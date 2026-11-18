@@ -16,6 +16,7 @@
 #   第4.190版：6 の 効果は ターンの はじめ（1つ目の 対戦）：配る → 「6 の 効果」の 帯 → 聞く 窓（deal）・見る カードを えらぶ → 効果の 札 → 見た カードを 大きく（six_peek）・
 #     オープン（勝ち）→「ターン 2」→「6 の 効果」の 帯（open_win）・6 を 使わない →「神様馬の 効果」の 帯（six_pre）・相手の 5 で「効果タイム」の 帯（set_efft）→ 負け（open_lose）。
 #     前の efft・eff6_open（効果タイムの 6）は なくなった
+#   第4.197版：6つ目＝決戦宝石（gem_deal：ケースの 宝石が ゆっくり 光る・gem_ask：宝石の 窓・gem_use：宝石が はねる・トークンが 手札へ・帯・gem_tokgone：使わなかった トークンが 消える）
 #   python3 test_cb_flash.py [場面の 名前,…]   （時間が かかる ので ふだんの テストとは 別に 動かす。コマは t5/cb_frames/<場面>/ に 残す）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -180,6 +181,16 @@ try:
             seg('x7r_open', 6.0, lambda: pg.evaluate(OPP, {'t': 'set', 'k': '1'}))      # 相手が ふせて セット → オープン（2 が 1 に 勝つ・強さ 逆転中）→「ターン 2」
             r7 = pg.evaluate("() => { const v = CBApp._t.view; return v ? [v.rv, v.turn, v.my.wins, v.op.wins, v.op.hand.filter(c => c.k === '7').length, document.querySelector('#cbOv .cbturn').textContent.indexOf('強さ 逆転中') >= 0] : null; }")
             check(r7 == [True, 2, 1, 0, 3, True], f'4つ目の 対戦も 場面の とおり（相手が セットの 前に 7 を 4まい 見せて 逆転 → 2 が 1 に 勝つ・相手の 7 が 3まい 見える・「強さ 逆転中」{r7}）')
+            # ---- 6つ目（第4.197版）：決戦宝石：配る → ケース（使える 宝石が ゆっくり 光る）→ 宝石を タップ → 窓 → 使う（宝石が はねる・トークンが 手札へ・帯）→ 使わなかった トークンが ターンの 終わりに 消える ----
+            settle(pg, 1.0)
+            pg.evaluate("() => { const T = CBApp._t; if (T.screen !== 'menu') T.menu(); CBApp._rng = () => 0.1; CBApp._opt = { hands: [['1', '2', '3', '6', '7'], ['2', '3', '4', '5', '6']], turns: 3, gems: [['m', 'k', '1', '3', '7'], []] }; }"); pg.wait_for_timeout(100)
+            seg('gem_deal', 4.6, lambda: pg.locator('#cbOv .cbmenu [data-cb=cpu]').click())      # 配る → 手札の 下に 宝石ケース（使える 宝石が ゆっくり 光る：2.4秒で 1回）
+            seg('gem_ask', 1.6, lambda: pg.locator('#cbOv .cbgem .g[data-g="1"]').click())        # 宝石を タップ →「双炎のルビー」の 窓（宝石 ▶ トークン）
+            seg('gem_use', 3.6, lambda: pg.locator('#cbOv .cbmod.cbgemm [data-cb=gemgo]').click())   # 使う → 宝石が はねる・トークンが 手札へ とぶ・帯「双炎のルビー！」
+            tap_play(pg, '2'); settle(pg, 0.8)
+            seg('gem_tokgone', 7.0, lambda: pg.evaluate(OPP, {'t': 'set', 'k': 3}))      # オープン（負け）→ 片付け → 使わなかった トークンが 消える →「ターン 2」
+            g6 = pg.evaluate("() => { const v = CBApp._t.view; return v ? [v.turn, v.my.hand.filter(c => c.tok).length, v.my.gem.used.join(''), document.querySelectorAll('#cbOv .cbgem .g').length] : null; }")
+            check(g6 == [2, 0, '1', 5], f'6つ目の 対戦（決戦宝石）も 場面の とおり（2ターン目・トークンは 消えた・使った 宝石 1・ケースに 5つ）{g6}')
             if calm < 2:
                 # ---- 5つ目（第4.189版）：カードパック ----
                 settle(pg, 1.0)

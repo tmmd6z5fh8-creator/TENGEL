@@ -246,7 +246,7 @@ try:
         check(top['who'] == '鈴駒' and top['qt'] == '第1戦・ターン 1／1', f'相手の 名前は「鈴駒」・小さく「{top["qt"]}」')
         ban = said(pg)
         check(any('第1戦 スタート' in x and '若草の鈴駒と 勝負！' in x for x in ban), f'はじめの 帯「第1戦 スタート／若草の鈴駒と 勝負！」 {ban[:2]}')
-        check(q(pg)['track'] == 'quest' and q(pg)['run'] == {'lv': 1, 'won': 0, 'm': '2026-11'}, 'BGM は 決戦調査の 曲・いまの 調査（レベル1・0勝）')
+        check(q(pg)['track'] == 'quest' and q(pg)['run'] == {'lv': 1, 'won': 0, 'm': '2026-11', 'gu': []}, 'BGM は 決戦調査の 曲・いまの 調査（レベル1・0勝・第4.197版：使った 決戦宝石 なし）')
         if HAVE:
             fl = pg.evaluate("() => { const im = document.querySelector('#cbOv .qhp .l'); return [im.complete, im.naturalWidth, im.naturalHeight]; }")
             check(fl[0] and fl[1] == 526 and fl[2] == 294, f'盾の 絵が 読めた {fl}')
@@ -437,10 +437,83 @@ try:
         check(s5['ms']['cpu'] == 0 and s5['ms']['live'] == '' and s5['lose'] == s4['lose'] and s5['streak'] == s4['streak'], 'つぎに 開いた とき：ミッションの 連勝 0・いつもの 負けには 数えない')
         check(any('決戦調査は 失敗に なったよ' in x and 'ミッションの 連勝（コンピュータ）は 0 に 戻ったよ' in x for x in tw), f'メニューで 知らせる：{tw[:1]}')
 
+        print('■ 決戦宝石（第4.197版・まさちゃん 18:58「呼び寄せの決戦宝石」・19:46「決戦調査は、決戦宝石あり、なしの選択はいらないよ！ 無条件であり！」・20:20「1クエスト連勝継続中に合計5個しか使えない！」・「決戦調査の時は、自分だけが見える」・19:03「手札が6枚以下の場合ね！」）')
+        pg.evaluate("() => { const T = CBApp._t; T.state.gq = false; T.save(); T.load(); }")      # 前の テスト版で 覚えた「なし」が のこって いても いつも あり
+        pg.locator('#cbOv .cbmenu [data-cb=quest]').click(); pg.wait_for_timeout(250)
+        lv0 = q(pg)['open']
+        pg.locator(f'#cbOv .qnd[data-lv="{lv0}"]').click(); pg.wait_for_timeout(250)
+        o0 = pop(pg)
+        g0 = pg.evaluate("() => { const e = document.querySelector('#cbOv .qmap .qpo'); return e ? { seg: e.querySelectorAll('[data-cb=qgem], .cbseg').length, t: e.innerText } : null; }")
+        qo = pg.evaluate(f"() => CBApp._t.qopt({lv0}, 0)")
+        check(o0 and o0['go'] and g0 and g0['seg'] == 0 and '決戦宝石' not in g0['t'] and 'gq' not in st(pg),
+              f'ふきだしに 決戦宝石の「なし／あり」は ない（決戦調査は いつも あり・前に 覚えた 設定も すてる）{g0 and g0["t"]!r}')
+        check(qo.get('gems') == [['m', 'k', '1', '3', '7'], []] and qo.get('gused') == [[], []] and qo.get('gpub') is False, f'決戦調査の 戦の 決まり：いつも あなたに 宝石 5つ・敵は なし・敵には 知らせない（gems {qo.get("gems")}・gpub {qo.get("gpub")}）')
+        pg.locator('#cbOv .qpo [data-cb=qpx]').click(); pg.wait_for_timeout(120)
+        H6 = {'turns': 1, 'hands': [['1', '2', '3', '4', '5', '6'], ['7', '7', '6', '2', '3', '1']]}      # 手札 6まい（1ターン目から 宝石が 使える）
+        GQS = """() => { const g = document.querySelector('#cbOv .cbgem'), o = document.querySelector('#cbOv .cbopp .ogem'), R = e => e.getBoundingClientRect();
+          return { hid: g.hidden, gs: [...g.querySelectorAll('.g')].map(b => b.dataset.g + ':' + [...b.classList].filter(c => c !== 'g').join('.')).join(' '), og: o.hidden, msg: document.querySelector('#cbOv .cbmsg').textContent,
+            ok: R(g).top >= Math.max(...[...document.querySelectorAll('#cbOv .cbhand .cbc')].map(c => R(c).bottom)) - 1 && R(g).bottom <= R(document.querySelector('#cbOv .cbact')).top + 1 && R(document.querySelector('#cbOv .cbact')).bottom <= innerHeight }; }"""
+        # レベル lv1（2連勝 以上）：1戦目に 日輪の黄金石 → 2戦目は のこりの 4つ
+        lv1 = lv0 + 1 if lv0 < 12 else lv0
+        pg.evaluate(f"() => {{ CBApp._t.state.q.clr = {lv1 - 1}; CBApp._t.save(); }}"); pg.locator('#cbOv [data-cb=qx]').click(); pg.locator('#cbOv .cbmenu [data-cb=quest]').click(); pg.wait_for_timeout(250)
+        go_field(pg, lv1); use(pg, H6['hands'])
+        pg.locator('#cbOv .qfw').click()
+        pg.wait_for_function("() => CBApp._t.screen === 'game' && CBApp._t.view && CBApp._t.view.can.set", timeout=20000); idle(pg)
+        bq = pg.evaluate(GQS)
+        check(not bq['hid'] and bq['gs'] == 'm:can k:can 1:can 3:can 7:can' and bq['og'] and '💎 セットの 前なら 決戦宝石を 使えるよ' in bq['msg'] and bq['ok'],
+              f'決戦調査の 1戦目：手札の 下に 宝石ケース（5つ・手札 6枚 → 使える）・敵の 宝石は 出ない（{bq["gs"]}）')
+        shot(pg, 'q15_gem_battle')
+        pg.locator('#cbOv .cbgem .g[data-g="k"]').click(); pg.wait_for_timeout(80); pg.locator('#cbOv .cbmod.cbgemm [data-cb=gemgo]').click(); idle(pg)
+        ban = said(pg)
+        lk = pg.evaluate("() => { const S = CBApp._t.match._.state(), w = CBRules.view(S, 1), t = S.p[0].hand.find(c => c.tok); return { tok: t ? t.k + '×' + t.tok : '', known: w.op.hand.some(c => c.k), n: w.op.hand.length, eg: w.op.gem }; }")
+        check(lk['tok'] == 'k×1' and not lk['known'] and lk['n'] == 7 and lk['eg'] is None and any('日輪の黄金石！' in x for x in ban),
+              f'日輪の黄金石 → 神様馬トークン（敵には 知らせない：敵から 見ると ふつうの 伏せた カード・宝石も 見えない {lk}）')
+        pg.locator('#cbOv .cbhand .cbc.tok[data-ck="k"]').click(); pg.wait_for_timeout(60); pg.locator('#cbOv .cbmod [data-cb=set]').click(); pg.wait_for_timeout(80)
+        pg.evaluate(OPP, {'t': 'set', 'k': '7'})
+        pg.wait_for_function("() => CBApp._t.ended && document.querySelector('#cbOv .cbmod.on.qend')", timeout=30000); pg.wait_for_timeout(150)
+        gl = pg.evaluate("() => { const e = document.querySelector('#cbOv .cbmod.qend .qgl'); return e ? { t: e.textContent, u: [...e.querySelectorAll('img')].map(i => i.classList.contains('u') ? 1 : 0).join('') } : null; }")
+        check(gl and gl['t'].startswith('💎 決戦宝石 のこり 4／5') and gl['u'] == '01000' and q(pg)['run']['gu'] == ['k'], f'勝利！の 窓に「💎 決戦宝石 のこり 4／5」（使った 日輪の黄金石は 暗く）{gl}')
+        shot(pg, 'q16_gem_left')
+        next_fight(pg); pg.wait_for_function("() => CBApp._t.view && CBApp._t.view.can.set", timeout=20000); idle(pg)
+        b2 = pg.evaluate(GQS); s2 = said(pg)
+        pg.locator('#cbOv .cbgem .g[data-g="k"]').click(); pg.wait_for_timeout(100); s3 = said(pg)
+        check(b2['gs'] == 'm:can k:used 1:can 3:can 7:can' and any('この 調査では もう 使ったよ' in x for x in s3) and pg.evaluate("() => CBApp._t.view.my.gem.used.join('')") == 'k',
+              f'第2戦：1戦目で 使った 日輪の黄金石は 使えない（暗い まま・タップ →「この 調査では もう 使ったよ」）・のこり 4つは 使える（{b2["gs"]}）')
+        pg.locator('#cbOv .cbgem .g[data-g="m"]').click(); pg.wait_for_timeout(80)
+        mt = pg.evaluate("() => (document.querySelector('#cbOv .cbmod.cbgemm p') || {}).textContent || ''")
+        check('この 宝石は この 調査で 1回（連勝が 続く 間）' in mt, f'宝石の 窓：「この 宝石は この 調査で 1回」（{mt[-40:]!r}）')
+        pg.locator('#cbOv .cbmod.cbgemm [data-cb=modx]').click(); pg.wait_for_timeout(80)
+        # 負けて 連勝が 切れる → もう 一度 挑戦 → 5つに 戻る
+        pg.locator('#cbOv .cbgem .g[data-g="m"]').click(); pg.wait_for_timeout(80); pg.locator('#cbOv .cbmod.cbgemm [data-cb=gemgo]').click(); idle(pg)
+        pg.locator('#cbOv .cbhand .cbc:not(.tok)[data-ck="6"]').first.click(); pg.wait_for_timeout(60); pg.locator('#cbOv .cbmod [data-cb=set]').click(); pg.wait_for_timeout(80)
+        pg.evaluate(OPP, {'t': 'set', 'k': '1'})      # 6 と 1（数字は 小さい ほど 強い）→ 負け
+        pg.wait_for_function("() => CBApp._t.ended && document.querySelector('#cbOv .cbmod.on.qend')", timeout=30000); pg.wait_for_timeout(150)
+        lt = mod_text(pg)
+        check('調査 失敗' in lt and '決戦宝石も 5つに 戻るよ' in lt and q(pg)['run']['gu'] == ['k', 'm'], f'負け（調査 失敗）：「もう 一度 1戦目から 挑戦できるよ（💎 決戦宝石も 5つに 戻るよ）」（使ったのは {q(pg)["run"]["gu"]}）')
+        pg.locator('#cbOv .cbmod [data-cb=qretry]').click()
+        pg.wait_for_function("() => CBApp._t.view && CBApp._t.view.phase !== 'end' && CBApp._t.view.can.set", timeout=20000); idle(pg)
+        b3 = pg.evaluate(GQS)
+        check(b3['gs'] == 'm:can k:can 1:can 3:can 7:can' and q(pg)['run']['gu'] == [] and q(pg)['run']['won'] == 0, f'もう 一度 挑戦（1戦目から）→ 決戦宝石は 5つ ぜんぶ 使える（{b3["gs"]}）')
+        # 1戦目：双炎のルビー → 同点（6 と 6）→ やり直しは 連勝が 続く ので 使った 宝石は 戻らない
+        pg.locator('#cbOv .cbgem .g[data-g="1"]').click(); pg.wait_for_timeout(80); pg.locator('#cbOv .cbmod.cbgemm [data-cb=gemgo]').click(); idle(pg)
+        pg.locator('#cbOv .cbhand .cbc:not(.tok)[data-ck="6"]').first.click(); pg.wait_for_timeout(60); pg.locator('#cbOv .cbmod [data-cb=set]').click(); pg.wait_for_timeout(80)
+        pg.evaluate(OPP, {'t': 'set', 'k': '6'})
+        pg.wait_for_function("() => CBApp._t.ended && document.querySelector('#cbOv .cbmod.on.qend')", timeout=30000); pg.wait_for_timeout(150)
+        dt = mod_text(pg); gd = pg.evaluate("() => { const e = document.querySelector('#cbOv .cbmod.qend .qgl'); return e ? e.textContent : ''; }")
+        next_fight(pg); pg.wait_for_function("() => CBApp._t.view && CBApp._t.view.can.set", timeout=20000); idle(pg)
+        b4 = pg.evaluate(GQS)
+        check('同点' in dt and gd.startswith('💎 決戦宝石 のこり 4／5') and b4['gs'] == 'm:can k:can 1:used 3:can 7:can', f'同点 → 同じ 戦を やり直し：連勝は 続く ので 使った 双炎のルビーは 戻らない（{b4["gs"]}）')
+        pg.locator('#cbOv .cbtop [data-cb=quit]').click(); pg.wait_for_timeout(80); pg.locator('#cbOv .cbmod [data-cb=quitgo]').click(); pg.wait_for_timeout(300)
+        if scr(pg) != 'qmap': pg.locator('#cbOv .cbmod [data-cb=qmapgo]').click(); pg.wait_for_timeout(200)
+        pg.evaluate(f"() => {{ CBApp._t.state.q.clr = {lv0 - 1}; CBApp._t.save(); }}")
+        if scr(pg) == 'qmap': pg.locator('#cbOv [data-cb=qx]').click(); pg.wait_for_timeout(150)
+        else: pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(150)
+
         print('■ あそび方・エラー')
         pg.locator('#cbOv .cbmenu [data-cb=help]').click(); pg.wait_for_timeout(200)
         hl = pg.locator('#cbOv .cbhelp').inner_text()
         check('⚔️ 決戦調査' in hl and 'Lv12 6連勝 250枚' in hl and '毎月 1日に リセット' in hl and '同じ 戦を やり直し' in hl, '遊び方に「⚔️ 決戦調査」（連勝・コイン・同点・リセット）')
+        check('💎 決戦宝石' in hl and '決戦調査では いつも 使えるよ' in hl and '5つ 1回ずつ（合計 5個）' in hl and '1試合で 5つ 1回ずつ' in hl and '幻影のアメジスト＝幻の馬トークン' in hl and '三峰の翡翠＝7トークン（1枚で 3頭分）' in hl and '手札が 6枚 以下' in hl and 'その ターン だけ' in hl, '第4.197版：遊び方に「💎 決戦宝石」（決戦調査は いつも・1つの 調査で 5つ 1回ずつ・友達との 対戦は 1試合で 5つ・使える とき・その ターン だけ）')
         check(not errs, f'画面の エラー なし {errs[:3]}')
         ctx.close()
 

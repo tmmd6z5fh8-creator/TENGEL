@@ -1198,5 +1198,205 @@ console.log('■ 第4.196版：決戦調査の 確定カード（opt.rig：敵�
   const a1 = C.decide(R.view(S, 1), rngOf(2)), r1 = a1 && R.act(S, 1, a1, rngOf(3));
   check(!!(r1 && r1.ok), '確定カードの 対戦も いつもどおり 進む（コンピュータが セットできる）');
 }
+console.log('■ 第4.197版：決戦宝石（まさちゃん 18:58「呼び寄せの決戦宝石」・19:03「決戦宝石が使えるのは手札が6枚以下の場合ね！」：1ターンに 1つ・同じ 宝石は 1戦に 1回・トークンは その ターン だけ）');
+{
+  // 本物の カードは いつも 30まい（トークンは 数えない・山札には 入らない）
+  const real = S => all(S).filter(c => !c.tok);
+  const saneG = S => { const a = real(S), us = new Set(a.map(c => c.u)); const n = {}; a.forEach(c => { n[c.k] = (n[c.k] || 0) + 1; }); return a.length === 30 && us.size === 30 && R.NUMS.every(k => n[k] === 4) && n.k === 1 && n.m === 1 && !S.deck.some(c => c.tok); };
+  const GG = (h0, h1, deck, gems, pub) => R.newGame(rngOf(7), { hands: [h0.split(''), h1.split('')], deck: deck ? deck.split('') : undefined, turns: 5, gems: gems, gpub: !!pub });
+  const gem = (S, i, g) => R.act(S, i, { t: 'gem', g: g }, rngOf(3));
+  const turn = (S, k0, k1) => { no6(S); set(S, 0, k0); set(S, 1, k1); while (S.phase === 'eff') [0, 1].forEach(i => { if (S.p[i].eff && !S.p[i].eff.done) eff(S, i, null); }); no6(S); };      // 1ターン（効果は 使わない）
+  check(R.GEMS.join('') === 'mk137' && R.GEM_W.m === 1 && R.GEM_W.k === 1 && R.GEM_W['1'] === 2 && R.GEM_W['3'] === 2 && R.GEM_W['7'] === 3 && R.GEM_HAND === 6,
+    '宝石は 5つ（幻影のアメジスト＝幻の馬・日輪の黄金石＝神様馬・双炎のルビー＝1 2頭分・双葉のエメラルド＝3 2頭分・三峰の翡翠＝7 3頭分）・手札 6まい 以下で 使える');
+  { const S = R.newGame(rngOf(1)); const v = R.view(S, 0); check(v.my.gem === null && v.op.gem === null && v.can.gem.length === 0 && !gem(S, 0, 'k').ok, '宝石 なしの 対戦（決まりを 入れない ふだんの 形）：宝石は 出ない・使えない'); }
+  // 決戦調査の 形：あなた（席 0）に 5つ・敵（席 1）は なし・敵には 知らせない
+  {
+    const S = GG('1234567', '1234566', '1234567', [R.GEMS, []]);
+    let v = R.view(S, 0);
+    check(v.my.gem && v.my.gem.list.join('') === 'mk137' && v.my.gem.used.length === 0 && v.can.gem.length === 0 && R.view(S, 1).my.gem === null && R.view(S, 1).op.gem === null,
+      '決戦調査の 形：あなたの ケースに 5つ・敵は なし・敵には あなたの 宝石は 見えない');
+    check(!gem(S, 0, 'k').ok && S.p[0].hand.length === 7, '1ターン目（手札 7まい）は 使えない（手札 6まい 以下：19:03）');
+    turn(S, '7', '6');
+    v = R.view(S, 0);
+    check(S.turn === 2 && S.p[0].hand.length === 6 && v.can.gem.join('') === 'mk137' && R.legal(S, 0).indexOf('gem') >= 0 && R.view(S, 1).can.gem.length === 0, '2ターン目（手札 6まい）：5つ ぜんぶ 使える（敵は 使えない）');
+    const r = gem(S, 0, 'k'), tk = S.p[0].hand.find(c => c.tok);
+    v = R.view(S, 0);
+    check(r.ok && tk && tk.k === 'k' && tk.tok === 1 && S.p[0].hand.length === 7 && v.my.hand.some(c => c.u === tk.u && c.tok === 1) && v.my.gem.used.join('') === 'k' && v.my.gem.now && v.can.gem.length === 0,
+      '日輪の黄金石 → 手札に 神様馬トークン（1頭分）が 1まい・使った 宝石・この ターンは もう 使えない（1ターンに 1つ）');
+    check(!gem(S, 0, '1').ok && !gem(S, 1, 'k').ok, 'この ターンに 2つ目は 使えない・敵は 使えない');
+    const e1 = R.evFor(r.ev, 1), w1 = R.view(S, 1);
+    check(e1.length === 0 && w1.op.hand.length === 7 && w1.op.hand.every(c => c.k === null) && R.evFor(r.ev, 0)[0].e === 'gem' && R.evFor(r.ev, 0)[0].c.k === 'k',
+      '敵には 知らせない（できごとは 出ない・敵から 見ると 手札が 1まい ふえた だけ・トークンも うら）');
+    set(S, 0, '2'); set(S, 1, '1'); no6(S);
+    while (S.phase === 'eff') [0, 1].forEach(i => { if (S.p[i].eff && !S.p[i].eff.done) eff(S, i, null); });
+    const gone = S.discard.length;
+    check(S.turn === 3 && !S.p[0].hand.some(c => c.tok) && S.p[0].hand.length === 5 && saneG(S), '使わなかった トークンは ターンの おわりに 消える（手札は 本物の 5まい）');
+    check(R.view(S, 0).can.gem.join('') === 'm137', '3ターン目：使った 日輪の黄金石は もう 使えない（同じ 宝石は 1戦に 1回）・ほかの 4つは 使える');
+    gem(S, 0, 'm'); const tm = S.p[0].hand.find(c => c.tok);
+    set(S, 0, 'm'); set(S, 1, '3');
+    const last = S.discard.slice(gone).find(d => d.tok);
+    check(tm && S.p[0].wins >= 1 && last && last.k === 'm' && last.tok === 1 && R.view(S, 0).discard.some(d => d.tok === 1 && d.k === 'm') && saneG(S),
+      '幻影のアメジスト → 幻の馬トークンを セット → 3 に 勝つ・場の トークンは 捨て札へ（トークンの しるし つき）');
+  }
+  // かぶり：神様馬トークン と 神様馬
+  {
+    const S = GG('1234567', 'k234566', '1234567', [R.GEMS, []]);
+    turn(S, '7', '6'); gem(S, 0, 'k'); set(S, 0, 'k'); set(S, 1, 'k'); no6(S);
+    check(S.last.res === 'clash' && S.last.c.join('') === 'kk' && S.p[0].wins === 0 && S.p[1].wins === 1, '神様馬トークン と 神様馬が ぶつかったら かぶり（どちらも 負け：勝ちは 1ターン目の まま）');
+  }
+  // 1トークン（2頭分）で 逆転勝利
+  {
+    const S = GG('1234567', 'k234566', '1234567', [R.GEMS, []]);
+    turn(S, '7', '6'); gem(S, 0, '1'); const t1 = S.p[0].hand.find(c => c.tok);
+    set(S, 0, '1'); set(S, 1, 'k'); no6(S);
+    check(S.phase === 'rev' && S.pend.who === 0 && t1.tok === 2, '1 を 出して 神様馬に 負けた・手札に 1トークン（1まいで 2頭分）だけ → 逆転勝利を 聞かれる（場 ＋ 2頭分 ＝ 3まい）');
+    const r = R.act(S, 0, { t: 'rev', use: true }, rngOf(3)), ev = r.ev.find(e => e.e === 'rev');
+    check(r.ok && ev && ev.show.length === 1 && ev.show[0] === t1.u && ev.drop.tok === 2 && S.p[0].wins === 1 && !S.p[0].hand.some(c => c.tok) && S.p[0].hand.length === 5 && saneG(S),
+      '使う → 1トークンを 見せて 捨てる（1まい ぶん）→ 勝ち。本物の 手札は へらない（5まい）');
+  }
+  // 3トークン（2頭分）＋ 3 で 交換（わたす のは 本物の 3）
+  {
+    const S = GG('1324567', '1234566', '1234567', [R.GEMS, []]);
+    turn(S, '7', '6'); gem(S, 0, '3'); const t3 = S.p[0].hand.find(c => c.tok), real3 = S.p[0].hand.find(c => c.k === '3' && !c.tok);
+    no6(S); set(S, 0, '1'); set(S, 1, '1');
+    check(S.phase === 'eff' && S.step === 'x3' && S.p[0].eff.can, '3トークン（2頭分）＋ 3 ＝ 3 が 3まい → 3 の 効果を 聞かれる');
+    const r = eff(S, 0, { x3: true }), x3 = r.ev.find(e => e.e === 'x3');
+    const tg = r.ev.find(e => e.e === 'tokgone' && e.who === 0);
+    check(x3 && x3.give.u === real3.u && !x3.give.tok && !x3.take.tok && x3.three.indexOf(t3.u) >= 0 && !S.p[1].hand.some(c => c.u === t3.u) && S.p[1].hand.some(c => c.u === real3.u) && tg && tg.u.indexOf(t3.u) >= 0,
+      '相手に わたすのは 本物の 3（トークンは 手元に のこる：ターンで 消える）・もらうのも 本物の カード');
+  }
+  // 7トークン（3頭分）：3まい 交換（トークンを もどして 3まい 引く）
+  {
+    const S = GG('1234566', '1234565', '1234567', [R.GEMS, []]);
+    turn(S, '6', '5'); gem(S, 0, '7'); const t7 = S.p[0].hand.find(c => c.tok), d0 = S.deck.length, h0 = S.p[0].hand.length;
+    no6(S); set(S, 0, '1'); set(S, 1, '1');
+    check(S.phase === 'eff' && S.step === 'x7' && S.p[0].eff.can && t7.tok === 3, '7トークン（3頭分）1まい ＝ 7 が 3まい → 7 の 3まい 交換を 聞かれる');
+    const r = eff(S, 0, { x7: true }), x7 = r.ev.find(e => e.e === 'x7');
+    check(x7 && x7.tok === t7.u && x7.drew.length === 3 && !S.p[0].hand.some(c => c.u === t7.u) && S.deck.length === d0 - 3 && !S.deck.some(c => c.tok) && S.p[0].hand.length === h0 - 1 - 1 + 3 && saneG(S),
+      'トークンを もどして（山札には 入らない：消える）3まい 引く ＝ 手札が 2まい ふえる（まさちゃんに 伝えた 形）');
+    const o1 = R.evFor(r.ev, 1).find(e => e.e === 'x7');
+    check(o1 && o1.tok === undefined && o1.drew === undefined, '決戦調査（宝石は 自分 だけ）：敵には トークンを もどした ことを 知らせない（引いた カードも）');
+  }
+  {      // 友だちとの 対戦：相手にも「7トークンを もどした」が わかる（引いた カードは わからない）
+    const S = GG('1234566', '1234565', '1234567', [['7'], ['1']], true);
+    turn(S, '6', '5'); gem(S, 0, '7'); const t7 = S.p[0].hand.find(c => c.tok);
+    no6(S); set(S, 0, '1'); set(S, 1, '1');
+    const r = eff(S, 0, { x7: true }), o1 = R.evFor(r.ev, 1).find(e => e.e === 'x7'), o0 = R.evFor(r.ev, 0).find(e => e.e === 'x7');
+    check(o1 && o1.tok === t7.u && o1.drew === undefined && o0 && o0.tok === t7.u && o0.drew.length === 3, '友だちとの 対戦：相手にも 7トークンを もどした ことが わかる（引いた カードは 自分 だけ）');
+  }
+  // 7トークン（3頭分）＋ 7 ＝ 4まい 公開（強さ 逆転：捨てるのは トークン）
+  {
+    const S = GG('1234567', '1234566', '1234567', [R.GEMS, []]);
+    turn(S, '6', '6'); gem(S, 0, '7');
+    const t7 = S.p[0].hand.find(c => c.tok), r7 = S.p[0].hand.find(c => c.k === '7' && !c.tok);
+    check(R.view(S, 0).can.x7r, '7トークン（3頭分）＋ 7 ＝ 7 が 4まい → セットの 前に 4まい 公開が 使える');
+    const r = R.act(S, 0, { t: 'x7r' }, rngOf(3)), ev = r.ev.find(e => e.e === 'x7r');
+    check(r.ok && S.rv && ev.drop.u === t7.u && ev.show.length === 2 && S.p[0].hand.some(c => c.u === r7.u) && S.p[1].known.indexOf(r7.u) >= 0 && saneG(S), '使う → 捨てるのは トークン（どうせ 消える）・本物の 7 は 手札に（相手に 知られる）・強さ 逆転');
+  }
+  // 5 の 効果：トークンを いっしょに 捨てる ときは 本物の 手札が へらない
+  {
+    const S = GG('5123467', '1234566', '1234567', [R.GEMS, []]);
+    turn(S, '1', '1'); toDis(S, 0, '2'); toDis(S, 0, '3');      // 本物の 手札を ぎりぎりに（4まい：のこり 4ターン）
+    gem(S, 0, '1'); const t1 = S.p[0].hand.find(c => c.tok);
+    no6(S); set(S, 0, '5'); set(S, 1, '2');
+    check(S.phase === 'eff' && S.step === 'u5' && S.p[0].eff.can, '本物の 手札が ぎりぎりでも、トークンを いっしょに 捨てる なら 5 の 効果を 聞かれる');
+    const bad = eff(S, 0, { u5: S.p[0].hand.find(c => !c.tok).u }), good = eff(S, 0, { u5: t1.u });
+    check(!bad.ok && good.ok && S.p[0].hand.filter(c => !c.tok).length === 3 && !S.p[0].hand.some(c => c.tok) && saneG(S), '本物の カードを 捨てると 足りなく なる → 受けつけない・トークンを 捨てる → 使える');
+  }
+  // セットの 後・ターンの はじめ（6）は 使えない
+  {
+    const S = GG('6612345', '1234567', '1234567', [R.GEMS, []]);
+    turn(S, '5', '7'); check(S.phase === 'six' || S.phase === 'set', '2ターン目の はじめ'); if (S.phase === 'six') check(!gem(S, 0, 'k').ok, 'ターンの はじめ（6 の 効果を 決める 前）は 使えない'); no6(S);
+    set(S, 0, '4'); check(!gem(S, 0, 'k').ok && R.view(S, 0).can.gem.length === 0, 'セットした あとは 使えない（セットの 前に 使う）');
+  }
+  // 第4.197版（まさちゃん 20:20「決戦宝石は、1試合に5個じゃなくて、1クエスト連勝継続中に合計5個しか使えない！」）：前の 戦で 使った 宝石（opt.gused）は はじめから「使った」
+  {
+    const S = R.newGame(rngOf(5), { hands: [['1', '2', '3', '4', '5'], ['1', '2', '3', '4', '6']], turns: 3, gems: [R.GEMS, []], gused: [['k', '1', 'x'], ['m']] });
+    const v0 = R.view(S, 0);
+    check(S.phase === 'set' && v0.my.gem.used.join('') === 'k1' && v0.my.gem.can.join('') === 'm37' && S.p[1].gused.length === 0 && !gem(S, 0, 'k').ok && !gem(S, 0, '1').ok,
+      '決戦調査の 2戦目：前の 戦で 使った 宝石（日輪の黄金石・双炎のルビー）は はじめから「使った」＝ もう 使えない（持って いない 宝石・おかしい 名前は 数えない）');
+    check(gem(S, 0, 'm').ok && R.view(S, 0).my.gem.used.join('') === 'k1m' && R.view(S, 0).my.gem.can.length === 0, 'のこりの 宝石は 使える（使った ものに たして いく）');
+    const S2 = R.newGame(rngOf(5), { hands: [['1', '2', '3', '4', '5'], ['1', '2', '3', '4', '6']], turns: 3, gems: [R.GEMS, []] });
+    check(R.view(S2, 0).my.gem.used.length === 0 && R.view(S2, 0).my.gem.can.join('') === R.GEMS.join(''), 'gused が ない ＝ 5つ ぜんぶ 使える（友だちとの 対戦・調査の 1戦目）');
+  }
+  // 持って いる 宝石だけ 使える・おたがいに 見える（例：1つずつ）
+  {
+    const S = GG('1234567', '1234566', '1234567', [['k'], ['1']], true);
+    const v0 = R.view(S, 0), v1 = R.view(S, 1);
+    check(v0.my.gem.list.join('') === 'k' && v0.op.gem.list.join('') === '1' && v1.my.gem.list.join('') === '1' && v1.op.gem.list.join('') === 'k', '持って いる 宝石だけ（1つずつ の 例）・おたがいの 宝石が 見える（gpub）');
+    turn(S, '7', '6');
+    check(!gem(S, 0, '1').ok && !gem(S, 1, 'k').ok, '持って いない 宝石は 使えない');
+    const r = gem(S, 0, 'k'), e1 = R.evFor(r.ev, 1), w1 = R.view(S, 1), tk = S.p[0].hand.find(c => c.tok);
+    check(r.ok && e1.length === 1 && e1[0].e === 'gem' && e1[0].g === 'k' && w1.op.hand.some(c => c.u === tk.u && c.k === 'k' && c.tok === 1) && w1.op.gem.used.join('') === 'k',
+      '使うと 相手にも 知らせる（相手の 画面で トークンは 表に 見える・使った 宝石も 見える）');
+    check(gem(S, 1, '1').ok, '相手も 同じ ターンに 自分の 宝石を 使える（1人 1ターンに 1つ）');
+  }
+  // でたらめに あそぶ（宝石 あり）：どんな 手の 順でも こわれない
+  {
+    const rng = rngOf(20261197); let bad = 0, why = ''; const st = { gem: 0, tokgone: 0, tokset: 0, revT: 0, x7T: 0, x3T: 0, x7rT: 0, u5T: 0 };
+    for (let g = 0; g < 6000; g++) {
+      const pub = g % 2 === 0, gems = pub ? [[R.GEMS[g % 5]], [R.GEMS[(g + 2) % 5]]] : [R.GEMS, []];
+      const S = R.newGame(rng, { gems: gems, gpub: pub }); let guard = 0; const usedT = [{}, {}];
+      while (S.phase !== 'end' && guard++ < 300) {
+        const L0 = R.legal(S, 0), L1 = R.legal(S, 1);
+        if (!L0.length && !L1.length) { bad++; why = why || 'stuck'; break; }
+        const i = rng() < 0.5 ? 0 : 1, L = i === 0 ? L0 : L1; if (!L.length) continue;
+        let t = L[Math.floor(rng() * L.length)]; if (L.indexOf('gem') >= 0 && rng() < 0.6) t = 'gem';
+        const P = S.p[i], rc = h => h[Math.floor(rng() * h.length)]; let a;
+        const v = R.view(S, i);
+        if (t === 'gem') a = { t: 'gem', g: rc(v.can.gem) };
+        else if (t === 'set') a = { t: 'set', u: rc(P.hand).u };
+        else if (t === 'x7r') a = { t: 'x7r' };
+        else if (t === 'eff') { const c = v.can.eff; a = { t: 'eff', use: rng() < 0.3 ? {} : c.e7 ? { x7: true } : c.e3 ? { x3: true } : c.e4 ? { u4: true } : c.e5 ? { u5: rc(P.hand.filter(x => R.view(S, i).my.hand.some(y => y.u === x.u))).u } : {} }; }
+        else if (t === 'p6') { const un = v.op.hand.filter(x => x.k == null); a = { t: 'p6', pick: un.length && rng() < 0.8 ? rc(un).u : null }; }
+        else if (t === 'swap') a = { t: 'swap', u: rc(P.hand).u };
+        else if (t === 'u5') a = { t: 'u5', drop: rng() < 0.3 ? null : rc(P.hand).u };
+        else if (t === 'k') { const un = v.op.hand.filter(x => x.k == null); a = { t: 'k', pick: un.length && rng() < 0.8 ? rc(un).u : null }; }
+        else if (t === 'm') { const h = R.shuffle(P.hand.slice(), rng); a = { t: 'm', drop: rng() < 0.2 ? null : [h[0].u, h[1].u] }; }
+        else if (t === 'rev') a = { t: 'rev', use: rng() < 0.7 };
+        const tn = S.turn, hn = P.hand.length;
+        let r = R.act(S, i, a, rng);
+        if (!r.ok && t === 'eff') r = R.act(S, i, { t: 'eff', use: {} }, rng);      // 5 で 捨てる カード（くじ）が 足りなく なる カード だった → 使わない
+        if (!r.ok && t === 'u5') r = R.act(S, i, { t: 'u5', drop: null }, rng);
+        if (!r.ok) { bad++; why = why || 'ng ' + t + ' ' + r.why; break; }
+        r.ev.forEach(e => {
+          if (e.e === 'gem') { st.gem++; if (usedT[e.who][tn]) { bad++; why = why || 'twice'; } usedT[e.who][tn] = 1; if (hn > R.GEM_HAND) { bad++; why = why || 'hand7'; } }
+          if (e.e === 'tokgone') st.tokgone++;
+          if (e.e === 'open' && e.c.some(c => c.tok)) st.tokset++;
+          if (e.e === 'rev' && e.drop.tok) st.revT++;
+          if (e.e === 'x7' && e.tok) st.x7T++;
+          if (e.e === 'x3' && e.three.length < 3) st.x3T++;      // 3トークン（2頭分）＋ 3 ＝ 2まいで 3まい ぶん
+          if (e.e === 'x7r' && e.drop.tok) st.x7rT++;
+          if (e.e === 'u5' && e.drop.tok) st.u5T++;
+        });
+        if (!saneG(S)) { bad++; why = why || 'cards'; break; }
+        if (r.ev.some(e => e.e === 'turn') && S.p.some(X => X.hand.some(c => c.tok))) { bad++; why = why || 'tok left'; break; }      // ターンを またいだら トークンは ない
+        if (S.phase !== 'end' && S.p.some(X => realN(X) + (X.set && !X.set.c.tok ? 1 : 0) + (X.set && X.set.c.tok ? 1 : 0) < R.TURNS - S.turn + 1)) { bad++; why = why || 'short'; break; }      // のこりの ターンに 出す カードが ある
+        if (S.p.some(X => X.gused.length !== new Set(X.gused).size || X.gused.some(k => X.gems.indexOf(k) < 0))) { bad++; why = why || 'gused'; break; }
+        if (!pub && t === 'gem') { const w1 = R.view(S, 1); if (w1.op.hand.some(c => c.tok) || R.evFor(r.ev, 1).length) { bad++; why = why || 'leak'; break; } }      // 決戦調査：宝石を 使った ことは 敵に 知らせない（3・7 の 効果で 見せた ときは 見える）
+      }
+      if (S.phase !== 'end' || S.turn !== 5) { bad++; why = why || 'end'; }
+    }
+    function realN(X) { return X.hand.filter(c => !c.tok).length; }
+    check(bad === 0, `宝石 あり で 6000回（決戦調査の 形・友だちとの 対戦の 形）：ぜんぶ 5ターンで おわる・本物の カードは 30まい・トークンは ターンを またがない・1ターンに 1つ・手札 6まい 以下・宝石は 1回 ずつ（おかしい ${bad}${why ? '：' + why : ''}）`);
+    check(st.gem > 5000 && st.tokgone > 500 && st.tokset > 500 && st.revT > 0 && st.x7T > 0 && st.x7rT > 0 && st.u5T > 0 && st.x3T > 0,
+      `トークンの 効果も 出た（宝石 ${st.gem}・消えた ${st.tokgone}・場に 出した ${st.tokset}・トークンで 逆転勝利 ${st.revT}・3 の 交換 ${st.x3T}・7 の 3まい 交換 ${st.x7T}・4まい 公開 ${st.x7rT}・5 で 捨てた ${st.u5T}）`);
+  }
+  // コンピュータ（敵）は 宝石を 使わない・あなたの トークンが あっても いつもどおり 決める
+  {
+    const rng = rngOf(4197); let bad = 0;
+    for (let g = 0; g < 1500; g++) {
+      const S = R.newGame(rng, { gems: [R.GEMS, []] }); let guard = 0;
+      while (S.phase !== 'end' && guard++ < 300) {
+        const L0 = R.legal(S, 0);
+        if (L0.length) { const v = R.view(S, 0); const a = v.can.gem.length && rng() < 0.7 ? { t: 'gem', g: v.can.gem[Math.floor(rng() * v.can.gem.length)] } : C.decide(v, rng); if (a && !R.act(S, 0, a, rng).ok) { bad++; break; } }
+        const a1 = C.decide(R.view(S, 1), rng); if (a1) { if (a1.t === 'gem') { bad++; break; } if (!R.act(S, 1, a1, rng).ok) { bad++; break; } }
+        if (!L0.length && !a1) { bad++; break; }
+      }
+      if (S.phase !== 'end') bad++;
+    }
+    check(bad === 0, `コンピュータは 宝石を 使わない・あなたが トークンを 使っても 最後まで 進む（1500回：おかしい ${bad}）`);
+  }
+}
 console.log('結果：', fails.length ? fails.length + '件おかしい' : 'OK');
 process.exit(fails.length ? 1 : 0);

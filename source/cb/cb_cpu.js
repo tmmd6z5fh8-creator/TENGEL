@@ -21,6 +21,7 @@
 //     ・第4.190版：6 の 効果は ターンの はじめ（v.can.six → { t:'p6', pick }：まだ 見て いない 手札から ランダムに 1まい）。
 //       効果タイムは 1つずつ 聞かれる（v.can.eff に いまの 効果 1つ）→ その 効果 だけ 決める（7・3 の あとの 手札で 5 を 考える）
 //     ・相手の 手札を 見る（6・神様馬）ときは、まだ 見て いない カード（うら）の 中から ひとしく ランダムに えらぶ（カードの 中身は 見えて いない：のぞかない）
+//     ・第4.197版：決戦宝石は 使わない（決戦調査の 敵は 宝石 なし：まさちゃんの 答え）。手札に トークンが ある とき（テストで 席 0 を まかせた とき）は 5 の 効果で トークンを 捨てる
 const CBCpu = (() => {
   'use strict';
   const power = (k, rv) => (k === 'k' || k === 'm' ? 0 : rv ? 8 - +k : +k);      // 小さい ほど 強い（rv＝強さ 逆転ちゅう：第4.185版）
@@ -39,7 +40,7 @@ const CBCpu = (() => {
         const five = s.find(c => c.k === '5'); if (five && hand.length - 1 >= v.turns - v.turn && v.deckN >= 1) return { t: 'swap', u: five.u };      // 第4.183版
         return { t: 'swap', u: s[s.length - 1].u };
       }
-      if (v.pend.type === 'u5') { const s = byS(hand); return { t: 'u5', drop: s.length ? s[s.length - 1].u : null }; }      // 第4.183版：交換で 出した 5 の 効果
+      if (v.pend.type === 'u5') { const s = byS(hand), tk = hand.find(c => c.tok); return { t: 'u5', drop: tk ? tk.u : s.length ? s[s.length - 1].u : null }; }      // 第4.183版：交換で 出した 5 の 効果（第4.197版：トークンが あれば それを 捨てる）
       if (v.pend.type === 'k') {
         const un = opHand.filter(c => c.k == null);
         return { t: 'k', pick: un.length ? pick(un, rng).u : null };
@@ -59,7 +60,7 @@ const CBCpu = (() => {
       const c = v.can.eff, s = byS(hand);
       if (c.e7) return { t: 'eff', use: rv ? {} : { x7: true } };      // 逆転ちゅうの 7 は 強い ので 交換しない
       if (c.e3) return { t: 'eff', use: rng() < (v.turn >= 2 ? 0.55 : 0.35) ? { x3: true } : {} };
-      if (c.e5) { const weak = s[s.length - 1]; return { t: 'eff', use: weak ? { u5: weak.u } : {} }; }      // 1番 弱い 手札を 捨てて 山札から 出す（7・3 は もう 終わって いる）
+      if (c.e5) { const weak = hand.find(x => x.tok) || s[s.length - 1]; return { t: 'eff', use: weak ? { u5: weak.u } : {} }; }      // 1番 弱い 手札を 捨てて 山札から 出す（7・3 は もう 終わって いる。第4.197版：トークンが あれば それ：ターンで 消える）
       if (c.e4) return { t: 'eff', use: (v.turn >= v.turns ? true : v.turn >= 2 ? rng() < 0.5 : false) ? { u4: true } : {} };
       return { t: 'eff', use: {} };
     }

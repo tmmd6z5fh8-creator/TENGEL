@@ -69,6 +69,21 @@
 //     ・効果タイムは 1つずつ（S.step：7 の 3まい 交換 → 3 → 5 → 4）：その 効果を 使える 人に 聞く → 決めたら すぐ 行う → 終わって から 次の 効果を 聞く
 //       （例：7 で 交換した あとの 手札で 5 を 使うか・どの カードを 捨てるか 決める）。同じ 効果を 2人とも 使える とき（5 と 5・4 と 4）は その 効果 だけ 2人 いっしょに 決める
 //     ・第4.188版の「5 で 捨てる カードは 7・3 の 効果に 使わない」は いらなく なった（7・3 は 5 を 聞く 前に 終わる）
+//   まさちゃんの 追加（第4.197版・2026/11/18 18:58「呼び寄せの決戦宝石 決戦調査とお友達バトルの設定で、決戦宝石ありにした場合のみ使用可能 決戦宝石は、１ターンにどれか1回しか使えない」・
+//     「トークンを使用するとそのターンのみ、決められたカードの枚数を超えることができる…トークンカードは、1枚で2枚分として使用できるが、フィールドへセットや、手札効果で捨てる場合は1枚分として使用する」・
+//     19:03「決戦宝石が使えるのは手札が6枚以下の場合ね！」・答え：宝石は 最初から 5つ（なくならない）・同じ 宝石は 1戦に 1回・使わない トークンは ターンで 消える）：
+//     ・決戦宝石（GEMS）：m＝幻影のアメジスト（幻の馬トークン）・k＝日輪の黄金石（神様馬トークン）・1＝双炎のルビー（1トークン 2頭分）・3＝双葉のエメラルド（3トークン 2頭分）・7＝三峰の翡翠（7トークン 3頭分）
+//     ・手 { t:'gem', g }：セットの 前（phase 'set'・まだ セットして いない）・手札 6まい 以下・この ターンに まだ 使って いない（1ターンに 1つ）・この 対戦で まだ 使って いない（同じ 宝石は 1戦に 1回）・
+//       まさちゃん 20:20「決戦宝石は、1試合に5個じゃなくて、1クエスト連勝継続中に合計5個しか使えない！」・20:21「お友達バトルは1試合で5個使える！」：
+//       決戦調査は 1つの 調査（連勝が つづく 間）で 5つ 1回ずつ ＝ 前の 戦で 使った 宝石は opt.gused＝[[席 0 の 使った 宝石],[…]]（はじめから 使った ことに する）／友だちとの 対戦は 1試合で 5つ（2人とも）
+//       持って いる 宝石（opt.gems＝[[席 0 の 宝石],[席 1 の 宝石]]：決戦調査は あなたに 5つ・敵は なし／友だちとの 対戦は 2人とも 5つ）→ 手札に トークン 1まい（{ u, k, tok：何頭分か }）
+//     ・トークンは その ターン だけ：ターンの おわりに 手札に のこって いたら 消える（できごと tokgone）。山札には もどらない（7 の 3まい 交換で もどす ときも 消える）
+//     ・何頭分か（GEM_W）は 手札の 効果の 数え方（count）：1トークン 1まい ＝ 1 が 2まい（1 の 逆転勝利）・3トークン ＋ 3 ＝ 3 が 3まい（3 の 交換）・7トークン ＝ 7 が 3まい（7 の 3まい 交換）・
+//       7トークン ＋ 7 ＝ 7 が 4まい（7 の 4まい 公開）。セット・捨てる・もどす ときは 1まい（場では ふつうの カードと 同じ 強さ：神様馬トークンと 神様馬は かぶり）
+//     ・姫が 決めた 所：見せて 捨てる 効果（7 の 4まい 公開・逆転勝利）は トークンを 捨てる（どうせ 消える）／7 の 3まい 交換は トークンを もどして 3まい 引く（まさちゃんに 伝えた）／
+//       3 の 交換で 相手に わたすのは 本物の 3・相手から くじで もらう カードも 本物 だけ（トークンが 消えて あとの ターンの カードが 足りなく ならない ように）／
+//       「のこりの ターンに 出す カードが 足りるか」（5・7 の 4まい 公開・逆転勝利）は トークンを 数えない（ターンで 消える）。トークンを 捨てる ときは 本物の 手札は へらない
+//     ・友だちとの 対戦（opt.gpub）：おたがいの 宝石が 見える ＝ 使った トークンも 相手に 知られる（相手の 手札で 表に 見える）。決戦調査（コンピュータ）は 自分 だけ（敵には 知らせない）
 //
 //   1ターンの 流れ：
 //     （はじめ：第4.190版：6 が 2まい ある 人が 6 の 効果を 使うか 決める＝phase 'six' → 前の ターンに 神様馬／幻の馬で 勝った 人が 効果を 使うか 決める＝phase 'pre'）
@@ -108,10 +123,11 @@
 //   部品：
 //     CBRules.newGame(rng, opt) → S（対戦の 中身 ぜんぶ：ホスト だけが 持つ）   opt.hands＝[[手札],[手札]]・opt.deck＝[上から …]・opt.turns＝ターンの 数（どれも テスト用：ふだんは 7まい・5ターン）
 //                                 opt.rig＝[[席 0 に かならず 入る カード],[席 1 に …]]（第4.196版：決戦調査の 敵の「確定カード」。のこりは くじ）
+//                                 opt.gems＝[[席 0 の 決戦宝石],[席 1 の …]]・opt.gused＝もう 使った 宝石（決戦調査の 2戦目 から）・opt.gpub＝宝石と トークンを 相手に 見せる（第4.197版：友だちとの 対戦）。なければ 宝石 なし
 //     CBRules.act(S, i, a)      → { ok, why, ev }：プレイヤー i（0／1）の 手 a を S に 入れる（ev＝おきた こと）
 //        a＝{ t:'set', u } ／ { t:'eff', use:{ u5:捨てる カード, x7:true, x3:true, u4:true }（第4.190版：いまの 効果（S.step）の 1つ だけ。使わない＝{}）} ／ { t:'p6', pick:u|null }（第4.190版：セットの 前）／ { t:'swap', u } ／
 //           { t:'k', pick:u|null } ／ { t:'m', drop:[u,u]|null } ／ { t:'rev', use:true|false }（逆転勝利）／ { t:'u5', drop:u|null }（交換で 出した 5 の 効果：第4.183版）／
-//           { t:'x7r' }（7 を 4まい 見せて 1まい 捨てる → 強さ 逆転：セットの 前。第4.187版）
+//           { t:'x7r' }（7 を 4まい 見せて 1まい 捨てる → 強さ 逆転：セットの 前。第4.187版）／ { t:'gem', g }（決戦宝石 → トークン：セットの 前。第4.197版）
 //     CBRules.view(S, i)        → プレイヤー i に 見せて いい こと だけ（相手の 手札・ふせた カードは 見えない）
 //     CBRules.evFor(ev, i)      → おきた こと の うち、プレイヤー i に 見せて いい 形
 const CBRules = (() => {
@@ -129,9 +145,20 @@ const CBRules = (() => {
     for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; }
     return a;
   }
+  // 第4.197版：決戦宝石（宝石 → その ターン だけの トークンの カード）。GEM_W＝トークンが 何頭分か（手札の 効果の 数え方）・GEM_HAND＝使える 手札の 数（6まい 以下）
+  const GEMS = ['m', 'k', '1', '3', '7'], GEM_W = { m: 1, k: 1, '1': 2, '3': 2, '7': 3 }, GEM_HAND = 6;
   const fullSet = () => { const a = []; NUMS.forEach(k => { for (let i = 0; i < COPIES; i++) a.push(k); }); a.push('k', 'm'); return a; };
-  const mkP = () => ({ hand: [], set: null, wins: 0, known: [], eff: null, six: null, r7: 0 });      // six：6 の 効果（第4.190版：セットの 前）      // r7：7 の 4まい 公開を 使った ターン（第4.187版：その ターンの 効果タイムでは 7 の 3まい 交換を 出さない）
-  const count = (hand, k) => hand.reduce((n, c) => n + (c.k === k ? 1 : 0), 0);
+  const mkP = () => ({ hand: [], set: null, wins: 0, known: [], eff: null, six: null, r7: 0, gems: [], gused: [], gturn: 0 });      // six：6 の 効果（第4.190版：セットの 前）      // r7：7 の 4まい 公開を 使った ターン（第4.187版：その ターンの 効果タイムでは 7 の 3まい 交換を 出さない）
+  const count = (hand, k) => hand.reduce((n, c) => n + (c.k === k ? c.tok || 1 : 0), 0);      // 第4.197版：トークンは 何頭分か（tok）で 数える
+  const realN = hand => hand.reduce((n, c) => n + (c.tok ? 0 : 1), 0);                         // 第4.197版：本物の カードの 数（トークンは ターンで 消える）
+  const hasTok = (hand, k) => hand.some(c => c.tok && c.k === k);
+  // 第4.197版：何頭分か 合わせて need に なる カード（トークンを 先に：どうせ ターンで 消える）。足りなければ null。トークンの ない 手札は 前と 同じ（手札の ならびの 先から）
+  function pickW(hand, k, need) {
+    const cs = hand.filter(c => c.k === k).sort((a, b) => (b.tok || 0) - (a.tok || 0)), out = []; let n = 0;
+    for (const c of cs) { if (n >= need) break; out.push(c); n += c.tok || 1; }
+    return n >= need ? out : null;
+  }
+  const cardEv = c => (c.tok ? { u: c.u, k: c.k, tok: c.tok } : { u: c.u, k: c.k });      // できごとに 書く カード（トークンは 何頭分か も）
   const idx = (hand, u) => hand.findIndex(c => c.u === u);
 
   function newGame(rng, opt) {
@@ -161,6 +188,9 @@ const CBRules = (() => {
       S.deck = shuffle(rest, rng).map(k => ({ u: ++S.uid, k }));
       for (let n = 0; n < HAND; n++) for (let i = 0; i < 2; i++) S.p[i].hand.push(S.deck.pop());      // 1まい ずつ 交互に 配る
     }
+    const gl = Array.isArray(opt.gems) ? opt.gems : [], gu = Array.isArray(opt.gused) ? opt.gused : [];      // 第4.197版：決戦宝石（持って いる 宝石・使った 宝石・使った ターン）
+    [0, 1].forEach(i => { const g = Array.isArray(gl[i]) ? gl[i] : [], u = Array.isArray(gu[i]) ? gu[i] : []; S.p[i].gems = GEMS.filter(k => g.indexOf(k) >= 0); S.p[i].gused = S.p[i].gems.filter(k => u.indexOf(k) >= 0); });      // gused＝前の 戦で もう 使った 宝石（決戦調査：1つの 調査で 1回ずつ）
+    S.gpub = !!opt.gpub;
     S.ev0 = []; startTurn(S, S.ev0);      // 第4.190版：1ターン目の はじめ（6 の 効果）。おきた こと（ev0）は 進め役が 配った あとに 見せる
     return S;
   }
@@ -168,7 +198,7 @@ const CBRules = (() => {
   const forget = (S, u) => { S.p.forEach(P => { const j = P.known.indexOf(u); if (j >= 0) P.known.splice(j, 1); }); };
   const learn = (P, u) => { if (P.known.indexOf(u) < 0) P.known.push(u); };
   // 捨て札へ：だれの（by）・何で 捨てたか（why：'t'＝ターンに 出した カード・'5'＝5 の 効果・'m'＝幻の馬の 効果・'1'／'2'＝逆転勝利で 捨てた 1／2・'7'＝7 の 4まい 公開：第4.185版）・どの ターンか を 覚える
-  const toss = (S, c, by, why) => { forget(S, c.u); S.discard.push({ u: c.u, k: c.k, by: by, why: why, turn: S.turn }); };
+  const toss = (S, c, by, why) => { forget(S, c.u); S.discard.push(Object.assign({ u: c.u, k: c.k, by: by, why: why, turn: S.turn }, c.tok ? { tok: c.tok } : {})); };      // 第4.197版：トークンは tok
 
   // 相手（Q）の 手札の 中で、P が まだ 見て いない カード（第4.178版：6・神様馬の 効果で 見られる カード）
   const unseen = (P, Q) => Q.hand.filter(c => P.known.indexOf(c.u) < 0);
@@ -180,14 +210,14 @@ const CBRules = (() => {
   //   うらの カードの 番号（u）は いま 手札に ある まだ 見て いない カードに つけかえる（6 の 効果で えらぶ カード）
   function handOf(P, Q) {
     const kn = c => P.known.indexOf(c.u) >= 0, s = Q.set;
-    if (!s || s.up || s.open || s.blind) return Q.hand.map(c => ({ u: c.u, k: kn(c) ? c.k : null }));
+    if (!s || s.up || s.open || s.blind) return Q.hand.map(c => (kn(c) ? cardEv(c) : { u: c.u, k: null }));
     const H = Q.hand.slice();
     H.splice(Math.max(0, Math.min(H.length, s.at | 0)), 0, s.c);
     let r = H.length - 1;
     for (let j = H.length - 1; j >= 0; j--) if (!kn(H[j])) { r = j; break; }
     H.splice(r, 1);
     const pool = Q.hand.filter(c => !kn(c));
-    return H.map(c => (kn(c) ? { u: c.u, k: c.k } : { u: pool.shift().u, k: null }));
+    return H.map(c => (kn(c) ? cardEv(c) : { u: pool.shift().u, k: null }));
   }
   // 第4.190版：効果タイムは 1つずつ（行う 順：7 の 3まい 交換 → 3 → 5 → 4。手札の 効果 → セットした カードの 効果・4 は いちばん あと）
   const STEPS = ['x7', 'x3', 'u5', 'u4'];
@@ -195,25 +225,29 @@ const CBRules = (() => {
   function canStep(S, i, st) {
     const P = S.p[i], Q = S.p[1 - i], sc = P.set && !P.set.blind ? P.set.c.k : null;      // 山札から ふせた カード（5 の 効果）は 自分にも 見えない ので 4・5 に 数えない
     if (st === 'x7') return count(P.hand, '7') >= 3 && S.deck.length >= 3 && P.r7 !== S.turn;      // 第4.187版：同じ ターンに 4まい 公開を 使ったら 出さない（どちらか 1つ）
-    if (st === 'x3') return count(P.hand, '3') >= 3 && Q.hand.length >= 1;                        // 第4.177版：3 が 3まい → 見せて 交換
-    if (st === 'u5') return sc === '5' && P.hand.length >= 1 && P.hand.length - 1 >= S.turns - S.turn && S.deck.length >= 1;      // 第4.177版：使った あとの 手札が のこりの ターンの 数より 少なく ならない
+    if (st === 'x3') return count(P.hand, '3') >= 3 && P.hand.some(c => c.k === '3' && !c.tok) && Q.hand.some(c => !c.tok);      // 第4.177版：3 が 3まい → 見せて 交換（第4.197版：わたす・もらうのは 本物の カード）
+    if (st === 'u5') return sc === '5' && P.hand.length >= 1 && S.deck.length >= 1 && P.hand.some(c => dropOk(S, P, c));      // 第4.177版：使った あとの 手札が のこりの ターンの 数より 少なく ならない（第4.197版：トークンは 数えない）
     if (st === 'u4') return sc === '4' && Q.hand.length >= 1;
     return false;
   }
+  // 5 の 効果で いっしょに 捨てて いい カードか（第4.197版）：捨てた あとの 本物の 手札が のこりの ターンの 数 以上（トークンを 捨てる ときは 本物は へらない）
+  function dropOk(S, P, c) { return !!c && realN(P.hand) - (c.tok ? 0 : 1) >= S.turns - S.turn; }
   // 6 の 効果（第4.190版：ターンの はじめ・セットの 前）：6 が 2まい・相手の 手札に まだ 見て いない カードが ある（第4.178版）
   const can6 = (S, i) => { const P = S.p[i], Q = S.p[1 - i]; return count(P.hand, '6') >= 2 && unseen(P, Q).length >= 1; };
   // 7 の 4まい 公開（第4.187版：セットの 前）を 使えるか：セットの とき・まだ セットして いない・7 が 4まい・まだ 逆転して いない・
   //   1まい 捨てても、この ターンを 入れた のこりの ターンに 出す カードが 足りる
-  const can7r = (S, i) => { const P = S.p[i]; return S.phase === 'set' && !P.set && !S.rv && count(P.hand, '7') >= 4 && P.hand.length - 1 >= S.turns - S.turn + 1; };
+  const can7r = (S, i) => { const P = S.p[i]; return S.phase === 'set' && !P.set && !S.rv && count(P.hand, '7') >= 4 && realN(P.hand) - (hasTok(P.hand, '7') ? 0 : 1) >= S.turns - S.turn + 1; };      // 第4.197版：トークンを 捨てる ときは 本物は へらない
   // 5 の 効果を 使えるか（第4.183版：4 の 効果で 交換して 出した 5）：ふせて いる 5・手札 1まい 以上・使った あとの 手札が のこりの ターンの 数より 少なく ならない・山札が ある
-  const can5 = (S, i) => { const P = S.p[i]; return !!P.set && !P.set.blind && P.set.c.k === '5' && P.hand.length >= 1 && P.hand.length - 1 >= S.turns - S.turn && S.deck.length >= 1; };
+  const can5 = (S, i) => { const P = S.p[i]; return !!P.set && !P.set.blind && P.set.c.k === '5' && P.hand.length >= 1 && S.deck.length >= 1 && P.hand.some(c => dropOk(S, P, c)); };
+  // 決戦宝石を いま 使えるか（第4.197版）：セットの 前・持って いる・この 対戦で まだ・この ターンに まだ・手札 6まい 以下
+  const canGem = (S, i, g) => { const P = S.p[i]; return S.phase === 'set' && !P.set && GEMS.indexOf(g) >= 0 && P.gems.indexOf(g) >= 0 && P.gused.indexOf(g) < 0 && P.gturn !== S.turn && P.hand.length <= GEM_HAND; };
   // 逆転勝利（第4.178版）を 使える 人の 席（いなければ null）。r＝オープンして ふつうに くらべた 結果（0／1＝勝った 席）
   //   負けた 人の 場の カードが 1（相手＝神様馬・幻の馬）か 2（相手＝1）・手札に 同じ 数字が 2まい 以上（場と 合わせて 3まい）・1まい 捨てても のこりの ターンに 足りる
   function revWho(S, r) {
     if (r !== 0 && r !== 1) return null;
     const i = 1 - r, P = S.p[i], mk = P.set.c.k, wk = S.p[r].set.c.k;
     const hit = (mk === '1' && (wk === 'k' || wk === 'm')) || (mk === '2' && wk === '1');
-    return hit && count(P.hand, mk) >= 2 && P.hand.length - 1 >= S.turns - S.turn ? i : null;
+    return hit && count(P.hand, mk) >= 2 && realN(P.hand) - (hasTok(P.hand, mk) ? 0 : 1) >= S.turns - S.turn ? i : null;      // 第4.197版：トークン（2頭分）なら それを 捨てる
   }
 
   function act(S, i, a, rng) {
@@ -231,13 +265,21 @@ const CBRules = (() => {
       if (S.p[0].set && S.p[1].set) afterSet(S, ev);
       return { ok: true, ev: ev };
     }
+    if (a.t === 'gem') {                                 // 第4.197版：決戦宝石 → トークンの カードが 手札に 1まい（この ターン だけ）
+      if (!canGem(S, i, a.g)) return bad('gem');
+      const c = { u: ++S.uid, k: a.g, tok: GEM_W[a.g] };
+      P.hand.push(c); P.gused.push(a.g); P.gturn = S.turn;
+      if (S.gpub) learn(Q, c.u);                         // 友だちとの 対戦：おたがいの 宝石が 見える ＝ 使った トークンも 相手に 知られる
+      ev.push({ e: 'gem', who: i, g: a.g, c: cardEv(c), pub: !!S.gpub });
+      return { ok: true, ev: ev };
+    }
     if (a.t === 'x7r') {                                 // 第4.187版：7 を 4まい 見せて 1まい 捨てる → 数字の 強さが 逆に（この 対戦が 終わる まで）。セットの 前に 使う（セットは いらない）
       if (!can7r(S, i)) return bad('x7r');
-      const sev = P.hand.filter(c => c.k === '7').slice(0, 4), drop = sev[0];
+      const sev = pickW(P.hand, '7', 4), drop = sev[0];      // 第4.197版：何頭分か で 4まい ぶん・捨てるのは トークン（あれば：どうせ 消える）
       P.hand.splice(P.hand.indexOf(drop), 1); toss(S, drop, i, '7');
       sev.slice(1).forEach(c => learn(Q, c.u));          // 見せて 手札に のこる 3まいは 相手が 知って いる（セットしたら どれを 出したかは わからない：handOf）
       S.rv = true; P.r7 = S.turn;
-      ev.push({ e: 'x7r', who: i, show: sev.map(c => c.u), drop: { u: drop.u, k: drop.k } });
+      ev.push({ e: 'x7r', who: i, show: sev.map(c => c.u), drop: cardEv(drop) });
       return { ok: true, ev: ev };
     }
     if (a.t === 'p6') {                                  // 第4.190版：6 の 効果（ターンの はじめ・セットの 前）：見る カード（pick）・null＝使わない
@@ -259,7 +301,7 @@ const CBRules = (() => {
       if (w.p6 != null) return bad('e6');               // 第4.190版：6 は セットの 前（{ t:'p6' }）
       const ask = { x7: !!w.x7, x3: !!w.x3, u5: w.u5 != null, u4: !!w.u4 }, NUM = { x7: 'e7', x3: 'e3', u5: 'e5', u4: 'e4' };
       for (const k of STEPS) if (ask[k] && k !== stp) return bad(NUM[k]);      // いまの 効果 では ない（1つずつ：前の 効果が 終わって から 次を 聞く）
-      if (stp === 'u5' && ask.u5 && idx(P.hand, w.u5) < 0) return bad('drop');
+      if (stp === 'u5' && ask.u5 && !dropOk(S, P, P.hand[idx(P.hand, w.u5)])) return bad('drop');      // 第4.197版：本物の 手札が 足りる か
       P.eff.use = ask[stp]; P.eff.drop = stp === 'u5' && ask.u5 ? w.u5 : null; P.eff.done = true;
       ev.push({ e: 'effd', who: i });
       if (S.p[0].eff.done && S.p[1].eff.done) resolveStep(S, ev, rng);
@@ -282,11 +324,11 @@ const CBRules = (() => {
       if (S.phase !== 'u5' || !S.pend || S.pend.type !== 'u5' || S.pend.who !== i) return bad('u5');
       if (a.drop == null) ev.push({ e: 'u5skip', who: i });
       else {
-        const d = idx(P.hand, a.drop); if (d < 0 || !can5(S, i)) return bad('drop');
+        const d = idx(P.hand, a.drop); if (d < 0 || !can5(S, i) || !dropOk(S, P, P.hand[d])) return bad('drop');
         const five = P.set.c, drop = P.hand.splice(d, 1)[0];
         toss(S, five, i, '5'); toss(S, drop, i, '5');
         P.set = { c: S.deck.pop(), up: false, blind: true, open: false };
-        ev.push({ e: 'u5', who: i, five: { u: five.u, k: five.k }, drop: { u: drop.u, k: drop.k }, sw: true });
+        ev.push({ e: 'u5', who: i, five: { u: five.u, k: five.k }, drop: cardEv(drop), sw: true });
       }
       S.pend = null;
       open(S, ev);
@@ -323,14 +365,18 @@ const CBRules = (() => {
       if (S.phase !== 'rev' || !S.pend || S.pend.type !== 'rev' || S.pend.who !== i) return bad('rev');
       let r = S.pend.res;
       if (a.use) {
-        const k = P.set.c.k, kn = c => (Q.known.indexOf(c.u) >= 0 ? 1 : 0);
-        const same = P.hand.filter(c => c.k === k).sort((x, y) => kn(y) - kn(x) || x.u - y.u);      // もう 知られて いる カードを 先に 見せる
-        if (same.length < 2) return bad('rev');
-        const drop = same[0], keep = same[1];
+        const k = P.set.c.k, kn = c => (Q.known.indexOf(c.u) >= 0 ? 1 : 0), tk = P.hand.find(c => c.tok && c.k === k);
+        let drop, keep = null;
+        if (tk) drop = tk;                               // 第4.197版：トークン（1まいで 2頭分）を 見せて、それを 捨てる
+        else {
+          const same = P.hand.filter(c => c.k === k).sort((x, y) => kn(y) - kn(x) || x.u - y.u);      // もう 知られて いる カードを 先に 見せる
+          if (same.length < 2) return bad('rev');
+          drop = same[0]; keep = same[1];
+        }
         P.hand.splice(P.hand.indexOf(drop), 1); toss(S, drop, i, k);
-        learn(Q, keep.u);                                // 見せて 手札に のこった 1まいは 相手が 知って いる
+        if (keep) learn(Q, keep.u);                      // 見せて 手札に のこった 1まいは 相手が 知って いる
         r = i;
-        ev.push({ e: 'rev', who: i, k: k, show: [drop.u, keep.u], drop: { u: drop.u, k: drop.k }, beat: Q.set.c.k });
+        ev.push({ e: 'rev', who: i, k: k, show: keep ? [drop.u, keep.u] : [drop.u], drop: cardEv(drop), beat: Q.set.c.k });
       } else ev.push({ e: 'revskip', who: i });
       S.pend = null;
       score(S, r, !!a.use);
@@ -377,27 +423,27 @@ const CBRules = (() => {
     const st = S.step, U = S.p.map(P => (P.eff && P.eff.use ? P.eff : null));
     if (st === 'x7') [0, 1].forEach(i => {              // 7：3まい 引いて、7 を 3まい 山札に もどす
       const P = S.p[i]; if (!U[i]) return;
-      const back = P.hand.filter(c => c.k === '7').slice(0, 3);
-      if (back.length < 3 || S.deck.length < 3) { ev.push({ e: 'fizz', who: i, k: '7' }); return; }
+      const back = pickW(P.hand, '7', 3);              // 第4.197版：何頭分か で 3まい ぶん（7トークン は 1まいで 3まい ぶん）
+      if (!back || S.deck.length < 3) { ev.push({ e: 'fizz', who: i, k: '7' }); return; }
       P.hand = P.hand.filter(c => back.indexOf(c) < 0);
       const drew = [S.deck.pop(), S.deck.pop(), S.deck.pop()];
       drew.forEach(c => P.hand.push(c));
-      back.forEach(c => { forget(S, c.u); S.deck.push({ u: ++S.uid, k: c.k }); });      // もどした カードは 新しい 番号（どれが もどした 7 か 追えない ように）
+      back.forEach(c => { forget(S, c.u); if (!c.tok) S.deck.push({ u: ++S.uid, k: c.k }); });      // もどした カードは 新しい 番号（どれが もどした 7 か 追えない ように）。第4.197版：トークンは 山札に もどさない（消える）
       shuffle(S.deck, rng);
-      ev.push({ e: 'x7', who: i, n: 3, drew: drew.map(c => ({ u: c.u, k: c.k })) });
+      ev.push(Object.assign({ e: 'x7', who: i, n: 3, drew: drew.map(c => ({ u: c.u, k: c.k })) }, back.some(c => c.tok) ? { tok: back.find(c => c.tok).u, pub: !!S.gpub } : {}));      // tok：もどした トークン（第4.197版：友だちとの 対戦は 相手にも 知らせる）
     });
     else if (st === 'x3') [0, 1].forEach(i => {         // 3（第4.177版）：3 を 3まい 見せて、その 1まいと 相手の 手札の 1まい（くじ）を 交換
       const P = S.p[i], Q = S.p[1 - i]; if (!U[i]) return;
-      const three = P.hand.filter(c => c.k === '3').slice(0, 3);
-      if (three.length < 3 || Q.hand.length < 1) { ev.push({ e: 'fizz', who: i, k: '3' }); return; }
-      const give = three[0], take = Q.hand[Math.floor(rng() * Q.hand.length)];
+      const three = pickW(P.hand, '3', 3), give = three && three.find(c => !c.tok), pool = Q.hand.filter(c => !c.tok);      // 第4.197版：何頭分か で 3まい ぶん・わたす のは 本物の 3・もらうのも 本物
+      if (!three || !give || pool.length < 1) { ev.push({ e: 'fizz', who: i, k: '3' }); return; }
+      const take = pool[Math.floor(rng() * pool.length)];
       P.hand.splice(P.hand.indexOf(give), 1); Q.hand.splice(Q.hand.indexOf(take), 1);
       P.hand.push(take); Q.hand.push(give);
       forget(S, give.u); forget(S, take.u);              // 持ち主が かわった：前の「知って いる」は 消して から 入れ直す
-      three.slice(1).forEach(c => learn(Q, c.u));        // 見せた 3（手札に のこる 2まい）は 相手が 知って いる
+      three.filter(c => c !== give).forEach(c => learn(Q, c.u));        // 見せた 3（手札に のこる 2まい）は 相手が 知って いる
       learn(P, give.u);                                  // わたした 3 は 自分が 知って いる（相手の 手札の 中）
       learn(Q, take.u);                                  // もらった カードは 相手が 知って いる（もとは 相手の カード）
-      ev.push({ e: 'x3', who: i, three: three.map(c => c.u), give: { u: give.u, k: give.k }, take: { u: take.u, k: take.k } });
+      ev.push({ e: 'x3', who: i, three: three.map(c => c.u), give: cardEv(give), take: cardEv(take) });
     });
     else if (st === 'u5') [0, 1].forEach(i => {         // 5：セットした 5 と 手札 1まいを 捨てて、山札の 上を ふせて セット
       const P = S.p[i]; if (!U[i]) return;
@@ -406,7 +452,7 @@ const CBRules = (() => {
       const five = P.set.c, drop = P.hand.splice(d, 1)[0];
       toss(S, five, i, '5'); toss(S, drop, i, '5');
       P.set = { c: S.deck.pop(), up: false, blind: true, open: false };
-      ev.push({ e: 'u5', who: i, five: { u: five.u, k: five.k }, drop: { u: drop.u, k: drop.k } });
+      ev.push({ e: 'u5', who: i, five: { u: five.u, k: five.k }, drop: cardEv(drop) });
     });
     else if (st === 'u4') {                              // 4：先に 見せて、相手に 交換させる（いちばん あと）
       const A = S.p[0], B = S.p[1], f0 = !!U[0] && !A.set.blind && A.set.c.k === '4', f1 = !!U[1] && !B.set.blind && B.set.c.k === '4';
@@ -426,7 +472,7 @@ const CBRules = (() => {
   }
   // d4＝2人とも 4 の 効果を 使った（第4.181版：くらべずに ドロー＝'tie'。逆転勝利も 出ない）
   function open(S, ev, d4) {
-    const c0 = S.p[0].set.c, c1 = S.p[1].set.c, r = d4 ? 'tie' : compare(c0.k, c1.k, S.rv), cs = [{ u: c0.u, k: c0.k }, { u: c1.u, k: c1.k }];      // 第4.185版：強さ 逆転ちゅうは 逆で くらべる
+    const c0 = S.p[0].set.c, c1 = S.p[1].set.c, r = d4 ? 'tie' : compare(c0.k, c1.k, S.rv), cs = [cardEv(c0), cardEv(c1)];      // 第4.185版：強さ 逆転ちゅうは 逆で くらべる
     S.step = null; S.p.forEach(P => { P.set.up = true; P.set.blind = false; P.set.open = true; P.eff = null; });
     const rv = revWho(S, r);
     if (rv != null) {                                    // 逆転勝利（第4.178版）：負けた 人が 使うか 決める まで、勝ち負けは 数えない（wins は 前の まま・rev＝聞かれる 席）
@@ -451,6 +497,11 @@ const CBRules = (() => {
     S.p.forEach((P, i) => { if (P.set) { toss(S, P.set.c, i, 't'); P.set = null; } P.eff = null; });
     S.pend = null;
     ev.push({ e: 'clear' });
+    S.p.forEach((P, i) => {                              // 第4.197版：トークンは その ターン だけ ＝ 手札に のこって いたら 消える
+      const gone = P.hand.filter(c => c.tok); if (!gone.length) return;
+      P.hand = P.hand.filter(c => !c.tok); gone.forEach(c => forget(S, c.u));
+      ev.push({ e: 'tokgone', who: i, u: gone.map(c => c.u), k: gone.map(c => c.k), pub: !!S.gpub });
+    });
     if (S.turn >= S.turns) {
       const a = S.p[0].wins, b = S.p[1].wins;
       S.phase = 'end'; S.res = a > b ? 0 : b > a ? 1 : 'draw';
@@ -496,16 +547,18 @@ const CBRules = (() => {
       const c = X.set.c, o = { u: c.u, k: null, up: X.set.up, blind: X.set.blind, open: !!X.set.open };
       if (mine) o.k = X.set.blind ? null : c.k;
       else if (X.set.up || X.set.open) o.k = c.k;
+      if (o.k != null && c.tok) o.tok = c.tok;      // 第4.197版：トークン
       return o;
     };
     const st = S.phase === 'eff' && P.eff && !P.eff.done && P.eff.can ? P.eff.st : null;      // 第4.190版：いま 聞かれて いる 効果（1つ）
     const hide5 = S.phase === 'u5' && !!S.pend && S.pend.who !== i;      // 第4.183版：相手が 交換で 出した 5 の 効果を えらんで いる ＝ この 人には「交換して いる」に 見せる
     return {
       v: 4, me: i, turn: S.turn, turns: S.turns, phase: hide5 ? 'swap' : S.phase, deckN: S.deck.length, rv: !!S.rv,      // rv：強さ 逆転ちゅう（第4.185版：2人とも 見える）
-      discard: S.discard.map(d => ({ k: d.k, mine: d.by === i, why: d.why, turn: d.turn })),
-      my: { hand: P.hand.map(c => ({ u: c.u, k: c.k, seen: Q.known.indexOf(c.u) >= 0 })), set: setOf(P, true), wins: P.wins },
-      op: { hand: handOf(P, Q), set: setOf(Q, false), wins: Q.wins },      // 第4.187版：相手が ふせて いる あいだは どれを セットしたか わからない 形（handOf）
-      can: { set: S.phase === 'set' && !P.set, x7r: can7r(S, i), eff: st ? { e6: false, e7: st === 'x7', e3: st === 'x3', e5: st === 'u5', e4: st === 'u4', st: st, n: S.effN } : null,      // x7r：7 の 4まい 公開（第4.187版：セットの 前）
+      discard: S.discard.map(d => Object.assign({ k: d.k, mine: d.by === i, why: d.why, turn: d.turn }, d.tok ? { tok: d.tok } : {})),
+      my: { hand: P.hand.map(c => Object.assign({ u: c.u, k: c.k, seen: Q.known.indexOf(c.u) >= 0 }, c.tok ? { tok: c.tok } : {})), set: setOf(P, true), wins: P.wins,
+        gem: P.gems.length ? { list: P.gems.slice(), used: P.gused.slice(), can: GEMS.filter(g => canGem(S, i, g)), now: P.gturn === S.turn } : null },      // 第4.197版：決戦宝石（can＝いま 使える・now＝この ターンに もう 使った）
+      op: { hand: handOf(P, Q), set: setOf(Q, false), wins: Q.wins, gem: S.gpub && Q.gems.length ? { list: Q.gems.slice(), used: Q.gused.slice() } : null },      // 第4.197版：友だちとの 対戦は 相手の 宝石も 見える      // 第4.187版：相手が ふせて いる あいだは どれを セットしたか わからない 形（handOf）
+      can: { set: S.phase === 'set' && !P.set, x7r: can7r(S, i), gem: GEMS.filter(g => canGem(S, i, g)), eff: st ? { e6: false, e7: st === 'x7', e3: st === 'x3', e5: st === 'u5', e4: st === 'u4', st: st, n: S.effN } : null,      // x7r：7 の 4まい 公開（第4.187版：セットの 前）
         six: S.phase === 'six' && !!P.six && !P.six.done && P.six.can ? { n: S.turn } : null },      // 第4.190版：6 の 効果（ターンの はじめ）・eff は いまの 効果 1つ（n＝何番目の 効果か：画面の 聞き直し）
       pend: S.pend ? { type: hide5 ? 'swap' : S.pend.type, mine: S.pend.who === i } : null,
       wait: (S.phase === 'set' && !!P.set && !Q.set) || (S.phase === 'eff' && !!P.eff && P.eff.done && !!Q.eff && !Q.eff.done) || (S.phase === 'six' && !!P.six && P.six.done && !!Q.six && !Q.six.done) || (!!S.pend && S.pend.who !== i),
@@ -516,10 +569,12 @@ const CBRules = (() => {
 
   // おきた こと を プレイヤー i に 見せて いい 形に（who は「自分か」に する：me）
   function evFor(ev, i) {
-    return ev.filter(x => !((x.e === 'ask5' || x.e === 'u5skip') && x.who !== i)).map(x => {      // 第4.183版：交換で 出した 5 を 聞いた・使わなかった ことは 相手に わたさない
+    return ev.filter(x => !((x.e === 'ask5' || x.e === 'u5skip' || (x.e === 'gem' && !x.pub)) && x.who !== i)).map(x => {      // 第4.197版：決戦調査の 宝石は 相手（敵）に 知らせない      // 第4.183版：交換で 出した 5 を 聞いた・使わなかった ことは 相手に わたさない
       const o = { e: x.e };
       if (x.who != null) o.me = x.who === i;
-      if (x.e === 'x7') { o.n = x.n; if (x.who === i) o.drew = x.drew; }
+      if (x.e === 'x7') { o.n = x.n; if (x.who === i) o.drew = x.drew; if (x.tok && (x.who === i || x.pub)) o.tok = x.tok; }      // 第4.197版：7トークン（友だちとの 対戦は 相手も 知って いる）
+      else if (x.e === 'gem') { o.g = x.g; o.c = x.c; }      // 第4.197版：決戦宝石 → トークン
+      else if (x.e === 'tokgone') { o.u = x.u; if (x.who === i || x.pub) o.k = x.k; }      // 第4.197版：ターンの おわりに 消えた トークン
       else if (x.e === 'x7r') { o.show = x.show; o.drop = x.drop; }      // 第4.185版：見せた 4まい・捨てた 1まいは 2人とも 見える
       else if (x.e === 'set' || x.e === 'swap') { if (x.who === i) { o.u = x.u; if (x.back != null) o.back = x.back; } }
       else if (x.e === 'efft') { o.mine = x.has[i]; if (x.has[i]) o.st = x.st; o.first = !!x.first; if (x.first) o.other = x.has[1 - i]; }      // 第4.190版：どの 効果か（聞かれる 人 だけ：相手が セットした カードが わからない ように）・効果タイムの はじめか（はじめ だけ「相手にも ある か」）
@@ -545,12 +600,13 @@ const CBRules = (() => {
     const v = view(S, i), out = [];
     if (v.can.set) out.push('set');
     if (v.can.x7r) out.push('x7r');                     // 第4.187版
+    if (v.can.gem && v.can.gem.length) out.push('gem');      // 第4.197版
     if (v.can.eff) out.push('eff');
     if (v.can.six) out.push('p6');                      // 第4.190版
     if (v.pend && v.pend.mine) out.push(v.pend.type);
     return out;
   }
 
-  return { NUMS, KINDS, TURNS, HAND, COPIES, STEPS, power, compare, shuffle, newGame, act, view, evFor, legal };
+  return { NUMS, KINDS, TURNS, HAND, COPIES, STEPS, GEMS, GEM_W, GEM_HAND, power, compare, shuffle, newGame, act, view, evFor, legal };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = CBRules;

@@ -53,6 +53,8 @@
 #         緑の フェルト・緑の 馬と 葉は ほぼ そのまま（あそぶ 所が 見にくく ならない ように）
 #   第4.196版（まさちゃん 2026/11/18 15:09「テンゲルカードバトルにクエストを追加する 名前:決戦調査」と 絵 26まい）：決戦調査の マップ・フィールド 12・敵 12・HP ゲージ（cb_q_*.webp）は
 #     kisekae/cb_quest_art.py が 作る（plan() の さいご）。敵の 絵・ゲージの 左は もとが いくつか ある（もとの 名前が tuple：台帳の src も その list）
+#   第4.197版（まさちゃん 2026/11/18 18:58「呼び寄せの決戦宝石」と 絵 12まい：宝石 5・トークン 5・宝石ケース・置き場所の イメージ）：宝石（cb_gm_*.webp）・トークンの カード（cb_ct*／cb_st*.webp）・
+#     宝石ケース（cb_gmcase.webp）は kisekae/cb_gem_art.py が 作る（plan() の さいご）
 #   台帳 cb_art.json：{ v, p（決めごと：大きさ・夜の 色の 数字）, files: { 名前: { src: [もとの 名前, 大きさ, sha1], size } } }（アプリには 入れない）
 import hashlib, json, os, sys
 import numpy as np
@@ -60,6 +62,7 @@ from PIL import Image, ImageDraw
 H = os.path.dirname(os.path.abspath(__file__)); W = os.path.dirname(H)
 sys.path.insert(0, H)
 import cb_quest_art as _cbq      # 第4.196版：決戦調査の 絵
+import cb_gem_art as _cbg       # 第4.197版：決戦宝石の 絵（宝石・トークン・ケース）
 SRC = os.path.join(W, 'ios', 'cb_assets', 'src'); OUT = os.path.join(W, 'ios', 'cb_assets')
 V = 1
 CARDS = [('1', 'cb_1_v2.png'), ('2', 'cb_2_v2.png'), ('3', 'cb_3_v2.png'), ('4', 'cb_4.png'), ('5', 'cb_5_v2.png'), ('6', 'cb_6.png'), ('7', 'cb_7_v2.png'), ('k', 'cb_k.png'), ('m', 'cb_m.png'), ('b', 'cb_back.png')]
@@ -253,12 +256,13 @@ def plan():
         jobs.append((f'cb_bd_{did}.webp', src, plain(BD)))
         jobs.append((f'cb_bd_{did}_s.webp', src, plain(BD_S)))
     jobs += _cbq.jobs()                                         # 第4.196版：決戦調査（マップ・フィールド・敵・HP ゲージ：kisekae/cb_quest_art.py。もとが いくつか ある 絵は もとの 名前が tuple）
+    jobs += _cbg.jobs()                                         # 第4.197版：決戦宝石（宝石 5・トークンの カード 5 × 大・小・宝石ケース：kisekae/cb_gem_art.py）
     return jobs
 
 
 def PARAMS():
     """決めごと（台帳に 書く：かわったら 作り直す）"""
-    return json.loads(json.dumps([list(BASE), INSET, RADIUS, list(BIG), list(SMALL), Q, NIGHT, [list(c) for c in DECK_FACE], [list(BD), list(BD_S)], [list(PACK_BOX), list(PACK_SIZE)], _cbq.PARAMS()]))      # 第4.185版：プレイボードの 大きさ・第4.189版：パックの 絵
+    return json.loads(json.dumps([list(BASE), INSET, RADIUS, list(BIG), list(SMALL), Q, NIGHT, [list(c) for c in DECK_FACE], [list(BD), list(BD_S)], [list(PACK_BOX), list(PACK_SIZE)], _cbq.PARAMS(), _cbg.PARAMS()]))      # 第4.185版：プレイボードの 大きさ・第4.189版：パックの 絵
 
 
 def files():

@@ -9,6 +9,7 @@
 //   第4.187版：PROTO 8（7 の 4まい 公開は セットの 前・場の カードは いつも うら）・部屋で 4まい 公開 → 7 を セット（ゲストには どれを 出したか わからない）
 //   第4.188版：PROTO 9（効果の 順 6 → 7 → 3 → 5 → 4）・部屋で 4 は いちばん あと：ゲストの 5 の 効果で 山札から ふせた カードを、ホストの 4 で 交換
 //   第4.190版：PROTO 10（6 は ターンの はじめ・効果タイムは 1つずつ）・1ターン目の はじめの 6 は 配った 知らせと いっしょ（deal,sixt）
+//   第4.197版：PROTO 11（決戦宝石）・部屋を 作る 人が「決戦宝石 あり」→ あいさつで ゲストへ → 参加 → 2人とも 5つ（まさちゃん 20:21「お友達バトルは1試合で5個使える！」）・おたがいに 見える
 global.CBRules = require('./cb/cb_rules.js'); global.CBCpu = require('./cb/cb_cpu.js');
 const R = global.CBRules, C = global.CBCpu, N = require('./cb/cb_net.js');
 let fails = [];
@@ -57,9 +58,9 @@ async function playOut(pairs, rng, guard) {
     H.start(); await tick();
     check(hs.ups.length === 0 && w.log.length === 0, 'ホストは 友だちの あいさつが 届く まで 配らない');
     G.start(); await tick(); await tick(); await tick();
-    check(w.log[0][0] === 'g' && JSON.parse(w.log[0][1]).t === 'hello' && JSON.parse(w.log[0][1]).v === N.PROTO && N.PROTO === 10 && JSON.parse(w.log[1][1]).t === 'hello' && hs.states.join() === 'ready' && gs.states.join() === 'ready,stake'
+    check(w.log[0][0] === 'g' && JSON.parse(w.log[0][1]).t === 'hello' && JSON.parse(w.log[0][1]).v === N.PROTO && N.PROTO === 11 && JSON.parse(w.log[1][1]).t === 'hello' && hs.states.join() === 'ready' && gs.states.join() === 'ready,stake'
       && JSON.stringify(JSON.parse(w.log[1][1]).stake) === '{"e":0,"w":0}' && JSON.stringify(G.stake) === '{"e":0,"w":0}' && hs.ups.length === 0,
-      'はじめに おたがいに あいさつ（hello・版の 番号 10）・ホストの あいさつに 部屋の 決まり（参加コイン 0）→ ゲストに「決まりが 届いた」（まだ 配らない）');
+      'はじめに おたがいに あいさつ（hello・版の 番号 11：第4.197版）・ホストの あいさつに 部屋の 決まり（参加コイン 0）→ ゲストに「決まりが 届いた」（まだ 配らない）');
     G.join(); await tick(); await tick(); await tick();
     check(JSON.parse(w.log[2][1]).t === 'join' && hs.states.join() === 'ready,joined', 'ゲストが「参加する」（join）→ ホストに 届く');
     check(hs.ups.length === 1 && gs.ups.length === 1 && hs.ups[0].ev[0].e === 'deal' && gs.ups[0].ev[0].e === 'deal' && hs.view.me === 0 && gs.view.me === 1, 'あいさつの あと 配る：2人に はじめの 形が 届く（ホスト＝席 0・ゲスト＝席 1）');
@@ -299,7 +300,7 @@ async function playOut(pairs, rng, guard) {
     check(H.opDz === null && G.opDz === null, 'はじめは 相手の デザインは まだ ない（opDz＝null）');
     H.start(); G.start(); await tick(); await tick(); await tick();
     const gh = JSON.parse(w.log[0][1]), hh = JSON.parse(w.log[1][1]);
-    check(w.log[0][0] === 'g' && gh.t === 'hello' && gh.v === 10 && JSON.stringify(gh.dz) === '{"b":"star","f":{"3":"3b","m":"mb"}}' && hh.t === 'hello' && JSON.stringify(hh.dz) === '{"b":"sky","f":{"6":"6a","k":"ka"}}' && N.PROTO === 10,
+    check(w.log[0][0] === 'g' && gh.t === 'hello' && gh.v === 11 && JSON.stringify(gh.dz) === '{"b":"star","f":{"3":"3b","m":"mb"}}' && hh.t === 'hello' && JSON.stringify(hh.dz) === '{"b":"sky","f":{"6":"6a","k":"ka"}}' && N.PROTO === 11,
       'あいさつ（hello）に 自分が えらんだ デザイン（dz：うら・おもて）・版の 番号 10（第4.190版：6 は ターンの はじめ・効果タイムは 1つずつ：ルールが かわった）');
     check(JSON.stringify(H.opDz) === '{"b":"star","f":{"3":"3b","m":"mb"}}' && JSON.stringify(G.opDz) === '{"b":"sky","f":{"6":"6a","k":"ka"}}' && hs.states.join() === 'ready' && gs.states.join() === 'ready,stake',
       'おたがいの デザインが 届く（match.opDz）・あいさつの 流れは 前と 同じ');
@@ -365,6 +366,35 @@ async function playOut(pairs, rng, guard) {
     const h1 = st().p[1].hand.map(c => c.k);
     check(h1.filter(k => k === '1').length >= 3 && s.view.turn === 1 && s.view.my.hand.length === 7, `2戦目は 新しい 決まりで 配る（敵の 手札に 1 が 3まい 以上：${h1.join('')}・1戦目 ${h0.join('')}）`);
     M.leave();
+  }
+  console.log('■ 第4.197版：部屋の 決戦宝石（まさちゃん 18:58「お友達バトルの設定で、決戦宝石ありにした場合のみ使用可能 … お互いに何の石を所有してるか見える」・20:21「お友達バトルは1試合で5個使える！」）');
+  {
+    check(JSON.stringify(N.gmOf({ on: true })) === '{"on":true}' && JSON.stringify(N.gmOf({ on: true, g: 'z' })) === '{"on":true}' && JSON.stringify(N.gmOf(null)) === '{"on":false}' && JSON.stringify(N.gmOf({ on: 1 })) === '{"on":false}' && N.gemOf === undefined,
+      '部屋の 決まりの 形を たしかめる（{ on } だけ・おかしい ものは「なし」・持ち込む 宝石は もう ない）');
+    const w = wire(), H = N.host(w.a, rngOf(9), { turns: 3, hands: [['1', '2', '3', '4', '7'], ['1', '2', '3', '6', '7']] }, { e: 0, w: 0 }, null, { on: true }), G = N.guest(w.b), hs = seat(H), gs = seat(G);      // 手札 5まい（1ターン目から 使える）
+    H.start(); G.start(); await tick(); await tick(); await tick();
+    const hh = JSON.parse(w.log[1][1]);
+    check(hh.t === 'hello' && JSON.stringify(hh.gm) === '{"on":true}' && JSON.stringify(G.gm) === '{"on":true}' && gs.states.join() === 'ready,stake' && hs.ups.length === 0,
+      'ホストの あいさつに「決戦宝石 あり」→ ゲストに 届く（まだ 配らない）');
+    G.join(); await tick(); await tick(); await tick();
+    const jj = JSON.parse(w.log[2][1]), S = H._.state();
+    check(jj.t === 'join' && jj.g === undefined && hs.ups.length === 1 && gs.ups.length === 1, 'ゲストが 決まりを 見て 参加 → 配る（宝石を えらぶ 所は ない）');
+    check(S.p[0].gems.join('') === R.GEMS.join('') && S.p[1].gems.join('') === R.GEMS.join('') && S.gpub === true && hs.view.my.gem.list.length === 5 && hs.view.op.gem.list.length === 5 && gs.view.my.gem.list.length === 5 && gs.view.op.gem.list.length === 5,
+      '2人とも 5つ（1試合で 1つ 1回ずつ）・おたがいの 宝石が 見える');
+    const r1 = await H.act({ t: 'gem', g: '1' }); await tick(); await tick();
+    const r2 = await G.act({ t: 'gem', g: '7' }); await tick(); await tick();
+    check(r1.ok && r2.ok && gs.view.op.gem.used.join('') === '1' && hs.view.op.gem.used.join('') === '7' && hs.view.my.gem.can.length === 0 && gs.view.my.gem.can.length === 0,
+      `2人とも 同じ ターンに 1つずつ 使える・使った 宝石は 相手にも 見える（${r1.why || ''}${r2.why || ''}）`);
+    H.leave();
+  }
+  {
+    const w = wire(), H = N.host(w.a, rngOf(9), undefined, { e: 0, w: 0 }, null, { on: false }), G = N.guest(w.b), hs = seat(H), gs = seat(G);
+    H.start(); G.start(); await tick(); await tick(); await tick();
+    G.join(); await tick(); await tick(); await tick();
+    const S = H._.state();
+    check(JSON.stringify(G.gm) === '{"on":false}' && hs.ups.length === 1 && S.p[0].gems.length === 0 && S.p[1].gems.length === 0 && hs.view.my.gem === null && gs.view.op.gem === null,
+      '決戦宝石 なし の 部屋：宝石 なしで 配る');
+    H.leave();
   }
   console.log('結果：', fails.length ? fails.length + '件おかしい' : 'OK');
   process.exit(fails.length ? 1 : 0);

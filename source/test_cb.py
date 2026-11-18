@@ -1953,6 +1953,10 @@ try:
         gp.evaluate(OPN)
         pg.evaluate("() => { const T = CBApp._t; T.state.coin = 0; T.state.ms = { m: T.msKey(), cpu: 0, fr: 2, got: { cpu: [], fr: [] }, live: '' }; CBApp._opt = { hands: [['k', '1', '2', '6', '7'], ['m', '3', '4', '5', '7']], turns: 3 }; CBApp._think = null; }")
         pg.locator('#cbOv .cbmenu [data-cb=host]').click(); pg.wait_for_timeout(300)
+        z0 = pg.evaluate("() => { const r = document.querySelector('#cbOv .cbroom'); return { h2: r.querySelector('h2').textContent, p: r.querySelector('h2 + p').textContent, chips: r.querySelectorAll('[data-cb=stke]').length, coin: !!r.querySelector('.cbcoinl'), gem: [...r.querySelectorAll('[data-cb=rgon]')].map(b => b.textContent + (b.classList.contains('on') ? '*' : '')).join(','), gp: !!r.querySelector('.gp'), hint: !!r.querySelector('.hint'), go: r.querySelector('[data-cb=stkgo]').textContent, calls: window.__room.calls.length }; }")
+        check(z0['h2'] == '部屋を 作る' and z0['p'] == '部屋の 決まりを 決めてね' and z0['chips'] == 0 and not z0['coin'] and z0['gem'] == 'なし*,あり' and not z0['gp'] and not z0['hint'] and z0['go'] == '部屋を 作る',
+              f'第4.197版：バトルコイン 0枚でも「部屋を 作る」→ 先に 部屋の 決まり（コインの 所は 出さない・決戦宝石 なし／あり だけ）（{z0}）')
+        pg.locator('#cbOv .cbroom [data-cb=stkgo]').click(); pg.wait_for_timeout(300)
         num = pg.evaluate("() => document.querySelector('#cbOv .cbroom .num').textContent")
         gp.locator('#cbOv .cbmenu [data-cb=join]').click(); gp.wait_for_timeout(150)
         for d in num: gp.locator(f'#cbOv .cbkeys [data-key="{d}"]').click()
@@ -1988,6 +1992,186 @@ try:
         pg.locator('#cbOv .cbend [data-cb=menu]').click(); pg.wait_for_timeout(150)      # ホストが メニューへ → ゲストには「ともだちが 部屋を 出たよ」の 窓
         gp.locator('#cbOv .cbmod [data-cb=menu]').click(); gp.wait_for_timeout(150)
         for q in (pg, gp): q.evaluate("() => { const T = CBApp._t; T.state.backs = []; T.state.faces = []; T.state.back = ''; T.state.face = {}; T.save(); T.menu(); }")
+        print('■ 決戦宝石：友達との 対戦（第4.197版・まさちゃん 18:58「お互いに何の石を所有してるか見える」・20:21「お友達バトルは1試合で5個使える！」）')
+        GEMQ = """() => { const g = document.querySelector('#cbOv .cbgem'), o = document.querySelector('#cbOv .cbopp .ogem'), R = e => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)]; };
+          const gb = g.getBoundingClientRect(), cs = [...document.querySelectorAll('#cbOv .cbhand .cbc')];
+          return { hid: g.hidden, rc: g.hidden ? null : R(g), hand: R(document.querySelector('#cbOv .cbhand')), act: R(document.querySelector('#cbOv .cbact')), vh: innerHeight, vw: innerWidth,
+            gs: [...g.querySelectorAll('.g')].map(b => b.dataset.g + ':' + [...b.classList].filter(c => c !== 'g').join('.')).join(' '), case: g.querySelector('.case').getAttribute('src'),
+            left: [...g.querySelectorAll('.g')].map(b => b.style.left), cb: cs.length ? Math.max(...cs.map(c => Math.round(c.getBoundingClientRect().bottom))) : 0,
+            ins: [...g.querySelectorAll('.g')].every(b => { const a = b.getBoundingClientRect(); return a.width > 20 && a.left >= gb.left - 1 && a.right <= gb.right + 1 && a.top >= gb.top - 1 && a.bottom <= gb.bottom + 1; }),
+            og: o.hidden ? null : o.textContent, ogi: o.hidden ? null : [...o.querySelectorAll('img')].map(i => i.dataset.g + (i.classList.contains('u') ? '*' : '')).join(','), ogl: o.getAttribute('aria-label') || '', cw: parseFloat(document.querySelector('#cbOv .cbhand').style.getPropertyValue('--cw')) || 0,
+            tok: [...document.querySelectorAll('#cbOv .cbhand .cbc.tok')].map(c => c.dataset.ck + '×' + c.dataset.tok + '=' + c.querySelector('img').getAttribute('src')),
+            otok: [...document.querySelectorAll('#cbOv .cbohand .cbc.tok')].map(c => c.querySelector('img').getAttribute('src')),
+            fit: document.querySelector('#cbOv .cbgame').scrollHeight <= document.querySelector('#cbOv .cbgame').clientHeight + 1 }; }"""
+        TOKV = "() => CBApp._t.view.my.hand.filter(c => c.tok).map(c => c.k + '×' + c.tok).join(',')"
+        MYG = "() => { const g = CBApp._t.view.my.gem; return g ? { list: g.list.join(''), used: g.used.join(''), can: g.can.join(''), now: g.now } : null; }"
+        def gtap(q, g): q.locator(f'#cbOv .cbgem .g[data-g="{g}"]').click(); q.wait_for_timeout(90)
+        def guse(q, g):
+            gtap(q, g); q.locator('#cbOv .cbmod.cbgemm [data-cb=gemgo]').click(); idle(q)
+        def cset(q, k, tok=False):      # 手札の カードを セット（tok＝トークン）
+            q.locator(f'#cbOv .cbhand .cbc{".tok" if tok else ":not(.tok)"}[data-ck="{k}"]').first.click(); q.wait_for_timeout(70)
+            q.locator('#cbOv .cbmod [data-cb=set]').click(); idle(q)
+        for q in (pg, gp): q.evaluate("() => { const T = CBApp._t; T.state.coin = 0; T.state.rg = { on: false }; T.state.ms = { m: T.msKey(), cpu: 0, fr: 0, got: { cpu: [], fr: [] }, live: '' }; }")
+        pg.evaluate("() => { CBApp._opt = { hands: [['1', '2', '3', '6', '7'], ['1', '2', '4', '5', '6']], turns: 3 }; CBApp._think = null; }")
+        pg.locator('#cbOv .cbmenu [data-cb=host]').click(); pg.wait_for_timeout(200)
+        RG = "() => { const r = document.querySelector('#cbOv .cbroom'); return { gem: [...r.querySelectorAll('[data-cb=rgon]')].map(b => b.textContent + (b.classList.contains('on') ? '*' : '')).join(','), t: r.querySelector('.cbstk').textContent, gl5: [...r.querySelectorAll('.gl5 img')].map(i => i.getAttribute('src')), pick: r.querySelectorAll('.gp, [data-cb=rgg]').length, go: r.querySelector('[data-cb=stkgo]').textContent, sc: r.scrollHeight <= r.clientHeight + 1 }; }"
+        r0 = pg.evaluate(RG)
+        pg.locator('#cbOv .cbroom [data-cb=rgon][data-v="1"]').click(); pg.wait_for_timeout(60); r1 = pg.evaluate(RG)
+        check(r0['gem'] == 'なし*,あり' and r0['gl5'] == [] and r1['gem'] == 'なし,あり*' and r1['gl5'] == [f'cb_gm_{g}.webp' for g in 'mk137'] and r1['pick'] == 0 and '2人とも 5つの 宝石を 使えるよ（1試合で 1つ 1回ずつ・おたがいに 見える）' in r1['t']
+              and pg.evaluate("() => CBApp._t.state.rg") == {'on': True} and r1['sc'] and r1['go'] == '部屋を 作る',
+              f'部屋の 決まりで 決戦宝石「あり」→ 2人とも 5つ（まさちゃん 20:21「お友達バトルは1試合で5個使える！」：持ち込む 宝石を えらぶ 所は ない）・あり／なしは 覚えて おく')
+        shot(pg, 'cb_room_gem')
+        pg.locator('#cbOv .cbroom [data-cb=stkgo]').click(); pg.wait_for_timeout(300)
+        rr = pg.evaluate("() => ({ num: document.querySelector('#cbOv .cbroom .num').textContent, l: [...document.querySelectorAll('#cbOv .cbroom .cbstkl')].map(e => e.textContent) })")
+        check(rr['l'] == ['💎 決戦宝石 あり（2人とも 5つ）'], f'部屋番号の 下に「💎 決戦宝石 あり（2人とも 5つ）」（{rr["l"]}）')
+        gp.locator('#cbOv .cbmenu [data-cb=join]').click(); gp.wait_for_timeout(150)
+        for d in rr['num']: gp.locator(f'#cbOv .cbkeys [data-key="{d}"]').click()
+        gp.locator('#cbOv .cbkeys [data-key=go]').click()
+        gp.wait_for_function("() => CBApp._t.screen === 'game' && document.querySelector('#cbOv .cbmod.cbjoin')", timeout=30000); gp.wait_for_timeout(150)
+        JG = "() => { const m = document.querySelector('#cbOv .cbmod.cbjoin'); return m ? { t: m.textContent, coin: !!m.querySelector('.cbstkv'), gl5: m.querySelectorAll('.gl5 img').length, pick: m.querySelectorAll('.gp, [data-cb=jgem]').length, btns: [...m.querySelectorAll('.cbb')].map(b => b.textContent.trim()) } : null; }"
+        j1 = gp.evaluate(JG)
+        check(j1 and not j1['coin'] and '💎 決戦宝石 あり' in j1['t'] and '2人とも 5つの 宝石を 使えるよ（1試合で 1つ 1回ずつ・おたがいに 見える）' in j1['t'] and j1['gl5'] == 5 and j1['pick'] == 0 and j1['btns'] == ['やめる', '参加する'] and 'バトルコイン' not in j1['t'],
+              f'入る 人：「この 部屋の 決まり」に「💎 決戦宝石 あり」（2人とも 5つ・えらぶ 所は ない）・「やめる」「参加する」（{j1 and j1["btns"]}）')
+        shot(gp, 'cb_join_gem')
+        gp.locator('#cbOv .cbmod.cbjoin [data-cb=joinyes]').click()
+        for q in (pg, gp): q.wait_for_function("() => CBApp._t.screen === 'game' && CBApp._t.view && CBApp._t.idle", timeout=30000)
+        hq, gq, hv, gv = pg.evaluate(GEMQ), gp.evaluate(GEMQ), pg.evaluate(V), gp.evaluate(V)
+        G5 = 'm:can k:can 1:can 3:can 7:can'
+        check(all(x == list('mk137') for x in (hv['my']['gem']['list'], hv['op']['gem']['list'], gv['my']['gem']['list'], gv['op']['gem']['list'])) and hq['gs'] == G5 and gq['gs'] == G5
+              and hq['left'] == ['7.99%', '25.44%', '42.13%', '59.1%', '75.93%'] and hq['ogi'] == 'm,k,1,3,7' and gq['ogi'] == 'm,k,1,3,7' and hq['ogl'].startswith('友達の 決戦宝石：のこり 5つ'),
+              f'対戦：2人とも ケースに 5つ（{hq["gs"]}）・相手の 名前の よこに 相手の 5つ（{hq["ogi"]}）')
+        shot(pg, 'cb_room_gem_game')
+        said(pg); said(gp)
+        guse(pg, '1'); idle(gp); gp.wait_for_timeout(200)
+        hq, gq, sg = pg.evaluate(GEMQ), gp.evaluate(GEMQ), said(gp)
+        check(hq['tok'] == ['1×2=cb_st1.webp'] and hq['gs'] == 'm:off k:off 1:used 3:off 7:off' and gq['otok'] == ['cb_st1.webp'] and gq['ogi'] == 'm,k,1*,3,7' and 'のこり 4つ' in gq['ogl']
+              and any(x.startswith('ban:友達が 双炎のルビーを 使った！') for x in sg) and gq['gs'] == G5,
+              f'ホストが 双炎のルビーを 使う → ゲストの 画面にも 知らせ・相手の 手札の トークンは 表で 見える・相手の 宝石は 1つ 暗く（{gq["ogi"]}・{sg}）・ゲストは 5つ まだ 使える')
+        shot(gp, 'cb_room_gem_op')
+        guse(gp, 'k'); idle(pg); pg.wait_for_timeout(200)
+        hq, gq = pg.evaluate(GEMQ), gp.evaluate(GEMQ)
+        check(gq['tok'] == ['k×1=cb_stk.webp'] and hq['otok'] == ['cb_stk.webp'] and hq['ogi'] == 'm,k*,1,3,7' and gq['gs'] == 'm:off k:used 1:off 3:off 7:off', '同じ ターンに ゲストも 日輪の黄金石（2人とも 1ターンに 1つ）')
+        cset(pg, '2'); idle(gp); cset(gp, '1'); idle(pg)
+        for q in (pg, gp): q.wait_for_function("() => CBApp._t.view && CBApp._t.view.turn === 2 && CBApp._t.idle", timeout=30000)
+        hq, gq, sh = pg.evaluate(GEMQ), gp.evaluate(GEMQ), said(pg)
+        check(hq['tok'] == [] and gq['otok'] == [] and hq['otok'] == [] and pg.evaluate(TOKV) == '' and any('消えたよ' in x for x in sh) and hq['gs'] == 'm:can k:can 1:used 3:can 7:can' and gq['gs'] == 'm:can k:used 1:can 3:can 7:can',
+              f'使わなかった トークンは ターンの 終わりに 消える（相手の 画面からも）・2ターン目：使った 宝石の ほかは また 使える（{hq["gs"]}）')
+        pg.locator('#cbOv .cbtop [data-cb=quit]').click(); pg.wait_for_timeout(80); pg.locator('#cbOv .cbmod [data-cb=quitgo]').click(); pg.wait_for_timeout(200)
+        gp.wait_for_function("() => CBApp._t.modOn() && /部屋を 出たよ/.test(document.querySelector('#cbOv .cbmod').textContent)", timeout=20000)
+        gp.locator('#cbOv .cbmod [data-cb=menu]').click(); gp.wait_for_timeout(150)
+        if pg.evaluate("() => CBApp._t.screen") != 'menu': pg.evaluate("() => CBApp._t.menu()")
+
+        print('■ 決戦宝石：使える とき・トークン（第4.197版・まさちゃん「１ターンにどれか1回しか使えない」「トークンを使用するとそのターンのみ」「1枚で2枚分として使用できるが、フィールドへセットや、手札効果で捨てる場合は1枚分」・19:03「手札が6枚以下の場合」）')
+        def startG(h0, h1, turns=3, deck='', g0='mk137', g1=''):
+            pg.evaluate("""([h0, h1, dk, tn, g0, g1]) => { CBApp._think = () => 1e9; CBApp._opt = { hands: [h0.split(''), h1.split('')], deck: dk ? dk.split('') : undefined, turns: tn, gems: [g0.split(''), g1.split('')] }; }""", [h0, h1, deck, turns, g0, g1])
+            if pg.evaluate("() => CBApp._t.screen") != 'menu': pg.evaluate("() => CBApp._t.menu()")
+            pg.locator('#cbOv .cbmenu [data-cb=cpu]').click(); idle(pg); said(pg)
+        # A：本番の 形（5ターン・手札 7枚）：1ターン目は 手札 7枚 → 使えない。セットして 6枚 → 2ターン目から 使える
+        startG('1122377', '1233456', turns=5)
+        a0 = pg.evaluate(GEMQ); m0 = pg.evaluate(MSG)
+        gtap(pg, 'm'); s0 = said(pg)
+        check(not a0['hid'] and a0['case'] == 'cb_gmcase.webp' and a0['gs'] == 'm:off k:off 1:off 3:off 7:off' and a0['ins'] and a0['og'] is None and '💎' not in m0 and pg.evaluate(MYG) == {'list': 'mk137', 'used': '', 'can': '', 'now': False}
+              and any('手札が 6枚 以下の ときに 使えるよ' in x for x in s0) and not pg.evaluate("() => CBApp._t.modOn()"),
+              f'決戦宝石 あり：手札の 下に 宝石ケース（5つ）・手札 7枚の あいだは 使えない（タップ →「手札が 6枚 以下の ときに 使えるよ」）（{a0["gs"]}・{s0}）')
+        check(a0['rc'][1] >= a0['cb'] - 1 and a0['rc'][1] >= a0['hand'][3] - 1 and a0['rc'][3] <= a0['act'][1] + 1 and a0['act'][3] <= a0['vh'] and a0['rc'][0] >= 0 and a0['rc'][2] <= a0['vw'] and a0['cw'] >= 60 and a0['fit'],
+              f'ケースは 手札の すぐ 下・下の ボタンの 上（まさちゃんの イメージ）・画面の 中・手札は 小さく しすぎない（カード 幅 {a0["cw"]}px）（手札 {a0["hand"]}・ケース {a0["rc"]}・ボタン {a0["act"]}）')
+        shot(pg, 'cb_gem_t1')
+        pg.set_viewport_size({'width': 375, 'height': 667}); pg.wait_for_timeout(300)
+        a5 = pg.evaluate(GEMQ)
+        check(a5['rc'][1] >= a5['cb'] - 1 and a5['rc'][3] <= a5['act'][1] + 1 and a5['act'][3] <= a5['vh'] and a5['cw'] >= 50 and a5['fit'],
+              f'小さい 画面（375×667）でも 手札・ケース・ボタンが 重ならず 画面の 中（カード 幅 {a5["cw"]}px・手札の 下 {a5["cb"]}・ケース {a5["rc"]}・ボタン {a5["act"]}）')
+        shot(pg, 'cb_gem_se')
+        pg.set_viewport_size({'width': 390, 'height': 844}); pg.wait_for_timeout(300)
+        cset(pg, '2'); opp(pg, {'t': 'set', 'k': 1})
+        a1 = pg.evaluate(GEMQ); m1 = pg.evaluate(MSG); v1 = pg.evaluate(V)
+        check(v1['turn'] == 2 and len(v1['my']['hand']) == 6 and a1['gs'] == 'm:can k:can 1:can 3:can 7:can' and '💎 セットの 前なら 決戦宝石を 使えるよ（下の ケース）' in m1,
+              f'セットして 手札 6枚 → 2ターン目は 5つとも 使える（光る）・下の 字「💎 セットの 前なら 決戦宝石を 使えるよ」（{a1["gs"]}）')
+        shot(pg, 'cb_gem_t2')
+        cset(pg, '1'); gtap(pg, 'k'); s1 = said(pg)
+        check(any('セットする 前に 使えるよ' in x for x in s1) and pg.evaluate(GEMQ)['gs'] == 'm:off k:off 1:off 3:off 7:off', f'セットした あとは 使えない（「セットする 前に 使えるよ」）（{s1}）')
+        # B：宝石 → トークン（この ターン だけ）・1ターンに 1つ・同じ 宝石は 1戦に 1回・トークン（2頭分）で 逆転勝利・トークンを セット・使わないと 消える
+        startG('12367', 'k2346')
+        b0 = pg.evaluate(GEMQ)
+        check(b0['gs'] == 'm:can k:can 1:can 3:can 7:can', f'手札 5枚（3ターンの 形）：1ターン目から 使える（{b0["gs"]}）')
+        gtap(pg, '1')
+        gm = pg.evaluate("() => { const m = document.querySelector('#cbOv .cbmod.cbgemm'); return m ? { h: m.querySelector('h3').textContent, im: [...m.querySelectorAll('img')].map(i => i.getAttribute('src')), t: m.querySelector('p').textContent, b: [...m.querySelectorAll('.cbb')].map(x => x.textContent.trim()) } : null; }")
+        check(gm and gm['h'] == '双炎のルビー' and gm['im'] == ['cb_gm_1.webp', 'cb_ct1.webp'] and gm['t'].startswith('1トークン（1枚で 2頭分）が 手札に 1枚 来るよ') and 'この ターン だけ' in gm['t'] and gm['b'] == ['使わない', '使う'],
+              f'宝石を タップ →「双炎のルビー」の 窓（宝石 ▶ 1トークンの カード・「使わない」「使う」）（{gm}）')
+        shot(pg, 'cb_gem_ask')
+        pg.locator('#cbOv .cbmod.cbgemm [data-cb=gemgo]').click(); idle(pg)
+        b1 = pg.evaluate(GEMQ); s2 = said(pg)
+        check(pg.evaluate(TOKV) == '1×2' and b1['tok'] == ['1×2=cb_st1.webp'] and b1['gs'] == 'm:off k:off 1:used 3:off 7:off' and pg.evaluate(MYG)['now'] is True and any(x.startswith('ban:双炎のルビー！') and '1トークン（1枚で 2頭分）が 手札に 来たよ' in x for x in s2),
+              f'「使う」→ 1トークン（2頭分）が 手札に・使った 宝石は 暗く・ほかの 宝石も この ターンは 使えない（{b1["gs"]}・{b1["tok"]}）')
+        shot(pg, 'cb_gem_token')
+        gtap(pg, 'k'); s3 = said(pg); gtap(pg, '1'); s4 = said(pg)
+        check(any('決戦宝石は 1ターンに 1つ までだよ' in x for x in s3) and any('この 試合では もう 使ったよ' in x for x in s4), f'1ターンに 1つ まで・同じ 宝石は 1戦に 1回（{s3}・{s4}）')
+        pg.locator('#cbOv .cbhand .cbc.tok').click(); pg.wait_for_timeout(80)
+        tm = pg.evaluate("() => { const m = document.querySelector('#cbOv .cbmod'); return { im: m.querySelector('.big img').getAttribute('src'), t: m.textContent }; }")
+        check(tm['im'] == 'cb_ct1.webp' and '1トークン（1枚で 2頭分）：この ターン だけ（使わないと ターンの 終わりに 消えるよ）' in tm['t'] and 'この カードを セットする' in tm['t'], f'トークンを タップ → 大きい 絵・「この ターン だけ」（{tm["t"][:60]!r}）')
+        pg.locator('#cbOv .cbmod [data-cb=modx]').click(); pg.wait_for_timeout(60)
+        cset(pg, '1'); opp(pg, {'t': 'set', 'k': 'k'})
+        aq = pg.evaluate(ASKQ)
+        check(aq and aq['q'] == '1 の 効果を 使う？' and aq['text'] == '場の 1 と 1トークン（2頭分）で 3枚 ぶん。トークンを 捨てると、神様馬に 勝てるよ' and aq['img'] == 'cb_ct1.webp',
+              f'1 を セット・相手は 神様馬 → 逆転の チャンス（場の 1 ＋ 1トークン 2頭分 ＝ 3枚 ぶん）（{aq and aq["text"]}）')
+        shot(pg, 'cb_gem_rev')
+        pg.locator('#cbOv .cbmod.cbask [data-cb=revyes]').click(); idle(pg)
+        v1 = pg.evaluate(V); s5 = said(pg)
+        check(v1['my']['wins'] == 1 and pg.evaluate(TOKV) == '' and any('トークンを 捨てて、神様馬に 勝ち！' in x for x in s5 if x.startswith('use:')) and not any('消えたよ' in x for x in s5) and v1['turn'] == 2
+              and any(d.get('tok') == 2 and d['k'] == '1' and d['mine'] for d in v1['discard']),
+              f'使う → トークンを 捨てて 逆転勝利（捨てた トークンは 捨て札に・使った トークンは「消えた」と 言わない）（{[x for x in s5 if x.startswith("use:")]}）')
+        guse(pg, 'k')
+        check(pg.evaluate(TOKV) == 'k×1' and pg.evaluate(GEMQ)['gs'] == 'm:off k:used 1:used 3:off 7:off', f'2ターン目：日輪の黄金石 → 神様馬トークン（{pg.evaluate(GEMQ)["gs"]}）')
+        cset(pg, 'k', tok=True)
+        ms = pg.evaluate(SLOT); mt = pg.evaluate("() => !!document.querySelector('#cbOv .cbslot.my .cbc.tok')")
+        opp(pg, {'t': 'set', 'k': 2})
+        v2 = pg.evaluate(V)
+        check(ms.split(' ')[1].startswith('b[') and mt and v2['my']['wins'] == 2 and v2['last']['c'] == ['k', '2'] and pg.evaluate(TOKV) == '',
+              f'神様馬トークンを セット（伏せて：{ms}）→ オープン：神様馬 と 同じ 強さで 勝ち（{v2["last"]}）')
+        pg.wait_for_function("() => document.querySelector('#cbOv .cbmod.cbask')", timeout=20000)
+        aq2 = pg.evaluate(ASKQ)
+        check(aq2 and aq2['q'] == '神様馬の 効果を 使う？', f'神様馬トークンで 勝った → 次の ターンの 始めに 神様馬の 効果（{aq2 and aq2["q"]}）')
+        pg.locator('#cbOv .cbmod.cbask [data-cb=kskip]').click(); idle(pg)
+        guse(pg, 'm'); b3 = pg.evaluate(GEMQ)
+        check(pg.evaluate(TOKV) == 'm×1' and b3['gs'] == 'm:used k:used 1:used 3:off 7:off' and b3['tok'] == ['m×1=cb_stm.webp'], f'3ターン目：幻影のアメジスト → 幻の馬トークン（{b3["gs"]}）')
+        cset(pg, '7'); opp(pg, {'t': 'set', 'k': 3})
+        pg.wait_for_function("() => CBApp._t.ended", timeout=30000); idle(pg); s7 = said(pg); v3 = pg.evaluate(V)
+        check(v3['res'] == 'win' and pg.evaluate(TOKV) == '' and any('トークンは この ターン だけ' in x and '消えたよ' in x for x in s7),
+              f'使わなかった トークンは ターンの 終わりに 消える（「トークンは この ターン だけ… 消えたよ」）（{[x for x in s7 if "消えた" in x]}）')
+        # C：7トークン（3頭分）で 7 の 3枚 交換 → 手札 7枚（使えない）・3トークン（2頭分）＋ 3 で 3 の 交換
+        startG('12345', '2356m', deck='124')
+        guse(pg, '7'); cset(pg, '1'); opp(pg, {'t': 'set', 'k': 2})
+        aq = pg.evaluate(ASKQ)
+        check(aq and aq['q'] == '7 の 効果を 使う？' and aq['text'] == '7トークン（3頭分）を 戻して、新しく 3枚 引けるよ（トークンは 山札に 入らない）' and aq['img'] == 'cb_ct7.webp',
+              f'7トークン（3頭分）＝ 7 が 3枚 → 効果タイムで 7 の 効果（{aq and aq["text"]}）')
+        peek(pg); mb = pg.evaluate(MSG)
+        check(mb == '効果タイム！ 7 の 効果を 使う？\n7トークン（3頭分）を 戻して、新しく 3枚 引けるよ', f'窓を 下げた ときの 下の 字も トークン（{mb!r}）')
+        pg.locator('#cbOv [data-cb=effyes]').click(); idle(pg)
+        s8 = said(pg); c1 = pg.evaluate(GEMQ); v4 = pg.evaluate(V)
+        check(pg.evaluate(TOKV) == '' and pg.evaluate(HAND) == '1223445' and any(x.startswith('use:') and '7トークン（3頭分）を 戻して、新しく 3枚 引くよ' in x for x in s8) and any('7トークン（3頭分）を 戻して、新しく 3枚 引いたよ' in x for x in s8)
+              and v4['turn'] == 2 and c1['gs'] == 'm:off k:off 1:off 3:off 7:used',
+              f'使う → 7トークンを 戻して 3枚 引いた（手札 {pg.evaluate(HAND)}：7枚 → 2ターン目は 宝石を 使えない）（{c1["gs"]}）')
+        gtap(pg, 'm'); s9 = said(pg)
+        check(any('手札が 6枚 以下の ときに 使えるよ' in x for x in s9), '手札 7枚：「手札が 6枚 以下の ときに 使えるよ」')
+        cset(pg, '2'); opp(pg, {'t': 'set', 'k': 3})
+        c2 = pg.evaluate(GEMQ)
+        check(pg.evaluate(V)['turn'] == 3 and c2['gs'] == 'm:can k:can 1:can 3:can 7:used', f'3ターン目：手札 6枚 → また 使える（{c2["gs"]}）')
+        guse(pg, '3'); cset(pg, '1'); opp(pg, {'t': 'set', 'k': 6})
+        aq = pg.evaluate(ASKQ)
+        check(aq and aq['q'] == '3 の 効果を 使う？' and aq['text'] == '3トークン（2頭分）と 3 で 3枚 ぶん 見せて、本物の 3 と 相手の 手札の 1枚（ランダム）を 交換できるよ' and aq['img'] == 'cb_ct3.webp',
+              f'3トークン（2頭分）＋ 3 ＝ 3 が 3枚 → 3 の 効果（{aq and aq["text"]}）')
+        h3 = pg.evaluate(HAND)
+        pg.evaluate("() => { window.__three = null; if (window.__mo3x) window.__mo3x.disconnect(); const mo = new MutationObserver(() => { const m = document.querySelector('#cbOv .cbmod.cbopen .three'); if (m && !window.__three) window.__three = { im: [...m.querySelectorAll('img')].map(i => i.getAttribute('src')), t: m.parentNode.querySelector('p').textContent }; }); mo.observe(document.getElementById('cbOv'), { childList: true, subtree: true }); window.__mo3x = mo; }")
+        pg.locator('#cbOv .cbmod.cbask [data-cb=effyes]').click()
+        pg.wait_for_function("() => CBApp._t.ended", timeout=30000); idle(pg); s10 = said(pg)
+        th = pg.evaluate("() => { if (window.__mo3x) window.__mo3x.disconnect(); return window.__three || { im: [], t: '' }; }")
+        check(sorted(th['im']) == ['cb_s3.webp', 'cb_st3.webp'] and '3トークン（2頭分）と 3 で 3枚 ぶん 見せたよ' in th['t'] and '3' not in pg.evaluate(HAND) and pg.evaluate(TOKV) == '' and any('消えたよ' in x for x in s10),
+              f'使う → 見せるのは 3トークンと 3（{th["im"]}）・わたすのは 本物の 3（手札 {h3} → {pg.evaluate(HAND)}）・トークンは ターンの 終わりに 消える')
+        pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(150)
+        # D：決戦宝石 なし の いつもの 対戦：ケースは 出ない（画面も 前と 同じ）
+        start(pg, '12345', '23456')
+        d0 = pg.evaluate(GEMQ)
+        check(d0['hid'] and d0['og'] is None and pg.evaluate("() => CBApp._t.view.my.gem") is None and '💎' not in pg.evaluate(MSG), '決戦宝石 なし（いつもの 対戦）：ケースは 出ない・下の 字も 前と 同じ')
+        pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(150)
         check(not errs and not gerrs, f'エラー なし {errs[:3]} {gerrs[:3]}')
         if HAVE:
             miss = sorted(set(f for f in reqs if f.startswith('cb_') and f != 'cb_bundle.js' and f not in CBF))

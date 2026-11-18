@@ -29,9 +29,14 @@
 //   第4.188版（効果タイムで 行う 順 6 → 7 → 3 → 5 → 4：手札の 効果が 先・4 は いちばん あと・ルールが かわった）：PROTO 9
 //   第4.190版（6 の 効果は ターンの はじめ〈セットの 前・神様馬／幻の馬より 先：手 p6〉・効果タイムは 1つずつ〈7 → 3 → 5 → 4〉：ルールが かわった）：PROTO 10
 //     ・1ターン目の はじめに 6 の 効果を 聞く ときは、配った（deal）あとの 同じ 知らせに 入れる（S.ev0 → sixt）
+//   第4.197版（まさちゃん 2026/11/18 18:58「呼び寄せの決戦宝石 決戦調査とお友達バトルの設定で、決戦宝石ありにした場合のみ使用可能…お友達バトルのトークンは、1人その試合で持ち込めるのは、一つの石まで
+//     お互いに何の石を所有してるか見える」）：ルールが かわった（手 gem・トークン）ので PROTO 11
+//     ・部屋を 作った 人（ホスト）が「決戦宝石 あり／なし」を 決める → あいさつ（hello）で ゲストに 伝える：{ t:'hello', v, stake, dz, gm:{ on } }
+//     ・まさちゃん 20:21「お友達バトルは1試合で5個使える！」：あり の 部屋は 2人とも 5つ ぜんぶ（1試合で 1つ 1回ずつ）＝ 持ち込む 宝石を えらぶ のは なくした（前の「1人 1つ」）
+//     ・ゲストは 決まりを 見て「参加する」：{ t:'join', stake }。ホストは 2人に 5つずつで 配る（opt.gems＝[[5つ],[5つ]]・opt.gpub＝おたがいに 見える）。match.gm＝部屋の 決まり（画面の 係が 見せる）
 const CBNet = (() => {
   'use strict';
-  const R = CBRules, PROTO = 10, MAXLEN = 20000;      // PROTO 10（第4.190版）：6 は セットの 前・効果タイムは 1つずつ。PROTO 9（第4.188版）：効果の 順 6 → 7 → 3 → 5 → 4。PROTO 8（第4.187版）：7 の 4まい 公開は セットの 前（手 x7r）・場の カードは いつも うら。PROTO 7（第4.185版）：7 の 4まい 公開で 強さ 逆転。PROTO 6（第4.183版）：4 の 効果で 交換して 5 を 出したら 5 の 効果（ルールが かわった：phase 'u5'・手 u5）＝ 前の 版の アプリとは 対戦しない。PROTO 5（第4.181版）：2人とも 4 の 効果を 使ったら ドロー（ルールが かわった）＝ 前の 版の アプリとは 対戦しない。PROTO 4（第4.179版）：あいさつに 参加コインの 決まり・「参加する」の 返事が ふえた ＝ 前の 版の アプリとは 対戦しない（「アプリの 版が ちがう」と 出る）。PROTO 3＝第4.178版（5ターン・手札 7まい・逆転勝利）・PROTO 2＝第4.177版
+  const R = CBRules, PROTO = 11, MAXLEN = 20000;      // PROTO 11（第4.197版）：決戦宝石（手 gem・トークン・あいさつの gm）。PROTO 10（第4.190版）：6 は セットの 前・効果タイムは 1つずつ。PROTO 9（第4.188版）：効果の 順 6 → 7 → 3 → 5 → 4。PROTO 8（第4.187版）：7 の 4まい 公開は セットの 前（手 x7r）・場の カードは いつも うら。PROTO 7（第4.185版）：7 の 4まい 公開で 強さ 逆転。PROTO 6（第4.183版）：4 の 効果で 交換して 5 を 出したら 5 の 効果（ルールが かわった：phase 'u5'・手 u5）＝ 前の 版の アプリとは 対戦しない。PROTO 5（第4.181版）：2人とも 4 の 効果を 使ったら ドロー（ルールが かわった）＝ 前の 版の アプリとは 対戦しない。PROTO 4（第4.179版）：あいさつに 参加コインの 決まり・「参加する」の 返事が ふえた ＝ 前の 版の アプリとは 対戦しない（「アプリの 版が ちがう」と 出る）。PROTO 3＝第4.178版（5ターン・手札 7まい・逆転勝利）・PROTO 2＝第4.177版
   // 参加コイン e（0〜STAKE_MAX）・勝者の 獲得コイン w（e 〜 e の 2倍）。数字で ない・はんいの 外は 直す（相手から 届いた ものも ここを 通す）
   const STAKE_MAX = 999;
   function stakeOf(k) {
@@ -39,6 +44,8 @@ const CBNet = (() => {
     const w = Math.max(e, Math.min(e * 2, Math.floor(+(k && k.w) || 0)));
     return { e: e, w: e > 0 ? w : 0 };
   }
+  // 決戦宝石（第4.197版）：部屋の 決まり { on }（相手から 届いた ものも ここを 通す）
+  const gmOf = o => ({ on: !!o && o.on === true });
   const say = (m, k, v) => { try { if (typeof m[k] === 'function') m[k](v); } catch (e) { /* 画面の 中の まちがいで 対戦を 止めない */ } };
   // デザイン（第4.183版）：{ b, f } の 形に そろえる（相手から 届いた もの・自分の ものも ここを 通す）
   const DZID = /^[a-z0-9]{1,12}$/;
@@ -107,10 +114,11 @@ const CBNet = (() => {
     }, opt);
   }
 
-  // 部屋の ホスト（親）：link の むこうに 友だち。stake＝{ e:参加コイン, w:勝者の 獲得コイン }（なければ 0）・dz＝自分が えらんだ デザイン（第4.183版）
-  function host(link, rng, opt, stake, dz) {
+  // 部屋の ホスト（親）：link の むこうに 友だち。stake＝{ e:参加コイン, w:勝者の 獲得コイン }（なければ 0）・dz＝自分が えらんだ デザイン（第4.183版）・
+  //   gm＝決戦宝石の 決まり { on }（第4.197版：あり なら 2人とも 5つ）
+  function host(link, rng, opt, stake, dz, gm) {
     rng = rng || Math.random;
-    const stk = stakeOf(stake), myDz = dzOf(dz);
+    const stk = stakeOf(stake), myDz = dzOf(dz), gmv = gmOf(gm);
     const mm = parent('host', rng, m => {
       let hello = false, joined = false, closed = false, want = false;
       const send = o => { if (!closed) link.send(JSON.stringify(o)); };
@@ -120,11 +128,15 @@ const CBNet = (() => {
         if (closed || typeof txt !== 'string' || txt.length > MAXLEN) return;
         let o; try { o = JSON.parse(txt); } catch (e) { return; }
         if (!o || typeof o !== 'object') return;
-        if (o.t === 'hello') { if (o.v !== PROTO) { send({ t: 'hello', v: PROTO }); m._.end('ver'); return; } if (!hello) { hello = true; m.opDz = dzOf(o.dz); send({ t: 'hello', v: PROTO, stake: stk, dz: myDz }); say(m, 'onState', 'ready'); } return; }
+        if (o.t === 'hello') { if (o.v !== PROTO) { send({ t: 'hello', v: PROTO }); m._.end('ver'); return; } if (!hello) { hello = true; m.opDz = dzOf(o.dz); send({ t: 'hello', v: PROTO, stake: stk, dz: myDz, gm: gmv }); say(m, 'onState', 'ready'); } return; }
         if (!hello) return;
         if (o.t === 'join') {                           // 友だちが 決まりを 見て「参加する」：同じ 数字で ある こと（ちがえば 配らない）
           const k = stakeOf(o.stake);
-          if (!joined && k.e === stk.e && k.w === stk.w) { joined = true; say(m, 'onState', 'joined'); if (want) deal(); }
+          if (!joined && k.e === stk.e && k.w === stk.w) {
+            joined = true;
+            if (gmv.on) m.setOpt(Object.assign({}, opt || {}, { gems: [R.GEMS.slice(), R.GEMS.slice()], gpub: true }));      // 第4.197版：決戦宝石 あり ＝ 2人とも 5つ（おたがいに 見える）
+            say(m, 'onState', 'joined'); if (want) deal();
+          }
           return;
         }
         if (o.t === 'bye') { m._.end('bye'); return; }
@@ -139,7 +151,7 @@ const CBNet = (() => {
         stop: mine => { if (closed) return; if (mine) send({ t: 'bye' }); closed = true; setTimeout(() => { try { link.close(); } catch (e) { /* なし */ } }, mine ? 250 : 0); }
       };
     }, opt);
-    mm.stake = stk; mm.opDz = null;
+    mm.stake = stk; mm.opDz = null; mm.gm = gmv;
     return mm;
   }
 
@@ -147,14 +159,14 @@ const CBNet = (() => {
   function guest(link, dz) {
     let alive = true, id = 0, hello = false;
     const wait = {}, myDz = dzOf(dz);
-    const m = { kind: 'guest', me: 1, onUpdate: null, onState: null, stake: null, opDz: null };
+    const m = { kind: 'guest', me: 1, onUpdate: null, onState: null, stake: null, opDz: null, gm: null };      // gm：部屋の 決戦宝石の 決まり（第4.197版）
     const send = o => { if (alive) link.send(JSON.stringify(o)); };
     const end = why => { if (!alive) return; alive = false; Object.keys(wait).forEach(k => wait[k]({ ok: false, why: 'off' })); try { link.close(); } catch (e) { /* なし */ } say(m, 'onState', why); };
     link.onText = txt => {
       if (!alive || typeof txt !== 'string' || txt.length > MAXLEN) return;
       let o; try { o = JSON.parse(txt); } catch (e) { return; }
       if (!o || typeof o !== 'object') return;
-      if (o.t === 'hello') { if (o.v !== PROTO) end('ver'); else if (!hello) { hello = true; m.stake = stakeOf(o.stake); m.opDz = dzOf(o.dz); say(m, 'onState', 'ready'); say(m, 'onState', 'stake'); } }      // stake：部屋の 決まり（参加コイン・勝者の 獲得コイン）が 届いた → 画面が 聞いて match.join()
+      if (o.t === 'hello') { if (o.v !== PROTO) end('ver'); else if (!hello) { hello = true; m.stake = stakeOf(o.stake); m.opDz = dzOf(o.dz); m.gm = gmOf(o.gm); say(m, 'onState', 'ready'); say(m, 'onState', 'stake'); } }      // stake：部屋の 決まり（参加コイン・勝者の 獲得コイン）が 届いた → 画面が 聞いて match.join()
       else if (o.t === 'up' && o.view && Array.isArray(o.ev)) say(m, 'onUpdate', { n: o.n, ev: o.ev, view: o.view });
       else if (o.t === 'ack') { const f = wait[o.id]; if (f) { delete wait[o.id]; f({ ok: !!o.ok, why: o.why }); } }
       else if (o.t === 'again') say(m, 'onState', 'again');
@@ -202,6 +214,6 @@ const CBNet = (() => {
     };
   }
 
-  return { PROTO, STAKE_MAX, stakeOf, dzOf, cpu, host, guest, nativeRoom };
+  return { PROTO, STAKE_MAX, stakeOf, dzOf, gmOf, cpu, host, guest, nativeRoom };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = CBNet;
