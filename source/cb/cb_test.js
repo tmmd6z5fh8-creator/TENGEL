@@ -39,7 +39,7 @@ const CBTest = (() => {
   }
   // 第4.196版：決戦調査の マップの 右上「🧪」→ テスト版の 道具：次の エリアを 討伐済みに・全部 討伐済みに・討伐を 0 に・月が 変わった ことに・戦を「1ターンで 勝てる 手札」に（切りかえ）
   //   ＝ レベル 12 まで 52勝 しなくても、強い 敵・確定カード・勝利の 演出（3段階）を 試せる。CBTest.qHtml(easy)・CBTest.qAct(t, api)　api＝cb_app.js の qApi（clr・all・zero・next・easy）
-  const Q = [['qclr', '次の エリアを 討伐済みに'], ['qall', '全部 討伐済みに'], ['q0', '討伐を 0 に 戻す'], ['qnx', '月が 変わった ことに（リセット）'], ['qez', '']];
+  const Q = [['qclr', '次の エリアを 討伐済みに'], ['qall', '全部 討伐済みに'], ['q0', '討伐を 0 に 戻す'], ['qnx', '月が 変わった ことに（リセット）'], ['qez', ''], ['qt0', '調査隊切符を 0枚に'], ['qtf', '調査隊切符を 15枚に']];      // 第4.203版：調査隊切符
   function qHtml(easy) {
     return '<div class="cbtst"><b>🧪 テスト版の 道具</b><small>App Store版には ないよ（たくさん 勝たなくても、強い 敵・確定カード・勝利の 演出を 試せる）</small><div class="r">'
       + Q.map(([t, l]) => `<button type="button" class="cbb dk sm" data-cb="tstq" data-t="${t}">${t === 'qez' ? (easy ? '戦を いつもの 手札に 戻す' : '戦を「1ターンで 勝てる 手札」に') : l}</button>`).join('') + '</div></div>';
@@ -51,6 +51,8 @@ const CBTest = (() => {
     else if (t === 'q0') api.zero();
     else if (t === 'qnx') api.next();
     else if (t === 'qez') api.easy();
+    else if (t === 'qt0') api.tk0();
+    else if (t === 'qtf') api.tkf();
   }
   return { html, act, msHtml, msAct, qHtml, qAct };
 })();

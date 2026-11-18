@@ -63,6 +63,7 @@ H = os.path.dirname(os.path.abspath(__file__)); W = os.path.dirname(H)
 sys.path.insert(0, H)
 import cb_quest_art as _cbq      # 第4.196版：決戦調査の 絵
 import cb_gem_art as _cbg       # 第4.197版：決戦宝石の 絵（宝石・トークン・ケース）
+import cb_ticket_art as _cbt    # 第4.203版：調査隊切符の 絵（切符・ゲージ・うめた こま）
 SRC = os.path.join(W, 'ios', 'cb_assets', 'src'); OUT = os.path.join(W, 'ios', 'cb_assets')
 V = 1
 CARDS = [('1', 'cb_1_v2.png'), ('2', 'cb_2_v2.png'), ('3', 'cb_3_v2.png'), ('4', 'cb_4.png'), ('5', 'cb_5_v2.png'), ('6', 'cb_6.png'), ('7', 'cb_7_v2.png'), ('k', 'cb_k.png'), ('m', 'cb_m.png'), ('b', 'cb_back.png')]
@@ -257,12 +258,13 @@ def plan():
         jobs.append((f'cb_bd_{did}_s.webp', src, plain(BD_S)))
     jobs += _cbq.jobs()                                         # 第4.196版：決戦調査（マップ・フィールド・敵・HP ゲージ：kisekae/cb_quest_art.py。もとが いくつか ある 絵は もとの 名前が tuple）
     jobs += _cbg.jobs()                                         # 第4.197版：決戦宝石（宝石 5・トークンの カード 5 × 大・小・宝石ケース：kisekae/cb_gem_art.py）
+    jobs += _cbt.jobs()                                         # 第4.203版：調査隊切符（切符の 絵・ゲージ〈数字を 消した 絵〉・うめた こま：kisekae/cb_ticket_art.py）
     return jobs
 
 
 def PARAMS():
     """決めごと（台帳に 書く：かわったら 作り直す）"""
-    return json.loads(json.dumps([list(BASE), INSET, RADIUS, list(BIG), list(SMALL), Q, NIGHT, [list(c) for c in DECK_FACE], [list(BD), list(BD_S)], [list(PACK_BOX), list(PACK_SIZE)], _cbq.PARAMS(), _cbg.PARAMS()]))      # 第4.185版：プレイボードの 大きさ・第4.189版：パックの 絵
+    return json.loads(json.dumps([list(BASE), INSET, RADIUS, list(BIG), list(SMALL), Q, NIGHT, [list(c) for c in DECK_FACE], [list(BD), list(BD_S)], [list(PACK_BOX), list(PACK_SIZE)], _cbq.PARAMS(), _cbg.PARAMS(), _cbt.PARAMS()]))      # 第4.185版：プレイボードの 大きさ・第4.189版：パックの 絵
 
 
 def files():
@@ -292,6 +294,16 @@ def stale():
 def main():
     if '--check' in sys.argv:
         w = stale(); print('cb_assets →', 'もとの 絵が ない' if w is None else ('新しい' if w == '' else '古い：' + w)); sys.exit(1 if w else 0)
+    if len(sys.argv) > 2 and sys.argv[1] == 'only':      # 第4.203版：決めた 名前 だけ 作り直す（ほかの 絵は 書きかえない）。台帳の 決めごとは、前の 決めごとに 新しい 所を 足した とき だけ 新しく する
+        names = sys.argv[2:]; mf = os.path.join(OUT, INFO); man = json.load(open(mf, encoding='utf8')); P = PARAMS()
+        if man.get('v') != V or not (man.get('p') == P or man.get('p') == P[:len(man.get('p') or [])]):
+            sys.exit('※ 前の 決めごとが かわって いる ので、ぜんぶ 作り直してね（python3 kisekae/cb_art.py）')
+        for name, src, fn in plan():
+            if name not in names: continue
+            sp = tuple(os.path.join(SRC, x) for x in src) if isinstance(src, tuple) else os.path.join(SRC, src); n = fn(sp, os.path.join(OUT, name))
+            man['files'][name] = {'src': sig(src), 'size': n}; print(f'  {name}  {n / 1000:.1f}KB', flush=True)
+        man['p'] = P; json.dump(man, open(mf, 'w', encoding='utf8'), ensure_ascii=False, indent=1)
+        w = stale(); print('cb_assets →', '新しい' if w == '' else '古い：' + str(w)); sys.exit(1 if w else 0)
     man = {'v': V, 'p': PARAMS(), 'files': {}}; tot = 0
     for cid, src in CARDS + [('fc_' + f, s_) for f, s_ in FACES] + [('bk_' + b, s_) for b, s_ in BACKS]:
         _o, sz, thin = card(os.path.join(SRC, src))

@@ -106,6 +106,7 @@ try:
                 else: pg.evaluate(OPP, {'t': 'set', 'k': '7'})
                 until(pg, "() => !!document.querySelector('#cbOv .cbmod.on.qend, #cbOv .cbmod.on.qvic')")
             def to_field(lv, capture=False):
+                pg.evaluate("() => { const T = CBApp._t; T.state.qt = { n: 15, at: Date.now() }; T.save(); }")      # 第4.203版：調査隊切符を 満タンに（戦が 多い ので）
                 if capture: seg('q_pop', 1.5, lambda: pg.locator(f'#cbOv .qnd[data-lv="{lv}"]').click())      # 第4.196版：マップの その 場に ふきだし（まさちゃん 16:47）
                 else: pg.locator(f'#cbOv .qnd[data-lv="{lv}"]').click(); settle(pg, 0.3, 50)
                 if capture: seg('q_field', 3.4, lambda: pg.locator('#cbOv .qpo [data-cb=qgo]').click())

@@ -53,7 +53,7 @@
 //       使える 条件：手札に 7 が 4まい・まだ 逆転して いない・捨てた あとの 手札が この ターンを 入れた のこりの ターンの 数 以上（セットする カードが のこる）。
 //       使った あとも セットは まだ（のこった 7 を セットしても いい）。逆転は この ターンの オープンから。同じ ターンの 効果タイムでは 7 の【3枚】は 出さない（P.r7：どちらか 1つ）
 //     ・セットは いつも ふせて（うら）：相手の 場の カードは、前に 効果で 見た カードでも、4 の 効果で 見せる か オープン する まで うら（前は 見た カードなら 表で 見えた）。
-//       どの カードを セットしたか 相手の 手札の 見え方で わからない ように：相手が ふせて セットして いる あいだは、セットする 前の 手札から 1まい へらした 形で 見せる（handOf）
+//       （第4.187版〜第4.202版：相手が ふせて いる あいだは、セットする 前の 手札から 1まい へらした 形で 見せて いた → 第4.203版：いつも 本当の 手札〈handOf〉）
 //   まさちゃんの 直し（第4.188版・2026/11/17 11:05「効果が発動できる順番は、神様馬カード、幻の馬カードのターン明けの効果が1番、手札から使える効果が2番、セットしてから使える効果が3番」・
 //     11:16「4は効果発動最後にして！」）：
 //     ・効果タイムで 効果を 行う 順を「手札の 効果（6 → 7 → 3）→ セットした カードの 効果（5 → 4：4 が いちばん あと）」に（前は 6 → 5 → 7 → 3 → 4）。神様馬・幻の馬は 前から ターンの はじめ（1番）
@@ -217,22 +217,14 @@ const CBRules = (() => {
 
   // 相手（Q）の 手札の 中で、P が まだ 見て いない カード（第4.178版：6・神様馬の 効果で 見られる カード）
   const unseen = (P, Q) => Q.hand.filter(c => P.known.indexOf(c.u) < 0);
-  // 相手（Q）の 手札の 見え方（P から：第4.187版）。ふつうは 手札 そのまま（見た カードは 表・ほかは うら）。
-  //   Q が 手札から ふせて セットした カード（4 の 効果で 見せる・オープンの 前・5 の 効果で 山札から 来た もの で ない）が ある あいだは、
-  //   どの カードを セットしたか わからない ように、セットする 前の 手札（場の カードを もとの 場所 at に もどした 形）から
-  //   「まだ 見て いない カードの さいごの 1まい（なければ さいごの 1まい）」を へらした 形で 見せる ＝ 見える 形は セットする 前の 手札 だけで 決まる。
-  //   見た カードを セットした ときは、その カードが 手札に ある ように 見え、まだ 見て いない カードが 1まい 見えない。
-  //   うらの カードの 番号（u）は いま 手札に ある まだ 見て いない カードに つけかえる（6 の 効果で えらぶ カード）
+  // 相手（Q）の 手札の 見え方（P から）：いつも 本当の 手札（見た カードは 表・ほかは うら。うらの 番号 u は その カードの 番号：6・神様馬・3 の 効果で 選ぶ カード）
+  //   第4.203版（まさちゃん 2026/11/19 01:51「カードバトルで、手札が効果で見えてる状態で、CPUがカードをセットすると、別のカードに変わってることがある。
+  //   見えてるカードと実際に出てるカードが違うから改善して！」）：前（第4.187版）は 相手が ふせて いる あいだ「セットする 前の 手札から まだ 見て いない
+  //   カードを 1まい へらした 形」で 見せて いた（どれを 出したか わからない ように）→ 見た カードを 出しても 手札に のこって 見えたり、ぜんぶ 見た 手札では
+  //   出して いない カードが 消えたり した（オープンで 本当の 形に もどる と、見えて いた カードが かわった ように 見える）。いまは 本当の 手札：見た カードを 出したら 手札から 消える
   function handOf(P, Q) {
-    const kn = c => P.known.indexOf(c.u) >= 0, s = Q.set;
-    if (!s || s.up || s.open || s.blind) return Q.hand.map(c => (kn(c) ? cardEv(c) : { u: c.u, k: null }));
-    const H = Q.hand.slice();
-    H.splice(Math.max(0, Math.min(H.length, s.at | 0)), 0, s.c);
-    let r = H.length - 1;
-    for (let j = H.length - 1; j >= 0; j--) if (!kn(H[j])) { r = j; break; }
-    H.splice(r, 1);
-    const pool = Q.hand.filter(c => !kn(c));
-    return H.map(c => (kn(c) ? cardEv(c) : { u: pool.shift().u, k: null }));
+    const kn = c => P.known.indexOf(c.u) >= 0;
+    return Q.hand.map(c => (kn(c) ? cardEv(c) : { u: c.u, k: null }));
   }
   // 第4.190版：効果タイムは 1つずつ（行う 順：7 の 3まい 交換 → 3 → 5 → 4。手札の 効果 → セットした カードの 効果・4 は いちばん あと）
   //   第4.202版（まさちゃん「手札から使える効果は、カードセット前に使えるようにして！」）：7 の 3まい 交換・3 は セットの 前（手 x7・x3）＝ 効果タイムは 5 → 4 だけ
@@ -257,8 +249,8 @@ const CBRules = (() => {
   const canX7 = (S, i) => { const P = S.p[i]; return S.phase === 'set' && !P.set && P.x7 !== S.turn && P.r7 !== S.turn && count(P.hand, '7') >= 3 && S.deck.length >= 3; };
   // 3 の 交換で もらえる カード（第4.202版・まさちゃん 11/19 00:38「3て、背面で相手のカードをランダムに選ぶことになってる？ CPUが勝手に選ぶ形にならないようにして！」）：
   //   使う 人が 相手の 手札の うらの カード（まだ 見て いない 本物の カード）から 1まい えらぶ ＝ 何が 来るかは わからない。見た カード（表）・トークンは えらべない。
-  //   えらべる 番号は 使う 人に 見えて いる 相手の 手札（handOf：相手が ふせて いる あいだの 見え方）の うらの カード（中身は いま 手札に ある カード）
-  const x3Pool = (S, i) => { const P = S.p[i], Q = S.p[1 - i], ok = new Set(Q.hand.filter(c => !c.tok).map(c => c.u)); return handOf(P, Q).filter(c => c.k == null && ok.has(c.u)).map(c => c.u); };
+  //   えらべる 番号は 使う 人に 見えて いる 相手の 手札（handOf：本当の 手札）の うらの カード
+  const x3Pool = (S, i) => { const P = S.p[i], Q = S.p[1 - i]; return Q.hand.filter(c => !c.tok && P.known.indexOf(c.u) < 0).map(c => c.u); };
   const canX3 = (S, i) => { const P = S.p[i]; return S.phase === 'set' && !P.set && P.x3 !== S.turn && count(P.hand, '3') >= 3 && P.hand.some(c => c.k === '3' && !c.tok) && x3Pool(S, i).length >= 1; };
   // 5 の 効果を 使えるか（第4.183版：4 の 効果で 交換して 出した 5）：ふせて いる 5・手札 1まい 以上・使った あとの 手札が のこりの ターンの 数より 少なく ならない・山札が ある
   const can5 = (S, i) => { const P = S.p[i]; return !!P.set && !P.set.blind && P.set.c.k === '5' && P.hand.length >= 1 && S.deck.length >= 1 && P.hand.some(c => dropOk(S, P, c)); };
@@ -283,7 +275,7 @@ const CBRules = (() => {
       if (S.phase !== 'set' || P.set) return bad('set');
       const j = idx(P.hand, a.u); if (j < 0) return bad('card');
       const c = P.hand.splice(j, 1)[0];
-      P.set = { c: c, up: false, blind: false, open: false, at: j };      // at：手札の どこから 出したか（第4.187版：相手に 見せる 手札の 形 handOf）
+      P.set = { c: c, up: false, blind: false, open: false, at: j };      // at：手札の どこから 出したか（第4.187版〜第4.202版：相手に 見せる 手札の 形に 使って いた。いまは 使わない）
       ev.push({ e: 'set', who: i, u: c.u });
       if (S.p[0].set && S.p[1].set) afterSet(S, ev);
       return { ok: true, ev: ev };
@@ -300,7 +292,7 @@ const CBRules = (() => {
       if (!can7r(S, i)) return bad('x7r');
       const sev = pickW(P.hand, '7', 4), drop = sev[0];      // 第4.197版：何頭分か で 4まい ぶん・捨てるのは トークン（あれば：どうせ 消える）
       P.hand.splice(P.hand.indexOf(drop), 1); toss(S, drop, i, '7');
-      sev.slice(1).forEach(c => learn(Q, c.u));          // 見せて 手札に のこる 3まいは 相手が 知って いる（セットしたら どれを 出したかは わからない：handOf）
+      sev.slice(1).forEach(c => learn(Q, c.u));          // 見せて 手札に のこる 3まいは 相手が 知って いる（第4.203版：その 7 を セットしたら 相手の 手札から 消えて 見える：handOf）
       S.rv = true; P.r7 = S.turn;
       ev.push({ e: 'x7r', who: i, show: sev.map(c => c.u), drop: cardEv(drop) });
       return { ok: true, ev: ev };
@@ -596,7 +588,7 @@ const CBRules = (() => {
       discard: S.discard.map(d => Object.assign({ k: d.k, mine: d.by === i, why: d.why, turn: d.turn }, d.tok ? { tok: d.tok } : {}, d.wt ? { wt: 1 } : {})),
       my: { hand: P.hand.map(c => Object.assign({ u: c.u, k: c.k, seen: Q.known.indexOf(c.u) >= 0 }, c.tok ? { tok: c.tok } : {})), set: setOf(P, true), wins: P.wins,
         gem: P.gems.length ? { list: P.gems.slice(), used: P.gused.slice(), can: GEMS.filter(g => canGem(S, i, g)), now: P.gturn === S.turn } : null },      // 第4.197版：決戦宝石（can＝いま 使える・now＝この ターンに もう 使った）
-      op: { hand: handOf(P, Q), set: setOf(Q, false), wins: Q.wins, gem: S.gpub && Q.gems.length ? { list: Q.gems.slice(), used: Q.gused.slice() } : null },      // 第4.197版：友だちとの 対戦は 相手の 宝石も 見える      // 第4.187版：相手が ふせて いる あいだは どれを セットしたか わからない 形（handOf）
+      op: { hand: handOf(P, Q), set: setOf(Q, false), wins: Q.wins, gem: S.gpub && Q.gems.length ? { list: Q.gems.slice(), used: Q.gused.slice() } : null },      // 第4.197版：友だちとの 対戦は 相手の 宝石も 見える      // 第4.203版：相手の 手札は いつも 本当の 手札（handOf）
       can: { set: S.phase === 'set' && !P.set, x7r: can7r(S, i), x7: canX7(S, i), x3: canX3(S, i), x3p: canX3(S, i) ? x3Pool(S, i) : [], gem: GEMS.filter(g => canGem(S, i, g)), eff: st ? { e6: false, e7: false, e3: false, e5: st === 'u5', e4: st === 'u4', st: st, n: S.effN } : null,      // 第4.202版：x7・x3＝セットの 前の 手札の 効果（効果タイムの e7・e3 は もう ない）      // x7r：7 の 4まい 公開（第4.187版：セットの 前）
         six: S.phase === 'six' && !!P.six && !P.six.done && P.six.can ? { n: S.turn } : null },      // 第4.190版：6 の 効果（ターンの はじめ）・eff は いまの 効果 1つ（n＝何番目の 効果か：画面の 聞き直し）
       pend: S.pend ? Object.assign({ type: hide5 ? 'swap' : S.pend.type, mine: S.pend.who === i }, S.pend.tok ? { tok: 1 } : {}) : null,      // 第4.201版：tok＝トークンで 勝った（神様馬／幻の馬）

@@ -269,11 +269,11 @@ console.log('■ 6：手札の 6 を 2まい 見せると、相手の 手札を 
   const O = G('61234', '12367'); check(O.phase === 'set' && O.ev0.length === 0 && R.view(O, 0).can.six === null, '6 が 1まい では 使えない（ターンの はじめに 聞かれない）');
   const Q = G('66123', '12345'); p6(Q, 0, null); set(Q, 0, '6'); const rq = set(Q, 1, '2');
   check(names(rq) === 'set,open,clear,turn' && Q.phase === 'set' && Q.turn === 2, '6 を セットして 手札の 6 が 1まいに なったら、次の ターンは 聞かれない（効果タイムにも 6 は 出ない）');
-  // 見た カードが 場に 出ても、場の カードは うら（第4.187版：セットは ふせて 出す・どの カードを 出したかは 手札の 見え方でも わからない）
+  // 見た カードが 場に 出ても、場の カードは うら（第4.187版：セットは ふせて 出す）・第4.203版：相手の 手札は 本当の 手札（見た 4 は 手札から 消える）
   R.act(S, 1, { t: 'set', u: tgt });
   const w0 = R.view(S, 0);
-  check(w0.op.set.k === null && w0.op.hand.length === 4 && w0.op.hand.filter(c => c.k).map(c => c.u + c.k).join() === tgt + '4' && w0.op.hand.filter(c => c.k === null).every(c => S.p[1].hand.some(h => h.u === c.u)),
-    '第4.187版：見た カードを 相手が セットした → 場の カードは うら・見た 4 は 手札に ある ように 見える（うらの カードは いま 手札に ある カード）');
+  check(w0.op.set.k === null && w0.op.hand.length === 4 && w0.op.hand.filter(c => c.k).length === 0 && w0.op.hand.map(c => c.u).join() === S.p[1].hand.map(c => c.u).join(),
+    '第4.203版：見た カード（4）を 相手が セットした → 場の カードは うら・見た 4 は 相手の 手札から 消える（見えて いる 手札 ＝ 本当の 手札）');
   set(S, 0, '1');
   check(S.phase === 'eff' && S.step === 'u4' && R.view(S, 1).can.eff.e4 === true && R.view(S, 0).can.eff === null, '（相手は 4 を セット：効果タイムは 4 だけ・6 は 出ない）');
   eff(S, 1, null);
@@ -408,8 +408,8 @@ console.log('■ 3：手札に 3 が 3まい → 3まいを 見せて、その 1
   check(R.view(P3, 0).can.x3 === false && R.view(P3, 0).can.x3p.length === 0 && R.legal(P3, 0).join() === 'set', '相手の 手札が ぜんぶ もう 見た カード（うらが ない）→ 3 の 効果は 使えない（聞かれない）');
   const P4 = mk(); P4.p[0].known.push(P4.p[1].hand.find(c => c.k === '4').u); set(P4, 1, '4');      // 相手が 見た カード（4）を ふせて セット → 見え方は セットする 前の 手札から うらを 1まい へらした 形
   const v4 = R.view(P4, 0), pv4 = v4.can.x3p, back4 = v4.op.hand.filter(c => c.k == null).map(c => c.u);
-  check(pv4.length === 3 && pv4.join() === back4.join() && pv4.every(u => P4.p[1].hand.some(c => c.u === u)) && v4.op.hand.some(c => c.k === '4') && R.act(P4, 0, { t: 'x3', pick: pv4[2] }).ok,
-    `相手が 見た カードを ふせて セットした あとも、えらべるのは 見えて いる うらの カード（${pv4.length}まい：中身は 相手の 手札に ある カード）`);
+  check(pv4.length === 4 && pv4.join() === back4.join() && pv4.every(u => P4.p[1].hand.some(c => c.u === u)) && !v4.op.hand.some(c => c.k === '4') && R.act(P4, 0, { t: 'x3', pick: pv4[3] }).ok,
+    `相手が 見た カード（4）を ふせて セットした あと：4 は 相手の 手札から 消えて、えらべるのは 見えて いる うらの カード（${pv4.length}まい：本当の 手札）`);
   const got = {}; for (let sd = 1; sd <= 500; sd++) { const X = mk(), q = x3(X, 0, rngOf(sd)); got[q.ev[0].take.k] = (got[q.ev[0].take.k] || 0) + 1; }
   check(Object.keys(got).sort().join('') === '4567k' && Object.values(got).every(n => n > 60 && n < 140), `うらの カードを でたらめに えらぶと 500回で 5まいの どれも 同じ ぐらい（${JSON.stringify(got)}）`);
   const C3 = G('33312', '4567k'); let cpk = 0, cbad = 0; const cg = {};
@@ -951,18 +951,18 @@ console.log('■ セットは いつも ふせて（第4.187版・まさちゃ�
 {
   // 席 1 が 7 を 4まい 見せた（のこりの 7 の 3まいは 席 0 が 知って いる）→ 7 を セットしても、ほかを セットしても、席 0 に 見える 形は 同じ
   const mk = () => { const S = G('12345', '777712', '', 3); R.act(S, 1, { t: 'x7r' }); return S; };      // 第4.190版：6 は ターンの はじめ なので、ここでは 6 を 持たない
-  const A = mk(), B = mk(), kp = v => v.op.hand.map(c => c.k).join(',');
+  const A = mk(), B = mk(), kp = v => v.op.hand.map(c => c.k).join(','), n7 = v => v.op.hand.filter(c => c.k === '7').length;
   const before = kp(R.view(A, 0));
   set(A, 1, '7'); set(B, 1, '1');
   const va = R.view(A, 0), vb = R.view(B, 0);
-  const real = (S, v) => v.op.hand.filter(c => c.k === null).every(c => S.p[1].hand.some(h => h.u === c.u && S.p[0].known.indexOf(h.u) < 0));
-  check(before === '7,7,7,,' && va.op.set.k === null && vb.op.set.k === null && kp(va) === '7,7,7,' && kp(vb) === kp(va) && va.op.hand.length === 4 && real(A, va) && real(B, vb),
-    '相手が 見た カード（7）を セットしても、ほかの カードを セットしても、場の カードは うら・手札の 見え方も 同じ（7 が 3まい ＋ うら 1まい：どれを 出したか わからない）');
+  const real = (S, v) => v.op.hand.map(c => c.u).join() === S.p[1].hand.map(c => c.u).join() && v.op.hand.every(c => (c.k === null) === (S.p[0].known.indexOf(c.u) < 0));
+  check(before === '7,7,7,,' && va.op.set.k === null && vb.op.set.k === null && n7(va) === 2 && n7(vb) === 3 && va.op.hand.length === 4 && vb.op.hand.length === 4 && real(A, va) && real(B, vb),
+    '第4.203版：場の カードは うら・相手の 手札は 本当の 手札（見た 7 を セットしたら 7 が 2まいに・ほかを セットしたら 7 は 3まいの まま）');
   check(va.op.set.up === false && R.view(A, 1).my.set.k === '7' && R.view(B, 1).my.set.k === '1', '自分の 場の カードは 自分には 何か わかる（ふせて いても）');
   const ra = set(A, 0, '3'), rb = set(B, 0, '3');
   const oa = ra.ev.find(e => e.e === 'open'), ob = rb.ev.find(e => e.e === 'open');
   check(oa.c[1].k === '7' && ob.c[1].k === '1' && kp(R.view(A, 0)).split(',').filter(k => k === '7').length === 2 && kp(R.view(B, 0)).split(',').filter(k => k === '7').length === 3,
-    'オープンしたら ほんとうの 形に もどる（7 を 出した 方は 手札の 7 が 2まい）');
+    'オープンの あとも 本当の 手札の まま（7 を 出した 方は 手札の 7 が 2まい）');
   // 第4.190版：6 の 効果は ターンの はじめ（だれも セットして いない）＝ 見える 手札は ほんとうの 手札・6 を 決める まで 7 の 4まい 公開も まだ
   const H = G('66345', '777712', '', 3);
   check(H.phase === 'six' && R.view(H, 0).op.hand.map(c => c.u).join() === H.p[1].hand.map(c => c.u).join() && R.view(H, 1).can.x7r === false && R.act(H, 1, { t: 'x7r' }).why === 'x7r', '6 の 効果を えらぶ ときは、相手の 手札は ほんとうの 手札（セットは まだ）・相手の 7 の 4まい 公開は その あと');
@@ -971,7 +971,7 @@ console.log('■ セットは いつも ふせて（第4.187版・まさちゃ�
   // ぜんぶ 見た 手札でも 同じ
   const mk2 = () => { const S = G('12345', '77771', '', 3); R.act(S, 1, { t: 'x7r' }); S.p[0].known.push(U(S, 1, '1')); return S; };
   const C2 = mk2(), D2 = mk2(); set(C2, 1, '1'); set(D2, 1, '7');
-  check(kp(R.view(C2, 0)) === '7,7,7' && kp(R.view(D2, 0)) === '7,7,7' && R.view(C2, 0).op.set.k === null && R.view(D2, 0).op.set.k === null, '相手の 手札を ぜんぶ 知って いても、どれを セットしたかは わからない（見え方は 同じ）');
+  check(kp(R.view(C2, 0)) === '7,7,7' && kp(R.view(D2, 0)).split(',').sort().join() === '1,7,7' && R.view(C2, 0).op.set.k === null && R.view(D2, 0).op.set.k === null, '第4.203版：相手の 手札を ぜんぶ 知って いる とき：セットした カードが 手札から 消える（1 を 出した → 7・7・7／7 を 出した → 7・7・1：前は どちらも 7・7・7 に 見えて、出して いない カードが 消えて いた）');
   // 4 の 効果で 見せたら 表・5 の 効果で 山札から 来た カードは だれにも うら
   const F = G('41235', '12345'); set(F, 0, '4'); set(F, 1, '5');
   check(R.view(F, 1).op.set.k === null && R.view(F, 0).op.set.k === null, '4 も 5 も ふせて セット（相手には うら）');

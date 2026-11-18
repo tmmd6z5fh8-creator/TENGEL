@@ -10,6 +10,7 @@
 //   第4.188版：PROTO 9（効果の 順 6 → 7 → 3 → 5 → 4）・部屋で 4 は いちばん あと：ゲストの 5 の 効果で 山札から ふせた カードを、ホストの 4 で 交換
 //   第4.190版：PROTO 10（6 は ターンの はじめ・効果タイムは 1つずつ）・1ターン目の はじめの 6 は 配った 知らせと いっしょ（deal,sixt）
 //   第4.202版：PROTO 13（7 の 3まい 交換・3 は セットの 前・決着したら 試合終了）
+//   第4.203版：相手の 手札は いつも 本当の 手札（見た カードを セットしたら 手札から 消える：ホストが 作る 見え方。ルールは 同じ ＝ PROTO 13 の まま）
 //   第4.197版：PROTO 11（決戦宝石）・部屋を 作る 人が「決戦宝石 あり」→ あいさつで ゲストへ → 参加 → 2人とも 5つ（まさちゃん 20:21「お友達バトルは1試合で5個使える！」）・おたがいに 見える
 global.CBRules = require('./cb/cb_rules.js'); global.CBCpu = require('./cb/cb_cpu.js');
 const R = global.CBRules, C = global.CBCpu, N = require('./cb/cb_net.js');
@@ -167,8 +168,8 @@ async function playOut(pairs, rng, guard) {
     const n0 = w.log.length;
     await H.act({ t: 'set', u: hs.view.my.hand.find(c => c.k === '7').u }); await tick(); await tick();
     const sent = w.log.slice(n0).filter(x => x[0] === 'h').map(x => JSON.parse(x[1])).filter(o => o.t === 'up');
-    check(sent.length === 1 && gs.view.op.set && gs.view.op.set.k === null && sent[0].view.op.set.k === null && gs.view.op.hand.map(c => c.k).join(',') === '7,7,7' && hs.view.my.set.k === '7',
-      'ホストが 7 を セット：ゲストの 画面では 場の カードは うら・手札は 7 が 3まいの まま 見える（どれを 出したか わからない）');
+    check(sent.length === 1 && gs.view.op.set && gs.view.op.set.k === null && sent[0].view.op.set.k === null && gs.view.op.hand.map(c => c.k).join(',') === '7,7,' && hs.view.my.set.k === '7',
+      'ホストが 7 を セット：ゲストの 画面では 場の カードは うら・手札は 本当の 手札（見た 7 が 1まい へる：第4.203版）');
     await G.act({ t: 'set', u: gs.view.my.hand.find(c => c.k === '1').u }); await tick(); await tick();
     const op = gs.ups[gs.ups.length - 1].ev.find(e => e.e === 'open');
     check(op && op.op.k === '7' && op.my.k === '1' && op.res === 'lose' && gs.view.op.hand.map(c => c.k).join(',') === '7,7,', 'オープン：逆転ちゅうの 7 が 1 に 勝つ・その あと ゲストの 画面の 手札は ほんとうの 形（7 が 2まい）');
