@@ -120,12 +120,13 @@ CBPY='
 # 第4.179版：メニューに バトルコインの 行（はじめ 0枚）・コンピュータに 勝ったら 1枚
 # 第4.188版：コンピュータに 勝ったら 2枚（1連勝目）・ログインボーナスの バトルコイン（はじめの 日 2枚）を 受け取って いれば その ぶんも（開いた とき：gift0・さいご：state.gifts）
 # 第4.185版：設定は BGM・効果音 だけ（エフェクトは なくした）・プレイボードは いつもの 絵（cb_board.webp）
+# 第4.196版：メニューに「⚔️ 決戦調査」（ボタンは 9こ：戻る・コンピュータと 対戦・決戦調査・部屋を 作る・部屋に 入る・遊び方・設定・ミッション・デザインカスタム）
 import json, sys
 o = json.load(open(sys.argv[1])).get("cb") or {}
 rm = o.get("room") or {}; rb = o.get("roomBad") or {}; st = o.get("start") or {}; au = o.get("auto") or {}; s = o.get("state") or {}
 fd = o.get("fd") or []
 ok = (o.get("fab") or [])[:4] == ["tcFab", "oshiFab", "cbFab", "figFab"] and (o.get("col") is True or o.get("g2") is True) and len(fd) == 4 and len(set(fd)) == 1 and 36 <= fd[0] <= 66 and o.get("clear") is True and o.get("api") == "object" and rm.get("ok") is True and rm.get("state") == "idle" and rb.get("ok") is False and rb.get("why") == "room" \
-     and o.get("open") is True and len(o.get("menu") or []) == 8 and o.get("roomBtn") == [True, True] and st.get("hand") == 7 and st.get("op") in (6, 7) and st.get("deck") == 16 and st.get("turn") == 1 and st.get("turns") == 5 and au.get("ended") is True \
+     and o.get("open") is True and len(o.get("menu") or []) == 9 and o.get("roomBtn") == [True, True] and st.get("hand") == 7 and st.get("op") in (6, 7) and st.get("deck") == 16 and st.get("turn") == 1 and st.get("turns") == 5 and au.get("ended") is True \
      and o.get("res") in ("win", "lose", "draw") and (o.get("discard") or 0) >= 10 and bool(o.get("gift")) and (s.get("win", 0) + s.get("lose", 0) + s.get("draw", 0)) == 1 and o.get("closed") is True \
      and (o.get("res") != "win" or o.get("tokens") == 6) and ("バトルコイン %d" % (2 * (o.get("gift0") or 0))) in (o.get("coinl") or "") and o.get("coin0") == 2 * (o.get("gift0") or 0) \
      and s.get("coin") == (2 if o.get("res") == "win" else 0) + 2 * len(s.get("gifts") or []) and len(s.get("gifts") or []) <= 1

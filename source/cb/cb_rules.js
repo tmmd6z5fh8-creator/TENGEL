@@ -107,6 +107,7 @@
 //
 //   部品：
 //     CBRules.newGame(rng, opt) → S（対戦の 中身 ぜんぶ：ホスト だけが 持つ）   opt.hands＝[[手札],[手札]]・opt.deck＝[上から …]・opt.turns＝ターンの 数（どれも テスト用：ふだんは 7まい・5ターン）
+//                                 opt.rig＝[[席 0 に かならず 入る カード],[席 1 に …]]（第4.196版：決戦調査の 敵の「確定カード」。のこりは くじ）
 //     CBRules.act(S, i, a)      → { ok, why, ev }：プレイヤー i（0／1）の 手 a を S に 入れる（ev＝おきた こと）
 //        a＝{ t:'set', u } ／ { t:'eff', use:{ u5:捨てる カード, x7:true, x3:true, u4:true }（第4.190版：いまの 効果（S.step）の 1つ だけ。使わない＝{}）} ／ { t:'p6', pick:u|null }（第4.190版：セットの 前）／ { t:'swap', u } ／
 //           { t:'k', pick:u|null } ／ { t:'m', drop:[u,u]|null } ／ { t:'rev', use:true|false }（逆転勝利）／ { t:'u5', drop:u|null }（交換で 出した 5 の 効果：第4.183版）／
@@ -146,6 +147,16 @@ const CBRules = (() => {
       // 山札は 配列の 後ろが 上（pop で 引く）：dk は「上から」の 順
       for (let i = 0; i < 2; i++) S.p[i].hand = hs[i].map(k => ({ u: ++S.uid, k }));
       S.deck = dk.slice().reverse().map(k => ({ u: ++S.uid, k }));
+    } else if (opt.rig) {
+      // 第4.196版：決戦調査の「かならず 入る カード」（opt.rig＝[[席 0 の カード], [席 1 の カード]]：その カードを かならず 手札に 入れて、のこりは いつもどおり くじで 配る）。
+      //   手札の ならびも くじ・番号（u）も くじ（どれが かならず 入った カードか、番号の 順では わからない）
+      const must = [0, 1].map(i => (Array.isArray(opt.rig[i]) ? opt.rig[i] : []).slice(0, HAND).map(take));
+      const dk = shuffle(rest, rng), hk = [must[0].slice(), must[1].slice()];
+      for (let n = 0; n < HAND; n++) for (let i = 0; i < 2; i++) if (hk[i].length < HAND) hk[i].push(dk.pop());
+      hk.forEach(h => shuffle(h, rng));
+      const all = hk[0].length + hk[1].length + dk.length, ids = shuffle(Array.from({ length: all }, (_, j) => j + 1), rng); let q = 0;
+      for (let i = 0; i < 2; i++) S.p[i].hand = hk[i].map(k => ({ u: ids[q++], k }));
+      S.deck = dk.map(k => ({ u: ids[q++], k })); S.uid = all;
     } else {
       S.deck = shuffle(rest, rng).map(k => ({ u: ++S.uid, k }));
       for (let n = 0; n < HAND; n++) for (let i = 0; i < 2; i++) S.p[i].hand.push(S.deck.pop());      // 1まい ずつ 交互に 配る

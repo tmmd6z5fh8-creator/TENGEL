@@ -272,8 +272,8 @@ try:
         print('■ メニュー・遊び方')
         open_cb(pg)
         m = pg.evaluate("() => ({ scr: CBApp._t.screen, h1: document.querySelector('#cbOv .cbmenu h1').textContent, rec: document.querySelector('#cbOv .cbmenu .rec').textContent, btn: [...document.querySelectorAll('#cbOv .cbmenu .cbb')].map(b => b.textContent.replace(/\\s+/g, ' ').trim()), dis: [...document.querySelectorAll('#cbOv .cbmenu .cbb')].map(b => b.disabled), lg: document.querySelector('#cbOv .cbmenu .lg').naturalWidth })")
-        check(m['scr'] == 'menu' and m['h1'].replace('\n', '').replace(' ', '') == 'TENGERカードバトル' and m['btn'] == ['← 戻る', 'コンピュータと 対戦', '部屋を 作る友達と 対戦', '部屋に 入る友達と 対戦', '遊び方', '設定BGM・効果音', '🎯ミッション今月 0／14 達成', 'デザインカスタムカードパック・裏・ボード'] and not any(m['dis']),
-              f'メニュー：コンピュータと 対戦・部屋を 作る・部屋に 入る・遊び方・設定（第4.178版）・ミッション（第4.183版）・デザインカスタム（第4.182版）（{m["btn"]}）')
+        check(m['scr'] == 'menu' and m['h1'].replace('\n', '').replace(' ', '') == 'TENGERカードバトル' and m['btn'] == ['← 戻る', 'コンピュータと 対戦', '⚔️ 決戦調査今月 0／12 討伐・次は レベル1', '部屋を 作る友達と 対戦', '部屋に 入る友達と 対戦', '遊び方', '設定BGM・効果音', '🎯ミッション今月 0／14 達成', 'デザインカスタムカードパック・裏・ボード'] and not any(m['dis']),
+              f'メニュー：コンピュータと 対戦・⚔️ 決戦調査（第4.196版）・部屋を 作る・部屋に 入る・遊び方・設定（第4.178版）・ミッション（第4.183版）・デザインカスタム（第4.182版）（{m["btn"]}）')
         check(m['rec'] == '勝つと お世話トークン 1個・5連勝 ごとに 3個' and (not HAVE or m['lg'] == 720), f'ご褒美の 説明（{m["rec"]}）')
         cl = pg.evaluate("() => { const e = document.querySelector('#cbOv .cbmenu .cbcoinl'); return e ? [e.textContent, e.querySelectorAll('img[src=\"cb_coin.webp\"]').length] : null; }")
         check(cl == ['バトルコイン 0枚コンピュータに 勝つと 2枚（3連勝 ＋6枚・5連勝 ＋10枚）毎日の ログインボーナスで 2枚（7日目 ＋10枚）', 1], f'メニューに バトルコイン（第4.179版：コインの 絵・持って いる 数・もらい方 → 第4.188版：勝つと 2枚・3連勝 ＋6・5連勝 ＋10・ログインボーナス）（{cl}）')

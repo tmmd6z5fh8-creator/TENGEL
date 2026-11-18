@@ -74,6 +74,7 @@ const CBNet = (() => {
       push([{ e: 'deal' }].concat(ev0));
     };
     m.act = a => Promise.resolve(apply(0, a));
+    m.setOpt = o => { opt = o; };                     // 第4.196版：次に 配る ときの 決まり（決戦調査：戦ごとの 敵の 確定カード opt.rig）
     m.idle = () => { if (seat && seat.idle) seat.idle(); };
     m.again = () => {                                   // もう 1回：2人とも 押したら 配り直す（コンピュータは いつでも OK）
       if (!alive || !S || S.phase !== 'end') return;

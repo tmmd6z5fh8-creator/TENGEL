@@ -348,6 +348,24 @@ async function playOut(pairs, rng, guard) {
     const r = await M.act({ t: 'set', u: s.view.my.hand[0].u });
     check(r.ok === false && !s.view.op.set, 'やめた あとは コンピュータも 動かない・手も 通らない');
   }
+  console.log('■ 第4.196版：決戦調査（戦ごとに 決まりを かえて 配り直す：m.setOpt → もう 1回）');
+  {
+    const M = N.cpu(rngOf(11), () => 0, { rig: [[], []] }), s = seat(M);
+    M.start(); await tick();
+    const st = () => M._.state();
+    const h0 = st().p[1].hand.map(c => c.k);
+    M.setOpt({ rig: [[], ['1', '1', '1']] });
+    for (let i = 0; i < 400 && s.view.phase !== 'end'; i++) {
+      const v = s.view, a = v.can.set ? { t: 'set', u: v.my.hand[0].u } : v.can.six ? { t: 'p6', pick: null } : v.can.eff ? { t: 'eff', use: {} } : v.pend && v.pend.mine && v.pend.type === 'k' ? { t: 'k', pick: null } : v.pend && v.pend.mine && v.pend.type === 'm' ? { t: 'm', drop: null } : v.pend && v.pend.mine && v.pend.type === 'swap' ? { t: 'swap', u: v.my.hand[0].u } : v.pend && v.pend.mine && v.pend.type === 'rev' ? { t: 'rev', use: false } : v.pend && v.pend.mine && v.pend.type === 'u5' ? { t: 'u5', drop: null } : null;
+      if (a) await M.act(a);
+      M.idle(); await sleep(4);
+    }
+    check(s.view.phase === 'end', '1戦目は さいごまで（決まりを かえても いまの 戦は そのまま）');
+    M.again(); await tick();
+    const h1 = st().p[1].hand.map(c => c.k);
+    check(h1.filter(k => k === '1').length >= 3 && s.view.turn === 1 && s.view.my.hand.length === 7, `2戦目は 新しい 決まりで 配る（敵の 手札に 1 が 3まい 以上：${h1.join('')}・1戦目 ${h0.join('')}）`);
+    M.leave();
+  }
   console.log('結果：', fails.length ? fails.length + '件おかしい' : 'OK');
   process.exit(fails.length ? 1 : 0);
 })();

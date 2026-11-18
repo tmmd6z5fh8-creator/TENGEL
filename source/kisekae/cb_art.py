@@ -51,11 +51,15 @@
 #       cb_board.webp は、もとの 絵（cb_board.png：そのまま のこす）の **光の 色 だけ** を かえて 作る（下の night）：形・もよう・字は 1画素も 動かさない。
 #       ・ぜんたいを 夜の 暗さ・青みへ ／ 光って いる 所（床に 差しこむ 光・金の ふちの てり）の 色を、左上から 月あかり（青白）・右下から 火の あかり（だいだい）に 入れかえる ／
 #         緑の フェルト・緑の 馬と 葉は ほぼ そのまま（あそぶ 所が 見にくく ならない ように）
+#   第4.196版（まさちゃん 2026/11/18 15:09「テンゲルカードバトルにクエストを追加する 名前:決戦調査」と 絵 26まい）：決戦調査の マップ・フィールド 12・敵 12・HP ゲージ（cb_q_*.webp）は
+#     kisekae/cb_quest_art.py が 作る（plan() の さいご）。敵の 絵・ゲージの 左は もとが いくつか ある（もとの 名前が tuple：台帳の src も その list）
 #   台帳 cb_art.json：{ v, p（決めごと：大きさ・夜の 色の 数字）, files: { 名前: { src: [もとの 名前, 大きさ, sha1], size } } }（アプリには 入れない）
 import hashlib, json, os, sys
 import numpy as np
 from PIL import Image, ImageDraw
 H = os.path.dirname(os.path.abspath(__file__)); W = os.path.dirname(H)
+sys.path.insert(0, H)
+import cb_quest_art as _cbq      # 第4.196版：決戦調査の 絵
 SRC = os.path.join(W, 'ios', 'cb_assets', 'src'); OUT = os.path.join(W, 'ios', 'cb_assets')
 V = 1
 CARDS = [('1', 'cb_1_v2.png'), ('2', 'cb_2_v2.png'), ('3', 'cb_3_v2.png'), ('4', 'cb_4.png'), ('5', 'cb_5_v2.png'), ('6', 'cb_6.png'), ('7', 'cb_7_v2.png'), ('k', 'cb_k.png'), ('m', 'cb_m.png'), ('b', 'cb_back.png')]
@@ -80,6 +84,17 @@ NIGHT = dict(lit0=0.06, lit1=0.40, mx=0.0, my=-0.08, mrx=1.0, mry=1.3, fx=1.03, 
 
 def sha(p):
     return hashlib.sha1(open(p, 'rb').read()).hexdigest()
+
+
+def srcs(src):
+    """もとの 名前（1つ・いくつか〈tuple：第4.196版の 決戦調査〉）→ list"""
+    return list(src) if isinstance(src, tuple) else [src]
+
+
+def sig(src):
+    """台帳に 書く もとの しるし：1つ ＝ [名前, 大きさ, sha1]（前と 同じ）・いくつか ＝ その list"""
+    one = lambda x: [x, os.path.getsize(os.path.join(SRC, x)), sha(os.path.join(SRC, x))]
+    return [one(x) for x in src] if isinstance(src, tuple) else one(src)
 
 
 def bbox(al, th=128):
@@ -237,12 +252,13 @@ def plan():
     for did, src in BOARDS:
         jobs.append((f'cb_bd_{did}.webp', src, plain(BD)))
         jobs.append((f'cb_bd_{did}_s.webp', src, plain(BD_S)))
+    jobs += _cbq.jobs()                                         # 第4.196版：決戦調査（マップ・フィールド・敵・HP ゲージ：kisekae/cb_quest_art.py。もとが いくつか ある 絵は もとの 名前が tuple）
     return jobs
 
 
 def PARAMS():
     """決めごと（台帳に 書く：かわったら 作り直す）"""
-    return json.loads(json.dumps([list(BASE), INSET, RADIUS, list(BIG), list(SMALL), Q, NIGHT, [list(c) for c in DECK_FACE], [list(BD), list(BD_S)], [list(PACK_BOX), list(PACK_SIZE)]]))      # 第4.185版：プレイボードの 大きさ・第4.189版：パックの 絵
+    return json.loads(json.dumps([list(BASE), INSET, RADIUS, list(BIG), list(SMALL), Q, NIGHT, [list(c) for c in DECK_FACE], [list(BD), list(BD_S)], [list(PACK_BOX), list(PACK_SIZE)], _cbq.PARAMS()]))      # 第4.185版：プレイボードの 大きさ・第4.189版：パックの 絵
 
 
 def files():
@@ -261,11 +277,11 @@ def stale():
     if man.get('v') != V or man.get('p') != PARAMS():
         return '決めごとが かわった'
     for name, src, _f in plan():
-        e = man['files'].get(name); sp = os.path.join(SRC, src); op = os.path.join(OUT, name)
+        e = man['files'].get(name); op = os.path.join(OUT, name)
         if not e or not os.path.isfile(op) or os.path.getsize(op) != e['size']:
             return 'ない・大きさが ちがう：' + name
-        if not os.path.isfile(sp) or e['src'] != [src, os.path.getsize(sp), sha(sp)]:
-            return 'もとが かわった：' + src
+        if not all(os.path.isfile(os.path.join(SRC, x)) for x in srcs(src)) or e['src'] != sig(src):
+            return 'もとが かわった：' + '・'.join(srcs(src))
     return ''
 
 
@@ -277,9 +293,9 @@ def main():
         _o, sz, thin = card(os.path.join(SRC, src))
         print(f'  カード {cid}：もとの 絵の 大きさ {sz[0]}×{sz[1]}（たて横 {sz[0] / sz[1]:.4f}）→ {BASE[0]}×{BASE[1]}・マスクの 中で もとが うすかった 点 {thin}')
     for name, src, fn in plan():
-        sp = os.path.join(SRC, src); n = fn(sp, os.path.join(OUT, name)); tot += n
-        man['files'][name] = {'src': [src, os.path.getsize(sp), sha(sp)], 'size': n}
-        print(f'  {name}  {n / 1000:.1f}KB')
+        sp = tuple(os.path.join(SRC, x) for x in src) if isinstance(src, tuple) else os.path.join(SRC, src); n = fn(sp, os.path.join(OUT, name)); tot += n
+        man['files'][name] = {'src': sig(src), 'size': n}
+        print(f'  {name}  {n / 1000:.1f}KB', flush=True)
     json.dump(man, open(os.path.join(OUT, INFO), 'w', encoding='utf8'), ensure_ascii=False, indent=1)
     print(f'できた：{len(man["files"])}こ・{tot / 1e6:.2f}MB → {OUT}')
 

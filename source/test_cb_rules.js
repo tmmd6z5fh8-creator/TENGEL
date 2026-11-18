@@ -1171,5 +1171,32 @@ console.log('■ コンピュータ（見えて いる こと だけで 決め�
   const S14 = G('66123', '66345'); R.act(S14, 0, C.decide(R.view(S14, 0), rngOf(1)));
   check(S14.phase === 'six' && C.decide(R.view(S14, 0), rngOf(1)) === null && C.decide(R.view(S14, 1), rngOf(1)).t === 'p6', '第4.190版：ターンの はじめの 6 も 同じ（決めた あとは 待つ）');
 }
+console.log('■ 第4.196版：決戦調査の 確定カード（opt.rig：敵の 手札に かならず 入る カード・のこりは くじ）');
+{
+  const RIGS = [['1'], ['1', '1'], ['2', '2'], ['2', '2', '2'], ['1', '1', '1'], ['1', 'k']];
+  let ok = 0, bad = '', firsts = {}, pos = {};
+  for (const rig of RIGS) for (let s = 1; s <= 400; s++) {
+    const S = R.newGame(rngOf(1000 * rig.length + s), { rig: [[], rig] }), h = S.p[1].hand.map(c => c.k), need = {};
+    rig.forEach(k => { need[k] = (need[k] || 0) + 1; });
+    const good = Object.keys(need).every(k => h.filter(x => x === k).length >= need[k]) && S.p[0].hand.length === R.HAND && S.p[1].hand.length === R.HAND && S.deck.length === 30 - 2 * R.HAND && sane(S) && S.uid === 30 && (S.phase === 'set' || S.phase === 'six');
+    if (good) ok++; else bad = bad || JSON.stringify([rig, h]);
+    const k0 = S.p[1].hand[0].k; firsts[k0] = (firsts[k0] || 0) + 1;      // 手札の 1まい目（くじで ならべる）
+    const iu = S.p[1].hand.findIndex(c => c.k === rig[0]); pos[iu] = (pos[iu] || 0) + 1;
+  }
+  check(ok === RIGS.length * 400, `確定カードが かならず 敵の 手札に（${ok}／${RIGS.length * 400}・カードは 30まいの まま・番号 1〜30）${bad}`);
+  check(Object.keys(pos).length === R.HAND, `確定カードの 手札の 場所は くじ（7か所 ぜんぶ 出る：${JSON.stringify(pos)}）`);
+  // 番号（u）の 順で 確定カードが わからない（番号の いちばん 小さい カードが 確定カード とは かぎらない）
+  let low = 0; for (let s = 1; s <= 400; s++) { const S = R.newGame(rngOf(5000 + s), { rig: [[], ['1']] }), a = S.p[1].hand.slice().sort((x, y) => x.u - y.u); if (a[0].k === '1') low++; }
+  check(low < 200, `番号の 順でも わからない（いちばん 小さい 番号が 1 だった：${low}／400）`);
+  // あなた（席 0）は いつもの くじ：400回で 1 の まい数の 平均が ふつうと 同じ くらい
+  let my1 = 0, base1 = 0; for (let s = 1; s <= 400; s++) { my1 += R.newGame(rngOf(9000 + s), { rig: [[], ['1', '1', '1']] }).p[0].hand.filter(c => c.k === '1').length; base1 += R.newGame(rngOf(9000 + s)).p[0].hand.filter(c => c.k === '1').length; }
+  check(my1 / 400 < 0.25 && base1 / 400 > 0.7, `敵に 1 が 3まい 入る ときは、あなたの 1 は のこりの 1まい だけ（平均 ${(my1 / 400).toFixed(2)}まい・ふつうは ${(base1 / 400).toFixed(2)}まい）`);
+  let threw = false; try { R.newGame(rngOf(1), { rig: [[], ['k', 'k']] }); } catch (e) { threw = true; }
+  check(threw, '1まいしか ない カード（神様馬）を 2まい 入れる ことは できない');
+  // 配った あとは ふつうの 対戦（コンピュータが 1ターン 進められる）
+  const S = R.newGame(rngOf(77), { rig: [[], ['1', 'k']] }); no6(S);
+  const a1 = C.decide(R.view(S, 1), rngOf(2)), r1 = a1 && R.act(S, 1, a1, rngOf(3));
+  check(!!(r1 && r1.ok), '確定カードの 対戦も いつもどおり 進む（コンピュータが セットできる）');
+}
 console.log('結果：', fails.length ? fails.length + '件おかしい' : 'OK');
 process.exit(fails.length ? 1 : 0);

@@ -12,16 +12,18 @@ from scipy.signal import butter, sosfilt
 H = os.path.dirname(os.path.abspath(__file__)); W = os.path.dirname(H)
 OUT = os.path.join(W, 'ios', 'cb_assets')
 SR = 44100
-NAMES = ['deal', 'set', 'flip', 'win', 'lose', 'even', 'magic', 'tap', 'fanfare', 'over', 'join']
-PEAK = {'deal': 0.26, 'set': 0.30, 'flip': 0.27, 'win': 0.33, 'lose': 0.30, 'even': 0.30, 'magic': 0.27, 'tap': 0.16, 'fanfare': 0.40, 'over': 0.34, 'join': 0.30}
+NAMES = ['deal', 'set', 'flip', 'win', 'lose', 'even', 'magic', 'tap', 'fanfare', 'over', 'join', 'appear', 'hit', 'qwin1', 'qwin2', 'qwin3', 'coin', 'unlock']      # 第4.196版：決戦調査（うしろに たした：前の 音の くじは かわらない）
+PEAK = {'deal': 0.26, 'set': 0.30, 'flip': 0.27, 'win': 0.33, 'lose': 0.30, 'even': 0.30, 'magic': 0.27, 'tap': 0.16, 'fanfare': 0.40, 'over': 0.34, 'join': 0.30,
+        'appear': 0.42, 'hit': 0.36, 'qwin1': 0.40, 'qwin2': 0.42, 'qwin3': 0.44, 'coin': 0.28, 'unlock': 0.30}
 
 
 BGM = 'cb_bgm.m4a'           # BGM（第4.178版：kisekae/cb_bgm.py が 作る。ここでは 名前 だけ）
+QBGM = 'cb_qbgm.m4a'         # 第4.196版：決戦調査の BGM（kisekae/cb_qbgm.py が 作る）
 
 
 def files():
-    """アプリに 入れる 音の 名前（build_ios.py・テストが 使う）：効果音 11こ ＋ BGM 1こ"""
-    return [f'cb_se_{n}.m4a' for n in NAMES] + [BGM]
+    """アプリに 入れる 音の 名前（build_ios.py・テストが 使う）：効果音 18こ（第4.196版：決戦調査の 7こ を たした）＋ BGM 2こ（いつもの・決戦調査）"""
+    return [f'cb_se_{n}.m4a' for n in NAMES] + [BGM, QBGM]
 
 
 def t_(sec):
@@ -164,6 +166,115 @@ def snd_join(rng):
     y = np.zeros(int(0.75 * SR))
     put(y, bell(1318.5, 0.5, decay=0.6), 0.0)                        # ミ
     put(y, bell(1046.5, 0.6, decay=0.7), 0.16)                       # ド（ピン ポン）
+    return y
+
+
+# ---------------- 第4.196版：決戦調査 ----------------
+#   appear（敵 出現：うしろへ すいこむ 風 → ドーン ＋ 暗い 金管の 和音 ＋ きらめき）・hit（ダメージ：ドスッ ＋ ガキン）・
+#   qwin1〜3（討伐の ファンファーレ：レベル 1〜5・6〜9・10〜12 で だんだん 大きく）・coin（コインが ジャラッ）・unlock（エリアが 開く：カチャッ ＋ 上がる 鈴）
+def timp(f, sec, drop=0.08):
+    """ティンパニの ような 音（少し 音が 下がる・低い ひびき）"""
+    t = t_(sec); ff = f * (1 + drop * np.exp(-t * 18)); ph = 2 * np.pi * np.cumsum(ff) / SR
+    y = np.sin(ph) + 0.5 * np.sin(1.505 * ph) * np.exp(-t * 6) + 0.25 * np.sin(1.98 * ph) * np.exp(-t * 9)
+    return y * np.minimum(1, t / 0.004) * np.exp(-t * 3.2)
+
+
+def cymbal(rng, sec, dark=9000):
+    """シンバル（高い 雑音が 長く のこる）"""
+    n = int(sec * SR); x = rng.standard_normal(n)
+    x = band(x, 3000, dark, 2) + 0.4 * band(x, 6500, 12000, 2)
+    return x * env(n, 0.006, sec * 0.55, 3.2)
+
+
+def boom(f0, f1, sec):
+    """ドーン（低い 音が 下がる）"""
+    t = t_(sec); ff = f1 + (f0 - f1) * np.exp(-t * 7); ph = 2 * np.pi * np.cumsum(ff) / SR
+    return np.sin(ph) * np.minimum(1, t / 0.005) * np.exp(-t * 2.4)
+
+
+def snd_appear(rng):
+    y = np.zeros(int(2.3 * SR)); n = int(0.5 * SR)
+    sw = rng.standard_normal(n); r = np.linspace(0, 1, n) ** 2.2
+    sw = low(sw, 900) * r * 0.9 + band(sw, 1500, 6000) * r ** 1.6 * 0.35      # うしろへ すいこむ 風（だんだん 大きく 明るく）
+    put(y, sw, 0.0)
+    put(y, 1.6 * boom(70, 34, 1.9), 0.5)                                       # ドーン
+    put(y, 0.7 * low(rng.standard_normal(int(0.4 * SR)), 500) * env(int(0.4 * SR), 0.002, 0.18, 4), 0.5)
+    for f, g in ((73.42, 0.55), (110.0, 0.4), (146.83, 0.35), (174.61, 0.3), (220.0, 0.22)):      # 暗い 和音（レ ラ レ ファ ラ：d moll）
+        put(y, g * low(brass(f, 1.2, 0.9), 2200), 0.52)
+    for i, f in enumerate((1760.0, 2217.5, 2637.0, 3520.0)):                   # きらめき
+        put(y, 0.12 * bell(f, 0.9, parts=((1, 1.0), (2.01, 0.25)), decay=0.8), 0.62 + i * 0.09)
+    return low(y, 9000)
+
+
+def snd_hit(rng):
+    y = np.zeros(int(0.8 * SR))
+    put(y, 1.3 * boom(110, 48, 0.5), 0.0)                                      # ドスッ
+    nz = rng.standard_normal(int(0.2 * SR)); put(y, 0.8 * band(nz, 250, 3500) * env(len(nz), 0.001, 0.07, 5), 0.0)
+    clang = bell(880, 0.6, parts=((1, 1.0), (2.76, 0.6), (5.4, 0.35), (8.9, 0.2)), decay=0.35)      # ガキン（金物）
+    put(y, 0.42 * clang, 0.012)
+    return low(y, 8000)
+
+
+def fanfare(seq, chord_at, chord, sec, bright=1.2):
+    y = np.zeros(int(sec * SR))
+    for f, at, d in seq:
+        put(y, brass(f, d + 0.06, bright), at); put(y, 0.45 * brass(f / 2, d + 0.06, 0.8), at)
+    for f in chord: put(y, 0.5 * brass(f, sec - chord_at - 0.1, 1.0), chord_at)
+    return y
+
+
+def snd_qwin1(rng):
+    seq = ((392.0, 0.0, 0.12), (392.0, 0.14, 0.12), (392.0, 0.28, 0.12), (523.25, 0.42, 0.62))      # ソ ソ ソ ドー
+    y = fanfare(seq, 0.42, (659.25, 783.99), 1.5)
+    for i in range(4): put(y, 0.5 * timp(98.0, 0.5), i * 0.07)                # ティンパニの 連打
+    put(y, 0.9 * timp(130.81, 1.0), 0.42)
+    for i, f in enumerate((2093.0, 2637.0, 3136.0)):
+        put(y, 0.18 * bell(f, 0.5, parts=((1, 1.0), (2.0, 0.2)), decay=0.4), 0.5 + i * 0.07)
+    return low(y, 7500)
+
+
+def snd_qwin2(rng):
+    seq = ((523.25, 0.0, 0.12), (523.25, 0.14, 0.12), (523.25, 0.28, 0.12), (392.0, 0.42, 0.24), (523.25, 0.7, 0.12), (659.25, 0.84, 0.12), (783.99, 0.98, 0.14), (1046.5, 1.14, 1.0))
+    y = fanfare(seq, 1.14, (659.25, 783.99, 523.25), 2.5)
+    for i in range(6): put(y, 0.45 * timp(98.0, 0.4), 0.98 - 0.45 + i * 0.07)
+    put(y, 1.0 * timp(130.81, 1.2), 1.14)
+    put(y, 0.35 * cymbal(rng, 1.3), 1.14)
+    for i, f in enumerate((2093.0, 2637.0, 3136.0, 4186.0)):
+        put(y, 0.2 * bell(f, 0.6, parts=((1, 1.0), (2.0, 0.2)), decay=0.5), 1.2 + i * 0.07)
+    return low(y, 8000)
+
+
+def snd_qwin3(rng):
+    y = np.zeros(int(3.6 * SR))
+    for i in range(12): put(y, (0.25 + 0.5 * i / 11) * timp(98.0, 0.35), i * 0.06)      # ティンパニの ロール（だんだん 大きく）
+    chords = (((261.63, 329.63, 392.0), 0.72, 0.36), ((349.23, 440.0, 523.25), 1.1, 0.36), ((392.0, 493.88, 587.33), 1.48, 0.36), ((523.25, 659.25, 783.99, 1046.5), 1.86, 1.6))      # ド → ファ → ソ → ドーー（大きな 和音）
+    for ch, at, d in chords:
+        for f in ch: put(y, 0.42 * brass(f, d + 0.06, 1.25), at); put(y, 0.3 * brass(f / 2, d + 0.06, 0.8), at)
+    for at in (0.72, 1.1, 1.48): put(y, 0.8 * timp(130.81, 0.5), at)
+    put(y, 1.2 * timp(65.41, 1.6), 1.86); put(y, 0.45 * cymbal(rng, 1.7, 10000), 1.86)
+    t = t_(1.7); pad = sum(np.sin(2 * np.pi * f * t + k) for k, f in enumerate((523.25, 659.25, 783.99, 1046.5)))      # 光の 声（やわらかい 和音）
+    put(y, 0.12 * low(pad, 2500) * np.minimum(1, t / 0.35) * np.minimum(1, (1.7 - t) / 0.6), 1.86)
+    for i, f in enumerate((2093.0, 2637.0, 3136.0, 4186.0, 5274.0, 4186.0, 3136.0)):
+        put(y, 0.2 * bell(f, 0.7, parts=((1, 1.0), (2.0, 0.2)), decay=0.5), 1.95 + i * 0.08)
+    return low(y, 8500)
+
+
+def snd_coin(rng):
+    y = np.zeros(int(1.1 * SR)); at = 0.0
+    for i in range(9):                                                         # コインが ジャラッ（高い 金物が いくつも）
+        f = rng.uniform(2300, 3900); put(y, rng.uniform(0.5, 1.0) * bell(f, 0.35, parts=((1, 1.0), (2.41, 0.5), (3.9, 0.25)), decay=0.25), at)
+        at += rng.uniform(0.03, 0.09)
+    put(y, 0.6 * bell(1567.98, 0.6, parts=((1, 1.0), (2.0, 0.3), (3.0, 0.15)), decay=0.5), 0.0)      # チャリーン
+    return low(y, 9000)
+
+
+def snd_unlock(rng):
+    y = np.zeros(int(1.0 * SR))
+    for at in (0.0, 0.07):                                                     # カチャッ
+        nz = rng.standard_normal(int(0.03 * SR)); put(y, 0.7 * band(nz, 1500, 6000) * env(len(nz), 0.001, 0.012, 5), at)
+        put(y, 0.3 * bell(1200 + 400 * at * 10, 0.08, parts=((1, 1.0), (2.7, 0.4)), decay=0.08), at)
+    for i, f in enumerate((783.99, 987.77, 1174.66, 1567.98)):                # 上がる 鈴（ソ シ レ ソ）
+        put(y, 0.45 * bell(f, 0.6, decay=0.6), 0.16 + i * 0.08)
     return y
 
 
