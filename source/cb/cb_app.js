@@ -888,7 +888,6 @@ const CBApp = (() => {
 #cbOv .qnm.on{opacity:1;transform:translate(-50%,0)}
 #cbOv .qsay{position:absolute;left:12px;right:12px;bottom:calc(var(--sab,env(safe-area-inset-bottom)) + 16px);z-index:3;min-height:112px;box-sizing:border-box;padding:18px 18px 24px;border-radius:16px;background:linear-gradient(180deg,rgba(30,19,9,.9),rgba(12,8,4,.94));border:2px solid #c9a35a;box-shadow:0 0 0 1px rgba(0,0,0,.6) inset,0 8px 20px rgba(0,0,0,.55);opacity:0;transform:translateY(14px);transition:opacity .3s,transform .3s;pointer-events:none}
 #cbOv .qsay.on{opacity:1;transform:none}
-#cbOv .qsay .who{position:absolute;left:14px;top:-13px;padding:2px 12px;border-radius:12px;background:linear-gradient(180deg,#ffe9a8,#e2a83e);color:#3a2206;font-size:12.5px;font-weight:700}
 #cbOv .qsay p{margin:0;font-size:18px;line-height:1.7;font-weight:700;color:#fff6e0;word-break:keep-all;overflow-wrap:anywhere}
 #cbOv .qsay .nx{position:absolute;right:16px;bottom:7px;font-style:normal;color:#ffd27a;font-size:13px;animation:qnx 1s ease-in-out infinite}
 @keyframes qnx{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
@@ -1028,7 +1027,7 @@ const CBApp = (() => {
       + '<section class="cbs cbpk" data-s="pk"></section>'
       + '<section class="cbs cbqmap" data-s="qmap"><div class="hd"><button type="button" class="cbb dk sm" data-cb="qx">← 戻る</button><b class="gold">⚔️ 決戦調査</b><button type="button" class="cbb dk sm qtt" data-cb="qtst" aria-label="テスト版の 道具">🧪</button></div><p class="qmst"></p><div class="qmw"><div class="qmap"></div></div><p class="cbcoinl qmft"></p></section>'
       + '<section class="cbs cbqf" data-s="qf"><div class="qfw" data-cb="qtap"><div class="qfld"></div></div><button type="button" class="cbb dk sm cbx" data-cb="qback">← マップ</button>'
-      + '<div class="qtel" aria-live="polite"></div><div class="qnm"></div><div class="qsay" aria-live="polite"><span class="who">あなた</span><p></p><i class="nx" aria-hidden="true">▼</i></div><div class="qtap">▶ タップで バトル開始！</div></section>'
+      + '<div class="qtel" aria-live="polite"></div><div class="qnm"></div><div class="qsay" aria-live="polite"><p></p><i class="nx" aria-hidden="true">▼</i></div><div class="qtap">▶ タップで バトル開始！</div></section>'
       + '<div class="cbfly"></div><div class="cbban"></div><div class="cbuse" data-cb="useok" aria-live="polite"></div><div class="cbmod" role="dialog" aria-modal="true"></div><div class="cbtoast" aria-live="polite"></div>';
     document.body.appendChild(ov);
     ov.querySelectorAll('.cbs').forEach(e => { scr[e.dataset.s] = e; });
@@ -2426,7 +2425,9 @@ const CBApp = (() => {
   //   まさちゃん 2026/11/18 15:09「テンゲルカードバトルにクエストを追加する 名前:決戦調査 エリア1〜12の全体マップ作成済み 敵役レベル別1〜12のデザイン作成済み フィールドレベル別1〜12作成済み
   //   敵HPゲージ作成済み(敵HPの左隣の縦の枠に敵キャラの顔が分かる大きさで画像を入れる) 敵の名前は、全体マップのフィールド名から作成して！ BGMは、決戦調査用の闘いに合うBGMを作成して！ 1ヶ月に1回リセットされる」
   //   ・メニューの「⚔️ 決戦調査」→ マップ（エリア 1 から。勝つと 次の エリアが 開く）→ 開いて いる エリアを タップ → その 場に ふきだし「決戦調査に 行く」／「もどる」
-  //   → フィールド（下に セリフ 2〜3行：タップで 次へ）→ 上に「レベル○の 敵 出現！」「○連勝して バトルコインを ○枚 手に入れよう！」→ 少し して 敵 → タップで カードバトル（決戦調査の BGM）
+  //   → フィールド（下に セリフ：タップで 次へ）→ 上に「レベル○の 敵 出現！」「○連勝して バトルコインを ○枚 手に入れよう！」→ 少し して 敵 → タップで カードバトル（決戦調査の BGM）
+  //     第4.200版（まさちゃん 11/18 22:54）：セリフは まさちゃんの 表（1タップで 1行・レベル 1・2 は 2行・3〜11 は 3行・12 は 4行）。テロップと 敵は「何タップ目で 敵表示」の 行と いっしょに 出る
+  //       （セリフの 窓は その まま）→ さいごの 行の あと タップ → 窓が 消える → 名前 →「タップで バトル開始！」
   //   → いつもの 対戦（自分の ボード・うら・おもて）。ちがうのは 上の「ターン」の 所が 敵HP ゲージ（いる 連勝の 数で 分けて、勝つ たびに へる 動き）
   //   → 倒したら「バトルコインを GETした！」（レベル 1〜5・6〜9・10〜12 で 3段階の 勝利の 演出）→ マップ（次の エリアが 開く）。負けたら その エリアを やり直し（1戦目から）
   //   ・敵の 確定カード（QUEST の rig：{ 何戦目: [カード] }）：その 戦は 敵の 手札に かならず 入る（のこりは いつもの くじ：cb_rules.js の opt.rig）。コンピュータの 考え方は いつもと 同じ
@@ -2434,7 +2435,7 @@ const CBApp = (() => {
   //     ＝ いつもの 勝ち負け・連勝・お世話トークン・いつもの コイン（2枚・連勝の ボーナス）には 数えない。負け・とちゅうで やめる・戦の とちゅうで アプリを 閉じる ＝ ミッションの 連勝は 0
   //   ・姫が 決めた 所：毎月 1日に リセット（討伐した エリアも 最初から：ミッションと 同じ 時計の 番人の 月・進んだ ときだけ）／討伐した エリアは その 月は もう 行けない（コインを 2回 もらえない）／
   //     戦の あいだで やめる（マップへ）は 負けに 数えない（その 調査は 終わり）／戦の とちゅうで 月が かわったら その 調査は なし（コインも なし）／
-  //     敵の 名前・セリフ（フィールドの 名前と 見た目から 姫が つけた）／確定カードが ある 戦は はじめに 知らせる
+  //     敵の 名前（フィールドの 名前と 見た目から 姫が つけた。セリフは 第4.200版から まさちゃんの 表）／確定カードが ある 戦は はじめに 知らせる
   //   ・保存：st.q＝{ m：月（'YYYY-MM'）, clr：討伐した エリアの 数（次は clr＋1）}。いまの 調査（何勝したか）は 保存しない（閉じたら 終わり）。戦の とちゅうの しるしは st.ms.live＝'qc'
   //   ・絵：kisekae/cb_quest_art.py（cb_q_map・cb_q_f01〜12・cb_q_e01〜12・cb_q_hl01〜12・cb_q_hm・cb_q_hr）。音：kisekae/cb_qbgm.py（cb_qbgm.m4a）・kisekae/cb_sfx.py（appear・hit・qwin1〜3・coin・unlock）
   //   敵の 置き場所（QG）：フィールドの 絵の 中の [蹄の 線の まん中 x, 蹄の 線の 高さ y, 幅]（どれも 0〜1：絵の 幅・高さに 対して）。QFOOT＝敵の 絵の 中の 蹄の 線（上から：cb_quest_art.py の EXT）
@@ -2443,27 +2444,29 @@ const CBApp = (() => {
   // マップの 丸（エリアの 番号）の まん中（cb_q_map.webp：1024×1536 の 中）
   const QMAP = [[135, 1376], [773, 1342], [779, 1087], [145, 1096], [157, 877], [776, 868], [791, 641], [171, 631], [140, 418], [773, 419], [796, 213], [146, 199]];
   const QUEST = [
-    // [エリア, 敵の 名前, 短い 名前（ことばの 中）, いる 連勝, バトルコイン, 確定カード { 何戦目: [カード] }, セリフ]
-    ['若草の原', '若草の鈴駒', '鈴駒', 1, 10, {}, ['とても 綺麗な 牧場だな〜。ここで 一度 休憩しよう', '……ん？ どこからか 鈴の 音が 聞こえるぞ', 'なんだ！！ 小馬が 急に 突進してきたぞ！']],
-    ['風見峠', '風見峠の疾風', '疾風', 2, 20, {}, ['風見峠に 着いた。風が 強くて 前に 進めない…', '風見の 旗が バタバタ 鳴ってる…何か 来るぞ！', '速い！！ 風と 一緒に 馬が 駆け下りてきた！']],
-    ['茨の森', '茨鎧の森番', '森番', 3, 30, {}, ['薄暗い 森だな…。茨が 道を ふさいでいる', '木の 葉が ざわざわと 揺れている…', '茨の 鎧を まとった 森番が 立ちはだかった！']],
-    ['鉄門の関所', '鉄門の関守', '関守', 4, 40, {}, ['大きな 鉄の 門だ…。ここを 通らないと 先へ 行けない', 'ガシャン！ 門の 鎖が 動いたぞ！', '関守だ！ 力ずくでも 通してもらうぞ！']],
-    ['霧鏡の湖', '霧鏡の湖霊', '湖霊', 4, 50, { 4: ['1'] }, ['霧が 深くて、湖が 鏡みたいに 光ってる…', '水面に 馬の 影が 映ってる…？', '湖の 中から 湖霊が 現れた！']],
-    ['刻砂の王墓', '刻砂の時守', '時守', 4, 80, { 4: ['1', '1'] }, ['古い 王の 墓だ…。大きな 砂時計が 動いている', '砂の 落ちる 音が だんだん 大きく なっていく…', '時を 守る 黄金の 馬が 目を 覚ました！']],
-    ['雷鳴峡', '雷鳴峡の迅雷', '迅雷', 5, 100, { 4: ['2', '2'], 5: ['2', '2'] }, ['ゴロゴロ…ものすごい 雷だ。早く ここを 抜けよう', '今の 光…雷じゃない！ 何かが 走ってくる！', '稲妻を まとった 迅雷が 飛び出してきた！']],
-    ['氷晶砦', '氷晶砦の守将', '守将', 5, 130, { 5: ['2', '2', '2'] }, ['寒い…！ 氷の 砦だ。息が 白く なる', 'ズシン…ズシン…重い 足音が 近づいてくる', '氷の 鎧の 守将が 道を ふさいだ！']],
-    ['紅蓮の鍛冶場', '紅蓮の鉄槌', '鉄槌', 6, 160, { 5: ['1', '1'], 6: ['1', '1'] }, ['すごい 熱さだ…。炉の 炎が ごうごうと 燃えている', 'カーン！ カーン！ 鉄を 打つ 音が 響く…', '火花を 散らして 紅蓮の 鉄槌が 突っ込んできた！']],
-    ['星月の回廊', '星月の天馬', '天馬', 6, 190, { 5: ['1', '1', '1'], 6: ['1', '1', '1'] }, ['なんて きれいな 星空…。月の 門が 続いている', '空から 白い 羽が 一枚 舞い落ちてきた…', '星座の 翼を 広げた 天馬が 舞い降りた！']],
-    ['黒曜の天文台', '黒曜の覇王', '覇王', 6, 220, { 5: ['1', 'k'], 6: ['1', 'k'] }, ['ここが 黒曜の 天文台…。空気が 重い', '天球儀が 勝手に 回り出した…！', '王冠の 覇王だ！ ここで 引くわけには いかない！']],
-    ['日蝕の玉座', '日蝕の薔薇女王', '薔薇女王', 6, 250, { 4: ['1', 'k'], 5: ['1', 'k'], 6: ['1', 'k'] }, ['ついに 日蝕の 玉座まで 来た…', '赤い 薔薇の 花びらが 舞っている…', '薔薇女王が 玉座から 降りてきた！ 最後の 決戦だ！']]
-  ].map(([a, n, s, w, c, rig, say], i) => ({ lv: i + 1, a: a, n: n, s: s, w: w, c: c, rig: rig, say: say, g: QG[i], m: QMAP[i] }));
+    // [エリア, 敵の 名前, 短い 名前（ことばの 中）, いる 連勝, バトルコイン, 確定カード { 何戦目: [カード] }, セリフ, 何行目で 敵が 出るか]
+    // 第4.200版（まさちゃん 11/18 22:54「セリフ変更と、タップ数、何タップ目に敵表示するか書いてるからこれ通り入れて！」）：セリフは まさちゃんの 表の まま（1タップで 1行）・
+    //   敵は その 行が 出ると 同時に（レベル 1・2 は 2行目・3〜12 は 3行目。レベル 12 だけ 4行：3行目で 女王が 出て 4行目）
+    ['若草の原', '若草の鈴駒', '鈴駒', 1, 10, {}, ['「ふぅ、ここでひと休み……」　チリン♪', 'チリンチリンッ！　ダダダッ！　「わっ、子馬がこっちに！」'], 2],
+    ['風見峠', '風見峠の疾風', '疾風', 2, 20, {}, ['バタバタバタッ！　「すごい風だ。……坂の上に馬？」', 'ビュンッ！　「早い！こいつも敵か！」'], 2],
+    ['茨の森', '茨鎧の森番', '森番', 3, 30, {}, ['ザク、ザク……。　「茨で行き止まりか。」', 'ガサ……ガサッ。　「ん？　茨が動いたぞ。」', 'ブルルッ！　「森番だ！　その茨、鎧だったのか！」'], 3],
+    ['鉄門の関所', '鉄門の関守', '関守', 4, 40, {}, ['ジャラララ……。　「よし、門が開くぞ！」', 'ギギギ……ガシャン！　門の奥から、カツン……カツン……ダンッ！', '関守のひと踏みで、門の鎖が揺れる。　「明らかに今までより強そうだ！」'], 3],
+    ['霧鏡の湖', '霧鏡の湖霊', '湖霊', 4, 50, { 4: ['1'] }, ['ヒュゥゥ……。霧の奥で、ぴちゃん。……ぴちゃん。　「水面に、馬が映ってる。」', 'そっと振り向く。　「……誰もいない。」', '背後で、ちゃぷ……。すぐ後ろで、ポチャン、、、すぐ後ろに何かいる…ブルルッ！　「……湖霊だ！」'], 3],
+    ['刻砂の王墓', '刻砂の時守', '時守', 4, 80, { 4: ['1', '1'] }, ['ヒュオォ……。振り返ると、足跡が砂に消えていく。　「砂の王国……？　さっきもこの門を通ったぞ。」', '王墓の奥で、コン……コン……。大砂時計のガラスが内側から鳴る。　「なんだ、あれ……。砂が上に落ちてる？」', '――ドゴォンッ！　真横で砂が噴き上がり、黄金の馬が飛び出す！　「うわっ！　刻砂の時守だ！」'], 3],
+    ['雷鳴峡', '雷鳴峡の迅雷', '迅雷', 5, 100, { 4: ['2', '2'], 5: ['2', '2'] }, ['ハァ……ハァ……。震える足で、吊り橋を踏む。ギシッ。　「やっと六戦……。少し、息を――」', 'ズドォン！ズドォンン！！ズドォン！そこらじゅうに落雷が落ちている…ズドドドォンッ！！　「うわっ！」', 'キィィン……。爆煙が晴れる。パチッ。青い火花が、たてがみを走る。　「……雷鳴峡の迅雷だ！」'], 3],
+    ['氷晶砦', '氷晶砦の守将', '守将', 5, 130, { 5: ['2', '2', '2'] }, ['ヒュウゥ……。　「寒っ。息が真っ白だ。」', '門の裏で何かが。ズン、ズン…。ズシィンッ！「自分の足元まで揺れてるぞ……。」', '守将が頭をかがめて門をくぐる。蹄から足元へ、ピキピキピキッ！　「靴の先が凍っている！とてつもない大きさだ！」'], 3],
+    ['紅蓮の鍛冶場', '紅蓮の鉄槌', '鉄槌', 6, 160, { 5: ['1', '1'], 6: ['1', '1'] }, ['カーン……カーン……。　「炉の奥で、誰かが鉄を打ってる。」', 'カン、カン、カカカンッ！　音が止まった…？火の向こうで、蹄が鉄をこする。ギリッ……。　「……来る。」', 'ガァンッ！　鉄床を蹴り、火花の幕を突き破って突進してくる！　「紅蓮の鉄槌だ！　来るぞ！」'], 3],
+    ['星月の回廊', '星月の天馬', '天馬', 6, 190, { 5: ['1', '1', '1'], 6: ['1', '1', '1'] }, ['ふわり。　「白い羽……どこから？」', '夜空の星が、すうっと動く。　「あの星座、翼だ……！」', 'ファサ……バサッ、バサァッ！　風が頬を打つ。青い石床に、蹄がカツン。　「天馬が目の前に、こんなにデカいのか！」'], 3],
+    ['黒曜の天文台', '黒曜の覇王', '覇王', 6, 220, { 5: ['1', 'k'], 6: ['1', 'k'] }, ['ギィ……クルクルクルッ。　「天球儀が、勝手に……！」', 'キリ……キリキリキリッ！　カチッ、カチッ、カチン！　金の輪が一直線に重なる。　「あれは…王冠？」', 'コツ……コツ……。紫水晶が低くうなる。ヴゥゥン……。ダンッ！　王冠の馬が光の中へ踏み出す。　「こいつが、黒曜の覇王か！」'], 3],
+    ['日蝕の玉座', '日蝕の薔薇女王', '薔薇女王', 6, 250, { 4: ['1', 'k'], 5: ['1', 'k'], 6: ['1', 'k'] }, ['ギィィ……。　「ここが、最後の玉座か。」', 'ザワ……ザワザワッ。薔薇が一斉に揺れる。玉座の陰から、羽のこすれる音。ファサ……。　「……そこにいるのか。」', '一瞬、静まり返る。――バサァァッ！！　黒い翼が花びらを払い、女王の蹄が最後の一段を降りる。　薔薇女王「十一勝、お見事。あと一勝、取れるかしら？」', 'シャッ！　カードを構える。　「お前が最後だ！行くぞ！」'], 3]
+  ].map(([a, n, s, w, c, rig, say, en], i) => ({ lv: i + 1, a: a, n: n, s: s, w: w, c: c, rig: rig, say: say, en: en, g: QG[i], m: QMAP[i] }));
   const QN = QUEST.length;
   const qp2 = n => String(n).padStart(2, '0');
   const qF = lv => `cb_q_f${qp2(lv)}.webp`, qE = lv => `cb_q_e${qp2(lv)}.webp`, qHL = lv => `cb_q_hl${qp2(lv)}.webp`;      // 絵の 名前：フィールド・敵・ゲージの 左（盾の 中に 敵の 顔）
   const qTier = lv => (lv >= 10 ? 3 : lv >= 6 ? 2 : 1);      // 勝利の 演出（まさちゃん：レベル 1〜5・6〜9・10〜12）
   let qRun = null;              // いまの 調査：{ lv, won（何連勝したか）, m（はじめた 月）, gu（第4.197版：この 調査で 使った 決戦宝石）}。対戦の 画面が 決戦調査の 形に なる
   let lostQ = false;            // 前の 決戦調査の 戦が とちゅうで 終わった（メニューで 1回 知らせる）
-  let qs = null;                // フィールドの 場面：{ lv, step：'say'｜'tel'｜'en'｜'go', i：セリフの 番号, tw：字を 出して いる とちゅう }
+  let qs = null;                // フィールドの 場面：{ lv, step：'say'｜'en'｜'go', i：セリフの 番号, tw：字を 出して いる とちゅう, rv：敵（0＝まだ・1＝出る とちゅう・2＝出た：第4.200版） }
   let qNew = 0;                 // マップで「開いた」動きを 見せる レベル（倒した すぐ あと）
   let qPop = 0;                 // マップで ふきだしを 出して いる レベル（0＝なし）
   const qRoll = () => { const k = monthKey(); if (k <= st.q.m) return false; st.q = { m: k, clr: 0 }; save(); return true; };      // 月が 進んだら リセット（第4.191版の ミッションと 同じ）
@@ -2559,7 +2562,7 @@ const CBApp = (() => {
   function qGo(lv) {
     const q = QUEST[lv - 1]; if (!q || lv !== qOpen() || lv <= st.q.clr) return;
     closeMod(); qPopClose(); se('tap');
-    qs = { lv: lv, step: 'say', i: -1, tw: null, g: GEN };
+    qs = { lv: lv, step: 'say', i: -1, tw: null, g: GEN, rv: 0, snd: false };
     const f = scr.qf;
     $('.qfld', f).innerHTML = `<img class="bg" src="${qF(lv)}" alt=""><i class="qsh"></i><img class="qe" src="${qE(lv)}" alt="" style="left:${q.g[0] * 100}%;top:${q.g[1] * 100}%;width:${q.g[2] * 100}%"><i class="qdu" style="left:${q.g[0] * 100}%;top:${q.g[1] * 100}%;width:${q.g[2] * 100}%"></i>`;
     $('.qfld', f).classList.remove('en');
@@ -2585,9 +2588,11 @@ const CBApp = (() => {
     const q = QUEST[qs.lv - 1], p = $('.qsay p', scr.qf), t = q.say[i];
     qs.i = i; $('.qsay', scr.qf).classList.add('on');
     if (qs.tw) unlater(qs.tw);
+    p.style.fontSize = t.length > 54 ? '15px' : t.length > 36 ? '16px' : '';      // 第4.200版：長い 行は 字を 少し 小さく（窓が 3〜4行 まで：敵に かかりすぎない）
     let n = 0; p.textContent = '';
     const step = () => { if (!qs || qs.i !== i) return; n += 1; p.textContent = t.slice(0, n); if (n < t.length) qs.tw = later(step, 34 * SPEED); else qs.tw = null; };
     step();
+    if (i === q.en - 1) qReveal();      // 第4.200版：この 行で 敵が 出る（セリフの 窓は その まま）
   }
   function qTap() {
     if (!qs || screen !== 'qf') return;
@@ -2597,30 +2602,32 @@ const CBApp = (() => {
       if (qs.tw) { unlater(qs.tw); qs.tw = null; $('.qsay p', scr.qf).textContent = q.say[qs.i]; return; }      // 字の とちゅう → すぐ ぜんぶ
       se('tap', 0.5);
       if (qs.i + 1 < q.say.length) return qLine(qs.i + 1);
-      return qAppear();
+      return qEnd();
     }
-    if (qs.step === 'tel') return qAppear(true);
     if (qs.step === 'en') return qBattle();
   }
-  // 敵 出現：セリフを 消す → 上の 字（テロップ）→ 少し して 敵（光って 出る・足もとに 土けむり）→ 名前 →「タップで バトル開始！」
-  async function qAppear(skip) {
-    const f = scr.qf, lv = qs.lv;
-    if (qs.step === 'say') {
-      qs.step = 'tel'; $('.qsay', f).classList.remove('on');
-      await T(250); if (!qs || qs.lv !== lv || qs.step !== 'tel') return;
-      $('.qtel', f).classList.add('on'); se('magic', 0.5);
-      if (!skip) {
-        await T(420); if (!qs || qs.lv !== lv || qs.step !== 'tel') return;
-        se('appear'); qs.snd = true;                     // 音の「ドーン」（0.5秒 あと）と 敵が 出る ときを そろえる
-        await T(480); if (!qs || qs.lv !== lv || qs.step !== 'tel') return;
-      }
-    }
-    if (qs.step !== 'tel') return;
-    qs.step = 'en'; $('.qtel', f).classList.add('on');
-    $('.qfld', f).classList.add('en'); if (!qs.snd) { se('appear'); qs.snd = true; }      // とちゅうで タップした ときも 1回 だけ
-    await T(900); if (!qs || qs.lv !== lv) return;
+  // 敵 出現（第4.200版：en 行目の セリフと いっしょに・セリフの 窓は その まま）：上の 字（テロップ）→ 少し して 敵（光って 出る・足もとに 土けむり）
+  async function qReveal() {
+    const f = scr.qf, lv = qs.lv; if (qs.rv) return;
+    qs.rv = 1; $('.qtel', f).classList.add('on'); se('magic', 0.5);
+    await T(420); if (!qs || qs.lv !== lv || qs.rv !== 1) return;
+    se('appear'); qs.snd = true;                     // 音の「ドーン」（0.5秒 あと）と 敵が 出る ときを そろえる
+    await T(480); if (!qs || qs.lv !== lv || qs.rv !== 1) return;
+    qShowEnemy();
+  }
+  function qShowEnemy() {
+    const f = scr.qf; if (!qs || qs.rv === 2) return;
+    qs.rv = 2; $('.qtel', f).classList.add('on'); $('.qfld', f).classList.add('en');
+    if (!qs.snd) { se('appear'); qs.snd = true; }      // 出る とちゅうで 進めた ときも 音は 1回 だけ
+  }
+  // さいごの セリフの あと：セリフの 窓を 消す → 名前 →「タップで バトル開始！」（敵は もう 出て いる：まだ 出る とちゅう なら すぐ 出す）
+  async function qEnd() {
+    const f = scr.qf, lv = qs.lv, fresh = qs.rv !== 2;
+    qShowEnemy();
+    qs.step = 'en'; $('.qsay', f).classList.remove('on');
+    await T(fresh ? 900 : 500); if (!qs || qs.lv !== lv || qs.step !== 'en') return;
     $('.qnm', f).classList.add('on');
-    await T(500); if (!qs || qs.lv !== lv) return;
+    await T(500); if (!qs || qs.lv !== lv || qs.step !== 'en') return;
     $('.qtap', f).classList.add('on');
   }
   // バトルへ：いつもの 対戦（コンピュータ）を 決戦調査の 形で
@@ -2779,7 +2786,7 @@ const CBApp = (() => {
     _t: {      // テスト・見本の 写真 用
       get view() { return V; }, get screen() { return screen; }, get match() { return match; }, get mode() { return mode; }, get state() { return st; }, get ended() { return ended; },
       get idle() { return !pumping && !queue.length && !busy && !lock; }, get ask() { return askOn(); }, say, get sets() { return { bgm: bgmOn(), se: seOn(), raw: { bgm: st.bgm, se: st.se }, as: AS }; },
-      qopt: (lv, n) => qOpt(lv, n), qApi, get quest() { return { run: qRun ? Object.assign({}, qRun) : null, st: st ? Object.assign({}, st.q) : null, scene: qs ? { lv: qs.lv, step: qs.step, i: qs.i, typing: !!qs.tw } : null, data: QUEST, open: st ? qOpen() : 0, track: bg.trk }; },      // 第4.196版：決戦調査
+      qopt: (lv, n) => qOpt(lv, n), qApi, get quest() { return { run: qRun ? Object.assign({}, qRun) : null, st: st ? Object.assign({}, st.q) : null, scene: qs ? { lv: qs.lv, step: qs.step, i: qs.i, typing: !!qs.tw, rv: qs.rv || 0 } : null, data: QUEST, open: st ? qOpen() : 0, track: bg.trk }; },      // 第4.196版：決戦調査
       get bgm() { return { on: !!bg.cur, want: bg.want, have: !!bg.buf, gone: bg.gone, pos: bgmPos(), len: BGM.len, pre: BGM.pre, vol: BGM.vol, file: BGM.file, loop: bg.cur ? [bg.cur.s.loopStart, bg.cur.s.loopEnd] : null, ctx: snd.ac ? snd.ac.state : null }; }, setSet, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, pay, load, save, takeGift, modOn, pkDraw, pkPool, pkGroup, randInt, get pk() { return pk; }, dz: t => showDz(t), dzApi, msKey: () => monthKey(), msRoll, ms: tab => showMs(tab), pic
     }
   };

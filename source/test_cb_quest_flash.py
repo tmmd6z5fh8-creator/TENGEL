@@ -2,6 +2,7 @@
 #   HP が へる（ゆれ・盾の 光）・勝利の 演出 3段階（光の 筋・光の 輪・紙吹雪・コインの 雨・コインの 数が ふえる）・エリアが 開く（鍵が 消える）を 60コマ／秒で 写して 数える
 #   決まり：画面の 10% 以上の 広さで 1秒に 3回 まで（もっと きびしい 3% でも 数えて 出す）。「演出を控えめにする」（動きを へらす 設定）でも 数える
 #   時計は 手で 進める（CBApp._t.manual・tick：1/60秒 ずつ）。CSS の 動きも 同じ 時計で 進める（test_cb_flash.py と 同じ しくみ）
+#   第4.200版：敵は まさちゃんの 表の 行で 出る（q_appear：セリフの 窓は その まま）・さいごの 行の あと 名前 と「タップで バトル開始！」（q_end）
 #   python3 test_cb_quest_flash.py [場面の 名前,…]   （時間が かかる ので ふだんの テストとは 別に 動かす。コマは t5/cbq_frames/<場面>/ に 残す）
 import json, os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -109,15 +110,16 @@ try:
                 else: pg.locator(f'#cbOv .qnd[data-lv="{lv}"]').click(); settle(pg, 0.3, 50)
                 if capture: seg('q_field', 3.4, lambda: pg.locator('#cbOv .qpo [data-cb=qgo]').click())
                 else: pg.locator('#cbOv .qpo [data-cb=qgo]').click()
-                n = pg.evaluate(f"() => CBApp._t.quest.data[{lv - 1}].say.length")
+                n, en = pg.evaluate(f"() => {{ const x = CBApp._t.quest.data[{lv - 1}]; return [x.say.length, x.en]; }}")
                 for i in range(n):
                     until(pg, f"() => CBApp._t.quest.scene.i === {i} && !CBApp._t.quest.scene.typing")
-                    if i < n - 1 or not capture: pg.locator('#cbOv .qfw').click(); settle(pg, 0.1, 50)
-                if capture: seg('q_appear', 4.4, lambda: pg.locator('#cbOv .qfw').click())
+                    if capture and i == en - 2: seg('q_appear', 4.4, lambda: pg.locator('#cbOv .qfw').click())      # 第4.200版：この タップで 次の 行と いっしょに テロップ → 敵が 光って 出る（セリフの 窓は その まま）
+                    elif capture and i == n - 1: seg('q_end', 2.6, lambda: pg.locator('#cbOv .qfw').click())         # さいごの 行の あと：窓が 消える → 名前 →「タップで バトル開始！」
+                    else: pg.locator('#cbOv .qfw').click(); settle(pg, 0.1, 50)
                 until(pg, "() => !!document.querySelector('#cbOv .qtap.on')")
             # ① マップ（開いて いる エリアの 光る 輪・「挑戦！」）
             seg('q_map', 3.0, lambda: pg.locator('#cbOv .cbmenu [data-cb=quest]').click())
-            # ② フィールド：出て くる → セリフ（字が 1つずつ）／ ③ さいごの セリフを タップ → テロップ → 敵が 光って 出る → 名前 →「タップで バトル開始！」
+            # ② フィールド：出て くる → セリフ（字が 1つずつ）／ ③ 第4.200版：敵が 出る 行（レベル1 は 2行目）→ テロップ → 敵が 光って 出る ／ ④ さいごの 行の あと → 名前 →「タップで バトル開始！」
             to_field(1, capture=True)
             # ④ バトルの はじまり（「第1戦 スタート」→ 配る）
             seg('q_start', 4.0, lambda: pg.locator('#cbOv .qfw').click())

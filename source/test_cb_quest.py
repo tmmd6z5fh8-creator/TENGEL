@@ -42,6 +42,8 @@ OPP = """a => { const m = CBApp._t.match, S = m._.state(), h = S.p[1].hand, b = 
 WIN = [['k', '1', '2', '3', '4', '5', '6'], ['7', '7', '6', '2', '3', '1', 'm']]
 LOSE = [['7', '6', '5', '4', '3', '2', '1'], ['k', 'm', '1', '1', '2', '3', '6']]
 DRAW = [['k', '1', '2', '3', '4', '5', '6'], ['m', '7', '7', '6', '2', '3', '1']]
+# 第4.200版：まさちゃんの セリフの 表（11/18 22:54「セリフ変更と、タップ数、何タップ目に敵表示するか書いてるからこれ通り入れて！」）＝ [[セリフ（1タップで 1行）], 何行目で 敵が 出るか]（レベル 1〜12）
+SAY = [[["「ふぅ、ここでひと休み……」　チリン♪", "チリンチリンッ！　ダダダッ！　「わっ、子馬がこっちに！」"], 2], [["バタバタバタッ！　「すごい風だ。……坂の上に馬？」", "ビュンッ！　「早い！こいつも敵か！」"], 2], [["ザク、ザク……。　「茨で行き止まりか。」", "ガサ……ガサッ。　「ん？　茨が動いたぞ。」", "ブルルッ！　「森番だ！　その茨、鎧だったのか！」"], 3], [["ジャラララ……。　「よし、門が開くぞ！」", "ギギギ……ガシャン！　門の奥から、カツン……カツン……ダンッ！", "関守のひと踏みで、門の鎖が揺れる。　「明らかに今までより強そうだ！」"], 3], [["ヒュゥゥ……。霧の奥で、ぴちゃん。……ぴちゃん。　「水面に、馬が映ってる。」", "そっと振り向く。　「……誰もいない。」", "背後で、ちゃぷ……。すぐ後ろで、ポチャン、、、すぐ後ろに何かいる…ブルルッ！　「……湖霊だ！」"], 3], [["ヒュオォ……。振り返ると、足跡が砂に消えていく。　「砂の王国……？　さっきもこの門を通ったぞ。」", "王墓の奥で、コン……コン……。大砂時計のガラスが内側から鳴る。　「なんだ、あれ……。砂が上に落ちてる？」", "――ドゴォンッ！　真横で砂が噴き上がり、黄金の馬が飛び出す！　「うわっ！　刻砂の時守だ！」"], 3], [["ハァ……ハァ……。震える足で、吊り橋を踏む。ギシッ。　「やっと六戦……。少し、息を――」", "ズドォン！ズドォンン！！ズドォン！そこらじゅうに落雷が落ちている…ズドドドォンッ！！　「うわっ！」", "キィィン……。爆煙が晴れる。パチッ。青い火花が、たてがみを走る。　「……雷鳴峡の迅雷だ！」"], 3], [["ヒュウゥ……。　「寒っ。息が真っ白だ。」", "門の裏で何かが。ズン、ズン…。ズシィンッ！「自分の足元まで揺れてるぞ……。」", "守将が頭をかがめて門をくぐる。蹄から足元へ、ピキピキピキッ！　「靴の先が凍っている！とてつもない大きさだ！」"], 3], [["カーン……カーン……。　「炉の奥で、誰かが鉄を打ってる。」", "カン、カン、カカカンッ！　音が止まった…？火の向こうで、蹄が鉄をこする。ギリッ……。　「……来る。」", "ガァンッ！　鉄床を蹴り、火花の幕を突き破って突進してくる！　「紅蓮の鉄槌だ！　来るぞ！」"], 3], [["ふわり。　「白い羽……どこから？」", "夜空の星が、すうっと動く。　「あの星座、翼だ……！」", "ファサ……バサッ、バサァッ！　風が頬を打つ。青い石床に、蹄がカツン。　「天馬が目の前に、こんなにデカいのか！」"], 3], [["ギィ……クルクルクルッ。　「天球儀が、勝手に……！」", "キリ……キリキリキリッ！　カチッ、カチッ、カチン！　金の輪が一直線に重なる。　「あれは…王冠？」", "コツ……コツ……。紫水晶が低くうなる。ヴゥゥン……。ダンッ！　王冠の馬が光の中へ踏み出す。　「こいつが、黒曜の覇王か！」"], 3], [["ギィィ……。　「ここが、最後の玉座か。」", "ザワ……ザワザワッ。薔薇が一斉に揺れる。玉座の陰から、羽のこすれる音。ファサ……。　「……そこにいるのか。」", "一瞬、静まり返る。――バサァァッ！！　黒い翼が花びらを払い、女王の蹄が最後の一段を降りる。　薔薇女王「十一勝、お見事。あと一勝、取れるかしら？」", "シャッ！　カードを構える。　「お前が最後だ！行くぞ！」"], 3]]
 
 
 def gate(pg):
@@ -197,13 +199,15 @@ try:
         pg.set_viewport_size({'width': 390, 'height': 844}); pg.wait_for_timeout(300)
         pg.locator('#cbOv .qpo [data-cb=qpx]').click(); pg.wait_for_timeout(100)
 
-        print('■ フィールド（セリフ → 敵 出現）')
+        print('■ フィールド（第4.200版：まさちゃんの セリフの 表 → その 行で 敵 出現）')
         pg.locator('#cbOv .qnd[data-lv="1"]').click(); pg.wait_for_timeout(120)
         pg.locator('#cbOv .qpo [data-cb=qgo]').click()
         pg.wait_for_function("() => CBApp._t.quest.scene && CBApp._t.quest.scene.i === 0", timeout=10000)
         check(scr(pg) == 'qf' and q(pg)['track'] == '', 'フィールドの 画面・BGM は 止まる（敵が 出る 音を 聞かせる）')
-        say = pg.evaluate("() => CBApp._t.quest.data[0].say")
-        check(len(say) == 3 and 'とても 綺麗な 牧場だな〜' in say[0] and '小馬が 急に 突進してきたぞ！' in say[2], f'セリフ 3行（まさちゃんの 例の 2行を 入れた）')
+        data = pg.evaluate("() => CBApp._t.quest.data.map(x => [x.say, x.en])")
+        check(data == SAY, f'セリフ 12 エリア ぶん：まさちゃんの 表（11/18 22:54）の まま・何行目で 敵が 出るか（{[len(x[0]) for x in data]} 行・敵 {[x[1] for x in data]} 行目）')
+        say = data[0][0]
+        check(not pg.locator('#cbOv .qsay .who').count(), 'セリフの 窓に「あなた」の 札は 出さない（セリフに 話す 人が 入って いる）')
         pg.evaluate("() => CBApp._t.speed(1)")      # 字が 1つずつ 出る ところを 見る
         pg.wait_for_timeout(120)
         tw = pg.evaluate("() => [document.querySelector('#cbOv .qsay p').textContent.length, CBApp._t.quest.scene.typing]")
@@ -212,20 +216,22 @@ try:
         check(pg.locator('#cbOv .qsay p').inner_text() == say[0] and q(pg)['scene']['i'] == 0, 'とちゅうで タップ → その 行が すぐ ぜんぶ 出る（次へは まだ）')
         fs = pg.evaluate("() => parseFloat(getComputedStyle(document.querySelector('#cbOv .qsay p')).fontSize)")
         check(fs >= 17, f'セリフの 字は 読みやすい 大きさ（{fs}px）')
+        en0 = pg.evaluate("() => [getComputedStyle(document.querySelector('#cbOv .qfld .qe')).opacity, !!document.querySelector('#cbOv .qtel.on'), CBApp._t.quest.scene.rv]")
+        check(float(en0[0]) == 0 and not en0[1] and en0[2] == 0, f'1行目「{say[0]}」：敵は まだ 見えない・テロップも まだ')
         shot(pg, 'q03_say')
         pg.evaluate("() => CBApp._t.speed(0.03)")
-        for i in (1, 2):
-            pg.locator('#cbOv .qfw').click()
-            pg.wait_for_function(f"() => CBApp._t.quest.scene.i === {i} && !CBApp._t.quest.scene.typing", timeout=10000)
-            check(pg.locator('#cbOv .qsay p').inner_text() == say[i], f'タップ → セリフ {i + 1}行目「{say[i]}」')
-        en0 = pg.evaluate("() => getComputedStyle(document.querySelector('#cbOv .qfld .qe')).opacity")
-        check(float(en0) == 0, 'セリフの あいだ 敵は まだ 見えない')
         pg.locator('#cbOv .qfw').click()
-        pg.wait_for_function("() => document.querySelector('#cbOv .qtel.on')", timeout=10000)
+        pg.wait_for_function("() => CBApp._t.quest.scene.i === 1 && !CBApp._t.quest.scene.typing && CBApp._t.quest.scene.rv === 2", timeout=10000); pg.wait_for_timeout(900)
         tel = pg.locator('#cbOv .qtel').inner_text()
-        check('レベル1の 敵 出現！' in tel and '1連勝して バトルコインを 10枚 手に入れよう！' in tel, f'上の テロップ：{tel!r}')
+        r1 = pg.evaluate("() => [+getComputedStyle(document.querySelector('#cbOv .qfld .qe')).opacity, document.querySelector('#cbOv .qsay').classList.contains('on'), document.querySelector('#cbOv .qsay p').textContent, document.querySelector('#cbOv .qnm').classList.contains('on'), document.querySelector('#cbOv .qtap').classList.contains('on'), CBApp._t.quest.scene.step]")
+        check('レベル1の 敵 出現！' in tel and '1連勝して バトルコインを 10枚 手に入れよう！' in tel and r1[0] > 0.99 and r1[1] and r1[2] == say[1],
+              f'タップ → 2行目「{say[1]}」と いっしょに 上の テロップ・敵が 出る（セリフの 窓は その まま）')
+        check(not r1[3] and not r1[4] and r1[5] == 'say', '敵が 出ても まだ セリフの とちゅう（名前・「タップで バトル開始！」は まだ）')
+        shot(pg, 'q04_reveal')
+        pg.locator('#cbOv .qfw').click()
         pg.wait_for_function("() => document.querySelector('#cbOv .qtap.on')", timeout=10000); pg.wait_for_timeout(1200)
-        check(pg.locator('#cbOv .qnm').inner_text() == '若草の鈴駒' and not pg.locator('#cbOv .qsay').evaluate("e => e.classList.contains('on')"), '敵の 名前「若草の鈴駒」・セリフの 窓は 消える')
+        check(pg.locator('#cbOv .qnm').inner_text() == '若草の鈴駒' and not pg.locator('#cbOv .qsay').evaluate("e => e.classList.contains('on')") and q(pg)['scene']['step'] == 'en',
+              'さいごの 行の あと タップ → セリフの 窓が 消える → 敵の 名前「若草の鈴駒」→「タップで バトル開始！」')
         # 敵の 足もと：蹄の 線（絵の 上から 1/1.42）が フィールドの 0.80 の 高さ・横は まん中・画面に 入る
         g = pg.evaluate("""() => { const f = document.querySelector('#cbOv .qfld').getBoundingClientRect(), e = document.querySelector('#cbOv .qfld .qe').getBoundingClientRect();
           return { foot: (e.top + e.height / 1.42 - f.top) / f.height, cx: (e.left + e.width / 2 - f.left) / f.width, w: e.width / f.width, l: e.left, r: e.right, t: e.top, vw: innerWidth, op: +getComputedStyle(document.querySelector('#cbOv .qfld .qe')).opacity }; }""")
@@ -509,6 +515,41 @@ try:
         if scr(pg) == 'qmap': pg.locator('#cbOv [data-cb=qx]').click(); pg.wait_for_timeout(150)
         else: pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(150)
 
+        print('■ 12 エリアの セリフと 敵が 出る 行（第4.200版・まさちゃんの 表）')
+        LAY = """() => { const b = document.querySelector('#cbOv .qsay').getBoundingClientRect(), e = document.querySelector('#cbOv .qfld .qe').getBoundingClientRect(), t = document.querySelector('#cbOv .qtel .bd').getBoundingClientRect();
+          return { top: b.top, bot: b.bottom, hoof: e.top + e.height / 1.42, eh: e.height, et: e.top, tel: t.bottom, vh: innerHeight, op: +getComputedStyle(document.querySelector('#cbOv .qfld .qe')).opacity,
+            on: document.querySelector('#cbOv .qsay').classList.contains('on'), telon: !!document.querySelector('#cbOv .qtel.on'), txt: document.querySelector('#cbOv .qsay p').textContent, rv: CBApp._t.quest.scene.rv }; }"""
+        bad12 = []; cov = []
+        for lv in range(1, 13):
+            pg.evaluate(f"() => {{ CBApp._t.state.q.clr = {lv - 1}; CBApp._t.save(); }}")
+            if scr(pg) == 'qmap': pg.locator('#cbOv [data-cb=qx]').click(); pg.wait_for_timeout(100)
+            elif scr(pg) != 'menu': pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(100)
+            pg.locator('#cbOv .cbmenu [data-cb=quest]').click(); pg.wait_for_timeout(200)
+            pg.locator(f'#cbOv .qnd[data-lv="{lv}"]').click(); pg.wait_for_timeout(120); pg.locator('#cbOv .qpo [data-cb=qgo]').click()
+            sy, en = SAY[lv - 1]
+            for i in range(len(sy)):
+                pg.wait_for_function(f"() => CBApp._t.quest.scene.i === {i} && !CBApp._t.quest.scene.typing", timeout=10000)
+                if i >= en - 1: pg.wait_for_function("() => CBApp._t.quest.scene.rv === 2", timeout=10000); pg.wait_for_timeout(950)
+                L = pg.evaluate(LAY)
+                if L['txt'] != sy[i] or not L['on']: bad12.append(f'Lv{lv} {i + 1}行目の 文')
+                if i < en - 1 and (L['op'] > 0.01 or L['telon'] or L['rv']): bad12.append(f'Lv{lv} {i + 1}行目：敵が もう 見える')
+                if i >= en - 1:
+                    if L['op'] < 0.99 or not L['telon']: bad12.append(f'Lv{lv} {i + 1}行目：敵・テロップが 見えない')
+                    cov.append(max(0.0, L['hoof'] - L['top']))
+                    if L['hoof'] - L['top'] > 8 or L['et'] < L['tel'] - 2 or L['bot'] > L['vh']: bad12.append(f'Lv{lv} {i + 1}行目：窓が 敵に かかる（{L["hoof"] - L["top"]:.0f}px）')
+                if lv == 12 and i == 2: shot(pg, 'q17_lv12_reveal')
+                pg.locator('#cbOv .qfw').click()
+            pg.wait_for_function("() => document.querySelector('#cbOv .qtap.on')", timeout=10000); pg.wait_for_timeout(300)
+            e1 = pg.evaluate("() => [document.querySelector('#cbOv .qnm').textContent, document.querySelector('#cbOv .qsay').classList.contains('on'), CBApp._t.quest.scene.step]")
+            if e1 != [pg.evaluate(f"() => CBApp._t.quest.data[{lv - 1}].n"), False, 'en']: bad12.append(f'Lv{lv} さいご {e1}')
+            pg.locator('#cbOv [data-cb=qback]').click(); pg.wait_for_timeout(250)
+            if scr(pg) != 'qmap': bad12.append(f'Lv{lv}：「← マップ」で マップに 戻らない（{scr(pg)}）')
+        check(not bad12, f'12 エリア：1タップで 1行・表の 行で テロップと 敵が 出る（その 前は 見えない）・Lv12 は 3行目で 女王 → 4行目・さいごの 行の あと 名前 と「タップで バトル開始！」・'
+                         f'窓は 敵の 蹄に かからない（かかって いちばん {max(cov):.0f}px）{bad12[:4]}')
+        pg.evaluate("() => { CBApp._t.state.q.clr = 0; CBApp._t.save(); }")
+        if scr(pg) == 'qmap': pg.locator('#cbOv [data-cb=qx]').click(); pg.wait_for_timeout(100)
+        pg.evaluate("() => { const T = CBApp._t; if (T.screen !== 'menu') T.menu(); }"); pg.wait_for_timeout(100)
+
         print('■ あそび方・エラー')
         pg.locator('#cbOv .cbmenu [data-cb=help]').click(); pg.wait_for_timeout(200)
         hl = pg.locator('#cbOv .cbhelp').inner_text()
@@ -544,6 +585,18 @@ try:
         v = pg.evaluate("() => { const b = document.querySelector('#cbOv .cbmod [data-cb=qmapgo]').getBoundingClientRect(), h = document.querySelector('#cbOv .qv h3').getBoundingClientRect(), e = document.querySelector('#cbOv .qv .en').getBoundingClientRect(); return [e.top, h.top, b.bottom, innerHeight]; }")
         check(v[0] >= -20 and v[2] <= v[3], f'SE：勝利の 画面の「マップへ」が 画面に 入る {[round(x) for x in v]}')
         shot(pg, 'se4_victory')
+        pg.locator('#cbOv .cbmod [data-cb=qmapgo]').click(); pg.wait_for_timeout(300)
+        pg.evaluate("() => { CBApp._t.state.q.clr = 11; CBApp._t.save(); }"); pg.locator('#cbOv [data-cb=qx]').click(); pg.wait_for_timeout(100)
+        pg.locator('#cbOv .cbmenu [data-cb=quest]').click(); pg.wait_for_timeout(200)
+        pg.locator('#cbOv .qnd[data-lv="12"]').click(); pg.wait_for_timeout(120); pg.locator('#cbOv .qpo [data-cb=qgo]').click()
+        for i in range(3):
+            pg.wait_for_function(f"() => CBApp._t.quest.scene.i === {i} && !CBApp._t.quest.scene.typing", timeout=10000)
+            if i < 2: pg.locator('#cbOv .qfw').click()
+        pg.wait_for_function("() => CBApp._t.quest.scene.rv === 2", timeout=10000); pg.wait_for_timeout(950)
+        L = pg.evaluate("""() => { const b = document.querySelector('#cbOv .qsay').getBoundingClientRect(), e = document.querySelector('#cbOv .qfld .qe').getBoundingClientRect(), t = document.querySelector('#cbOv .qtel .bd').getBoundingClientRect();
+          return [b.top, b.bottom, e.top + e.height / 1.42, e.height, e.top, t.bottom, innerHeight]; }""")
+        check(L[1] <= L[6] and (L[2] - L[0]) / L[3] <= 0.14 and L[4] >= L[5] - 2, f'SE：いちばん 長い セリフ（Lv12 の 3行目・{len(SAY[11][0][2])}字）でも 窓は 画面の 中・敵に かかるのは 足もと だけ（敵の 高さの {max(0, L[2] - L[0]) / L[3] * 100:.0f}%）・テロップと 敵は 重ならない')
+        shot(pg, 'se5_lv12_reveal')
         check(not errs, f'SE：画面の エラー なし {errs[:3]}')
         ctx.close()
 
