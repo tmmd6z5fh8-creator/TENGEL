@@ -222,17 +222,9 @@ const CBRules = (() => {
   
   
   
-  
   function handOf(P, Q) {
-    const kn = c => P.known.indexOf(c.u) >= 0, s = Q.set;
-    if (!s || s.up || s.open || s.blind) return Q.hand.map(c => (kn(c) ? cardEv(c) : { u: c.u, k: null }));
-    const H = Q.hand.slice();
-    H.splice(Math.max(0, Math.min(H.length, s.at | 0)), 0, s.c);
-    let r = H.length - 1;
-    for (let j = H.length - 1; j >= 0; j--) if (!kn(H[j])) { r = j; break; }
-    H.splice(r, 1);
-    const pool = Q.hand.filter(c => !kn(c));
-    return H.map(c => (kn(c) ? cardEv(c) : { u: pool.shift().u, k: null }));
+    const kn = c => P.known.indexOf(c.u) >= 0;
+    return Q.hand.map(c => (kn(c) ? cardEv(c) : { u: c.u, k: null }));
   }
   
   
@@ -258,7 +250,7 @@ const CBRules = (() => {
   
   
   
-  const x3Pool = (S, i) => { const P = S.p[i], Q = S.p[1 - i], ok = new Set(Q.hand.filter(c => !c.tok).map(c => c.u)); return handOf(P, Q).filter(c => c.k == null && ok.has(c.u)).map(c => c.u); };
+  const x3Pool = (S, i) => { const P = S.p[i], Q = S.p[1 - i]; return Q.hand.filter(c => !c.tok && P.known.indexOf(c.u) < 0).map(c => c.u); };
   const canX3 = (S, i) => { const P = S.p[i]; return S.phase === 'set' && !P.set && P.x3 !== S.turn && count(P.hand, '3') >= 3 && P.hand.some(c => c.k === '3' && !c.tok) && x3Pool(S, i).length >= 1; };
   
   const can5 = (S, i) => { const P = S.p[i]; return !!P.set && !P.set.blind && P.set.c.k === '5' && P.hand.length >= 1 && S.deck.length >= 1 && P.hand.some(c => dropOk(S, P, c)); };
@@ -1090,6 +1082,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBNet;
 
 
 
+
+
+
+
 const CBApp = (() => {
   'use strict';
   const R = CBRules, SK = 'tengel.cb';
@@ -1191,6 +1187,7 @@ const CBApp = (() => {
     
     const q0 = st.q && typeof st.q === 'object' ? st.q : {};
     st.q = { m: typeof q0.m === 'string' && /^\d{4}-\d{2}$/.test(q0.m) ? q0.m : monthKey(), clr: Math.max(0, Math.min(QN, Math.floor(+q0.clr || 0))) };
+    { const t0 = st.qt && typeof st.qt === 'object' ? st.qt : null; st.qt = t0 && isFinite(+t0.n) && isFinite(+t0.at) ? { n: Math.max(0, Math.min(QT.max, Math.floor(+t0.n))), at: +t0.at } : null; }      
     if (st.ms.live === 'qc') { if (st.ms.cpu > 0) lostMs = 'cpu'; st.ms.cpu = 0; st.ms.live = ''; lostQ = true; save(); }
     
     delete st.gq;
@@ -1799,7 +1796,31 @@ const CBApp = (() => {
 #cbOv .cbqmap .hd .qtt[hidden]{display:none}
 #cbOv .qmst{flex:none;margin:0 0 4px;text-align:center;font-size:14px;color:#f0dfb6}
 #cbOv .qmst b{color:#ffe07a;font-size:17px}
-#cbOv .qmw{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#cbOv .qmw{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+/* 第4.203版：調査隊切符の ゲージ（マップの すぐ 上・マップと 同じ 幅：qMapLayout。2つ いっしょに まん中に 置く）。絵（数字を 消した ゲージ）＋ うめた こま（左から n こ 分：clip-path）＋ 枚数の 字 ＋ 次の 1枚までの 時間 */
+#cbOv .qtg{position:relative;flex:none;display:block;width:96%;aspect-ratio:7.4549;margin:0 0 6px;padding:0;border:0;background:none;container-type:inline-size;-webkit-tap-highlight-color:transparent}
+#cbOv .qtg img{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;-webkit-user-select:none;user-select:none}
+#cbOv .qtg .n{position:absolute;right:20.12%;top:30.9%;transform:translateY(-52%);font:700 5.1cqw/1 "Avenir Next","Helvetica Neue","Hiragino Sans",sans-serif;color:#f6e3bf;letter-spacing:.01em;text-shadow:0 .12cqw .3cqw rgba(0,0,0,.75);pointer-events:none}
+#cbOv .qtg .rc{position:absolute;right:31.5%;top:30.9%;transform:translateY(-50%);font:700 2.35cqw/1 "BIZ UDPGothic","Hiragino Sans",sans-serif;color:#e8cf98;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.8);pointer-events:none}
+#cbOv .qtg:active{filter:brightness(1.08)}
+#cbOv .qpo .qpotk{margin-top:6px;font-size:13px;line-height:1.4;color:#f3dfae}
+#cbOv .qpo .qpotk b{color:#ffe07a;font-size:16px}
+#cbOv .qpo .qpob .cbb small:empty{display:none}
+#cbOv .qpo .qpob .cbb small{display:block;font-size:11px;font-weight:700;color:#5a3a10}
+#cbOv .qpo .qpob .cbb:disabled{opacity:.62;filter:grayscale(.35)}
+#cbOv .cbmod .qtl{margin:4px 0;font-size:14px;color:#ffe9a8}
+#cbOv .cbmod .qtl b{font-size:17px}
+#cbOv .cbmod .qtl small{display:block;font-size:11.5px;color:#d9c08c}
+#cbOv .cbmod .cbb[data-qt] .qtw:empty{display:none}
+#cbOv .cbmod .cbb[data-qt]:disabled{opacity:.62;filter:grayscale(.35)}
+#cbOv .cbmod.cbqtk .qtkm{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+#cbOv .cbmod.cbqtk .tk{width:100%;max-width:340px;height:auto;filter:drop-shadow(0 6px 14px rgba(0,0,0,.6))}
+#cbOv .cbmod.cbqtk h3{margin:2px 0 0}
+#cbOv .cbmod.cbqtk p{margin:0;font-size:14px;line-height:1.55;color:#f3dfae}
+#cbOv .cbmod.cbqtk .qtkn{font-size:16px;color:#ffe9a8}
+#cbOv .cbmod.cbqtk .qtkn b{font-size:24px;color:#ffe07a}
+#cbOv .cbmod.cbqtk .qtkr{font-size:14px;font-weight:700;color:#ffd27a}
+#cbOv .cbmod.cbqtk .col{width:100%}
 #cbOv .qmap{--u:.38px;position:relative;flex:none;border-radius:12px;overflow:hidden;box-shadow:0 8px 22px rgba(0,0,0,.6),0 0 0 1.5px rgba(255,214,120,.35)}
 #cbOv .qmap>img{position:absolute;inset:0;width:100%;height:100%;display:block}
 #cbOv .qmft{flex:none;margin:6px 0 2px;text-align:center}
@@ -2000,7 +2021,7 @@ const CBApp = (() => {
       + '<section class="cbs cbdz" data-s="dz"></section>'
       + '<section class="cbs cbms" data-s="ms"></section>'
       + '<section class="cbs cbpk" data-s="pk"></section>'
-      + '<section class="cbs cbqmap" data-s="qmap"><div class="hd"><button type="button" class="cbb dk sm" data-cb="qx">← 戻る</button><b class="gold">⚔️ 決戦調査</b><button type="button" class="cbb dk sm qtt" data-cb="qtst" aria-label="テスト版の 道具">🧪</button></div><p class="qmst"></p><div class="qmw"><div class="qmap"></div></div><p class="cbcoinl qmft"></p></section>'
+      + '<section class="cbs cbqmap" data-s="qmap"><div class="hd"><button type="button" class="cbb dk sm" data-cb="qx">← 戻る</button><b class="gold">⚔️ 決戦調査</b><button type="button" class="cbb dk sm qtt" data-cb="qtst" aria-label="テスト版の 道具">🧪</button></div><p class="qmst"></p><div class="qmw"><button type="button" class="qtg" data-cb="qtk"><img class="b" src="cb_q_tg.webp" alt="" draggable="false"><img class="f" src="cb_q_tgf.webp" alt="" draggable="false"><b class="n"></b><small class="rc"></small></button><div class="qmap"></div></div><p class="cbcoinl qmft"></p></section>'
       + '<section class="cbs cbqf" data-s="qf"><div class="qfw" data-cb="qtap"><div class="qfld"></div></div><button type="button" class="cbb dk sm cbx" data-cb="qback">← マップ</button>'
       + '<div class="qtel" aria-live="polite"></div><div class="qnm"></div><div class="qsay" aria-live="polite"><p></p><i class="nx" aria-hidden="true">▼</i></div><div class="qtap">▶ タップで バトル開始！</div></section>'
       + '<div class="cbfly"></div><div class="cbban"></div><div class="cbuse" data-cb="useok" aria-live="polite"></div><div class="cbmod" role="dialog" aria-modal="true"></div><div class="cbtoast" aria-live="polite"></div>';
@@ -2121,7 +2142,7 @@ const CBApp = (() => {
       + ef('k', '神様馬：勝ったら 手札を 見る', '神様馬で 勝ったら、次の ターンの 始めに、相手の 手札を 1枚 選んで 見られるよ（まだ 見て いない カードが ある とき）。')
       + ef('m', '幻の馬：勝ったら 手札を 交換', '幻の馬で 勝ったら、次の ターンの 始めに、手札を 2枚 捨てて、山札から 2枚 引けるよ。')
       + '<ul><li>手札の 数は、手札の 効果（6・7・3）は <b>セットする 前</b>の 手札で、5 の 効果は <b>セットした あと</b>の 手札で 数えるよ（セットした カードは 手札に 入らない）</li><li>効果が 出る 順番：<b>① ターンの 始め</b>（<b>6</b> → 神様馬・幻の馬）→ <b>② セット</b>（手札の 効果 7・3 は セットの 前）→ <b>③ 効果タイム</b>（<b>5 → 4</b>：セットした カードの 効果。4 は 一番 後）</li><li>効果は <b>1つ 終わってから 次の 効果</b>を 聞くよ（前の 効果で 変わった 手札で 決められる。例：7 で 引いた 後の 手札で、セットする カードを 選ぶ・5 で 捨てる カードを 選ぶ）</li><li>最後の ターンに 神様馬・幻の馬で 勝った ときは、次の ターンが ない ので 効果は ないよ</li></ul>'
-      + '<h4>見た カード・見られた カード</h4><ul><li>効果で 見た 相手の カードは、相手の 手札に ある 間 表で 見えるよ</li><li>相手に 見られた 自分の カードには 目の 印が 付くよ</li><li>セットした カードは、前に 見た カードでも <b>裏</b>（4 の 効果で 見せる か、オープン するまで）。どの カードを セットしたかは 分からない ので、見た カードは オープンまで 手札に ある ように 見えるよ</li></ul>'
+      + '<h4>見た カード・見られた カード</h4><ul><li>効果で 見た 相手の カードは、相手の 手札に ある 間 表で 見えるよ</li><li>相手に 見られた 自分の カードには 目の 印が 付くよ</li><li>セットした カードは <b>裏</b>（4 の 効果で 見せる か、オープン するまで）。相手の 手札は いつも <b>本当の 手札</b>の まま 見えるよ（見た カードを 相手が セットしたら、その カードは 相手の 手札から 消える）</li></ul>'
       + '<h4>捨て札</h4><ul><li>ボードの「<b>捨て札</b>」を タップすると、捨て札を 見られるよ</li><li><b>終わった ターンの 捨て札</b>（2人が 出した カード）と、<b>効果で 捨てた カード</b>に 分けて 出るよ</li></ul>'
       + `<h4>ご褒美</h4><ul><li>勝つと <b>お世話トークン ${REWARD.win}個</b></li><li><b>${REWARD.every}連勝</b> ごとに <b>${REWARD.bonus}個</b>（負けると 連勝は 0 に 戻るよ。同点は そのまま）</li><li>お世話トークンは 25個 まで。対戦の 途中で やめた・アプリを 閉じた ときも 負けに なるよ</li></ul>`
       + `<h4>バトルコイン</h4><ul><li><b>コンピュータに 勝つと ${COIN.win}枚</b> もらえるよ。連勝すると ボーナス：${COIN.bonus.map(t => `<b>${t[0]}連勝 ごとに ＋${t[1]}枚</b>`).join('・')}（${COIN.bonus.reduce((a, t) => a * t[0], 1)}連勝 など、両方の ときは 両方）</li>`
@@ -2140,7 +2161,8 @@ const CBApp = (() => {
       + '<li>討伐すると <b>次の エリアが 開く</b>よ。負けたら その エリアを <b>1戦目から やり直し</b>。同点は <b>同じ 戦を やり直し</b>（HP は そのまま）</li>'
       + '<li>強い 敵は、決まった 戦で <b>手札に 必ず 強い カード</b>を 持って いるよ（その 戦の 始めに 知らせるよ）</li>'
       + '<li>もらえるのは 決戦調査の バトルコインと、<b>ミッション</b>（コンピュータに 連続勝利）の 連勝。いつもの 勝ち負け・連勝・お世話トークンには 数えないよ</li>'
-      + '<li>戦の 途中で やめる・アプリを 閉じると 調査 失敗（ミッションの 連勝も 0）。<b>毎月 1日に リセット</b>（討伐した エリアも 最初から）</li></ul>'
+      + '<li>戦の 途中で やめる・アプリを 閉じると 調査 失敗（ミッションの 連勝も 0）。<b>毎月 1日に リセット</b>（討伐した エリアも 最初から）</li>'
+      + `<li>🎫 <b>調査隊切符</b>：<b>1戦ごとに 1枚</b> 使うよ（次の 戦・同点の やり直し・もう 一度 挑戦も 1枚）。<b>3分で 1枚</b> たまって、<b>${QT.max}枚 まで</b>。0枚の ときは 戦えないよ（マップの 上の ゲージで 枚数と 次の 1枚 までの 時間が わかるよ）</li></ul>`
       + `<h4>💎 決戦宝石</h4><ul><li><b>決戦調査では いつも 使えるよ</b>：1つの 調査（連勝が 続く 間）で <b>5つ 1回ずつ（合計 5個）</b>。負けて 1戦目から やり直すと また 5つ</li>`
       + `<li>友達との 対戦は、部屋を 作る 人が「<b>決戦宝石 あり</b>」に した とき：2人とも <b>1試合で 5つ 1回ずつ</b>（おたがいの 宝石が 見える）</li>`
       + `<li>宝石は 5つ：${R.GEMS.map(g => `${GEMS[g].n}＝<b>${GEMS[g].t}</b>${headOf(R.GEM_W[g])}`).join('・')}</li>`
@@ -3011,6 +3033,7 @@ const CBApp = (() => {
     if (a === 'qx') { se('tap', 0.6); return showMenu(); }
     if (a === 'qarea') return qArea(+b.dataset.lv);
     if (a === 'qgo') return qGo(+b.dataset.lv);
+    if (a === 'qtk') { se('tap', 0.5); return qtModal(false); }      
     if (a === 'qpx') { se('tap', 0.5); return qPopClose(); }
     if (a === 'qtap') return qTap();
     if (a === 'qback') { se('tap', 0.6); return showQMap(); }
@@ -3189,7 +3212,8 @@ const CBApp = (() => {
           $('.cbslot.my').innerHTML = mySet({ u: x.u, k: c ? c.k : null, tok: c ? c.tok : 0, up: false, blind: false, open: false });
           hand = hand.filter(q => q.u !== x.u); const h = $('.cbhand').querySelector(`[data-u="${x.u}"]`); if (h) h.remove();
         } else {                                       
-          const hs = Array.from($('.cbohand').children), h = hs.filter(e => !e.dataset.ck).pop() || hs[hs.length - 1];
+          const keep = new Set(((v && v.op && v.op.hand) || []).map(c => String(c.u))), hs = Array.from($('.cbohand').children);
+          const h = hs.find(e => !keep.has(e.dataset.u)) || hs.filter(e => !e.dataset.ck).pop() || hs[hs.length - 1];
           await fly(null, h ? box(h) : mid(handBox('op'), 40), slotBox('op'), 300, false, 'op'); if (h) h.remove(); $('.cbslot.op').innerHTML = cardBtn({ u: 0, k: null }, '', '', 'op');
         }
       } else if (x.e === 'sixt') {                     
@@ -3471,6 +3495,57 @@ const CBApp = (() => {
   const qRoll = () => { const k = monthKey(); if (k <= st.q.m) return false; st.q = { m: k, clr: 0 }; save(); return true; };      
   const qOpen = () => Math.min(QN, st.q.clr + 1);              
   
+  
+  
+  
+  
+  const QT = { max: 15, ms: 180000 };
+  let qtTick = 0;                                      
+  
+  const QTG = { cut: [0, 24.616, 29.18, 33.768, 38.379, 44.364, 50.419, 55.17, 59.851, 64.718, 70.89, 77.038, 81.858, 86.656, 91.476, 100], right: 20.121, mid: 30.903, ar: 7.4549 };
+  const qtT = () => nowD().getTime();
+  function qtNow() {                                    
+    const t = qtT(); let s = st.qt;
+    if (!s) { s = st.qt = { n: QT.max, at: t }; save(); }
+    if (s.n >= QT.max) { s.n = QT.max; return s; }
+    if (t < s.at) { s.at = t; save(); return s; }      
+    const k = Math.floor((t - s.at) / QT.ms);
+    if (k > 0) { s.n = Math.min(QT.max, s.n + k); s.at = s.n >= QT.max ? t : s.at + k * QT.ms; save(); }
+    return s;
+  }
+  const qtLeft = () => { const s = qtNow(); return s.n >= QT.max ? 0 : Math.max(0, QT.ms - (qtT() - s.at)); };      
+  function qtUse() { const s = qtNow(); if (s.n < 1) return false; if (s.n >= QT.max) s.at = qtT(); s.n -= 1; save(); return true; }      
+  const mmss = ms => { const x = Math.ceil(ms / 1000); return `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}`; };
+  const qtWait = () => `切符が たまるまで あと ${mmss(qtLeft())}`;
+  function qtPaint() {                                  
+    if (!st || !ov || !ov.classList.contains('on')) return;
+    const s = qtNow(), n = s.n, g = scr.qmap && $('.qtg', scr.qmap);
+    if (g && screen === 'qmap') {
+      const nb = $('.n', g); if (nb.textContent !== String(n)) nb.textContent = String(n);
+      $('.f', g).style.clipPath = `inset(0 ${(100 - QTG.cut[n]).toFixed(3)}% 0 0)`;
+      const rc = n < QT.max ? `次の 1枚 まで ${mmss(qtLeft())}` : ''; if ($('.rc', g).textContent !== rc) $('.rc', g).textContent = rc;
+      g.setAttribute('aria-label', `調査隊切符 ${n}／${QT.max}枚${rc ? '・' + rc : ''}（タップで くわしく）`);
+      const po = $('.qpo.op', scr.qmap);
+      if (po) {
+        const tk = $('.qpotk b', po); if (tk) tk.textContent = String(n);
+        const go = $('[data-cb=qgo]', po); if (go) { go.disabled = n < 1; const w = $('small', go); if (w) w.textContent = n < 1 ? qtWait() : ''; }
+      }
+    }
+    if (modOn()) {
+      modEl.querySelectorAll('[data-qt]').forEach(b => { b.disabled = n < 1; const w = $('.qtw', b); if (w) w.textContent = n < 1 ? qtWait() : ''; });
+      const ql = $('.qtl b', modEl); if (ql) ql.textContent = String(n);
+      if (modEl.classList.contains('cbqtk')) { $('.qtkn b', modEl).textContent = String(n); $('.qtkr', modEl).textContent = n < QT.max ? `次の 1枚 まで あと ${mmss(qtLeft())}` : '満タン！（15枚）'; }
+    }
+  }
+  const qtLine = () => `<p class="qtl">🎫 調査隊切符 のこり <b>${qtNow().n}</b>枚<small>（1戦ごとに 1枚・3分で 1枚 たまる）</small></p>`;      
+  const qtBtn = (cb, label, cls) => `<button type="button" class="cbb${cls || ''}" data-cb="${cb}" data-qt="1"${qtNow().n < 1 ? ' disabled' : ''}>${label}<small class="qtw">${qtNow().n < 1 ? qtWait() : ''}</small></button>`;      
+  function qtModal(lack) {                              
+    const s = qtNow();
+    modal(`<div class="qtkm"><img class="tk" src="cb_q_tk.webp" alt="調査隊切符">${lack ? '<h3 class="gold">切符が 足りないよ…</h3>' : ''}<p class="qtkn">調査隊切符 <b>${s.n}</b>／${QT.max}枚</p>`
+      + `<p>決戦調査の <b>1戦ごとに 1枚</b> 使うよ<br><b>3分で 1枚</b> たまるよ（${QT.max}枚 まで）</p><p class="qtkr">${s.n < QT.max ? `次の 1枚 まで あと ${mmss(qtLeft())}` : `満タン！（${QT.max}枚）`}</p>`
+      + '<div class="col"><button type="button" class="cbb dk" data-cb="modx">閉じる</button></div></div>', 'cbqtk');
+  }
+  
   function qRigText(cs) {
     if (!cs || !cs.length) return '';
     const n = {}; cs.forEach(k => { n[k] = (n[k] || 0) + 1; });
@@ -3500,7 +3575,7 @@ const CBApp = (() => {
       return `<button type="button" class="qnd ${cls}${q.lv === qNew ? ' nw' : ''}" data-cb="qarea" data-lv="${q.lv}" style="--x:${q.m[0]};--y:${q.m[1]}" aria-label="レベル${q.lv} ${esc(q.a)}（${done ? '討伐済み' : open ? '挑戦できる' : 'まだ 行けない'}）">`
         + `<i class="ring"></i>${lock && !done ? '<i class="lock" aria-hidden="true"></i>' : ''}${done ? '<i class="stamp" aria-hidden="true">討伐</i>' : ''}${open ? '<i class="go" aria-hidden="true">挑戦！</i>' : ''}</button>`;
     }).join('');
-    qMapLayout();
+    qMapLayout(); qtPaint();      
     if (qNew) {
       const q = QUEST[qNew - 1]; qNew = 0;
       if (q && q.lv <= QN) { se('unlock'); toast(`🔓 レベル${q.lv}「${q.a}」が 開いたよ！`, 2.6); }
@@ -3510,10 +3585,11 @@ const CBApp = (() => {
   
   function qMapLayout() {
     if (screen !== 'qmap') return;
-    const w0 = $('.qmw', scr.qmap), m = $('.qmap', scr.qmap), r = w0.getBoundingClientRect();
+    const w0 = $('.qmw', scr.qmap), m = $('.qmap', scr.qmap), g = $('.qtg', scr.qmap), r = w0.getBoundingClientRect();
     if (!r.width || !r.height) return;
-    const w = Math.floor(Math.min(r.width - 8, r.height * 1024 / 1536));
+    const w = Math.floor(Math.min(r.width - 8, (r.height - 6) / (1536 / 1024 + 1 / QTG.ar)));      
     m.style.width = w + 'px'; m.style.height = Math.round(w * 1536 / 1024) + 'px'; m.style.setProperty('--u', (w / 1024).toFixed(5) + 'px');
+    if (g) { g.style.width = w + 'px'; g.style.height = (w / QTG.ar).toFixed(2) + 'px'; }
     qPopPlace();
   }
   
@@ -3528,8 +3604,9 @@ const CBApp = (() => {
     const ns = Object.keys(q.rig), rig = ns.length ? q.rig[ns[0]] : null;      
     const body = done ? '<p class="qpoi"><b>討伐済み！</b><small>来月の リセットまで 待ってね</small></p>'
       : !open ? `<p class="qpoi">🔒 レベル${lv - 1}「${esc(QUEST[lv - 2].a)}」を<br>討伐すると 行けるよ</p>`
-        : `<p class="qpoi"><b>${q.w}連勝</b>で 討伐！　${COINI}<b>${q.c}</b>枚</p>` + (rig ? `<p class="qpor">⚠ ${ns.join('・')}戦目は 敵の 手札に 必ず ${esc(qRigText(rig))}</p>` : '');
-    const bt = '<button type="button" class="cbb dk" data-cb="qpx">もどる</button>' + (open ? `<button type="button" class="cbb" data-cb="qgo" data-lv="${lv}">決戦調査に 行く</button>` : '');
+        : `<p class="qpoi"><b>${q.w}連勝</b>で 討伐！　${COINI}<b>${q.c}</b>枚</p>` + (rig ? `<p class="qpor">⚠ ${ns.join('・')}戦目は 敵の 手札に 必ず ${esc(qRigText(rig))}</p>` : '')
+          + `<p class="qpotk">🎫 1戦ごとに 調査隊切符 1枚（今 <b>${qtNow().n}</b>枚）</p>`;      
+    const bt = '<button type="button" class="cbb dk" data-cb="qpx">もどる</button>' + (open ? `<button type="button" class="cbb" data-cb="qgo" data-lv="${lv}"${qtNow().n < 1 ? ' disabled' : ''}>決戦調査に 行く<small>${qtNow().n < 1 ? qtWait() : ''}</small></button>` : '');
     qPopClose();
     const el = document.createElement('div');
     el.className = 'qpo' + (open ? ' op' : '');
@@ -3560,6 +3637,7 @@ const CBApp = (() => {
   
   function qGo(lv) {
     const q = QUEST[lv - 1]; if (!q || lv !== qOpen() || lv <= st.q.clr) return;
+    if (qtNow().n < 1) { se('tap', 0.5); return qtModal(true); }      
     closeMod(); qPopClose(); se('tap');
     qs = { lv: lv, step: 'say', i: -1, tw: null, g: GEN, rv: 0, snd: false };
     const f = scr.qf;
@@ -3632,10 +3710,12 @@ const CBApp = (() => {
   
   function qBattle() {
     if (!qs || qs.step !== 'en') return;
+    if (!qtUse()) { qs = null; showQMap(); qtModal(true); return; }      
     const lv = qs.lv; qs.step = 'go'; se('tap');
     qRun = { lv: lv, won: 0, m: st.q.m, gu: [] };
     startMatch(CBNet.cpu(CBApp._rng || undefined, CBApp._think || undefined, qOpt(lv, 1)));
     bgmTrack('quest');
+    toast(`🎫 調査隊切符を 1枚 使ったよ（のこり ${qtNow().n}枚）`, 1.8);      
   }
   
   function qHP(left, hit) {
@@ -3687,22 +3767,22 @@ const CBApp = (() => {
       if (no !== gameNo || !match) return;
       if (r.cleared) return qVictory(r, msh);
       se('magic', 0.6);
-      modal(`<h3 class="gold">勝利！</h3><div class="sc">${r.won}連勝<small>あと ${q.w - r.won}連勝で 討伐！</small></div><div class="gift">${qGemLeft()}${msh}`
+      modal(`<h3 class="gold">勝利！</h3><div class="sc">${r.won}連勝<small>あと ${q.w - r.won}連勝で 討伐！</small></div><div class="gift">${qGemLeft()}${qtLine()}${msh}`
         + (r.ms.length ? `<div class="cbcl">${COINI}バトルコイン（今 ${r.coins}枚）</div>` : '') + '</div>'
-        + `<div class="col"><button type="button" class="cbb" data-cb="qnext">第${r.won + 1}戦へ</button><button type="button" class="cbb dk" data-cb="qmapgo">マップへ 戻る<small>この 調査は ここまで</small></button></div>`, 'cbend qend');
+        + `<div class="col">${qtBtn('qnext', `第${r.won + 1}戦へ`)}<button type="button" class="cbb dk" data-cb="qmapgo">マップへ 戻る<small>この 調査は ここまで</small></button></div>`, 'cbend qend');
       return;
     }
     if (x.res === 'lose') {
       se('over');
       modal(`<h3 class="gold">調査 失敗…</h3><div class="sc">${x.wins[0]} － ${x.wins[1]}<small>あなた － ${esc(q.s)}（勝った 数）${x.early ? `<br>${x.early}ターン目で 決着！` : ''}</small></div>`
-        + `<div class="gift"><div>${esc(q.s)}に 負けた…。${r.won ? `${r.won}連勝で 止まったよ` : ''}</div><div>もう 一度 1戦目から 挑戦できるよ（💎 決戦宝石も 5つに 戻るよ）</div>${msh}</div>`
-        + '<div class="col"><button type="button" class="cbb" data-cb="qretry">もう 一度 挑戦</button><button type="button" class="cbb dk" data-cb="qmapgo">マップへ</button></div>', 'cbend qend');
+        + `<div class="gift"><div>${esc(q.s)}に 負けた…。${r.won ? `${r.won}連勝で 止まったよ` : ''}</div><div>もう 一度 1戦目から 挑戦できるよ（💎 決戦宝石も 5つに 戻るよ）</div>${qtLine()}${msh}</div>`
+        + `<div class="col">${qtBtn('qretry', 'もう 一度 挑戦')}<button type="button" class="cbb dk" data-cb="qmapgo">マップへ</button></div>`, 'cbend qend');
       return;
     }
     se('even');
     modal(`<h3 class="gold">同点！</h3><div class="sc">${x.wins[0]} － ${x.wins[1]}<small>あなた － ${esc(q.s)}（勝った 数）</small></div>`
-      + `<div class="gift"><div>同点は 負けじゃ ないよ。<br>第${r.won + 1}戦を やり直そう！（HP は そのまま）</div>${qGemLeft()}${msh}</div>`
-      + `<div class="col"><button type="button" class="cbb" data-cb="qnext">第${r.won + 1}戦を やり直す</button><button type="button" class="cbb dk" data-cb="qmapgo">マップへ 戻る<small>この 調査は ここまで</small></button></div>`, 'cbend qend');
+      + `<div class="gift"><div>同点は 負けじゃ ないよ。<br>第${r.won + 1}戦を やり直そう！（HP は そのまま）</div>${qGemLeft()}${qtLine()}${msh}</div>`
+      + `<div class="col">${qtBtn('qnext', `第${r.won + 1}戦を やり直す`)}<button type="button" class="cbb dk" data-cb="qmapgo">マップへ 戻る<small>この 調査は ここまで</small></button></div>`, 'cbend qend');
   }
   
   function qGemLeft() {
@@ -3712,12 +3792,14 @@ const CBApp = (() => {
   
   function qNext() {
     if (!qRun || qRun.dead || !match || !ended) return;
-    se('tap'); closeMod();
+    if (!qtUse()) { se('tap', 0.5); toast(`🎫 ${qtWait()}`, 1.8); return qtPaint(); }      
+    se('tap'); closeMod(); toast(`🎫 調査隊切符を 1枚 使ったよ（のこり ${qtNow().n}枚）`, 1.8);
     match.setOpt(qOpt(qRun.lv, qRun.won + 1));
     match.again();
   }
   function qRetry() {
     if (!qRun || qRun.dead || !match || !ended) return;
+    if (qtNow().n < 1) { se('tap', 0.5); toast(`🎫 ${qtWait()}`, 1.8); return qtPaint(); }      
     qRun.won = 0; qRun.m = st.q.m; qRun.gu = []; qHP(QUEST[qRun.lv - 1].w, false);      
     qNext();
   }
@@ -3755,7 +3837,9 @@ const CBApp = (() => {
     all: () => { qRoll(); st.q.clr = QN; save(); closeMod(); showQMap(); toast('🧪 全部 討伐済みに したよ', 2); },
     zero: () => { qRoll(); st.q.clr = 0; save(); closeMod(); showQMap(); toast('🧪 討伐を 0 に 戻したよ', 2); },
     next: () => { st.q.m = '2000-01'; qRoll(); closeMod(); showQMap(); toast('🧪 月が 変わった ことに したよ（決戦調査を リセット）', 2.4); },
-    easy: () => { qEasy = !qEasy; closeMod(); showQMap(); toast(qEasy ? '🧪 戦を「1ターンで 勝てる 手札」に したよ' : '🧪 戦を いつもの 手札に 戻したよ', 2.4); }
+    easy: () => { qEasy = !qEasy; closeMod(); showQMap(); toast(qEasy ? '🧪 戦を「1ターンで 勝てる 手札」に したよ' : '🧪 戦を いつもの 手札に 戻したよ', 2.4); },
+    tk0: () => { st.qt = { n: 0, at: qtT() }; save(); closeMod(); showQMap(); toast('🧪 調査隊切符を 0枚に したよ（3分で 1枚 たまる）', 2.4); },      
+    tkf: () => { st.qt = { n: QT.max, at: qtT() }; save(); closeMod(); showQMap(); toast(`🧪 調査隊切符を ${QT.max}枚に したよ`, 2); }
   };
 
   
@@ -3769,8 +3853,10 @@ const CBApp = (() => {
     boardImg();                                        
     actx(); applySets();                               
     showMenu();
+    clearInterval(qtTick); qtTick = setInterval(qtPaint, 1000);      
   }
   function close() {
+    clearInterval(qtTick); qtTick = 0;
     roomStop(); leave(true);
     if (ov) ov.classList.remove('on');
     soundRest();
@@ -3785,7 +3871,7 @@ const CBApp = (() => {
     _t: {      
       get view() { return V; }, get screen() { return screen; }, get match() { return match; }, get mode() { return mode; }, get state() { return st; }, get ended() { return ended; },
       get idle() { return !pumping && !queue.length && !busy && !lock; }, get ask() { return askOn(); }, say, get sets() { return { bgm: bgmOn(), se: seOn(), raw: { bgm: st.bgm, se: st.se }, as: AS }; },
-      qopt: (lv, n) => qOpt(lv, n), qApi, get quest() { return { run: qRun ? Object.assign({}, qRun) : null, st: st ? Object.assign({}, st.q) : null, scene: qs ? { lv: qs.lv, step: qs.step, i: qs.i, typing: !!qs.tw, rv: qs.rv || 0 } : null, data: QUEST, open: st ? qOpen() : 0, track: bg.trk }; },      
+      qopt: (lv, n) => qOpt(lv, n), qApi, qtPaint: () => qtPaint(), get qt() { return st ? Object.assign({ left: qtLeft() }, qtNow()) : null; }, get quest() { return { run: qRun ? Object.assign({}, qRun) : null, st: st ? Object.assign({}, st.q) : null, scene: qs ? { lv: qs.lv, step: qs.step, i: qs.i, typing: !!qs.tw, rv: qs.rv || 0 } : null, data: QUEST, open: st ? qOpen() : 0, track: bg.trk }; },      
       get bgm() { return { on: !!bg.cur, want: bg.want, have: !!bg.buf, gone: bg.gone, pos: bgmPos(), len: BGM.len, pre: BGM.pre, vol: BGM.vol, file: BGM.file, loop: bg.cur ? [bg.cur.s.loopStart, bg.cur.s.loopEnd] : null, ctx: snd.ac ? snd.ac.state : null }; }, setSet, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, pay, load, save, takeGift, modOn, pkDraw, pkPool, pkGroup, randInt, get pk() { return pk; }, dz: t => showDz(t), dzApi, msKey: () => monthKey(), msRoll, ms: tab => showMs(tab), pic
     }
   };
