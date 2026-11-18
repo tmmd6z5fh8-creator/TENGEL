@@ -1244,6 +1244,37 @@ console.log('■ 第4.197版：決戦宝石（まさちゃん 18:58「呼び寄�
     turn(S, '7', '6'); gem(S, 0, 'k'); set(S, 0, 'k'); set(S, 1, 'k'); no6(S);
     check(S.last.res === 'clash' && S.last.c.join('') === 'kk' && S.p[0].wins === 0 && S.p[1].wins === 1, '神様馬トークン と 神様馬が ぶつかったら かぶり（どちらも 負け：勝ちは 1ターン目の まま）');
   }
+  // 第4.201版（まさちゃん 11/18 23:23「トークンで勝ったならトークンにして！」）：神様馬トークン・幻の馬トークンで 勝った → 次の ターンの 効果に トークンの しるし（tok）
+  {
+    const toPre = (S, r) => {      // 効果タイム・6 の 効果は 使わずに 次の ターンの はじめまで すすめる（できごとを ぜんぶ あつめる）
+      const evs = r.ev.slice();
+      for (let n = 0; n < 9 && (S.phase === 'eff' || S.phase === 'six'); n++) [0, 1].forEach(i => {
+        if (S.phase === 'eff' && S.p[i].eff && !S.p[i].eff.done) evs.push(...eff(S, i, null).ev);
+        else if (S.phase === 'six' && S.p[i].six && !S.p[i].six.done) evs.push(...p6(S, i, null).ev);
+      });
+      return evs;
+    };
+    const S = GG('1234567', '1234566', '1234567', [R.GEMS, []]);
+    turn(S, '7', '6'); gem(S, 0, 'k'); set(S, 0, 'k');
+    const evs = toPre(S, set(S, 1, '3')), op = evs.find(e => e.e === 'open'), pre = evs.find(e => e.e === 'pre');
+    check(op && op.res === 0 && S.turn === 3 && S.phase === 'pre' && S.pend.type === 'k' && S.pend.who === 0 && S.pend.tok === 1 && pre && pre.tok === 1 && R.evFor([pre], 0)[0].tok === 1 && R.evFor([pre], 1)[0].tok === 1
+      && R.view(S, 0).pend.tok === 1 && R.view(S, 0).pend.mine && R.view(S, 1).pend.tok === 1 && !R.view(S, 1).pend.mine,
+      '神様馬トークンで 3 に 勝った → 3ターン目の はじめ：神様馬の 効果に トークンの しるし（tok：2人とも 見える）');
+    const k = R.act(S, 0, { t: 'k', pick: S.p[1].hand[0].u });
+    check(k.ok && k.ev[0].e === 'k' && k.ev[0].tok === 1 && R.evFor(k.ev, 0)[0].tok === 1 && R.evFor(k.ev, 1)[0].tok === 1 && R.evFor(k.ev, 0)[0].k && R.evFor(k.ev, 1)[0].k === undefined && !S.pend && S.phase === 'set' && saneG(S),
+      '神様馬トークンの 効果で 1まい 見た：できごとにも tok（見た カードは 自分 だけ）');
+    const M = GG('1234567', '1234566', '1234567', [R.GEMS, []]);
+    turn(M, '7', '6'); gem(M, 0, 'm'); set(M, 0, 'm'); toPre(M, set(M, 1, '3'));
+    check(M.phase === 'pre' && M.pend.type === 'm' && M.pend.tok === 1 && R.view(M, 0).pend.tok === 1 && R.view(M, 1).pend.tok === 1, '幻の馬トークンで 勝った → 幻の馬の 効果に トークンの しるし');
+    const n0 = M.discard.length, d = M.p[0].hand.slice(0, 2).map(c => c.u), m = R.act(M, 0, { t: 'm', drop: d }), nd = M.discard.slice(n0);
+    check(m.ok && m.ev[0].e === 'm' && m.ev[0].tok === 1 && R.evFor(m.ev, 1)[0].tok === 1 && nd.length === 2 && nd.every(x => x.why === 'm' && x.wt === 1)
+      && R.view(M, 0).discard.filter(x => x.wt === 1).length === 2 && R.view(M, 1).discard.filter(x => x.wt === 1 && !x.mine).length === 2 && saneG(M),
+      '幻の馬トークンの 効果で 2まい 捨てた：できごとに tok・捨て札に wt（窓の 名前「幻の馬トークンの 効果」）');
+    const K = G('k2367', '12345'); set(K, 0, 'k'); set(K, 1, '1');
+    const W = G('m6712', '12345', '13'); set(W, 0, 'm'); set(W, 1, '1'); R.act(W, 0, { t: 'm', drop: [U(W, 0, '6'), U(W, 0, '7')] });
+    check(K.phase === 'pre' && !('tok' in K.pend) && !('tok' in R.view(K, 0).pend) && W.discard.every(x => !('wt' in x)) && R.view(W, 0).discard.every(x => !('wt' in x)),
+      '本物の 神様馬・幻の馬で 勝った ときは しるし なし（前と 同じ）');
+  }
   // 1トークン（2頭分）で 逆転勝利
   {
     const S = GG('1234567', 'k234566', '1234567', [R.GEMS, []]);

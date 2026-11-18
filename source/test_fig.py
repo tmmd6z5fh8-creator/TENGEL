@@ -12,7 +12,7 @@ subprocess.run(['python3', 'build_pwa.py', os.path.join(SRV, 'APP')], check=True
 pth = os.path.join(SRV, 'APP', 'index.html'); html = open(pth, encoding='utf8').read()
 open(pth, 'w', encoding='utf8').write(html.replace("window.__NATIVE = location.protocol === 'tengel:';", 'window.__NATIVE = true;'))
 from assets_dir import adir
-FGA = adir('fig_assets'); HAVE = os.path.isdir(FGA) and len(os.listdir(FGA)) > 45      # 第4.176版：デザインが 5種に なって 56こ（前は 8種で 83こ）
+FGA = adir('fig_assets'); HAVE = os.path.isdir(FGA) and len(os.listdir(FGA)) > 45      # 第4.176版：デザインが 5種に なって 56こ（前は 8種で 83こ）・第4.201版：ブースが 5つ（棚の 絵 c6・c7 を 入れない）で 54こ
 if HAVE:
     for f in os.listdir(FGA): shutil.copy(os.path.join(FGA, f), os.path.join(SRV, 'APP', f))
 else:
@@ -228,6 +228,9 @@ try:
         pg.locator('#fgOv [data-fg=move]').click(); wait_scene(pg)
         id7 = pg.evaluate("() => TengelWallet.fig.slots()[4]")
         pg.evaluate("() => FigApp._t.goPage(1)"); pg.wait_for_timeout(900); wait_scene(pg)
+        PG = "() => ({ t: document.querySelector('#fgOv .fgt span').textContent, dots: document.querySelectorAll('#fgOv .fgdots i').length, on: [...document.querySelectorAll('#fgOv .fgdots i')].findIndex(i => i.classList.contains('on')), prev: document.querySelector('#fgOv [data-fg=prev]').disabled, next: document.querySelector('#fgOv [data-fg=next]').disabled })"
+        pq = pg.evaluate(PG)
+        check(pq == {'t': 'ブース 2 / 5', 'dots': 5, 'on': 1, 'prev': False, 'next': False}, f'第4.201版：ブースは 5つ（上の 字「ブース 2 / 5」・下の 点 5つ）（{pq}）')
         pg.evaluate("() => FigApp._t.tapSlot(3)"); wait_scene(pg)
         s2 = pg.evaluate("() => TengelWallet.fig.slots()")
         check(s2[4] is None and s2[8 + 3] == id7, 'ブース 2 の 2段目 右へ 動かした')
@@ -237,14 +240,18 @@ try:
         check(pg.evaluate("() => TengelWallet.fig.slots().filter(Boolean).length") == 7 and pg.locator('#fgOv [data-fg=place]').count() == 1, 'しまった（部屋に「ブースに飾る」）')
         pg.locator('#fgOv [data-fg=back]').click(); wait_scene(pg)
         check('しまってある（1）' in pg.locator('#fgOv .fgf').inner_text(), 'しまってある（1）')
-        print('■ 一覧（7つの ブース）')
+        print('■ 一覧（5つの ブース：第4.201版）')
         pg.locator('#fgOv [data-fg=over]').click()
-        pg.wait_for_function("() => { const c = document.querySelectorAll('#fgOv .fgoc canvas'); if (c.length !== 7) return false; const g = c[6].getContext('2d'); return g.getImageData(150, 200, 1, 1).data[3] > 0; }", timeout=240000)
+        pg.wait_for_function("() => { const c = document.querySelectorAll('#fgOv .fgoc canvas'); if (c.length !== 5) return false; const g = c[4].getContext('2d'); return g.getImageData(150, 200, 1, 1).data[3] > 0; }", timeout=240000)
         o = pg.evaluate("() => [...document.querySelectorAll('#fgOv .fgoc small')].map(x => x.textContent)")
         a = pg.evaluate("() => { const c = document.querySelector('#fgOv .fgoc canvas'), g = c.getContext('2d'); const d = g.getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 0) n++; return n / (c.width * c.height); }")
-        check(o == ['7 / 8'] + ['0 / 8'] * 6 and a > 0.5, f'7つの ブースの 写真・数（{o}・うまって いる 割合 {a:.2f}）')
-        check('7 / 56' in pg.locator('#fgOv .fgos').inner_text(), '飾っている フィギュア 7 / 56')
-        check(all(f'fg_shelf2_c{i}.webp' in reqs for i in range(1, 8)), '第4.153版：7つの ブースの 棚の 絵（fg_shelf2_c1〜7.webp）を 全部 読んだ')
+        check(o == ['7 / 8'] + ['0 / 8'] * 4 and a > 0.5, f'5つの ブースの 写真・数（{o}・うまって いる 割合 {a:.2f}）')
+        check('7 / 40' in pg.locator('#fgOv .fgos').inner_text(), '飾っている フィギュア 7 / 40')
+        gr = pg.evaluate("() => [...document.querySelectorAll('#fgOv .fgov > *')].map(e => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.right), e.className]; })")
+        check(len(gr) == 6 and gr[0][1] == gr[1][1] == gr[2][1] and gr[3][1] == gr[4][1] == gr[5][1] and gr[3][1] > gr[0][1] and [g[0] for g in gr[:3]] == [g[0] for g in gr[3:]] and gr[5][3] == 'fgos' and all(g[0] >= 0 and g[2] <= 390 for g in gr),
+              f'一覧は 3つ × 2段（ブース 1〜5 ＋「飾っている フィギュア」：あまりの すき間 なし・画面の 中）（{gr}）')
+        check(all(f'fg_shelf2_c{i}.webp' in reqs for i in range(1, 6)) and not any(f in reqs for f in ('fg_shelf2_c6.webp', 'fg_shelf2_c7.webp')) and not any(os.path.isfile(os.path.join(FGA, f)) for f in ('fg_shelf2_c6.webp', 'fg_shelf2_c7.webp')),
+              '第4.201版：5つの ブースの 棚の 絵（fg_shelf2_c1〜5.webp）を 全部 読んだ・6・7 の 絵は 読まない（アプリにも 入れない）')
         shot(pg, 'fig_over')
         pg.locator('#fgOv .fgoc[data-p="0"]').click(); wait_scene(pg)
         print('■ しまってある → 空きに 飾る')
@@ -318,6 +325,53 @@ try:
               f'番号 2・6・7 の フィギュアを 外した（飾って いた 場所は 空き）・+84,000P（22,000＋32,000＋30,000）・幻の馬＆神様馬（番号 8）は そのまま・もう一度 よんでも 返さない・お知らせ（{g0["t1"] - g0["t0"]}・{g0["back"]}・{g0["toast"][:40]}）')
         bs = [pg.evaluate("async ([n, c]) => await TengelWallet.fig.buy({ id: 'fx176_' + n, n: n, bet: 'figm1', info: {} }, c)", [n, c]) for n, c in ((2, 22000), (6, 32000), (7, 30000))]
         check(all(x == {'ok': False, 'why': 'bad'} for x in bs), f'なくした 番号（2・6・7）は もう 作れない（{bs}）')
+        # ---------- 第4.201版：ブースは 5つ（40こ）・前の 6・7 ブースの フィギュアは 消えない ----------
+        print('■ 第4.201版：ブース 7 → 5（まさちゃん 11/18 23:23「思い出フィギュアのブース7から5に変更して！」）：6・7 ブースに 飾って いた フィギュアは 1〜5 の 空きへ')
+        # ① 前の 版の バックアップ（56こ）を 戻す：2つ目・5つ目の フィギュアが 前の 6 ブース・7 ブースに あった 形
+        m0 = pg.evaluate("""async () => {
+          const s = TengelWallet.snapshot(), sl = s.figs.slots, n = sl.filter(Boolean).length, old = Array(56).fill(null);
+          sl.forEach((v, i) => { old[i] = v; });
+          const a = old[1], b = old[4]; old[1] = null; old[4] = null; old[53] = a; old[45] = b;      // 6 ブース（45）に b・7 ブース（53）に a
+          s.figs.slots = old; await TengelWallet.restore(s);
+          const w = TengelWallet.snapshot();
+          return { a, b, n, len: w.figs.slots.length, s1: w.figs.slots[1], s4: w.figs.slots[4], placed: w.figs.slots.filter(Boolean).length, items: w.figs.items.length, store: (await TengelLocal.getMeta('wallet')).figs.slots.length };
+        }""")
+        check(m0['len'] == 40 and m0['store'] == 40 and m0['s1'] == m0['b'] and m0['s4'] == m0['a'] and m0['placed'] == m0['n'] == 8 and m0['items'] == 8,
+              f'前の 版の 台帳（56こ）を 戻す → 置き場所は 40こ・6 ブースの フィギュア → 1つ目の 空き（2つ目の 場所）・7 ブースの → 次の 空き（5つ目の 場所）・8体 とも 飾った まま（{m0}）')
+        # ② アプリを 新しく した ときと 同じ：iPhone の 中の 台帳が 56こ（8体 とも 6・7 ブース）→ 開き直す
+        pg.evaluate("""async () => {
+          const d = await TengelLocal.getMeta('wallet'), ids = d.figs.slots.filter(Boolean), old = Array(56).fill(null);
+          ids.forEach((v, k) => { old[54 - k * 2] = v; });      // 55・53・51… 番目（6・7 ブース）に とびとびに・ならびは 逆（1体目が いちばん 後ろ）
+          d.figs.slots = old; await TengelLocal.putMeta(d); window.__ids201 = ids;
+          localStorage.setItem('tengel.figpage', '6');      // さいごに 見て いた ブース＝前の 7 ブース
+        }""")
+        ids = pg.evaluate("() => window.__ids201")
+        pg.reload(); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(600)
+        pg.wait_for_function("() => window.TengelWallet && TengelWallet.fig", timeout=30000)
+        m1 = pg.evaluate("async () => { await TengelWallet.ready; return { slots: TengelWallet.fig.slots(), items: TengelWallet.fig.items().map(x => x.id) }; }")
+        check(len(m1['slots']) == 40 and m1['slots'][:8] == ids[::-1] and not any(m1['slots'][8:]) and sorted(m1['items']) == sorted(ids),
+              f'開き直す → 6・7 ブースの 8体は 1 ブースの 空きに 前の 場所の 順で（41 番目に いた フィギュアが 1つ目の 場所へ）・8体 とも 台帳に ある')
+        pg.locator('#figFab').click(); pg.wait_for_function("() => !!window.FigApp", timeout=30000); wait_scene(pg)
+        pq = pg.evaluate(PG); ph = pg.evaluate("() => FigApp._t.page")
+        pg.evaluate("() => FigApp._t.goPage(1)"); pg.wait_for_timeout(600); pq2 = pg.evaluate(PG)
+        check(ph == 4 and pq == {'t': 'ブース 5 / 5', 'dots': 5, 'on': 4, 'prev': False, 'next': True} and pq2 == pq and pg.evaluate("() => localStorage.getItem('tengel.figpage')") == '4',
+              f'さいごに 見て いた ブースが 前の 7 ブース → ブース 5 を 出す（次へは 押せない）（{pq}）')
+        shot(pg, 'fig_booth5')
+        pg.evaluate("() => FigApp._t.goPage(-4)"); pg.wait_for_timeout(600); wait_scene(pg)
+        pq3 = pg.evaluate(PG); nb = pg.evaluate("() => FigApp._t.slots.slice(0, 8).filter(Boolean).length")
+        check(pq3['t'] == 'ブース 1 / 5' and nb == 8, f'ブース 1 に 8体（{pq3["t"]}・{nb}）')
+        shot(pg, 'fig_booth1_moved')
+        # ③ 1〜5 ブースが いっぱい（40体）の とき：はみ出た 2体は しまってある に（台帳には ある）
+        m2 = pg.evaluate("""async () => {
+          const s = TengelWallet.snapshot(), base = s.figs.items[0];
+          for (let k = 0; s.figs.items.length < 42; k++) s.figs.items.push(Object.assign(JSON.parse(JSON.stringify(base)), { id: 'f201_' + k }));
+          const all = s.figs.items.map(x => x.id), old = Array(56).fill(null);
+          all.slice(0, 40).forEach((v, i) => { old[i] = v; }); old[44] = all[40]; old[50] = all[41];
+          s.figs.slots = old; await TengelWallet.restore(s);
+          const w = TengelWallet.snapshot();
+          return { len: w.figs.slots.length, placed: w.figs.slots.filter(Boolean).length, items: w.figs.items.length, out: [all[40], all[41]].filter(id => w.figs.slots.indexOf(id) < 0).length, keep: all.slice(0, 40).every((v, i) => w.figs.slots[i] === v) };
+        }""")
+        check(m2 == {'len': 40, 'placed': 40, 'items': 42, 'out': 2, 'keep': True}, f'1〜5 ブースが いっぱい → 6・7 ブースの 2体は しまってある に（42体 とも 台帳に ある・1〜5 の 40体は そのまま）（{m2}）')
         pg.wait_for_timeout(400)
         check(not errs, f'エラー なし {errs[:3]}')
 finally:

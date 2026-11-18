@@ -224,7 +224,7 @@ const FigGL = (() => {
       const eye = [tgt[0] + dist * Math.sin(a) * Math.cos(e), tgt[1] + dist * Math.sin(e), tgt[2] + dist * Math.cos(a) * Math.cos(e)];
       return { eye, VP: M4.mul(M4.persp(fov, asp, Math.max(0.5, dist - 3), dist + 3), M4.look(eye, tgt)) };
     }
-    const SHELF = 'fg_shelf2';                       // 棚の 形の 名前（第4.153版：貼り直した 形）。絵は <名前>_c1〜7.webp
+    const SHELF = 'fg_shelf2';                       // 棚の 形の 名前（第4.153版：貼り直した 形）。絵は <名前>_c1〜5.webp（第4.201版：ブースは 5つ。c6・c7 は アプリに 入れない）
     async function shelfMesh() { return mesh(SHELF); }
     const shelfTex = p => `${SHELF}_c${p + 1}.webp`;
     function drawBooth(W, H, B) {

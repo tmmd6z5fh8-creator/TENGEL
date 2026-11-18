@@ -38,7 +38,7 @@
   //                   board{ reads（買った あとに 読み込んだ レース）, selHit（的中の ときに 使う もの）・selMiss（ハズレの ときに 使う もの）（'none'＝なし・''＝まだ 選んで いない）,
   //                          streak（連続的中）, mstreak（続けて ハズレた 数：第4.121版）, res[]（連続に 数えた レース） },
   //                   pack{ reads（壁紙パックを 買った あとに 読み込んだ レース） },
-  //                   figs{ items[]（思い出フィギュア：第4.134版）, slots[56]（ブースの 置き場所：id か null） },
+  //                   figs{ items[]（思い出フィギュア：第4.134版）, slots[40]（ブースの 置き場所：id か null。第4.201版で 56 → 40） },
   //                   hold[]（あずかりポイント：上限を こえて 届いた ぶん。points.js の holdSplit・holdRelease：第4.139版）,
   //                   ord（1＝できごとに 書いた 順の 番号 n を ふって ある：points.js の「台帳の ならび」：第4.139版） }
   //   paid の 1件＝{ pid, at, date, venue, r, rname, start, dist, last, ck（ミッションに 数えた レース：1回の 読み込みで 数える のは 1レースだけ：第4.139版）,
@@ -46,13 +46,22 @@
   let W = null, saving = Promise.resolve();
   const newId = () => Math.random().toString(36).slice(2, 10);
   const blank = () => ({ id: 'wallet', v: 1, device: newId(), events: [], paid: [], counted: {}, gift: null, at: '', board: { reads: 0, selHit: '', selMiss: '', streak: 0, mstreak: 0, res: [] }, pack: { reads: 0 }, hold: [] });
-  // 思い出フィギュア（第4.134版・fig/fig_app.js）：作った フィギュア（ボードの 文は 作った ときの まま）と ブースの 置き場所（7ブース × 8 ＝ 56）
-  const FIG_SLOTS = 56;
+  // 思い出フィギュア（第4.134版・fig/fig_app.js）：作った フィギュア（ボードの 文は 作った ときの まま）と ブースの 置き場所（5ブース × 8 ＝ 40）
+  //   第4.201版（まさちゃん 2026/11/18 23:23「思い出フィギュアのブース7から5に変更して！」）：7ブース（56）→ 5ブース（40）。
+  //   前の 6・7 ブース（41〜56 番目）に 飾って いた フィギュアは、1〜5 ブースの あいて いる 所に 前から 順に 移す。
+  //   あいて いなければ 置き場所なし（＝「しまってある」）。フィギュア（items）は どれも 消さない
+  const FIG_SLOTS = 40;
   function figNorm(f) {
     const o = f && typeof f === 'object' ? f : {};
     const items = (Array.isArray(o.items) ? o.items : []).filter(x => x && typeof x.id === 'string' && x.id && +x.n >= 1 && +x.n <= 8);
-    const ids = new Set(items.map(x => x.id)), seen = new Set();
-    const slots = Array.from({ length: FIG_SLOTS }, (_, i) => { const v = Array.isArray(o.slots) ? o.slots[i] : null; if (typeof v === 'string' && ids.has(v) && !seen.has(v)) { seen.add(v); return v; } return null; });
+    const ids = new Set(items.map(x => x.id)), seen = new Set(), src = Array.isArray(o.slots) ? o.slots : [];
+    const ok = v => typeof v === 'string' && ids.has(v) && !seen.has(v);
+    const slots = Array.from({ length: FIG_SLOTS }, (_, i) => { const v = src[i]; if (ok(v)) { seen.add(v); return v; } return null; });
+    for (let i = FIG_SLOTS; i < src.length; i++) {      // 第4.201版：はみ出た 置き場所（前の 6・7 ブース）の フィギュアを あいて いる 所へ
+      const v = src[i]; if (!ok(v)) continue;
+      const e = slots.indexOf(null); if (e < 0) break;
+      seen.add(v); slots[e] = v;
+    }
     return { items, slots };
   }
   function normalize(w) {
@@ -1218,7 +1227,7 @@
     pack: { info: packInfo, buy: btn => buy(P.WALLPACK.product, btn), restore: btn => restore(btn), price: () => price(P.WALLPACK.product), products: () => loadProducts(false) },
     // お得パック（第4.114版・bcx.js と kisekae.js が 使う）：offer＝出すか（単品を どちらも 持って いない とき）
     bundle: { owned: () => !!W && P.bundleOwned(W.events), offer: () => !!W && P.bundleOffer(W.events), buy: btn => buy(P.BUNDLE.product, btn), price: () => price(P.BUNDLE.product), products: () => loadProducts(false) },
-    // 思い出フィギュア（第4.134版・fig/fig_app.js）：buy＝ポイントを 使って 作る（unlock-fig:<id>・slot を 渡せば そこに 飾る）・place＝飾る 場所（56こ）を 書く
+    // 思い出フィギュア（第4.134版・fig/fig_app.js）：buy＝ポイントを 使って 作る（unlock-fig:<id>・slot を 渡せば そこに 飾る）・place＝飾る 場所（40こ：第4.201版）を 書く
     fig: {
       // 第4.176版：なくした デザイン（points.js の FIG_GONE）の フィギュアは 渡さない（ポイントを 返して 台帳から 外す 前でも）
       items: () => (W ? JSON.parse(JSON.stringify(W.figs.items.filter(x => !P.figGone(x.n)))) : []),

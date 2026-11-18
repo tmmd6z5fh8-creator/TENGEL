@@ -2129,7 +2129,7 @@ try:
               f'神様馬トークンを セット（伏せて：{ms}）→ オープン：神様馬 と 同じ 強さで 勝ち（{v2["last"]}）')
         pg.wait_for_function("() => document.querySelector('#cbOv .cbmod.cbask')", timeout=20000)
         aq2 = pg.evaluate(ASKQ)
-        check(aq2 and aq2['q'] == '神様馬の 効果を 使う？', f'神様馬トークンで 勝った → 次の ターンの 始めに 神様馬の 効果（{aq2 and aq2["q"]}）')
+        check(aq2 and aq2['q'] == '神様馬トークンの 効果を 使う？' and aq2['img'] == 'cb_ctk.webp', f'神様馬トークンで 勝った → 次の ターンの 始めに 神様馬トークンの 効果（第4.201版：絵も トークン）（{aq2 and [aq2["q"], aq2["img"]]}）')
         pg.locator('#cbOv .cbmod.cbask [data-cb=kskip]').click(); idle(pg)
         guse(pg, 'm'); b3 = pg.evaluate(GEMQ)
         check(pg.evaluate(TOKV) == 'm×1' and b3['gs'] == 'm:used k:used 1:used 3:off 7:off' and b3['tok'] == ['m×1=cb_stm.webp'], f'3ターン目：幻影のアメジスト → 幻の馬トークン（{b3["gs"]}）')
@@ -2176,6 +2176,63 @@ try:
         check(sorted(th['im']) == ['cb_s3.webp', 'cb_st3.webp'] and '3トークン（2頭分）と 3 で 3枚 ぶん 見せたよ' in th['t'] and '3' not in pg.evaluate(HAND) and pg.evaluate(TOKV) == '' and any('消えたよ' in x for x in s10),
               f'使う → 見せるのは 3トークンと 3（{th["im"]}）・わたすのは 本物の 3（手札 {h3} → {pg.evaluate(HAND)}）・トークンは ターンの 終わりに 消える')
         pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(150)
+        # E：神様馬トークン・幻の馬トークンで 勝った → 次の ターンの 効果も トークン（第4.201版・まさちゃん 11/18 23:23「トークンで勝ったならトークンにして！」）
+        print('■ 決戦宝石：神様馬トークン・幻の馬トークンで 勝った ときの 効果は トークンの 絵と 名前（第4.201版）')
+        pg.evaluate("""() => { window.__usei = []; if (window.__useo) window.__useo.disconnect(); const e = document.querySelector('#cbOv .cbuse');
+          window.__useo = new MutationObserver(() => { if (!e.classList.contains('on')) return; const s = [...e.querySelectorAll('img')].map(i => i.getAttribute('src')).join(',') + '|' + e.textContent; if (window.__usei[window.__usei.length - 1] !== s) window.__usei.push(s); });
+          window.__useo.observe(e, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] }); }""")
+        USEI = "() => { const a = window.__usei.slice(); window.__usei.length = 0; return a; }"
+        BAR = """() => { const a = document.querySelector('#cbOv .cbact'), r = a.getBoundingClientRect(); return [...a.querySelectorAll('.cbb')].map(b => { const q = b.getBoundingClientRect(); return { t: b.textContent.trim(), fit: b.scrollWidth <= b.clientWidth + 1 && q.left >= r.left - 1 && q.right <= r.right + 1 && q.right <= innerWidth }; }); }"""
+        startG('12345', '23456', deck='1234')
+        guse(pg, 'k'); cset(pg, 'k', tok=True); said(pg); opp(pg, {'t': 'set', 'k': 2})
+        pg.wait_for_function("() => document.querySelector('#cbOv .cbmod.cbask')", timeout=20000)
+        ek = pg.evaluate(ASKQ); se1 = said(pg)
+        check(ek and ek['head'] == '神様馬トークンで 勝った！' and ek['q'] == '神様馬トークンの 効果を 使う？' and ek['text'] == '相手の 手札を 1枚 見られるよ' and ek['img'] == 'cb_ctk.webp'
+              and any(x.startswith('ban:神様馬トークンの 効果') and '使うか 選んでね' in x for x in se1) and not any(x.startswith('ban:神様馬の 効果') for x in se1),
+              f'神様馬トークンで 勝った → 2ターン目の 始めの 窓は 神様馬トークンの 絵・「神様馬トークンで 勝った！／神様馬トークンの 効果を 使う？」・帯も「神様馬トークンの 効果」（{ek and [ek["head"], ek["q"], ek["img"]]}）')
+        shot(pg, 'cb_tok_kwin')
+        peek(pg); mk = pg.evaluate(MSG); bk = pg.evaluate(BAR)
+        pg.set_viewport_size({'width': 375, 'height': 667}); pg.wait_for_timeout(300); bk5 = pg.evaluate(BAR)
+        pg.set_viewport_size({'width': 390, 'height': 844}); pg.wait_for_timeout(300)
+        check(mk == '神様馬トークンで 勝った！ 効果を 使う？\n相手の 手札を 1枚 見られるよ' and [b['t'] for b in bk] == ['使わない', '神様馬トークンの 効果を 使う'] and all(b['fit'] for b in bk + bk5),
+              f'窓を 下げた ときの 下の 字・ボタンも「神様馬トークン」（ボタンは はみ出ない：390・375 幅）（{mk!r}・{bk5}）')
+        pg.locator('#cbOv [data-cb=kgo]').click(); pg.wait_for_timeout(80)
+        pk = pg.evaluate("() => document.querySelector('#cbOv .cbmod h3').textContent")
+        pg.evaluate("() => { window.__seen = []; }"); pg.evaluate(USEI)
+        pg.locator('#cbOv .cbmod .pick .cbc').first.click(); idle(pg)
+        seen = pg.evaluate("() => window.__seen"); uk = pg.evaluate(USEI); v5 = pg.evaluate(V)
+        check(pk == '神様馬トークンの 効果' and any(x.startswith('神様馬トークンの 効果|') for x in seen) and len(uk) == 1 and uk[0].startswith('cb_stk.webp|あなたが 使った！神様馬トークンの 効果手札を 1枚 見る前の ターンに 神様馬トークンで 勝った ので、')
+              and len([c for c in v5['op']['hand'] if c['k']]) == 1 and v5['turn'] == 2 and v5['phase'] == 'set',
+              f'「使う」→ 選ぶ 窓「神様馬トークンの 効果」→ 効果の 札は 神様馬トークンの 絵・「神様馬トークンの 効果」→ 見た 窓も（{pk}・{uk}・{seen}）')
+        guse(pg, 'm'); cset(pg, 'm', tok=True); said(pg); opp(pg, {'t': 'set', 'k': 3})
+        pg.wait_for_function("() => document.querySelector('#cbOv .cbmod.cbask')", timeout=20000)
+        em = pg.evaluate(ASKQ); se2 = said(pg)
+        check(em and em['head'] == '幻の馬トークンで 勝った！' and em['q'] == '幻の馬トークンの 効果を 使う？' and em['text'] == '手札を 2枚 捨てて、山札から 2枚 引けるよ' and em['img'] == 'cb_ctm.webp'
+              and any(x.startswith('ban:幻の馬トークンの 効果') for x in se2) and pg.evaluate(V)['turn'] == 3,
+              f'幻の馬トークンで 勝った → 3ターン目の 始めの 窓は 幻の馬トークンの 絵・「幻の馬トークンで 勝った！／幻の馬トークンの 効果を 使う？」（{em and [em["head"], em["q"], em["img"]]}）')
+        shot(pg, 'cb_tok_mwin')
+        peek(pg); mm = pg.evaluate(MSG); am = acts(pg)
+        check(mm == '幻の馬トークンで 勝った！ 効果を 使う？\n手札を 2枚 捨てて、山札から 2枚 引けるよ' and am == ['使わない', '幻の馬トークンの 効果を 使う'], f'下の 字・ボタンも「幻の馬トークン」（{mm!r}・{am}）')
+        pg.locator('#cbOv [data-cb=mpick]').click(); pg.wait_for_timeout(80)
+        hm = pg.evaluate(HAND); tap(pg, hm[0]); tap(pg, hm[1]); pg.evaluate(USEI); said(pg)
+        pg.locator('#cbOv .cbact [data-cb=mgo]').click(); idle(pg)
+        um = pg.evaluate(USEI); s11 = said(pg)
+        pg.locator('#cbOv [data-cb=discard]').click(); pg.wait_for_timeout(100)
+        dm2 = pg.evaluate(DM); pg.locator('#cbOv .cbmod [data-cb=modx]').click(); pg.wait_for_timeout(60)
+        check(len(um) == 1 and um[0].startswith('cb_stm.webp|あなたが 使った！幻の馬トークンの 効果捨てて 引き直す前の ターンに 幻の馬トークンで 勝った ので、') and any(x.startswith('toast:幻の馬トークンの 効果！') for x in s11)
+              and f'ターン 3始め|あなたの 幻の馬トークンの 効果={hm[0]}{hm[1]}' in dm2['effs'],
+              f'2枚 捨てて 引いた：効果の 札は 幻の馬トークンの 絵・知らせ・捨て札の 窓も「あなたの 幻の馬トークンの 効果」（{um}・{dm2["effs"]}）')
+        # 相手が 神様馬トークンで 勝った（友だちとの 対戦で 起きる 形：ここでは コンピュータの 席に 宝石を 持たせて テストが 手を 打つ）
+        startG('12345', '23456', deck='1234', g1='mk137')
+        opp(pg, {'t': 'gem', 'g': 'k'}); cset(pg, '3'); said(pg); opp(pg, {'t': 'set', 'k': 'k'})
+        so = said(pg); mo = pg.evaluate(MSG)
+        check(pg.evaluate(V)['pend'] == {'type': 'k', 'mine': False, 'tok': 1} and any(x.startswith('ban:神様馬トークンの 効果') and 'コンピュータが 使うか 選ぶよ' in x for x in so) and mo == 'コンピュータが 神様馬トークンの 効果を 使うか 選んで いるよ…',
+              f'相手が 神様馬トークンで 勝った → 帯「神様馬トークンの 効果」・下の 字「コンピュータが 神様馬トークンの 効果を 使うか 選んで いるよ…」（{mo!r}）')
+        pg.evaluate(USEI); opp(pg, {'t': 'k', 'pickk': 2}); uo = pg.evaluate(USEI); so2 = said(pg)
+        check(len(uo) == 1 and uo[0].startswith('cb_stk.webp|コンピュータが 使った！神様馬トークンの 効果手札を 1枚 見る前の ターンに 神様馬トークンで 勝った ので、あなたの 手札を 1枚 見るよ')
+              and any('コンピュータが 神様馬トークンの 効果で、' in x and 'あなたの 2 を 見たよ' in x for x in so2),
+              f'相手が 神様馬トークンの 効果を 使った：効果の 札は 神様馬トークンの 絵・知らせも「神様馬トークンの 効果で」（{uo}）')
+        pg.evaluate("() => { if (window.__useo) window.__useo.disconnect(); CBApp._t.menu(); }"); pg.wait_for_timeout(150)
         # D：決戦宝石 なし の いつもの 対戦：ケースは 出ない（画面も 前と 同じ）
         start(pg, '12345', '23456')
         d0 = pg.evaluate(GEMQ)

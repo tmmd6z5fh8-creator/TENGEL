@@ -343,7 +343,7 @@ const CBRules = (() => {
       else {
         const j = idx(Q.hand, a.pick); if (j < 0 || P.known.indexOf(a.pick) >= 0) return bad('pick');      // 見るのは まだ 見て いない カード だけ（第4.178版）
         learn(P, Q.hand[j].u);
-        ev.push({ e: 'k', who: i, pick: Q.hand[j].u, k: Q.hand[j].k });
+        ev.push(Object.assign({ e: 'k', who: i, pick: Q.hand[j].u, k: Q.hand[j].k }, S.pend.tok ? { tok: 1 } : {}));
       }
       S.pend = null; S.phase = 'set';
       return { ok: true, ev: ev };
@@ -356,10 +356,10 @@ const CBRules = (() => {
         const j0 = idx(P.hand, a.drop[0]), j1 = idx(P.hand, a.drop[1]); if (j0 < 0 || j1 < 0) return bad('drop');
         const out = [P.hand[j0], P.hand[j1]];
         P.hand = P.hand.filter(c => out.indexOf(c) < 0);
-        out.forEach(c => toss(S, c, i, 'm'));
+        out.forEach(c => { toss(S, c, i, 'm'); if (S.pend.tok) S.discard[S.discard.length - 1].wt = 1; });      // 第4.201版：wt＝幻の馬トークンの 効果で 捨てた（捨て札の 窓の 名前）
         const drew = []; while (drew.length < 2 && S.deck.length) drew.push(S.deck.pop());
         drew.forEach(c => P.hand.push(c));
-        ev.push({ e: 'm', who: i, drop: out.map(c => ({ u: c.u, k: c.k })), drew: drew.map(c => ({ u: c.u, k: c.k })) });
+        ev.push(Object.assign({ e: 'm', who: i, drop: out.map(c => ({ u: c.u, k: c.k })), drew: drew.map(c => ({ u: c.u, k: c.k })) }, S.pend.tok ? { tok: 1 } : {}));
       }
       S.pend = null; S.phase = 'set';
       return { ok: true, ev: ev };
@@ -495,7 +495,7 @@ const CBRules = (() => {
     S.last = { turn: S.turn, c: [c0.k, c1.k], res: r, rev: !!rev, d4: !!d4 };
     // 神様馬・幻の馬で 勝った：次の ターンの はじめに 効果を 使うか 決める（さいごの ターンは 次が ない ので 出ない。逆転で 負けた ときは 勝って いない ので 出ない）
     S.win = null;
-    if ((r === 0 || r === 1) && S.turn < S.turns) { const wk = r === 0 ? c0.k : c1.k; if (wk === 'k' || wk === 'm') S.win = { type: wk, who: r }; }
+    if ((r === 0 || r === 1) && S.turn < S.turns) { const wc = r === 0 ? c0 : c1, wk = wc.k; if (wk === 'k' || wk === 'm') S.win = Object.assign({ type: wk, who: r }, wc.tok ? { tok: 1 } : {}); }      // 第4.201版：トークンで 勝った（tok）
   }
   function endTurn(S, ev) {
     S.p.forEach((P, i) => { if (P.set) { toss(S, P.set.c, i, 't'); P.set = null; } P.eff = null; });
@@ -537,8 +537,8 @@ const CBRules = (() => {
     if (w) {
       const Wn = S.p[w.who], Ls = S.p[1 - w.who];
       if ((w.type === 'k' && unseen(Wn, Ls).length >= 1) || (w.type === 'm' && Wn.hand.length >= 2 && S.deck.length >= 1)) {      // 神様馬：まだ 見て いない カードが ある とき だけ（第4.178版）
-        S.phase = 'pre'; S.pend = { type: w.type, who: w.who };
-        ev.push({ e: 'pre', who: w.who, type: w.type });
+        S.phase = 'pre'; S.pend = Object.assign({ type: w.type, who: w.who }, w.tok ? { tok: 1 } : {});      // 第4.201版：神様馬トークン・幻の馬トークンで 勝った ときは tok（画面は トークンの 絵）
+        ev.push(Object.assign({ e: 'pre', who: w.who, type: w.type }, w.tok ? { tok: 1 } : {}));
       }
     }
   }
@@ -558,13 +558,13 @@ const CBRules = (() => {
     const hide5 = S.phase === 'u5' && !!S.pend && S.pend.who !== i;      // 第4.183版：相手が 交換で 出した 5 の 効果を えらんで いる ＝ この 人には「交換して いる」に 見せる
     return {
       v: 4, me: i, turn: S.turn, turns: S.turns, phase: hide5 ? 'swap' : S.phase, deckN: S.deck.length, rv: !!S.rv,      // rv：強さ 逆転ちゅう（第4.185版：2人とも 見える）
-      discard: S.discard.map(d => Object.assign({ k: d.k, mine: d.by === i, why: d.why, turn: d.turn }, d.tok ? { tok: d.tok } : {})),
+      discard: S.discard.map(d => Object.assign({ k: d.k, mine: d.by === i, why: d.why, turn: d.turn }, d.tok ? { tok: d.tok } : {}, d.wt ? { wt: 1 } : {})),
       my: { hand: P.hand.map(c => Object.assign({ u: c.u, k: c.k, seen: Q.known.indexOf(c.u) >= 0 }, c.tok ? { tok: c.tok } : {})), set: setOf(P, true), wins: P.wins,
         gem: P.gems.length ? { list: P.gems.slice(), used: P.gused.slice(), can: GEMS.filter(g => canGem(S, i, g)), now: P.gturn === S.turn } : null },      // 第4.197版：決戦宝石（can＝いま 使える・now＝この ターンに もう 使った）
       op: { hand: handOf(P, Q), set: setOf(Q, false), wins: Q.wins, gem: S.gpub && Q.gems.length ? { list: Q.gems.slice(), used: Q.gused.slice() } : null },      // 第4.197版：友だちとの 対戦は 相手の 宝石も 見える      // 第4.187版：相手が ふせて いる あいだは どれを セットしたか わからない 形（handOf）
       can: { set: S.phase === 'set' && !P.set, x7r: can7r(S, i), gem: GEMS.filter(g => canGem(S, i, g)), eff: st ? { e6: false, e7: st === 'x7', e3: st === 'x3', e5: st === 'u5', e4: st === 'u4', st: st, n: S.effN } : null,      // x7r：7 の 4まい 公開（第4.187版：セットの 前）
         six: S.phase === 'six' && !!P.six && !P.six.done && P.six.can ? { n: S.turn } : null },      // 第4.190版：6 の 効果（ターンの はじめ）・eff は いまの 効果 1つ（n＝何番目の 効果か：画面の 聞き直し）
-      pend: S.pend ? { type: hide5 ? 'swap' : S.pend.type, mine: S.pend.who === i } : null,
+      pend: S.pend ? Object.assign({ type: hide5 ? 'swap' : S.pend.type, mine: S.pend.who === i }, S.pend.tok ? { tok: 1 } : {}) : null,      // 第4.201版：tok＝トークンで 勝った（神様馬／幻の馬）
       wait: (S.phase === 'set' && !!P.set && !Q.set) || (S.phase === 'eff' && !!P.eff && P.eff.done && !!Q.eff && !Q.eff.done) || (S.phase === 'six' && !!P.six && P.six.done && !!Q.six && !Q.six.done) || (!!S.pend && S.pend.who !== i),
       last: S.last ? { turn: S.last.turn, c: i === 0 ? S.last.c.slice() : [S.last.c[1], S.last.c[0]], res: S.last.res === 0 || S.last.res === 1 ? (S.last.res === i ? 'win' : 'lose') : S.last.res, rev: !!S.last.rev, d4: !!S.last.d4 } : null,
       res: S.phase === 'end' ? (S.res === 'draw' ? 'draw' : S.res === i ? 'win' : 'lose') : null
@@ -590,9 +590,9 @@ const CBRules = (() => {
       else if (x.e === 'open') { o.turn = x.turn; o.my = x.c[i]; o.op = x.c[1 - i]; o.res = x.res === 0 || x.res === 1 ? (x.res === i ? 'win' : 'lose') : x.res; o.wins = [x.wins[i], x.wins[1 - i]]; if (x.rev != null) o.rev = x.rev === i ? 'me' : 'op'; if (x.d4) o.d4 = true; }      // rev＝逆転勝利を 使えるのは 自分か 相手か（ある とき：勝ち負けは まだ 決まって いない）
       else if (x.e === 'rev') { o.k = x.k; o.show = x.show; o.drop = x.drop; o.beat = x.beat; }      // 逆転勝利：見せた 2まい・捨てた 1まいは 2人とも 見える
       else if (x.e === 'fin') { o.turn = x.turn; o.res = x.res === i ? 'win' : 'lose'; o.wins = [x.wins[i], x.wins[1 - i]]; o.rev = !!x.rev; }
-      else if (x.e === 'pre') o.type = x.type;
-      else if (x.e === 'k') { o.pick = x.pick; if (x.who === i) o.k = x.k; }
-      else if (x.e === 'm') { o.drop = x.drop; o.n = x.drew.length; if (x.who === i) o.drew = x.drew; }
+      else if (x.e === 'pre') { o.type = x.type; if (x.tok) o.tok = 1; }
+      else if (x.e === 'k') { o.pick = x.pick; if (x.who === i) o.k = x.k; if (x.tok) o.tok = 1; }      // 第4.201版：トークンで 勝った（場で 2人とも 見た）
+      else if (x.e === 'm') { o.drop = x.drop; o.n = x.drew.length; if (x.who === i) o.drew = x.drew; if (x.tok) o.tok = 1; }
       else if (x.e === 'turn') o.n = x.n;
       else if (x.e === 'end') { o.wins = [x.wins[i], x.wins[1 - i]]; o.res = x.res === 'draw' ? 'draw' : x.res === i ? 'win' : 'lose'; }
       return o;

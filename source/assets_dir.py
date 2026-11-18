@@ -34,6 +34,7 @@ FX_NEW = ((('sgd_film2.mp4', 'sgd_last2.webp', 'sfx_sgd2.m4a'), ('sgd_film.mp4',
 #   さいごの 1まいは 前の まま（sd_last4.webp：動画の うしろは …4 と 1画素も 同じ）→ sd_film5.mp4 と sd_last4.webp が ある ときは 前の 動画（…4・…3・…2・はじめの もの）と
 #   前の さいごの 1まい（…3・…2・はじめの もの）を 入れない
 FIG_GONE = re.compile(r'fg[267](\.json|\.bin|_[a-z]+\.webp)')      # 第4.176版：なくした フィギュアの デザイン（番号 2・6・7）の 形と 絵
+FIG_BOOTHS = 5      # 第4.201版：思い出フィギュアの ブースの 数（fig/fig_app.js の PAGES と 同じ）。棚の 絵 fg_shelf2_c<番号>.webp は この 数まで アプリに 入れる
 RT_OLD = re.compile(r'rt_(normal|maboroshi|kamisama)_(plate|knob|stick|ptr)\.webp')      # ルーレットの 前の 絵（第4.157版まで）
 INFO = 'lite.info'          # 台帳（JSON）。名前の おわりが json・webp・bin・m4a で ない ので、フォルダごと 入れる ビルドの 所でも アプリには 入らない
 
@@ -61,6 +62,9 @@ def superseded(name, files):
         old = {f for f in files if FIG_GONE.fullmatch(f)}
         if 'fg_shelf2.json' in files:      # 第4.153版：棚は 貼り直した fg_shelf2.*（kisekae/fig/shelf_reuv.py）を 使う。前の fg_shelf.* は 入れない
             old |= {f for f in files if re.fullmatch(r'fg_shelf(\.json|\.bin|_c\d+\.webp)', f)}
+        # 第4.201版（まさちゃん 2026/11/18 23:23「思い出フィギュアのブース7から5に変更して！」）：ブースは 5つ（fig/fig_app.js の PAGES）。
+        #   6・7 ブースの 棚の 絵（fg_shelf2_c6.webp・fg_shelf2_c7.webp）は アプリに 入れない（もとの フォルダには 残す）
+        old |= {f for f in files if (m := re.fullmatch(r'fg_shelf2_c(\d+)\.webp', f)) and int(m.group(1)) > FIG_BOOTHS}
         return old
     if name == 'tc_assets':                                     # 第4.156版（まさちゃん 2026/11/12 04:20「トレーニングセンターの馬の寝転ぶ演出は全部消して！」「いないデータの削除」）：
         old = files & TC_GONE                                   #   横に なる 動きの 音（どさっ・ごろん・ねる）は もう 鳴らない ので アプリに 入れない（もとの フォルダには 残す）
