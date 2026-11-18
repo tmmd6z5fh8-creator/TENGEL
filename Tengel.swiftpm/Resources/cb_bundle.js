@@ -133,6 +133,18 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 const CBRules = (() => {
   'use strict';
   const NUMS = ['1', '2', '3', '4', '5', '6', '7'], KINDS = NUMS.concat(['k', 'm']);
@@ -151,7 +163,7 @@ const CBRules = (() => {
   
   const GEMS = ['m', 'k', '1', '3', '7'], GEM_W = { m: 1, k: 1, '1': 2, '3': 2, '7': 3 }, GEM_HAND = 6;
   const fullSet = () => { const a = []; NUMS.forEach(k => { for (let i = 0; i < COPIES; i++) a.push(k); }); a.push('k', 'm'); return a; };
-  const mkP = () => ({ hand: [], set: null, wins: 0, known: [], eff: null, six: null, r7: 0, gems: [], gused: [], gturn: 0 });      
+  const mkP = () => ({ hand: [], set: null, wins: 0, known: [], eff: null, six: null, r7: 0, x7: 0, x3: 0, gems: [], gused: [], gturn: 0 });      
   const count = (hand, k) => hand.reduce((n, c) => n + (c.k === k ? c.tok || 1 : 0), 0);      
   const realN = hand => hand.reduce((n, c) => n + (c.tok ? 0 : 1), 0);                         
   const hasTok = (hand, k) => hand.some(c => c.tok && c.k === k);
@@ -167,7 +179,7 @@ const CBRules = (() => {
   function newGame(rng, opt) {
     rng = rng || Math.random; opt = opt || {};
     const tn = Math.floor(+opt.turns);
-    const S = { v: 5, turn: 1, turns: tn >= 1 && tn <= 9 ? tn : TURNS, phase: 'set', uid: 0, deck: [], discard: [], p: [mkP(), mkP()], pend: null, win: null, last: null, res: null, rv: false, step: null, effN: 0 };      
+    const S = { v: 6, full: !!opt.full, turn: 1, turns: tn >= 1 && tn <= 9 ? tn : TURNS, phase: 'set', uid: 0, deck: [], discard: [], p: [mkP(), mkP()], pend: null, win: null, last: null, res: null, rv: false, step: null, effN: 0 };      
     let rest = fullSet();
     const take = k => { const j = rest.indexOf(k); if (j < 0) throw new Error('card ' + k); rest.splice(j, 1); return k; };
     if (opt.hands) {
@@ -223,12 +235,11 @@ const CBRules = (() => {
     return H.map(c => (kn(c) ? cardEv(c) : { u: pool.shift().u, k: null }));
   }
   
-  const STEPS = ['x7', 'x3', 'u5', 'u4'];
+  
+  const STEPS = ['u5', 'u4'];
   
   function canStep(S, i, st) {
     const P = S.p[i], Q = S.p[1 - i], sc = P.set && !P.set.blind ? P.set.c.k : null;      
-    if (st === 'x7') return count(P.hand, '7') >= 3 && S.deck.length >= 3 && P.r7 !== S.turn;      
-    if (st === 'x3') return count(P.hand, '3') >= 3 && P.hand.some(c => c.k === '3' && !c.tok) && Q.hand.some(c => !c.tok);      
     if (st === 'u5') return sc === '5' && P.hand.length >= 1 && S.deck.length >= 1 && P.hand.some(c => dropOk(S, P, c));      
     if (st === 'u4') return sc === '4' && Q.hand.length >= 1;
     return false;
@@ -239,7 +250,16 @@ const CBRules = (() => {
   const can6 = (S, i) => { const P = S.p[i], Q = S.p[1 - i]; return count(P.hand, '6') >= 2 && unseen(P, Q).length >= 1; };
   
   
-  const can7r = (S, i) => { const P = S.p[i]; return S.phase === 'set' && !P.set && !S.rv && count(P.hand, '7') >= 4 && realN(P.hand) - (hasTok(P.hand, '7') ? 0 : 1) >= S.turns - S.turn + 1; };      
+  const can7r = (S, i) => { const P = S.p[i]; return S.phase === 'set' && !P.set && !S.rv && P.x7 !== S.turn && count(P.hand, '7') >= 4 && realN(P.hand) - (hasTok(P.hand, '7') ? 0 : 1) >= S.turns - S.turn + 1; };      
+  
+  
+  
+  const canX7 = (S, i) => { const P = S.p[i]; return S.phase === 'set' && !P.set && P.x7 !== S.turn && P.r7 !== S.turn && count(P.hand, '7') >= 3 && S.deck.length >= 3; };
+  
+  
+  
+  const x3Pool = (S, i) => { const P = S.p[i], Q = S.p[1 - i], ok = new Set(Q.hand.filter(c => !c.tok).map(c => c.u)); return handOf(P, Q).filter(c => c.k == null && ok.has(c.u)).map(c => c.u); };
+  const canX3 = (S, i) => { const P = S.p[i]; return S.phase === 'set' && !P.set && P.x3 !== S.turn && count(P.hand, '3') >= 3 && P.hand.some(c => c.k === '3' && !c.tok) && x3Pool(S, i).length >= 1; };
   
   const can5 = (S, i) => { const P = S.p[i]; return !!P.set && !P.set.blind && P.set.c.k === '5' && P.hand.length >= 1 && S.deck.length >= 1 && P.hand.some(c => dropOk(S, P, c)); };
   
@@ -285,6 +305,17 @@ const CBRules = (() => {
       ev.push({ e: 'x7r', who: i, show: sev.map(c => c.u), drop: cardEv(drop) });
       return { ok: true, ev: ev };
     }
+    if (a.t === 'x7') {                                  
+      if (!canX7(S, i)) return bad('x7');
+      P.x7 = S.turn; doX7(S, i, ev, rng);
+      return { ok: true, ev: ev };
+    }
+    if (a.t === 'x3') {                                  
+      if (!canX3(S, i)) return bad('x3');
+      if (x3Pool(S, i).indexOf(a.pick) < 0) return bad('pick');
+      P.x3 = S.turn; doX3(S, i, ev, a.pick);
+      return { ok: true, ev: ev };
+    }
     if (a.t === 'p6') {                                  
       if (S.phase !== 'six' || !P.six || P.six.done) return bad('p6');
       if (a.pick != null) {
@@ -302,7 +333,8 @@ const CBRules = (() => {
       const stp = P.eff.st, w = a.use && typeof a.use === 'object' ? a.use : {};
       if (w.x7r) return bad('e7r');                     
       if (w.p6 != null) return bad('e6');               
-      const ask = { x7: !!w.x7, x3: !!w.x3, u5: w.u5 != null, u4: !!w.u4 }, NUM = { x7: 'e7', x3: 'e3', u5: 'e5', u4: 'e4' };
+      if (w.x7 || w.x3) return bad(w.x7 ? 'e7' : 'e3');      
+      const ask = { u5: w.u5 != null, u4: !!w.u4 }, NUM = { u5: 'e5', u4: 'e4' };
       for (const k of STEPS) if (ask[k] && k !== stp) return bad(NUM[k]);      
       if (stp === 'u5' && ask.u5 && !dropOk(S, P, P.hand[idx(P.hand, w.u5)])) return bad('drop');      
       P.eff.use = ask[stp]; P.eff.drop = stp === 'u5' && ask.u5 ? w.u5 : null; P.eff.done = true;
@@ -422,34 +454,36 @@ const CBRules = (() => {
     preKM(S, ev);
   }
   
+  function doX7(S, i, ev, rng) {
+    const P = S.p[i];
+    const back = pickW(P.hand, '7', 3);              
+    if (!back || S.deck.length < 3) { ev.push({ e: 'fizz', who: i, k: '7' }); return; }
+    P.hand = P.hand.filter(c => back.indexOf(c) < 0);
+    const drew = [S.deck.pop(), S.deck.pop(), S.deck.pop()];
+    drew.forEach(c => P.hand.push(c));
+    const tk = back.find(c => c.tok);                 
+    back.forEach(c => { if (c.tok) toss(S, c, i, '7'); else { forget(S, c.u); S.deck.push({ u: ++S.uid, k: c.k }); } });      
+    shuffle(S.deck, rng);
+    ev.push(Object.assign({ e: 'x7', who: i, n: 3, drew: drew.map(c => ({ u: c.u, k: c.k })) }, tk ? { tok: tk.u, drop: cardEv(tk) } : {}));      
+  }
+  
+  
+  function doX3(S, i, ev, pickU) {
+    const P = S.p[i], Q = S.p[1 - i];
+    const three = pickW(P.hand, '3', 3), give = three && three.find(c => !c.tok), take = Q.hand.find(c => c.u === pickU && !c.tok);      
+    if (!three || !give || !take) { ev.push({ e: 'fizz', who: i, k: '3' }); return; }
+    P.hand.splice(P.hand.indexOf(give), 1); Q.hand.splice(Q.hand.indexOf(take), 1);
+    P.hand.push(take); Q.hand.push(give);
+    forget(S, give.u); forget(S, take.u);              
+    three.filter(c => c !== give).forEach(c => learn(Q, c.u));        
+    learn(P, give.u);                                  
+    learn(Q, take.u);                                  
+    ev.push({ e: 'x3', who: i, three: three.map(c => c.u), give: cardEv(give), take: cardEv(take) });
+  }
+  
   function resolveStep(S, ev, rng) {
     const st = S.step, U = S.p.map(P => (P.eff && P.eff.use ? P.eff : null));
-    if (st === 'x7') [0, 1].forEach(i => {              
-      const P = S.p[i]; if (!U[i]) return;
-      const back = pickW(P.hand, '7', 3);              
-      if (!back || S.deck.length < 3) { ev.push({ e: 'fizz', who: i, k: '7' }); return; }
-      P.hand = P.hand.filter(c => back.indexOf(c) < 0);
-      const drew = [S.deck.pop(), S.deck.pop(), S.deck.pop()];
-      drew.forEach(c => P.hand.push(c));
-      const tk = back.find(c => c.tok);                 
-      back.forEach(c => { if (c.tok) toss(S, c, i, '7'); else { forget(S, c.u); S.deck.push({ u: ++S.uid, k: c.k }); } });      
-      shuffle(S.deck, rng);
-      ev.push(Object.assign({ e: 'x7', who: i, n: 3, drew: drew.map(c => ({ u: c.u, k: c.k })) }, tk ? { tok: tk.u, drop: cardEv(tk) } : {}));      
-    });
-    else if (st === 'x3') [0, 1].forEach(i => {         
-      const P = S.p[i], Q = S.p[1 - i]; if (!U[i]) return;
-      const three = pickW(P.hand, '3', 3), give = three && three.find(c => !c.tok), pool = Q.hand.filter(c => !c.tok);      
-      if (!three || !give || pool.length < 1) { ev.push({ e: 'fizz', who: i, k: '3' }); return; }
-      const take = pool[Math.floor(rng() * pool.length)];
-      P.hand.splice(P.hand.indexOf(give), 1); Q.hand.splice(Q.hand.indexOf(take), 1);
-      P.hand.push(take); Q.hand.push(give);
-      forget(S, give.u); forget(S, take.u);              
-      three.filter(c => c !== give).forEach(c => learn(Q, c.u));        
-      learn(P, give.u);                                  
-      learn(Q, take.u);                                  
-      ev.push({ e: 'x3', who: i, three: three.map(c => c.u), give: cardEv(give), take: cardEv(take) });
-    });
-    else if (st === 'u5') [0, 1].forEach(i => {         
+    if (st === 'u5') [0, 1].forEach(i => {         
       const P = S.p[i]; if (!U[i]) return;
       const d = idx(P.hand, U[i].drop);
       if (d < 0 || !P.set || P.set.blind || P.set.c.k !== '5' || S.deck.length < 1) { ev.push({ e: 'fizz', who: i, k: '5' }); return; }
@@ -506,10 +540,11 @@ const CBRules = (() => {
       P.hand = P.hand.filter(c => !c.tok); gone.forEach(c => forget(S, c.u));
       ev.push({ e: 'tokgone', who: i, u: gone.map(c => c.u), k: gone.map(c => c.k), pub: !!S.gpub });
     });
-    if (S.turn >= S.turns) {
-      const a = S.p[0].wins, b = S.p[1].wins;
-      S.phase = 'end'; S.res = a > b ? 0 : b > a ? 1 : 'draw';
-      ev.push({ e: 'end', wins: [a, b], res: S.res });
+    const a = S.p[0].wins, b = S.p[1].wins, left = S.turns - S.turn;      
+    const early = !S.full && left > 0 && Math.abs(a - b) > left;      
+    if (S.turn >= S.turns || early) {
+      S.phase = 'end'; S.res = a > b ? 0 : b > a ? 1 : 'draw'; S.win = null; S.early = early ? S.turn : 0;
+      ev.push(Object.assign({ e: 'end', wins: [a, b], res: S.res }, early ? { early: S.turn } : {}));      
       return;
     }
     S.turn += 1; S.phase = 'set';
@@ -562,12 +597,13 @@ const CBRules = (() => {
       my: { hand: P.hand.map(c => Object.assign({ u: c.u, k: c.k, seen: Q.known.indexOf(c.u) >= 0 }, c.tok ? { tok: c.tok } : {})), set: setOf(P, true), wins: P.wins,
         gem: P.gems.length ? { list: P.gems.slice(), used: P.gused.slice(), can: GEMS.filter(g => canGem(S, i, g)), now: P.gturn === S.turn } : null },      
       op: { hand: handOf(P, Q), set: setOf(Q, false), wins: Q.wins, gem: S.gpub && Q.gems.length ? { list: Q.gems.slice(), used: Q.gused.slice() } : null },      
-      can: { set: S.phase === 'set' && !P.set, x7r: can7r(S, i), gem: GEMS.filter(g => canGem(S, i, g)), eff: st ? { e6: false, e7: st === 'x7', e3: st === 'x3', e5: st === 'u5', e4: st === 'u4', st: st, n: S.effN } : null,      
+      can: { set: S.phase === 'set' && !P.set, x7r: can7r(S, i), x7: canX7(S, i), x3: canX3(S, i), x3p: canX3(S, i) ? x3Pool(S, i) : [], gem: GEMS.filter(g => canGem(S, i, g)), eff: st ? { e6: false, e7: false, e3: false, e5: st === 'u5', e4: st === 'u4', st: st, n: S.effN } : null,      
         six: S.phase === 'six' && !!P.six && !P.six.done && P.six.can ? { n: S.turn } : null },      
       pend: S.pend ? Object.assign({ type: hide5 ? 'swap' : S.pend.type, mine: S.pend.who === i }, S.pend.tok ? { tok: 1 } : {}) : null,      
       wait: (S.phase === 'set' && !!P.set && !Q.set) || (S.phase === 'eff' && !!P.eff && P.eff.done && !!Q.eff && !Q.eff.done) || (S.phase === 'six' && !!P.six && P.six.done && !!Q.six && !Q.six.done) || (!!S.pend && S.pend.who !== i),
       last: S.last ? { turn: S.last.turn, c: i === 0 ? S.last.c.slice() : [S.last.c[1], S.last.c[0]], res: S.last.res === 0 || S.last.res === 1 ? (S.last.res === i ? 'win' : 'lose') : S.last.res, rev: !!S.last.rev, d4: !!S.last.d4 } : null,
-      res: S.phase === 'end' ? (S.res === 'draw' ? 'draw' : S.res === i ? 'win' : 'lose') : null
+      res: S.phase === 'end' ? (S.res === 'draw' ? 'draw' : S.res === i ? 'win' : 'lose') : null,
+      early: S.phase === 'end' && S.early ? S.early : 0      
     };
   }
 
@@ -594,7 +630,7 @@ const CBRules = (() => {
       else if (x.e === 'k') { o.pick = x.pick; if (x.who === i) o.k = x.k; if (x.tok) o.tok = 1; }      
       else if (x.e === 'm') { o.drop = x.drop; o.n = x.drew.length; if (x.who === i) o.drew = x.drew; if (x.tok) o.tok = 1; }
       else if (x.e === 'turn') o.n = x.n;
-      else if (x.e === 'end') { o.wins = [x.wins[i], x.wins[1 - i]]; o.res = x.res === 'draw' ? 'draw' : x.res === i ? 'win' : 'lose'; }
+      else if (x.e === 'end') { o.wins = [x.wins[i], x.wins[1 - i]]; o.res = x.res === 'draw' ? 'draw' : x.res === i ? 'win' : 'lose'; if (x.early) o.early = x.early; }      
       return o;
     });
   }
@@ -604,6 +640,8 @@ const CBRules = (() => {
     const v = view(S, i), out = [];
     if (v.can.set) out.push('set');
     if (v.can.x7r) out.push('x7r');                     
+    if (v.can.x7) out.push('x7');                       
+    if (v.can.x3) out.push('x3');
     if (v.can.gem && v.can.gem.length) out.push('gem');      
     if (v.can.eff) out.push('eff');
     if (v.can.six) out.push('p6');                      
@@ -616,6 +654,9 @@ const CBRules = (() => {
 if (typeof module !== 'undefined' && module.exports) module.exports = CBRules;
 
 ;
+
+
+
 
 
 
@@ -676,14 +717,14 @@ const CBCpu = (() => {
     }
     if (v.can.eff) {                                     
       const c = v.can.eff, s = byS(hand);
-      if (c.e7) return { t: 'eff', use: rv ? {} : { x7: true } };      
-      if (c.e3) return { t: 'eff', use: rng() < (v.turn >= 2 ? 0.55 : 0.35) ? { x3: true } : {} };
       if (c.e5) { const weak = hand.find(x => x.tok) || s[s.length - 1]; return { t: 'eff', use: weak ? { u5: weak.u } : {} }; }      
       if (c.e4) return { t: 'eff', use: (v.turn >= v.turns ? true : v.turn >= 2 ? rng() < 0.5 : false) ? { u4: true } : {} };
       return { t: 'eff', use: {} };
     }
     if (v.phase !== 'set' || !v.can.set) return null;
     if (v.can.x7r) return { t: 'x7r' };                 
+    if (v.can.x7 && !rv) return { t: 'x7' };            
+    if (v.can.x3 && v.can.x3p.length && rng() < (v.turn >= 2 ? 0.55 : 0.35)) return { t: 'x3', pick: pick(v.can.x3p, rng) };      
     const s = byS(hand), left = v.turns - v.turn + 1;          
     const top = s.slice(0, Math.min(left, s.length));
     if (hand.length - 2 >= v.turns - v.turn && hand.length - 1 >= 1 && v.deckN >= 1) {          
@@ -737,9 +778,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBCpu;
 
 
 
+
+
 const CBNet = (() => {
   'use strict';
-  const R = CBRules, PROTO = 12, MAXLEN = 20000;      
+  const R = CBRules, PROTO = 13, MAXLEN = 20000;      
   
   const STAKE_MAX = 999;
   function stakeOf(k) {
@@ -922,6 +965,13 @@ const CBNet = (() => {
 if (typeof module !== 'undefined' && module.exports) module.exports = CBNet;
 
 ;
+
+
+
+
+
+
+
 
 
 
@@ -1998,7 +2048,7 @@ const CBApp = (() => {
     if (x.e === 'u5') return { k: '5', t: '5 の 効果', n: '捨てて 山札から セット', d: 'セットした 5 と 手札 1枚を 捨てて、山札から 1枚 伏せて セットするよ' };
     if (x.e === 'x7') return x.tok ? { k: 't7', t: '7 の 効果', n: '3枚 引く', d: '7トークン（3頭分）を 見せて 捨てて、山札から 3枚 引くよ' } : { k: '7', t: '7 の 効果', n: '3枚 交換', d: '7 を 3枚 山札に 戻して、新しく 3枚 引くよ' };      
     if (x.e === 'x7r') return x.drop && x.drop.tok ? { k: 't7', t: '7 の 効果', n: '強さ 逆転', d: '7 を 4枚 ぶん 見せて（7トークンは 3頭分）、トークンを 捨てるよ。この 対戦が 終わる まで、数字の 強さが 逆に なる！' } : { k: '7', t: '7 の 効果', n: '強さ 逆転', d: '7 を 4枚 見せて 1枚 捨てるよ。この 対戦が 終わる まで、数字の 強さが 逆に なる！' };
-    if (x.e === 'x3') return { k: '3', t: '3 の 効果', n: '手札を 交換', d: x.three && x.three.length < 3 ? `3トークン（2頭分）と 3 で 3枚 ぶん 見せて、本物の 3 と ${yours} 手札の 1枚（ランダム）を 交換するよ` : `3 を 3枚 見せて、その 1枚と ${yours} 手札の 1枚（ランダム）を 交換するよ` };
+    if (x.e === 'x3') return { k: '3', t: '3 の 効果', n: '手札を 交換', d: x.three && x.three.length < 3 ? `3トークン（2頭分）と 3 で 3枚 ぶん 見せて、本物の 3 と ${yours} 手札から 選んだ 1枚（裏の カード）を 交換するよ` : `3 を 3枚 見せて、その 1枚と ${yours} 手札から 選んだ 1枚（裏の カード）を 交換するよ` };      
     if (x.e === 'first') return { k: '4', t: '4 の 効果', n: '強制 交換', d: x.me ? `4 を 先に 見せたよ。${W}は セットした カードを 交換するよ` : '4 を 先に 見せたよ。あなたは セットした カードを、手札の 別の カードと 交換してね' };
     if (x.e === 'first2') return { k: '4', t: '4 の 効果', n: '打ち消して ドロー', d: '2人とも 4 の 効果を 使った ので、打ち消しあって この ターンは ドロー（引き分け）だよ', both: true };
     if (x.e === 'k') return { k: x.tok ? tokP('k') : 'k', t: `${kmN('k', x.tok)}の 効果`, n: '手札を 1枚 見る', d: `前の ターンに ${kmN('k', x.tok)}で 勝った ので、${yours} 手札を 1枚 見るよ` };      
@@ -2053,24 +2103,24 @@ const CBApp = (() => {
     helpBack = from || 'menu'; closeMod();
     const ef = (k, t, d) => `<div class="ef"><img src="${pic(k)}" alt=""><div><b>${t}</b>${d}</div></div>`;
     scr.help.innerHTML = '<div class="hd"><button type="button" class="cbb dk sm" data-cb="helpx">← 戻る</button><b>遊び方</b></div><div class="bd">'
-      + `<h4>勝負の 仕方</h4><ul><li>手札は <b>${R.HAND}枚</b>。<b>${R.TURNS}ターン</b>で 勝負するよ</li><li>${R.TURNS}ターン 終わって、<b>勝った 数が 多い 人の 勝ち</b>（同じ なら 同点）。先に 勝ちが 決まっても、最後の ターンまで やるよ</li><li>出すのは 1ターンに 1枚。${R.HAND - R.TURNS}枚は 使わずに 残るよ</li></ul>`
+      + `<h4>勝負の 仕方</h4><ul><li>手札は <b>${R.HAND}枚</b>。<b>${R.TURNS}ターン</b>で 勝負するよ</li><li>${R.TURNS}ターン 終わって、<b>勝った 数が 多い 人の 勝ち</b>（同じ なら 同点）</li><li><b>先に 勝ちが 決まったら、その ターンで 試合終了</b>だよ（3勝した とき・残りの ターンを 全部 勝っても 追いつけない とき）</li><li>出すのは 1ターンに 1枚。${R.HAND - R.TURNS}枚は 使わずに 残るよ</li></ul>`
       + '<h4>1ターンの 流れ</h4><ul><li><b>① ターンの 始め</b>：手札に <b>6 が 2枚</b> ある 人に「6 の 効果を 使う？」と 聞くよ（<b>セットの 前</b>に 相手の 手札を 1枚 見られる）。その 後、前の ターンに <b>神様馬・幻の馬</b>で 勝った 人が 効果を 使うか 選ぶよ</li>'
-      + '<li><b>② セット</b>：手札から 1枚 選んで「この カードを セットする」。<b>伏せて（裏で）出す</b>よ（自分の カードには 数字の 印・タップで 見られる）。<b>セットしたら もう 変えられない</b><br>手札に <b>7 が 4枚</b> ある ときは、<b>セットの 前</b>に「7 を 4枚 見せて 逆転する？」と 聞くよ</li>'
-      + '<li><b>③ 効果タイム</b>：2人とも セットしたら、効果を <b>1つずつ</b> 聞くよ（<b>7 → 3 → 5 → 4</b> の 順）。その 効果を 使える 人に「○ の 効果を 使う？」→ 決めたら <b>すぐ 効果が 出て</b>、終わって から 次の 効果を 聞くよ。<b>「使う」「使わない」は 自分で 選べる</b>。同じ 効果を 2人とも 使える ときは、2人とも 決めて から 一緒に 出る</li>'
+      + '<li><b>② セット</b>：手札から 1枚 選んで「この カードを セットする」。<b>伏せて（裏で）出す</b>よ（自分の カードには 数字の 印・タップで 見られる）。<b>セットしたら もう 変えられない</b><br><b>手札の 効果</b>（<b>7</b> の 3枚 交換・4枚 公開・<b>3</b> の 交換）は、<b>セットの 前</b>に「○ の 効果を 使う？」と 聞くよ（手札は セットする 前の 枚数で 数える。使った 後で セットする カードを 選べる）</li>'
+      + '<li><b>③ 効果タイム</b>：2人とも セットしたら、<b>セットした カードの 効果</b>を <b>1つずつ</b> 聞くよ（<b>5 → 4</b> の 順）。その 効果を 使える 人に「○ の 効果を 使う？」→ 決めたら <b>すぐ 効果が 出て</b>、終わって から 次の 効果を 聞くよ。<b>「使う」「使わない」は 自分で 選べる</b>。同じ 効果を 2人とも 使える ときは、2人とも 決めて から 一緒に 出る</li>'
       + '<li><b>④ オープン</b>：2枚を 一緒に めくる。<b>強い カードの 勝ち</b>（1・2 の「<b>逆転勝利</b>」は、めくった 後に 使うか 選ぶよ）</li></ul>'
       + '<h4>カードの 強さ</h4><div class="ord">' + ['k', 'm'].map(k => `<img src="${pic(k)}" alt="${nameOf(k)}">`).join('<i>＝</i>') + ['1', '2', '3', '4', '5', '6', '7'].map(k => `<i>＞</i><img src="${pic(k)}" alt="${k}">`).join('') + '</div>'
       + '<ul><li><b>神様馬</b>と <b>幻の馬</b>が 一番 強い（この 2枚が ぶつかったら 引き分け）</li><li>数字は <b>1 が 一番 強くて、7 が 一番 弱い</b></li><li>7 の 効果（<b>4枚 公開</b>）で <b>強さ 逆転</b>したら、その 対戦が 終わる まで <b>7 が 一番 強くて、1 が 一番 弱い</b>（神様馬と 幻の馬は 一番 強い まま。上に「強さ 逆転中」と 出るよ）</li><li><b>同じ 数字</b>が ぶつかったら「かぶり」＝<b>どちらも 負け</b>（4 同士で <b>2人とも 4 の 効果を 使った</b> ときは <b>ドロー</b>）</li><li><b>逆転勝利</b>：1 が 3枚 あれば 神様馬・幻の馬に、2 が 3枚 あれば 1 に 勝てる（下の「カードの 効果」）</li><li>カードは 全部で 30枚（1〜7 が 4枚 ずつ・神様馬 1枚・幻の馬 1枚）</li></ul>'
-      + '<h4>カードの 効果</h4><ul><li><b>6</b> の 効果は <b>ターンの 始め</b>（セットの 前）に 使うか 選ぶよ</li><li><b>7（3枚 交換）・3・5・4</b> の 効果は、2人とも セットした 後の「<b>効果タイム</b>」で、<b>1つずつ</b> 使うか 選ぶよ</li><li><b>7 の 4枚 公開</b>（強さ 逆転）は、<b>セットの 前</b>に 使うか 選ぶよ（セットしなくて いい）</li><li><b>1・2</b> の 効果（逆転勝利）は、<b>オープンした 後</b>、負けた 人が 使うか 選ぶよ</li><li><b>神様馬・幻の馬</b>の 効果は、勝った <b>次の ターンの 始め</b>に、使うか 選ぶよ</li><li>どの 効果も、<b>使うか 使わないかは 自分で 選べる</b>よ</li><li>効果を 使うと、ボードの 真ん中に <b>誰が・どの 効果を・何を するか</b>の 札が 出るよ（タップすると すぐ 次へ）</li></ul>'
-      + ef('7', '7：3枚 交換・4枚 公開で 逆転', '【3枚】手札に 7 が 3枚 あれば、3枚を 山札に 戻して、新しく 3枚 引けるよ。<br>【4枚】手札に 7 が 4枚 あれば、<strong>セットの 前に</strong> 4枚 見せて 1枚 捨てると、<strong>その 対戦が 終わる まで 数字の 強さが 逆</strong>に なるよ（7＞6＞5＞4＞3＞2＞1・神様馬と 幻の馬は 一番 強い まま）。その あと いつもの ように セット（残った 7 を 出しても いい）。<br>【4枚】を 使った ターンは【3枚】は 使えない（どちらか 1つ）')
+      + '<h4>カードの 効果</h4><ul><li><b>6</b> の 効果は <b>ターンの 始め</b>（セットの 前）に 使うか 選ぶよ</li><li><b>7</b>（3枚 交換・4枚 公開）・<b>3</b> の 効果は、<b>セットの 前</b>に 使うか 選ぶよ（手札の 効果：セットしなくて いい）</li><li><b>5・4</b> の 効果は、2人とも セットした 後の「<b>効果タイム</b>」で、<b>1つずつ</b> 使うか 選ぶよ</li><li><b>1・2</b> の 効果（逆転勝利）は、<b>オープンした 後</b>、負けた 人が 使うか 選ぶよ</li><li><b>神様馬・幻の馬</b>の 効果は、勝った <b>次の ターンの 始め</b>に、使うか 選ぶよ</li><li>どの 効果も、<b>使うか 使わないかは 自分で 選べる</b>よ</li><li>効果を 使うと、ボードの 真ん中に <b>誰が・どの 効果を・何を するか</b>の 札が 出るよ（タップすると すぐ 次へ）</li></ul>'
+      + ef('7', '7：3枚 交換・4枚 公開で 逆転', '【3枚】手札に 7 が 3枚 あれば、<strong>セットの 前に</strong> 3枚を 山札に 戻して、新しく 3枚 引けるよ。<br>【4枚】手札に 7 が 4枚 あれば、<strong>セットの 前に</strong> 4枚 見せて 1枚 捨てると、<strong>その 対戦が 終わる まで 数字の 強さが 逆</strong>に なるよ（7＞6＞5＞4＞3＞2＞1・神様馬と 幻の馬は 一番 強い まま）。その あと いつもの ように セット（残った 7 を 出しても いい）。<br>【3枚】と【4枚】は 1ターンに どちらか 1つ')
       + ef('6', '6：2枚 見せて 手札を 見る', '手札に 6 が 2枚 あれば、<strong>ターンの 始め（セットの 前）</strong>に、その 2枚を 相手に 見せて、相手の 手札を 1枚 選んで 見られるよ（見てから セットする カードを 選べる）。神様馬・幻の馬の 効果より 先だよ。<br>相手の 手札が <strong>もう 見た カード だけ</strong>の ときは 使えないよ（見るのは まだ 見て いない カード）。')
       + ef('5', '5：2枚 捨てて 山札から セット', '5 を セットしたら、その 5 と 手札 1枚を 捨てて、山札から 1枚を 伏せて セットできるよ。何が 出るかは オープンまで 分からない！<br>使えるのは、使った 後の 手札が <strong>残りの ターンの 数より 少なく ならない とき</strong> だけ（最後の ターンは、手札が 1枚 あれば 使える）。')
       + ef('4', '4：見せて 強制交換', '4 を セットして 効果を 使うと、4 を 先に 見せる 代わりに、相手は セットした カードを 手札の 別の カードと 交換しないと いけないよ。<br><strong>2人とも 4 を 出して、2人とも 効果を 使ったら</strong>、打ち消して その ターンは <strong>ドロー</strong>（引き分け）だよ。<br>交換で <strong>5 を セットしたら、5 の 効果を 使うか 選べる</strong>よ（オープンの 前）。<br>4 の 効果は <strong>一番 後</strong>：相手が 5 の 効果で 山札から 伏せた カードも 交換に なるよ。')
-      + ef('3', '3：3枚 見せて 手札を 交換', '手札に 3 が 3枚 あれば、その 3枚を 相手に 見せて、その うちの 1枚と、相手の 手札から <strong>ランダムに 選んだ 1枚</strong>を 交換できるよ。')
+      + ef('3', '3：3枚 見せて 手札を 交換', '手札に 3 が 3枚 あれば、<strong>セットの 前に</strong> その 3枚を 相手に 見せて、その うちの 1枚と、相手の 手札の <strong>裏の カードから 自分で 選んだ 1枚</strong>（何が 来るかは わからない）を 交換できるよ。もう 見た カード（表）は 選べないよ。')
       + ef('2', '2：3枚 見せて 逆転勝利', '2 を 出して <strong>1 に 負けた</strong> とき、手札に 2 が 2枚 あれば（場の 2 と 合わせて 3枚）、その 2枚を 相手に 見せて、1枚 捨てると、<strong>勝ちに できる</strong>よ。')
       + ef('1', '1：3枚 見せて 逆転勝利', '1 を 出して <strong>神様馬・幻の馬に 負けた</strong> とき、手札に 1 が 2枚 あれば（場の 1 と 合わせて 3枚）、その 2枚を 相手に 見せて、1枚 捨てると、<strong>勝ちに できる</strong>よ。<br>1・2 とも、使えるのは 捨てた 後の 手札が <strong>残りの ターンの 数より 少なく ならない とき</strong> だけ。')
       + ef('k', '神様馬：勝ったら 手札を 見る', '神様馬で 勝ったら、次の ターンの 始めに、相手の 手札を 1枚 選んで 見られるよ（まだ 見て いない カードが ある とき）。')
       + ef('m', '幻の馬：勝ったら 手札を 交換', '幻の馬で 勝ったら、次の ターンの 始めに、手札を 2枚 捨てて、山札から 2枚 引けるよ。')
-      + '<ul><li>手札の 数は「セットした あと」で 数えるよ（セットした カードは 手札に 入らない）</li><li>効果が 出る 順番：<b>① ターンの 始め</b>（<b>6</b> → 神様馬・幻の馬）→ <b>② セット</b>（7 の 4枚 公開は セットの 前）→ <b>③ 効果タイム</b>（<b>7 → 3 → 5 → 4</b>：手札の 効果 → セットした カードの 効果。4 は 一番 後）</li><li>効果は <b>1つ 終わってから 次の 効果</b>を 聞くよ（前の 効果で 変わった 手札で 決められる。例：7 で 引いた 後の 手札で、5 を 使うか・どの カードを 捨てるか）</li><li>最後の ターンに 神様馬・幻の馬で 勝った ときは、次の ターンが ない ので 効果は ないよ</li></ul>'
+      + '<ul><li>手札の 数は、手札の 効果（6・7・3）は <b>セットする 前</b>の 手札で、5 の 効果は <b>セットした あと</b>の 手札で 数えるよ（セットした カードは 手札に 入らない）</li><li>効果が 出る 順番：<b>① ターンの 始め</b>（<b>6</b> → 神様馬・幻の馬）→ <b>② セット</b>（手札の 効果 7・3 は セットの 前）→ <b>③ 効果タイム</b>（<b>5 → 4</b>：セットした カードの 効果。4 は 一番 後）</li><li>効果は <b>1つ 終わってから 次の 効果</b>を 聞くよ（前の 効果で 変わった 手札で 決められる。例：7 で 引いた 後の 手札で、セットする カードを 選ぶ・5 で 捨てる カードを 選ぶ）</li><li>最後の ターンに 神様馬・幻の馬で 勝った ときは、次の ターンが ない ので 効果は ないよ</li></ul>'
       + '<h4>見た カード・見られた カード</h4><ul><li>効果で 見た 相手の カードは、相手の 手札に ある 間 表で 見えるよ</li><li>相手に 見られた 自分の カードには 目の 印が 付くよ</li><li>セットした カードは、前に 見た カードでも <b>裏</b>（4 の 効果で 見せる か、オープン するまで）。どの カードを セットしたかは 分からない ので、見た カードは オープンまで 手札に ある ように 見えるよ</li></ul>'
       + '<h4>捨て札</h4><ul><li>ボードの「<b>捨て札</b>」を タップすると、捨て札を 見られるよ</li><li><b>終わった ターンの 捨て札</b>（2人が 出した カード）と、<b>効果で 捨てた カード</b>に 分けて 出るよ</li></ul>'
       + `<h4>ご褒美</h4><ul><li>勝つと <b>お世話トークン ${REWARD.win}個</b></li><li><b>${REWARD.every}連勝</b> ごとに <b>${REWARD.bonus}個</b>（負けると 連勝は 0 に 戻るよ。同点は そのまま）</li><li>お世話トークンは 25個 まで。対戦の 途中で やめた・アプリを 閉じた ときも 負けに なるよ</li></ul>`
@@ -2613,7 +2663,7 @@ const CBApp = (() => {
   
   const EFFQ = { x7: '7', x3: '3', u5: '5', u4: '4' };      
   const EFFTXT = { 6: '6 を 2枚 見せて、相手の 手札を 1枚 見られるよ', 5: '5 と 手札 1枚を 捨てて、山札から 1枚 セットできるよ', 7: '7 を 3枚 山札に 戻して、新しく 3枚 引けるよ',
-    3: '3 を 3枚 見せて、その 1枚と 相手の 手札の 1枚（ランダム）を 交換できるよ', 4: '4 を 見せて、相手に カードを 交換させるよ' };
+    3: '3 を 3枚 見せて、その 1枚と 相手の 手札の 1枚（裏の カードから 選ぶ）を 交換できるよ', 4: '4 を 見せて、相手に カードを 交換させるよ' };
   const EFFBAR = { 3: '3 を 3枚 見せて、手札を 1枚 交換できるよ' };
   const effQ = q => `${q} の 効果を 使う？`;      
   const effBtn = q => `${q} の 効果を 使う`;
@@ -2622,6 +2672,8 @@ const CBApp = (() => {
   const SIX = { head: 'ターンの 始め！', q: '6 の 効果を 使う？', text: '6 を 2枚 見せて、相手の 手札を 1枚 見られるよ（セットの 前：見てから セットする カードを 選べる）', bar: '6 を 2枚 見せて、相手の 手札を 1枚 見られるよ', btn: '6 の 効果を 使う' };
   
   const X7 = { head: '7 が 4枚！', q: '7 を 4枚 見せて 逆転する？', text: 'セットの 前に 使えるよ（セットは いらない）。4枚 見せて 1枚 捨てると、この 対戦が 終わる まで 数字の 強さが 逆に なるよ', ord: '7＞6＞5＞4＞3＞2＞1', btn: '4枚 見せて 逆転', bar: '7 を 4枚 見せて 逆転' };      
+  
+  const PRE = [{ c: 'x7r', yes: 'x7yes', no: 'x7no' }, { c: 'x7', yes: 'p7yes', no: 'p7no' }, { c: 'x3', yes: 'p3yes', no: 'p3no' }];
   
   const toName = o => (NAMES[o] ? NAMES[o] + 'に' : o + ' に');
   const REVTXT = (k, o) => `手札の ${k} を 2枚 見せて、1枚 捨てると、${toName(o)} 勝てるよ`;
@@ -2684,7 +2736,7 @@ const CBApp = (() => {
     }
     if (v.phase === 'six') return v.can.six ? `${SIX.head} ${SIX.q}\n${SIX.bar}` : `${w}が 6 の 効果を 使うか 選んで いるよ…`;      
     if (v.phase === 'eff') return `${w}が 効果を 使うか 選んで いるよ…`;      
-    if (v.can.set && v.can.x7r) return (v.op.set ? `${w}は もう セットしたよ。カードを 選んでね` : 'セットする カードを 選んでね（カードを タップ）') + '\n7 が 4枚！ セットの 前なら 逆転を 使えるよ';      
+    if (v.can.set && preList(v).length) { const p = preAsk(v) || preList(v)[0]; return (v.op.set ? `${w}は もう セットしたよ。カードを 選んでね` : 'セットする カードを 選んでね（カードを タップ）') + '\n' + preLine(p.c); }      
     if (v.can.set && v.can.gem && v.can.gem.length) return (v.op.set ? `${w}は もう セットしたよ。カードを 選んでね` : 'セットする カードを 選んでね（カードを タップ）') + '\n💎 セットの 前なら 決戦宝石を 使えるよ（下の ケース）';      
     if (v.can.set) return v.op.set ? `${w}は もう セットしたよ。セットする カードを 選んでね` : 'セットする カードを 選んでね（カードを タップ）';
     return `${w}が 選んで いるよ…`;
@@ -2716,6 +2768,7 @@ const CBApp = (() => {
     $('.cbslot.op').innerHTML = os ? cardBtn({ u: os.u, k: os.k, tok: os.tok }, '', ' data-cb="oset"', 'op') + setTag(os, false) : '';
     $('.cbslot.my').innerHTML = mySet(ms, true);      
     $('.cbglow').classList.toggle('on', v.can.set || !!(v.pend && v.pend.mine && v.pend.type === 'swap'));
+    if (modOn() && modEl.classList.contains('cbx3')) { if (v.can.x3 && v.can.x3p.length && mode.k === 'idle') pickModal('x3'); else closeMod(); }      
     const asking = dealHold ? false : askSync();       
     paintHand(); paintAct(asking); paintGem(v);
     say(dealHold ? '' : asking ? '効果を 使うか 選んでね' : (modeText() || statusText(v)));
@@ -2763,7 +2816,10 @@ const CBApp = (() => {
     else if (mode.k === 'idle' && v.can.six) h = two('sixno', 'sixyes', SIX.btn);      
     else if (mode.k === 'eff') h = mode.step === 'drop5' ? '<button type="button" class="cbb dk sm" data-cb="effback">戻る</button>' : two('effno', 'effyes', effBtn(mode.q));
     else if (mode.k === 'dropm') h = `<button type="button" class="cbb dk sm" data-cb="modex">戻る</button><button type="button" class="cbb sm" data-cb="mgo"${mode.sel.length === 2 ? '' : ' disabled'}>この 2枚を 捨てて 引く</button>`;
-    else if (mode.k === 'idle' && v.can.x7r) h = x7off === x7id(v) ? `<button type="button" class="cbb sm" data-cb="x7yes">${X7.bar}</button>` : two('x7no', 'x7yes', X7.btn);      
+    else if (mode.k === 'idle' && preList(v).length) {      
+      const pa = preAsk(v), L = preList(v);
+      h = pa ? two(pa.no, pa.yes, preBtn(pa.c)) : L.length === 1 ? `<button type="button" class="cbb sm" data-cb="${L[0].yes}">${preBar(L[0].c)}</button>` : '<button type="button" class="cbb sm" data-cb="prere">セットの 前の 効果</button>';
+    }
     else if (v.pend && v.pend.mine && v.pend.type === 'k') h = two('kskip', 'kgo', `${kmN('k', v.pend.tok)}の 効果を 使う`);      
     else if (v.pend && v.pend.mine && v.pend.type === 'm') h = two('mskip', 'mpick', `${kmN('m', v.pend.tok)}の 効果を 使う`);
     else if (v.pend && v.pend.mine && v.pend.type === 'rev' && v.my.set) h = two('revno', 'revyes', `${v.my.set.k} の 効果を 使う`);
@@ -2792,7 +2848,7 @@ const CBApp = (() => {
   const tokIn = k => (V && V.my.hand.find(c => c.tok && c.k === k)) || null;      
   const effKey = q => ((q === '7' || q === '3') && tokIn(q) ? tokP(q) : effK(q));
   const effBar = q => (q === '7' && tokIn('7') ? '7トークン（3頭分）を 見せて 捨てると、山札から 3枚 引けるよ' : q === '3' && tokIn('3') ? '3トークン（2頭分）と 3 を 見せて、本物の 3 を 交換できるよ' : EFFBAR[q] || EFFTXT[q]);      
-  const effText = q => (q === '7' && tokIn('7') ? '7トークン（3頭分）を 見せて 捨てて、山札から 3枚 引けるよ（トークンは 山札に 戻せないので 捨てる）' : q === '3' && tokIn('3') ? '3トークン（2頭分）と 3 で 3枚 ぶん 見せて、本物の 3 と 相手の 手札の 1枚（ランダム）を 交換できるよ' : EFFTXT[q]);
+  const effText = q => (q === '7' && tokIn('7') ? '7トークン（3頭分）を 見せて 捨てて、山札から 3枚 引けるよ（トークンは 山札に 戻せないので 捨てる）' : q === '3' && tokIn('3') ? '3トークン（2頭分）と 3 で 3枚 ぶん 見せて、本物の 3 と 相手の 手札の 1枚（裏の カードから 選ぶ）を 交換できるよ' : EFFTXT[q]);
   function askInfo() {
     const v = V; if (!v || ended || !match) return null;
     if (mode.k === 'idle' && v.can.six) return { id: `s${gameNo}.${v.turn}`, k: '6', head: SIX.head, q: SIX.q, text: SIX.text, yes: 'sixyes', no: 'sixno' };      
@@ -2801,12 +2857,19 @@ const CBApp = (() => {
     if (mode.k === 'idle' && v.pend && v.pend.mine && v.pend.type === 'm') return { id: `m${gameNo}.${v.turn}`, k: v.pend.tok ? tokP('m') : 'm', head: `${kmN('m', v.pend.tok)}で 勝った！`, q: `${kmN('m', v.pend.tok)}の 効果を 使う？`, text: '手札を 2枚 捨てて、山札から 2枚 引けるよ', yes: 'mpick', no: 'mskip' };
     if (mode.k === 'idle' && v.pend && v.pend.mine && v.pend.type === 'u5') return { id: `u${gameNo}.${v.turn}`, k: '5', head: '交換で 5 を セット！', q: '5 の 効果を 使う？', text: EFFTXT[5], yes: 'u5yes', no: 'u5no' };      
     if (mode.k === 'idle' && v.pend && v.pend.mine && v.pend.type === 'rev' && v.my.set && v.op.set) { const k = v.my.set.k, tr = tokIn(k); return { id: `r${gameNo}.${v.turn}`, k: tr ? tokP(k) : k, head: '逆転の チャンス！', q: `${k} の 効果を 使う？`, text: tr ? `場の ${k} と ${nameOf(tokP(k))}（2頭分）で 3枚 ぶん。トークンを 捨てると、${toName(v.op.set.k)} 勝てるよ` : REVTXT(k, v.op.set.k), yes: 'revyes', no: 'revno' }; }      
-    if (mode.k === 'idle' && v.can.x7r && x7off !== x7id(v)) return { id: x7id(v), k: tokIn('7') ? 't7' : '7', head: X7.head, q: X7.q, text: X7.text + (tokIn('7') ? '（7トークンは 3頭分：捨てるのは トークン）' : ''), ord: X7.ord, yes: 'x7yes', no: 'x7no' };      
+    const pa = mode.k === 'idle' ? preAsk(v) : null;      
+    if (pa && pa.c === 'x7r') return { id: 'x' + preId(v), k: tokIn('7') ? 't7' : '7', head: X7.head, q: X7.q, text: X7.text + (tokIn('7') ? '（7トークンは 3頭分：捨てるのは トークン）' : ''), ord: X7.ord, yes: 'x7yes', no: 'x7no' };
+    if (pa) { const q = pa.c === 'x7' ? '7' : '3'; return { id: pa.c + preId(v), k: effKey(q), head: `${q} が 3枚${tokIn(q) ? ' ぶん' : ''}！`, q: effQ(q), text: 'セットの 前に 使えるよ。' + effText(q), yes: pa.yes, no: pa.no }; }      
     return null;
   }
   
-  let x7off = '';
-  const x7id = v => `x${gameNo}.${v.turn}`;
+  let preOff = {};
+  const preId = v => `${gameNo}.${v.turn}`;
+  const preList = v => PRE.filter(p => v.can[p.c]);                                   
+  const preAsk = v => PRE.find(p => v.can[p.c] && preOff[p.c] !== preId(v)) || null;     
+  const preBtn = c => (c === 'x7r' ? X7.btn : c === 'x7' ? effBtn('7') : effBtn('3'));      
+  const preBar = c => (c === 'x7r' ? X7.bar : c === 'x7' ? (tokIn('7') ? '7トークンで 3枚 引く' : '7 を 3枚 交換') : '3 を 3枚 見せて 交換');      
+  const preLine = c => (c === 'x7r' ? '7 が 4枚！ セットの 前なら 逆転を 使えるよ' : c === 'x7' ? (tokIn('7') ? '7トークン！ セットの 前なら 山札から 3枚 引けるよ' : '7 が 3枚！ セットの 前なら 交換を 使えるよ') : `3 が 3枚${tokIn('3') ? ' ぶん' : ''}！ セットの 前なら 交換を 使えるよ`);
   const askOn = () => !!modEl && modEl.classList.contains('cbask');
   function askSync() {                                 
     const A = askInfo();
@@ -2836,10 +2899,14 @@ const CBApp = (() => {
   function pickModal(kind) {
     const v = V;
     
-    const seen = v.op.hand.some(c => c.k);
-    modal(`<h3 class="gold">${kind === 'p6' ? '6 の 効果' : kmN('k', v.pend && v.pend.tok) + 'の 効果'}</h3><p>見たい カードを 1枚 選んでね${kind === 'p6' ? '<br>（手札の 6 を 2枚 相手に 見せるよ）' : ''}${seen ? '<br>もう 見た カードは 選べないよ' : ''}</p>`
-      + `<div class="pick">${v.op.hand.map(c => cardBtn({ u: c.u, k: c.k }, c.k ? 'knw' : '', c.k ? ' disabled' : ` data-cb="pick" data-kind="${kind}"`, 'op')).join('')}</div>`
-      + '<div class="col"><button type="button" class="cbb dk" data-cb="modx">戻る</button></div>');
+    
+    const seen = v.op.hand.some(c => c.k), x3 = kind === 'x3', ok = c => (x3 ? v.can.x3p.indexOf(c.u) >= 0 : !c.k);
+    const head = kind === 'p6' ? '6 の 効果' : x3 ? '3 の 効果' : kmN('k', v.pend && v.pend.tok) + 'の 効果';
+    const txt = x3 ? `交換する カードを 1枚 選んでね<br>（相手の 手札の 裏の カード：何が 来るかは わからないよ）<br>${tokIn('3') ? '3トークン（2頭分）と 3 を 見せて、本物の 3 を 1枚 わたすよ' : '手札の 3 を 3枚 相手に 見せて、1枚 わたすよ'}`
+      : `見たい カードを 1枚 選んでね${kind === 'p6' ? '<br>（手札の 6 を 2枚 相手に 見せるよ）' : ''}`;
+    modal(`<h3 class="gold">${head}</h3><p>${txt}${seen ? '<br>もう 見た カードは 選べないよ' : ''}</p>`
+      + `<div class="pick">${v.op.hand.map(c => cardBtn({ u: c.u, k: c.k }, c.k ? 'knw' : '', ok(c) ? ` data-cb="pick" data-kind="${kind}"` : ' disabled', 'op')).join('')}</div>`
+      + '<div class="col"><button type="button" class="cbb dk" data-cb="modx">戻る</button></div>', x3 ? 'cbx3' : '');
   }
   
   function discardModal() {
@@ -2912,7 +2979,7 @@ const CBApp = (() => {
     const b = e.target.closest('[data-cb]'); if (!b || b.disabled) return;
     const a = b.dataset.cb, u = +b.dataset.u;
     if (a === 'useok') { if (useSkip) useSkip(); return; }      
-    if (/^(effyes|effno|sixyes|sixno|kgo|kskip|mpick|mskip|revyes|revno|u5yes|u5no|x7yes|x7no)$/.test(a) && b.closest('.cbask') && performance.now() - askAt < (typeof CBApp._guard === 'number' ? CBApp._guard : ASK_GUARD)) return;      
+    if (/^(effyes|effno|sixyes|sixno|kgo|kskip|mpick|mskip|revyes|revno|u5yes|u5no|x7yes|x7no|p7yes|p7no|p3yes|p3no)$/.test(a) && b.closest('.cbask') && performance.now() - askAt < (typeof CBApp._guard === 'number' ? CBApp._guard : ASK_GUARD)) return;      
     if (a === 'close') return close();
     if (a === 'cpu') { se('tap'); return startMatch(CBNet.cpu(CBApp._rng || undefined, CBApp._think || undefined, CBApp._opt || undefined)); }
     if (a === 'host' || a === 'join') { se('tap'); return showRoom(a); }
@@ -2988,7 +3055,12 @@ const CBApp = (() => {
     if (a === 'gemgo') { const g = b.dataset.g; if (!v.my.gem || v.my.gem.can.indexOf(g) < 0 || mode.k !== 'idle') { closeMod(); return; } se('tap'); return send({ t: 'gem', g: g }); }
     
     if (a === 'x7yes') { if (!v.can.x7r || mode.k !== 'idle') return; se('tap', 0.6); return send({ t: 'x7r' }); }
-    if (a === 'x7no') { if (!v.can.x7r) return; se('tap', 0.6); x7off = x7id(v); closeMod(); render(); return; }
+    if (a === 'x7no') { if (!v.can.x7r) return; se('tap', 0.6); preOff.x7r = preId(v); closeMod(); render(); return; }
+    
+    if (a === 'p7yes') { if (!v.can.x7 || mode.k !== 'idle') return; se('tap', 0.6); return send({ t: 'x7' }); }
+    if (a === 'p3yes') { if (!v.can.x3 || mode.k !== 'idle') return; se('tap', 0.6); return pickModal('x3'); }      
+    if (a === 'p7no' || a === 'p3no') { const c = a === 'p7no' ? 'x7' : 'x3'; if (!v.can[c]) return; se('tap', 0.6); preOff[c] = preId(v); closeMod(); render(); return; }
+    if (a === 'prere') { if (!preList(v).length || mode.k !== 'idle') return; se('tap', 0.6); preOff = {}; peekId = ''; render(); return; }      
     
     if (a === 'sixyes') { if (!v.can.six || mode.k !== 'idle') return; se('tap', 0.6); return pickModal('p6'); }
     if (a === 'sixno') { if (!v.can.six) return; se('tap', 0.6); return send({ t: 'p6', pick: null }); }
@@ -3008,6 +3080,7 @@ const CBApp = (() => {
     if (a === 'pick') {
       if (!v.op.hand.some(c => c.u === u && !c.k)) return;      
       if (b.dataset.kind === 'p6') { if (!v.can.six) return; return send({ t: 'p6', pick: u }); }      
+      if (b.dataset.kind === 'x3') { if (!v.can.x3 || v.can.x3p.indexOf(u) < 0 || mode.k !== 'idle') return; se('tap', 0.6); return send({ t: 'x3', pick: u }); }      
       return send({ t: 'k', pick: u });
     }
     if (a === 'kskip') return send({ t: 'k', pick: null });
@@ -3287,6 +3360,7 @@ const CBApp = (() => {
         } else { x.u.forEach(u => { const el = $('.cbohand').querySelector(`[data-u="${u}"]`); if (el) el.remove(); }); }
       } else if (x.e === 'end') {
         V = v; render();
+        if (x.early) await banner('決着！', `${x.wins[0] > x.wins[1] ? 'あなた' : WHO()}の 勝ちが 決まったよ（のこりの ターンでは 追いつけない）`, 1500);      
         await endShow(x);
       }
     }
@@ -3297,7 +3371,7 @@ const CBApp = (() => {
     ended = true;
     const head = x.res === 'win' ? 'あなたの 勝ち！' : x.res === 'lose' ? 'あなたの 負け…' : '同点！';
     se(x.res === 'win' ? 'fanfare' : x.res === 'lose' ? 'over' : 'even');
-    modal(`<h3 class="gold">${head}</h3><div class="sc">${x.wins[0]} － ${x.wins[1]}<small>あなた － ${esc(WHO())}（勝った 数）</small></div><div class="gift"></div><div class="gift2" style="min-height:20px;font-size:12.5px;color:#d9c08c"></div>`
+    modal(`<h3 class="gold">${head}</h3><div class="sc">${x.wins[0]} － ${x.wins[1]}<small>あなた － ${esc(WHO())}（勝った 数）${x.early ? `<br>${x.early}ターン目で 決着！` : ''}</small></div><div class="gift"></div><div class="gift2" style="min-height:20px;font-size:12.5px;color:#d9c08c"></div>`
       + '<div class="col"><button type="button" class="cbb" data-cb="again">もう 1回</button><button type="button" class="cbb dk" data-cb="menu">メニューへ</button></div>', 'cbend');
     const no = gameNo, r = await (ends.shift() || settle(x.res)), g = $('.cbend .gift');      
     if (!g || no !== gameNo) return;
@@ -3620,7 +3694,7 @@ const CBApp = (() => {
     }
     if (x.res === 'lose') {
       se('over');
-      modal(`<h3 class="gold">調査 失敗…</h3><div class="sc">${x.wins[0]} － ${x.wins[1]}<small>あなた － ${esc(q.s)}（勝った 数）</small></div>`
+      modal(`<h3 class="gold">調査 失敗…</h3><div class="sc">${x.wins[0]} － ${x.wins[1]}<small>あなた － ${esc(q.s)}（勝った 数）${x.early ? `<br>${x.early}ターン目で 決着！` : ''}</small></div>`
         + `<div class="gift"><div>${esc(q.s)}に 負けた…。${r.won ? `${r.won}連勝で 止まったよ` : ''}</div><div>もう 一度 1戦目から 挑戦できるよ（💎 決戦宝石も 5つに 戻るよ）</div>${msh}</div>`
         + '<div class="col"><button type="button" class="cbb" data-cb="qretry">もう 一度 挑戦</button><button type="button" class="cbb dk" data-cb="qmapgo">マップへ</button></div>', 'cbend qend');
       return;
