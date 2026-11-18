@@ -14,6 +14,7 @@ OUT = os.path.join(W, 't5', 'ks_frames')
 args = [a for a in sys.argv[1:] if not a.startswith('--')]
 DO_PUSH = '--push' in sys.argv or '--wall' not in sys.argv
 DO_WALL = '--wall' in sys.argv or '--push' not in sys.argv
+NO_CLIPS = {'gold'}      # 第4.193版：カッコいい（gold）の PUSH（gp：黒と 金の ぷるんぷるんの ボタン）は もとから とびちる かけら（.clips）が ない
 shutil.rmtree(SRV, ignore_errors=True); os.makedirs(SRV)
 subprocess.run(['node', 'build.js'], check=True, stdout=subprocess.DEVNULL)
 subprocess.run(['python3', 'build_pwa.py', os.path.join(SRV, 'APP')], check=True, stdout=subprocess.DEVNULL, env=dict(os.environ, HIST='hist_280.json', DROP='', TARGET='app'))
@@ -82,8 +83,11 @@ try:
                 # 第4.168版（まさちゃん 2026/11/14 01:26「プッシュ押した後に出るこのエフェクト消して！」）：かけら（.clips）の 中の「光の輪」（.ring）は 出さない
                 #   （デカ的中の 虹の 輪の きまり（.ring）が もれて、左上に ずれた 虹色の 太い 弧に なって いた）。火花・いなずま・光の すじは そのまま
                 rg = pg.evaluate("() => { const r = [...document.querySelectorAll('#fxOv .clips .ring')]; return [r.length, r.filter(e => getComputedStyle(e).display !== 'none').length, document.querySelectorAll('#fxOv .clips *').length]; }")
-                print(('  ✅ ' if rg[1] == 0 and rg[2] > rg[0] else '  ❌ ') + f'{tid} かけらの「光の輪」{rg[0]}こは 出ない（見える もの {rg[1]}こ）・ほかの かけら {rg[2] - rg[0]}こは そのまま')
-                if rg[1] or rg[2] <= rg[0]: fails.append(tid + ' ring')
+                #   第4.193版：かけらが もとから ない テーマ（NO_CLIPS）は かけら 0こ で OK（ほかの テーマは かけらが あって、光の輪 だけ 出ない）
+                okr = rg[1] == 0 and (rg[2] == 0 if tid in NO_CLIPS else rg[2] > rg[0])
+                print(('  ✅ ' if okr else '  ❌ ') + (f'{tid} かけらは もとから ない（ぷるんぷるんの PUSH・かけら {rg[2]}こ）・光の輪も 出ない' if tid in NO_CLIPS else
+                                                      f'{tid} かけらの「光の輪」{rg[0]}こは 出ない（見える もの {rg[1]}こ）・ほかの かけら {rg[2] - rg[0]}こは そのまま'))
+                if not okr: fails.append(tid + ' ring')
                 for i in range(90):
                     pg.evaluate(STEP_F, i / 60); pg.screenshot(path=os.path.join(d, f'f{idx:04d}.png'), clip={'x': 0, 'y': 0, 'width': 390, 'height': 844}); idx += 1
                 pg.evaluate('TengelFx.close()')

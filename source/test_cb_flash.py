@@ -151,7 +151,8 @@ try:
                 if want('end_win'): run(pg, 'end_win' + tag, 7.0, pre=lambda: tap_play(pg, '3'))      # 3ターン目：3 と 7 → 勝ち → 結果「あなたの 勝ち！」→ GET の 札が ぽんと 出る
                 else: tap_play(pg, '3'); settle(pg, 7.0)
                 v2 = pg.evaluate("() => { const v = CBApp._t.view, b = document.querySelector('#cbOv .cbend .cbget'); return v ? [v.phase, v.res, v.my.wins, v.op.wins, b ? b.querySelector('.n').textContent : null] : null; }")
-                check(a3 == '3 の 効果を 使う？' and h2 == '2334' and v2 == ['end', 'win', 3, 0, '＋1こ GET！'], f'2つ目の 対戦も 場面の とおり（聞く 窓「{a3}」・交換の あとの 手札 {h2}・3勝 0勝・GET の 札）{v2}')
+                # 第4.193版：GET の 札は 第4.192版の 漢字（＋1こ → ＋1個）に そろえた 文（test_cb.py と 同じ）
+                check(a3 == '3 の 効果を 使う？' and h2 == '2334' and v2 == ['end', 'win', 3, 0, '＋1個 GET！'], f'2つ目の 対戦も 場面の とおり（聞く 窓「{a3}」・交換の あとの 手札 {h2}・3勝 0勝・GET の 札）{v2}')
             # ---- 3つ目の 対戦（第4.178版）：本番の 形（5ターン・手札 7まい）・夜の フィールド（火の あかりの ゆれ）・逆転勝利（自分 → 相手）----
             settle(pg, 1.0)
             pg.evaluate("() => { if (CBApp._t.screen !== 'menu') CBApp._t.menu(); CBApp._rng = () => 0.1; CBApp._opt = { hands: [['1', '1', '1', '2', '3', '6', '7'], ['m', '2', '2', '2', '4', '5', '6']] }; }"); pg.wait_for_timeout(100)

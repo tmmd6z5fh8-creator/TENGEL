@@ -271,7 +271,7 @@ window.webkit = { messageHandlers: { tengel: { postMessage: function (m) {
     (window.__unseals = window.__unseals || []).push([m.payload.key.length, m.payload.iv.length, m.payload.data.length]);
     crypto.subtle.importKey('raw', hx(m.payload.key), 'AES-GCM', false, ['decrypt'])
       .then(function (k) { return crypto.subtle.decrypt({ name: 'AES-GCM', iv: hx(m.payload.iv) }, k, hx(m.payload.data)); })
-      .then(function (buf) { window.__nativeReply(m.id, true, new TextDecoder('utf-8', { fatal: true }).decode(buf)); }, function () { window.__nativeReply(m.id, false, 'データの形がちがうよ'); });
+      .then(function (buf) { window.__nativeReply(m.id, true, new TextDecoder('utf-8', { fatal: true }).decode(buf)); }, function () { window.__nativeReply(m.id, false, 'データの形が違うよ'); });
     return;
   }
   if (m.name === 'store') val = window.__storeAns || { found: true, version: '1.1', url: 'https://apps.apple.com/jp/app/id0000000000', notes: '新しい版', date: '2026-10-20T00:00:00Z', error: '' };
@@ -323,7 +323,7 @@ window.webkit = { messageHandlers: { tengel: { postMessage: function (m) {
         RM = re.compile(r'/remote/mother_app2\.json')
         ctx.route(RM, lambda route: route.fulfill(status=200, content_type='application/json', body=json.dumps({'app': 'other', 'rows': []})))
         pg.click('#sdCheck'); pg.wait_for_timeout(600)
-        check('形がちがう' in pg.locator('#sdMsg').inner_text(), f'形のちがうデータは入れない（{pg.locator("#sdMsg").inner_text()}）')
+        check('形が違う' in pg.locator('#sdMsg').inner_text(), f'形のちがうデータは入れない（{pg.locator("#sdMsg").inner_text()}）')
         ctx.unroute(RM)
         # 第4.155版：前の 形（スクランブル sc:1）・ちがう 鍵で 封じた もの・1字 かえた もの は 読まない／封じて いない ふつうの JSON は 読める
         _tam = dict(_rj, data=_rj['data'][:-1] + ('1' if _rj['data'][-1] == '0' else '0'))
@@ -331,7 +331,7 @@ window.webkit = { messageHandlers: { tengel: { postMessage: function (m) {
         for _body in (_old_doc, _wrong_doc, json.dumps(_tam)):
             ctx.route(RM, (lambda _b: lambda route: route.fulfill(status=200, content_type='application/json', body=_b))(_body))
             pg.click('#sdCheck'); pg.wait_for_timeout(700); _msgs.append(pg.locator('#sdMsg').inner_text()); ctx.unroute(RM)
-        check(all('形がちがう' in m for m in _msgs) and not pg.locator('#sdApply').is_visible(), f'前の 形（スクランブル）・ちがう 鍵で 封じた もの・1字 かえた もの は 読まない（{_msgs}）')
+        check(all('形が違う' in m for m in _msgs) and not pg.locator('#sdApply').is_visible(), f'前の 形（スクランブル）・ちがう 鍵で 封じた もの・1字 かえた もの は 読まない（{_msgs}）')
         ctx.route(RM, lambda route: route.fulfill(status=200, content_type='application/json', body=_plain))
         pg.click('#sdCheck'); pg.wait_for_timeout(700)
         check('最新' in pg.locator('#sdMsg').inner_text(), f'封じて いない ふつうの JSON（同じ 版）は 読める（{pg.locator("#sdMsg").inner_text()}）')
@@ -360,7 +360,7 @@ window.webkit = { messageHandlers: { tengel: { postMessage: function (m) {
               f'押すと ひな形（.xlsx）を そのまま 共有シートへ（{[(x.get("name"), len(x.get("base64") or "")) for x in sh]}）')
         pg.set_input_files('#smFile', TPL); pg.wait_for_timeout(1200)
         pv = pg.locator('#smPreview').inner_text()
-        check(pg.locator('#smApply').count() == 0 and 'レースの行' in pv and '5行目から' in pv and 'いまのデータはそのまま' in pv, f'空の ひな形を 選ぶと「黄色い行（5行目から）に入れてね」（記入例・説明の シートは 読まない）（{pv[:120]}）')
+        check(pg.locator('#smApply').count() == 0 and 'レースの行' in pv and '5行目から' in pv and '今のデータはそのまま' in pv, f'空の ひな形を 選ぶと「黄色い行（5行目から）に入れてね」（記入例・説明の シートは 読まない）（{pv[:120]}）')
         wb = _ox.load_workbook(TPL); ws = wb['検証データ']
         for i, v in enumerate([[_dt.datetime(2026, 9, 20), 3, '稍重', 1200, 11, 2.4, 22.8, 2, 1, 5, '', '', 640, 3880, 'ひな形', 1],
                                [_dt.datetime(2026, 9, 20), 4, '良', 1600, 12, 3.1, 61.0, 1, 7, 2, '', '', 2450, 9870, '', 1]]):
