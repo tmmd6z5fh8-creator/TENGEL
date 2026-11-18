@@ -37,6 +37,8 @@
 #     第4.186版（まさちゃん 2026/11/17 00:52「この4つ、この画像と入れ替えて！」と 絵 4まい）：crimson・sakura・marble・frost は 新しい 絵 cb_board_<名前>_v2.png
 #       （1672×941：右の 馬が 大きく なって「山札」の 札が 左へ 98px。ほかの 形〈台・捨て札・VS の わく・歯車〉は 同じ 場所）。前の 絵は のこす（上書きしない・消さない：アプリには 入れない）
 #       絵は そのまま（夜の 色〈night〉に しない：まさちゃんの デザインの まま）。大きさを かえる だけ
+#     第4.194版（まさちゃん 2026/11/18 10:15「カードバトルのこのプレイボード、赤丸のところ、馬と山札重なってる！改善して！」）：violet・starry・steam は
+#       kisekae/cb_board_dl.py で 作った cb_board_<名前>_dl.png（もとの 絵の「山札」の 札 だけを 左へ 98px・札の あとは まわりの 模様で うめる）。もとの 絵は のこす（アプリには 入れない）
 #     第4.189版（まさちゃん 2026/11/17 15:00「カードバトル 1パックコイン112枚 カード購入ではなく、パック式にする…」と 絵 18まい：どれも「SECRET RARE」）：
 #       カードパックの レア 9種・超レア 9種（1〜7・神様馬・幻の馬：名前は 姫が つけた。どちらが レアかは 姫が 決めた）＝ cb_face_<名前>.png（1024×1536・白い 紙の 上に カード）
 #       ・レア（キラキラの 水晶の 枠・角ばった 大きい 数字）：kr・mr・1r〜7r（2r だけ cb_face_2r.jpg：もらった 形の まま）
@@ -58,7 +60,7 @@ SRC = os.path.join(W, 'ios', 'cb_assets', 'src'); OUT = os.path.join(W, 'ios', '
 V = 1
 CARDS = [('1', 'cb_1_v2.png'), ('2', 'cb_2_v2.png'), ('3', 'cb_3_v2.png'), ('4', 'cb_4.png'), ('5', 'cb_5_v2.png'), ('6', 'cb_6.png'), ('7', 'cb_7_v2.png'), ('k', 'cb_k.png'), ('m', 'cb_m.png'), ('b', 'cb_back.png')]
 BACKS = [('sky', 'cb_back_sky.png'), ('star', 'cb_back_star.png'), ('ice', 'cb_back_ice.png'), ('wa', 'cb_back_wa.png'), ('ori', 'cb_back_ori.png'), ('crown', 'cb_back_crown.png'), ('heart', 'cb_back_heart.png')]      # 第4.182版：背面カスタム
-BOARDS = [(b, f'cb_board_{b}' + ('_v2' if b in ('crimson', 'sakura', 'marble', 'frost') else '') + '.png') for b in ('marble', 'frost', 'sakura', 'violet', 'crimson', 'starry', 'steam')]      # 第4.185版：プレイボード（第4.186版：4つは 新しい 絵）
+BOARDS = [(b, f'cb_board_{b}' + ('_v2' if b in ('crimson', 'sakura', 'marble', 'frost') else '_dl') + '.png') for b in ('marble', 'frost', 'sakura', 'violet', 'crimson', 'starry', 'steam')]      # 第4.185版：プレイボード（第4.186版：4つは 新しい 絵・第4.194版：のこりの 3つは「山札」の 札を 左へ うつした 絵＝cb_board_dl.py）
 BD, BD_S = (1254, 706), (480, 270)      # 第4.185版：プレイボードの 大きさ（いつもの cb_board.webp と 同じ）・タイル
 FACES = [(f, f'cb_face_{f}' + ('_v2' if f in ('7a', '7b') else '') + '.png') for f in ('ka', 'kb', 'ma', 'mb', '1a', '1b', '2a', '2b', '3a', '3b', '4a', '4b', '5a', '5b', '6a', '6b', '7a', '7b')]
 FACES += [(f, f'cb_face_{f}' + ('.jpg' if f == '2r' else '.png')) for f in ('kr', 'mr', '1r', '2r', '3r', '4r', '5r', '6r', '7r', 'ksr', 'msr', '1sr', '2sr', '3sr', '4sr', '5sr', '6sr', '7sr')]      # 第4.189版：カードパックの レア・超レア      # 第4.182版：おもての べつの デザイン（第4.185版：7a・7b は 新しい 絵）

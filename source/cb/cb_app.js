@@ -112,6 +112,10 @@
 //       負けそうな ときに アプリを 閉じれば 連勝の ボーナスコイン・お世話トークンの 連勝が のこった）。メニューで「負けに 数えたよ」と 知らせる
 //     ・結果は 決まった とき（ルールから 'end' が 届いた とき）に すぐ 数える（settle：前は 最後の 札を 見せ終わって から）。
 //       勝ったのに 最後の 札の とちゅうで 閉じても 勝ちに なる・決まった あとに「やめる」を 押しても 負けを 足さない（fin）
+//   第4.194版（まさちゃん 2026/11/18 10:15「カードバトルのこのプレイボード、赤丸のところ、馬と山札重なってる！改善して！」と 画面 3まい）：
+//     ・『紫月の夜』『黄金の星空』『歯車の工房』は 第4.185版の 絵の まま「山札」の 札が もとの 場所 → 山札の カードが 右の 馬に かぶって いた。
+//       絵の「山札」の 札 だけを 左へ 98px うつした 絵（kisekae/cb_board_dl.py → cb_board_<名前>_dl.png：馬・飾りは そのまま）に して、
+//       山札も ほかの 4つと 同じ だけ 左へ（BOARDS の dl）＝ プレイボード 7つ ぜんぶ dl。いつもの ボードは 前の まま
 const CBApp = (() => {
   'use strict';
   const R = CBRules, SK = 'tengel.cb';
@@ -153,8 +157,8 @@ const CBApp = (() => {
     .map(([id, name]) => ({ k: null, id: id, name: name, c: `cb_bk_${id}_c.webp`, s: `cb_bk_${id}_s.webp`, d: `cb_bk_${id}_d.webp`, cost: BACK_COST }));
   // 第4.185版：プレイボード 7種（まさちゃん 23:20：1つ 300枚）。絵は kisekae/cb_art.py の BOARDS（cb_bd_<id>.webp：対戦の ボード・cb_bd_<id>_s.webp：タイル）。名前は 姫が つけた
   const BOARD_COST = 300;
-  //   dl＝山札の 置き場所を 左へ（第4.186版：新しい 絵の「山札」の 札の 上）
-  const BOARDS = [['marble', '白亜の宮殿', 1], ['frost', '蒼氷の宮', 1], ['sakura', '桜の舞踏会', 1], ['violet', '紫月の夜', 0], ['crimson', '紅蓮の闘技場', 1], ['starry', '黄金の星空', 0], ['steam', '歯車の工房', 0]]
+  //   dl＝山札の 置き場所を 左へ（第4.186版：新しい 絵の「山札」の 札の 上／第4.194版：のこりの 3つも 札を 左へ うつした 絵に して dl）
+  const BOARDS = [['marble', '白亜の宮殿', 1], ['frost', '蒼氷の宮', 1], ['sakura', '桜の舞踏会', 1], ['violet', '紫月の夜', 1], ['crimson', '紅蓮の闘技場', 1], ['starry', '黄金の星空', 1], ['steam', '歯車の工房', 1]]
     .map(([id, name, dl]) => ({ id: id, name: name, b: `cb_bd_${id}.webp`, s: `cb_bd_${id}_s.webp`, cost: BOARD_COST, dl: !!dl }));
   const boardNow = () => (st && st.board ? BOARDS.find(d => d.id === st.board) || null : null);      // えらんだ プレイボード（null＝いつもの）
   const DZ_KINDS = ['k', 'm', '1', '2', '3', '4', '5', '6', '7'];

@@ -21,6 +21,7 @@
 #     （23:04）設定の「エフェクト」を なくした（BGM・効果音 だけ・前の 版の fx は すてる）／（23:06）効果を 使った ときの 札（だれが・どの 効果・何を する）／
 #     （23:20）プレイボード 7種（デザインカスタムの 3つ目の タブ・1つ 300枚・対戦の ボードの 絵・いつもの 以外は 火の あかりの ゆれ なし）
 #   第4.186版（まさちゃん 2026/11/17 00:52）：プレイボード 4つを 新しい 絵に（山札の 札が 左へ 5.86% → この 4つの とき だけ 山札も 左へ：.cbboard.dl）
+#   第4.194版（まさちゃん 2026/11/18 10:15「馬と山札重なってる！」）：のこりの 3つ（紫月の夜・黄金の星空・歯車の工房）も 札を 左へ うつした 絵 → 7つ ぜんぶ dl
 #   第4.187版（まさちゃん 2026/11/17 09:39）：7 の 4まい 公開は セットの 前（聞く 窓・使わない の あとの 下の ボタン）・セットは いつも ふせて（自分の 場の カードは うら ＋ しるし・相手が 7 を ふせても 見え方は 同じ）
 #   第4.188版（まさちゃん 2026/11/17 11:05・11:16）：効果の 順 6 → 7 → 3 → 5 → 4（聞く 順も・4 は いちばん あと）・5 で 捨てる カードは 7・3 の 効果の 分を のこす・相手の 5 の 効果で 来た カードでも 逆転勝利
 #   第4.189版（まさちゃん 2026/11/17 15:00・15:18・15:39）：カードパック（1パック 112枚・5まい＝ノーマル 4まい ＋ くじ 1まい：0〜229 の 番号・コイン／カード／記録を いっしょに 保存・2回 しない・記録から もう 1回 見る・パックの 絵）。おもては パックで 集める（コインで 解放は うら・ボード だけ）
@@ -1704,7 +1705,15 @@ try:
               f'山札は『桜の舞踏会』〈第4.186版の 新しい 絵〉の とき だけ ボードの 幅の 5.86% 左（{g2[2][0] - g1[2][0]}px／幅 {g2[5][2]}px）（{s2}）')
         pg.evaluate("() => { const T = CBApp._t; T.state.boards = ['sakura', 'violet']; T.state.board = 'violet'; T.save(); }")
         start(pg, '12345', '12345'); b3 = pg.evaluate(BIMG); g3 = pg.evaluate(GEO); pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(100)
-        check(b3[0] == 'cb_bd_violet.webp' and b3[1] is True and b3[5] is False and g3 == g2, f'『紫月の夜』（前の 絵の まま）：山札は いつもの 場所（{g3[2]}）')
+        # 第4.194版（まさちゃん 11/18 10:15「馬と山札重なってる！」）：『紫月の夜』『黄金の星空』『歯車の工房』も「山札」の 札を 左へ うつした 絵 → 山札も 左へ（7つ ぜんぶ dl）
+        check(b3[0] == 'cb_bd_violet.webp' and b3[1] is True and b3[5] is True and g3[:2] + g3[3:] == g1[:2] + g1[3:] and g3[2] == g1[2],
+              f'『紫月の夜』（第4.194版：「山札」の 札を 左へ うつした 絵）：山札は『桜の舞踏会』と 同じ 左の 場所（{g3[2]}・桜 {g1[2]}）')
+        bd7 = []
+        for bid in ('marble', 'frost', 'sakura', 'violet', 'crimson', 'starry', 'steam'):
+            pg.evaluate("(id) => { const T = CBApp._t; T.state.boards = [id]; T.state.board = id; T.save(); }", bid)
+            start(pg, '12345', '12345'); pg.wait_for_timeout(300 if HAVE else 0); bb = pg.evaluate(BIMG); gg = pg.evaluate(GEO); shot(pg, f'cb_board_{bid}'); pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(60)
+            bd7.append([bid, bb[0], bb[5], gg[2] == g1[2]])
+        check(all(r[1] == f'cb_bd_{r[0]}.webp' and r[2] is True and r[3] for r in bd7), f'プレイボード 7つ ぜんぶ：山札は 左（dl）・同じ 場所（{bd7}）')
         pg.evaluate("() => { const s = JSON.parse(localStorage.getItem('tengel.cb')); s.boards = ['zz', 'sakura', 'sakura', 7]; s.board = 'frost'; localStorage.setItem('tengel.cb', JSON.stringify(s)); CBApp._t.load(); }")
         s3 = pg.evaluate("() => [CBApp._t.state.boards, CBApp._t.state.board]")
         check(s3 == [['sakura'], ''], f'覚えた 中身が おかしい ときは 直す（ない 名前・2つ目・解放して いない ボードは 捨てる）（{s3}）')

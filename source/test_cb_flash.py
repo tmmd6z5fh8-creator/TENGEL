@@ -135,6 +135,7 @@ try:
                 pg.locator('#cbOv [data-cb=sixno]').click(); settle(pg, 0.6)
                 pg.evaluate(OPP, {'t': 'set', 'k': 6}); settle(pg, 0.8)
                 if want('end'): run(pg, 'end' + tag, 6.4, pre=lambda: tap_play(pg, '6'))
+                else: tap_play(pg, '6'); settle(pg, 6.4)      # 第4.194版：場面を えらんで 写す とき（ONLY）も さいごまで 進める（前は 1つ目の 対戦が 終わらず「場面の とおり」が NG に なった）
                 v = pg.evaluate("() => { const v = CBApp._t.view; return v ? [v.phase, v.res, v.my.wins, v.op.wins, v.discard.length] : null; }")
                 check(v == ['end', 'draw', 1, 1, 6], f'場面の とおりに 進んだ（さいごまで：1勝 1勝 の 同点・捨て札 6まい）{v}')
                 # ---- 2つ目の 対戦（第4.177版）：3 の 効果（聞く 窓 → 3まい 見せる → 交換）・勝ち → GET の 札 ----
