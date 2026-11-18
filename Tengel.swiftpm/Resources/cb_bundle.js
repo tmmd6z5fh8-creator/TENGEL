@@ -950,6 +950,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBNet;
 
 
 
+
+
+
+
 const CBApp = (() => {
   'use strict';
   const R = CBRules, SK = 'tengel.cb';
@@ -992,7 +996,7 @@ const CBApp = (() => {
   
   const BOARD_COST = 300;
   
-  const BOARDS = [['marble', '白亜の宮殿', 1], ['frost', '蒼氷の宮', 1], ['sakura', '桜の舞踏会', 1], ['violet', '紫月の夜', 0], ['crimson', '紅蓮の闘技場', 1], ['starry', '黄金の星空', 0], ['steam', '歯車の工房', 0]]
+  const BOARDS = [['marble', '白亜の宮殿', 1], ['frost', '蒼氷の宮', 1], ['sakura', '桜の舞踏会', 1], ['violet', '紫月の夜', 1], ['crimson', '紅蓮の闘技場', 1], ['starry', '黄金の星空', 1], ['steam', '歯車の工房', 1]]
     .map(([id, name, dl]) => ({ id: id, name: name, b: `cb_bd_${id}.webp`, s: `cb_bd_${id}_s.webp`, cost: BOARD_COST, dl: !!dl }));
   const boardNow = () => (st && st.board ? BOARDS.find(d => d.id === st.board) || null : null);      
   const DZ_KINDS = ['k', 'm', '1', '2', '3', '4', '5', '6', '7'];
