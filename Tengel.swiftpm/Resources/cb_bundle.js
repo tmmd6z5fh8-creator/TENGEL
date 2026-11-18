@@ -114,6 +114,22 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const CBRules = (() => {
   'use strict';
   const NUMS = ['1', '2', '3', '4', '5', '6', '7'], KINDS = NUMS.concat(['k', 'm']);
@@ -129,9 +145,20 @@ const CBRules = (() => {
     for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; }
     return a;
   }
+  
+  const GEMS = ['m', 'k', '1', '3', '7'], GEM_W = { m: 1, k: 1, '1': 2, '3': 2, '7': 3 }, GEM_HAND = 6;
   const fullSet = () => { const a = []; NUMS.forEach(k => { for (let i = 0; i < COPIES; i++) a.push(k); }); a.push('k', 'm'); return a; };
-  const mkP = () => ({ hand: [], set: null, wins: 0, known: [], eff: null, six: null, r7: 0 });      
-  const count = (hand, k) => hand.reduce((n, c) => n + (c.k === k ? 1 : 0), 0);
+  const mkP = () => ({ hand: [], set: null, wins: 0, known: [], eff: null, six: null, r7: 0, gems: [], gused: [], gturn: 0 });      
+  const count = (hand, k) => hand.reduce((n, c) => n + (c.k === k ? c.tok || 1 : 0), 0);      
+  const realN = hand => hand.reduce((n, c) => n + (c.tok ? 0 : 1), 0);                         
+  const hasTok = (hand, k) => hand.some(c => c.tok && c.k === k);
+  
+  function pickW(hand, k, need) {
+    const cs = hand.filter(c => c.k === k).sort((a, b) => (b.tok || 0) - (a.tok || 0)), out = []; let n = 0;
+    for (const c of cs) { if (n >= need) break; out.push(c); n += c.tok || 1; }
+    return n >= need ? out : null;
+  }
+  const cardEv = c => (c.tok ? { u: c.u, k: c.k, tok: c.tok } : { u: c.u, k: c.k });      
   const idx = (hand, u) => hand.findIndex(c => c.u === u);
 
   function newGame(rng, opt) {
@@ -161,6 +188,9 @@ const CBRules = (() => {
       S.deck = shuffle(rest, rng).map(k => ({ u: ++S.uid, k }));
       for (let n = 0; n < HAND; n++) for (let i = 0; i < 2; i++) S.p[i].hand.push(S.deck.pop());      
     }
+    const gl = Array.isArray(opt.gems) ? opt.gems : [], gu = Array.isArray(opt.gused) ? opt.gused : [];      
+    [0, 1].forEach(i => { const g = Array.isArray(gl[i]) ? gl[i] : [], u = Array.isArray(gu[i]) ? gu[i] : []; S.p[i].gems = GEMS.filter(k => g.indexOf(k) >= 0); S.p[i].gused = S.p[i].gems.filter(k => u.indexOf(k) >= 0); });      
+    S.gpub = !!opt.gpub;
     S.ev0 = []; startTurn(S, S.ev0);      
     return S;
   }
@@ -168,7 +198,7 @@ const CBRules = (() => {
   const forget = (S, u) => { S.p.forEach(P => { const j = P.known.indexOf(u); if (j >= 0) P.known.splice(j, 1); }); };
   const learn = (P, u) => { if (P.known.indexOf(u) < 0) P.known.push(u); };
   
-  const toss = (S, c, by, why) => { forget(S, c.u); S.discard.push({ u: c.u, k: c.k, by: by, why: why, turn: S.turn }); };
+  const toss = (S, c, by, why) => { forget(S, c.u); S.discard.push(Object.assign({ u: c.u, k: c.k, by: by, why: why, turn: S.turn }, c.tok ? { tok: c.tok } : {})); };      
 
   
   const unseen = (P, Q) => Q.hand.filter(c => P.known.indexOf(c.u) < 0);
@@ -180,14 +210,14 @@ const CBRules = (() => {
   
   function handOf(P, Q) {
     const kn = c => P.known.indexOf(c.u) >= 0, s = Q.set;
-    if (!s || s.up || s.open || s.blind) return Q.hand.map(c => ({ u: c.u, k: kn(c) ? c.k : null }));
+    if (!s || s.up || s.open || s.blind) return Q.hand.map(c => (kn(c) ? cardEv(c) : { u: c.u, k: null }));
     const H = Q.hand.slice();
     H.splice(Math.max(0, Math.min(H.length, s.at | 0)), 0, s.c);
     let r = H.length - 1;
     for (let j = H.length - 1; j >= 0; j--) if (!kn(H[j])) { r = j; break; }
     H.splice(r, 1);
     const pool = Q.hand.filter(c => !kn(c));
-    return H.map(c => (kn(c) ? { u: c.u, k: c.k } : { u: pool.shift().u, k: null }));
+    return H.map(c => (kn(c) ? cardEv(c) : { u: pool.shift().u, k: null }));
   }
   
   const STEPS = ['x7', 'x3', 'u5', 'u4'];
@@ -195,25 +225,29 @@ const CBRules = (() => {
   function canStep(S, i, st) {
     const P = S.p[i], Q = S.p[1 - i], sc = P.set && !P.set.blind ? P.set.c.k : null;      
     if (st === 'x7') return count(P.hand, '7') >= 3 && S.deck.length >= 3 && P.r7 !== S.turn;      
-    if (st === 'x3') return count(P.hand, '3') >= 3 && Q.hand.length >= 1;                        
-    if (st === 'u5') return sc === '5' && P.hand.length >= 1 && P.hand.length - 1 >= S.turns - S.turn && S.deck.length >= 1;      
+    if (st === 'x3') return count(P.hand, '3') >= 3 && P.hand.some(c => c.k === '3' && !c.tok) && Q.hand.some(c => !c.tok);      
+    if (st === 'u5') return sc === '5' && P.hand.length >= 1 && S.deck.length >= 1 && P.hand.some(c => dropOk(S, P, c));      
     if (st === 'u4') return sc === '4' && Q.hand.length >= 1;
     return false;
   }
   
+  function dropOk(S, P, c) { return !!c && realN(P.hand) - (c.tok ? 0 : 1) >= S.turns - S.turn; }
+  
   const can6 = (S, i) => { const P = S.p[i], Q = S.p[1 - i]; return count(P.hand, '6') >= 2 && unseen(P, Q).length >= 1; };
   
   
-  const can7r = (S, i) => { const P = S.p[i]; return S.phase === 'set' && !P.set && !S.rv && count(P.hand, '7') >= 4 && P.hand.length - 1 >= S.turns - S.turn + 1; };
+  const can7r = (S, i) => { const P = S.p[i]; return S.phase === 'set' && !P.set && !S.rv && count(P.hand, '7') >= 4 && realN(P.hand) - (hasTok(P.hand, '7') ? 0 : 1) >= S.turns - S.turn + 1; };      
   
-  const can5 = (S, i) => { const P = S.p[i]; return !!P.set && !P.set.blind && P.set.c.k === '5' && P.hand.length >= 1 && P.hand.length - 1 >= S.turns - S.turn && S.deck.length >= 1; };
+  const can5 = (S, i) => { const P = S.p[i]; return !!P.set && !P.set.blind && P.set.c.k === '5' && P.hand.length >= 1 && S.deck.length >= 1 && P.hand.some(c => dropOk(S, P, c)); };
+  
+  const canGem = (S, i, g) => { const P = S.p[i]; return S.phase === 'set' && !P.set && GEMS.indexOf(g) >= 0 && P.gems.indexOf(g) >= 0 && P.gused.indexOf(g) < 0 && P.gturn !== S.turn && P.hand.length <= GEM_HAND; };
   
   
   function revWho(S, r) {
     if (r !== 0 && r !== 1) return null;
     const i = 1 - r, P = S.p[i], mk = P.set.c.k, wk = S.p[r].set.c.k;
     const hit = (mk === '1' && (wk === 'k' || wk === 'm')) || (mk === '2' && wk === '1');
-    return hit && count(P.hand, mk) >= 2 && P.hand.length - 1 >= S.turns - S.turn ? i : null;
+    return hit && count(P.hand, mk) >= 2 && realN(P.hand) - (hasTok(P.hand, mk) ? 0 : 1) >= S.turns - S.turn ? i : null;      
   }
 
   function act(S, i, a, rng) {
@@ -231,13 +265,21 @@ const CBRules = (() => {
       if (S.p[0].set && S.p[1].set) afterSet(S, ev);
       return { ok: true, ev: ev };
     }
+    if (a.t === 'gem') {                                 
+      if (!canGem(S, i, a.g)) return bad('gem');
+      const c = { u: ++S.uid, k: a.g, tok: GEM_W[a.g] };
+      P.hand.push(c); P.gused.push(a.g); P.gturn = S.turn;
+      if (S.gpub) learn(Q, c.u);                         
+      ev.push({ e: 'gem', who: i, g: a.g, c: cardEv(c), pub: !!S.gpub });
+      return { ok: true, ev: ev };
+    }
     if (a.t === 'x7r') {                                 
       if (!can7r(S, i)) return bad('x7r');
-      const sev = P.hand.filter(c => c.k === '7').slice(0, 4), drop = sev[0];
+      const sev = pickW(P.hand, '7', 4), drop = sev[0];      
       P.hand.splice(P.hand.indexOf(drop), 1); toss(S, drop, i, '7');
       sev.slice(1).forEach(c => learn(Q, c.u));          
       S.rv = true; P.r7 = S.turn;
-      ev.push({ e: 'x7r', who: i, show: sev.map(c => c.u), drop: { u: drop.u, k: drop.k } });
+      ev.push({ e: 'x7r', who: i, show: sev.map(c => c.u), drop: cardEv(drop) });
       return { ok: true, ev: ev };
     }
     if (a.t === 'p6') {                                  
@@ -259,7 +301,7 @@ const CBRules = (() => {
       if (w.p6 != null) return bad('e6');               
       const ask = { x7: !!w.x7, x3: !!w.x3, u5: w.u5 != null, u4: !!w.u4 }, NUM = { x7: 'e7', x3: 'e3', u5: 'e5', u4: 'e4' };
       for (const k of STEPS) if (ask[k] && k !== stp) return bad(NUM[k]);      
-      if (stp === 'u5' && ask.u5 && idx(P.hand, w.u5) < 0) return bad('drop');
+      if (stp === 'u5' && ask.u5 && !dropOk(S, P, P.hand[idx(P.hand, w.u5)])) return bad('drop');      
       P.eff.use = ask[stp]; P.eff.drop = stp === 'u5' && ask.u5 ? w.u5 : null; P.eff.done = true;
       ev.push({ e: 'effd', who: i });
       if (S.p[0].eff.done && S.p[1].eff.done) resolveStep(S, ev, rng);
@@ -282,11 +324,11 @@ const CBRules = (() => {
       if (S.phase !== 'u5' || !S.pend || S.pend.type !== 'u5' || S.pend.who !== i) return bad('u5');
       if (a.drop == null) ev.push({ e: 'u5skip', who: i });
       else {
-        const d = idx(P.hand, a.drop); if (d < 0 || !can5(S, i)) return bad('drop');
+        const d = idx(P.hand, a.drop); if (d < 0 || !can5(S, i) || !dropOk(S, P, P.hand[d])) return bad('drop');
         const five = P.set.c, drop = P.hand.splice(d, 1)[0];
         toss(S, five, i, '5'); toss(S, drop, i, '5');
         P.set = { c: S.deck.pop(), up: false, blind: true, open: false };
-        ev.push({ e: 'u5', who: i, five: { u: five.u, k: five.k }, drop: { u: drop.u, k: drop.k }, sw: true });
+        ev.push({ e: 'u5', who: i, five: { u: five.u, k: five.k }, drop: cardEv(drop), sw: true });
       }
       S.pend = null;
       open(S, ev);
@@ -323,14 +365,18 @@ const CBRules = (() => {
       if (S.phase !== 'rev' || !S.pend || S.pend.type !== 'rev' || S.pend.who !== i) return bad('rev');
       let r = S.pend.res;
       if (a.use) {
-        const k = P.set.c.k, kn = c => (Q.known.indexOf(c.u) >= 0 ? 1 : 0);
-        const same = P.hand.filter(c => c.k === k).sort((x, y) => kn(y) - kn(x) || x.u - y.u);      
-        if (same.length < 2) return bad('rev');
-        const drop = same[0], keep = same[1];
+        const k = P.set.c.k, kn = c => (Q.known.indexOf(c.u) >= 0 ? 1 : 0), tk = P.hand.find(c => c.tok && c.k === k);
+        let drop, keep = null;
+        if (tk) drop = tk;                               
+        else {
+          const same = P.hand.filter(c => c.k === k).sort((x, y) => kn(y) - kn(x) || x.u - y.u);      
+          if (same.length < 2) return bad('rev');
+          drop = same[0]; keep = same[1];
+        }
         P.hand.splice(P.hand.indexOf(drop), 1); toss(S, drop, i, k);
-        learn(Q, keep.u);                                
+        if (keep) learn(Q, keep.u);                      
         r = i;
-        ev.push({ e: 'rev', who: i, k: k, show: [drop.u, keep.u], drop: { u: drop.u, k: drop.k }, beat: Q.set.c.k });
+        ev.push({ e: 'rev', who: i, k: k, show: keep ? [drop.u, keep.u] : [drop.u], drop: cardEv(drop), beat: Q.set.c.k });
       } else ev.push({ e: 'revskip', who: i });
       S.pend = null;
       score(S, r, !!a.use);
@@ -377,27 +423,27 @@ const CBRules = (() => {
     const st = S.step, U = S.p.map(P => (P.eff && P.eff.use ? P.eff : null));
     if (st === 'x7') [0, 1].forEach(i => {              
       const P = S.p[i]; if (!U[i]) return;
-      const back = P.hand.filter(c => c.k === '7').slice(0, 3);
-      if (back.length < 3 || S.deck.length < 3) { ev.push({ e: 'fizz', who: i, k: '7' }); return; }
+      const back = pickW(P.hand, '7', 3);              
+      if (!back || S.deck.length < 3) { ev.push({ e: 'fizz', who: i, k: '7' }); return; }
       P.hand = P.hand.filter(c => back.indexOf(c) < 0);
       const drew = [S.deck.pop(), S.deck.pop(), S.deck.pop()];
       drew.forEach(c => P.hand.push(c));
-      back.forEach(c => { forget(S, c.u); S.deck.push({ u: ++S.uid, k: c.k }); });      
+      back.forEach(c => { forget(S, c.u); if (!c.tok) S.deck.push({ u: ++S.uid, k: c.k }); });      
       shuffle(S.deck, rng);
-      ev.push({ e: 'x7', who: i, n: 3, drew: drew.map(c => ({ u: c.u, k: c.k })) });
+      ev.push(Object.assign({ e: 'x7', who: i, n: 3, drew: drew.map(c => ({ u: c.u, k: c.k })) }, back.some(c => c.tok) ? { tok: back.find(c => c.tok).u, pub: !!S.gpub } : {}));      
     });
     else if (st === 'x3') [0, 1].forEach(i => {         
       const P = S.p[i], Q = S.p[1 - i]; if (!U[i]) return;
-      const three = P.hand.filter(c => c.k === '3').slice(0, 3);
-      if (three.length < 3 || Q.hand.length < 1) { ev.push({ e: 'fizz', who: i, k: '3' }); return; }
-      const give = three[0], take = Q.hand[Math.floor(rng() * Q.hand.length)];
+      const three = pickW(P.hand, '3', 3), give = three && three.find(c => !c.tok), pool = Q.hand.filter(c => !c.tok);      
+      if (!three || !give || pool.length < 1) { ev.push({ e: 'fizz', who: i, k: '3' }); return; }
+      const take = pool[Math.floor(rng() * pool.length)];
       P.hand.splice(P.hand.indexOf(give), 1); Q.hand.splice(Q.hand.indexOf(take), 1);
       P.hand.push(take); Q.hand.push(give);
       forget(S, give.u); forget(S, take.u);              
-      three.slice(1).forEach(c => learn(Q, c.u));        
+      three.filter(c => c !== give).forEach(c => learn(Q, c.u));        
       learn(P, give.u);                                  
       learn(Q, take.u);                                  
-      ev.push({ e: 'x3', who: i, three: three.map(c => c.u), give: { u: give.u, k: give.k }, take: { u: take.u, k: take.k } });
+      ev.push({ e: 'x3', who: i, three: three.map(c => c.u), give: cardEv(give), take: cardEv(take) });
     });
     else if (st === 'u5') [0, 1].forEach(i => {         
       const P = S.p[i]; if (!U[i]) return;
@@ -406,7 +452,7 @@ const CBRules = (() => {
       const five = P.set.c, drop = P.hand.splice(d, 1)[0];
       toss(S, five, i, '5'); toss(S, drop, i, '5');
       P.set = { c: S.deck.pop(), up: false, blind: true, open: false };
-      ev.push({ e: 'u5', who: i, five: { u: five.u, k: five.k }, drop: { u: drop.u, k: drop.k } });
+      ev.push({ e: 'u5', who: i, five: { u: five.u, k: five.k }, drop: cardEv(drop) });
     });
     else if (st === 'u4') {                              
       const A = S.p[0], B = S.p[1], f0 = !!U[0] && !A.set.blind && A.set.c.k === '4', f1 = !!U[1] && !B.set.blind && B.set.c.k === '4';
@@ -426,7 +472,7 @@ const CBRules = (() => {
   }
   
   function open(S, ev, d4) {
-    const c0 = S.p[0].set.c, c1 = S.p[1].set.c, r = d4 ? 'tie' : compare(c0.k, c1.k, S.rv), cs = [{ u: c0.u, k: c0.k }, { u: c1.u, k: c1.k }];      
+    const c0 = S.p[0].set.c, c1 = S.p[1].set.c, r = d4 ? 'tie' : compare(c0.k, c1.k, S.rv), cs = [cardEv(c0), cardEv(c1)];      
     S.step = null; S.p.forEach(P => { P.set.up = true; P.set.blind = false; P.set.open = true; P.eff = null; });
     const rv = revWho(S, r);
     if (rv != null) {                                    
@@ -451,6 +497,11 @@ const CBRules = (() => {
     S.p.forEach((P, i) => { if (P.set) { toss(S, P.set.c, i, 't'); P.set = null; } P.eff = null; });
     S.pend = null;
     ev.push({ e: 'clear' });
+    S.p.forEach((P, i) => {                              
+      const gone = P.hand.filter(c => c.tok); if (!gone.length) return;
+      P.hand = P.hand.filter(c => !c.tok); gone.forEach(c => forget(S, c.u));
+      ev.push({ e: 'tokgone', who: i, u: gone.map(c => c.u), k: gone.map(c => c.k), pub: !!S.gpub });
+    });
     if (S.turn >= S.turns) {
       const a = S.p[0].wins, b = S.p[1].wins;
       S.phase = 'end'; S.res = a > b ? 0 : b > a ? 1 : 'draw';
@@ -496,16 +547,18 @@ const CBRules = (() => {
       const c = X.set.c, o = { u: c.u, k: null, up: X.set.up, blind: X.set.blind, open: !!X.set.open };
       if (mine) o.k = X.set.blind ? null : c.k;
       else if (X.set.up || X.set.open) o.k = c.k;
+      if (o.k != null && c.tok) o.tok = c.tok;      
       return o;
     };
     const st = S.phase === 'eff' && P.eff && !P.eff.done && P.eff.can ? P.eff.st : null;      
     const hide5 = S.phase === 'u5' && !!S.pend && S.pend.who !== i;      
     return {
       v: 4, me: i, turn: S.turn, turns: S.turns, phase: hide5 ? 'swap' : S.phase, deckN: S.deck.length, rv: !!S.rv,      
-      discard: S.discard.map(d => ({ k: d.k, mine: d.by === i, why: d.why, turn: d.turn })),
-      my: { hand: P.hand.map(c => ({ u: c.u, k: c.k, seen: Q.known.indexOf(c.u) >= 0 })), set: setOf(P, true), wins: P.wins },
-      op: { hand: handOf(P, Q), set: setOf(Q, false), wins: Q.wins },      
-      can: { set: S.phase === 'set' && !P.set, x7r: can7r(S, i), eff: st ? { e6: false, e7: st === 'x7', e3: st === 'x3', e5: st === 'u5', e4: st === 'u4', st: st, n: S.effN } : null,      
+      discard: S.discard.map(d => Object.assign({ k: d.k, mine: d.by === i, why: d.why, turn: d.turn }, d.tok ? { tok: d.tok } : {})),
+      my: { hand: P.hand.map(c => Object.assign({ u: c.u, k: c.k, seen: Q.known.indexOf(c.u) >= 0 }, c.tok ? { tok: c.tok } : {})), set: setOf(P, true), wins: P.wins,
+        gem: P.gems.length ? { list: P.gems.slice(), used: P.gused.slice(), can: GEMS.filter(g => canGem(S, i, g)), now: P.gturn === S.turn } : null },      
+      op: { hand: handOf(P, Q), set: setOf(Q, false), wins: Q.wins, gem: S.gpub && Q.gems.length ? { list: Q.gems.slice(), used: Q.gused.slice() } : null },      
+      can: { set: S.phase === 'set' && !P.set, x7r: can7r(S, i), gem: GEMS.filter(g => canGem(S, i, g)), eff: st ? { e6: false, e7: st === 'x7', e3: st === 'x3', e5: st === 'u5', e4: st === 'u4', st: st, n: S.effN } : null,      
         six: S.phase === 'six' && !!P.six && !P.six.done && P.six.can ? { n: S.turn } : null },      
       pend: S.pend ? { type: hide5 ? 'swap' : S.pend.type, mine: S.pend.who === i } : null,
       wait: (S.phase === 'set' && !!P.set && !Q.set) || (S.phase === 'eff' && !!P.eff && P.eff.done && !!Q.eff && !Q.eff.done) || (S.phase === 'six' && !!P.six && P.six.done && !!Q.six && !Q.six.done) || (!!S.pend && S.pend.who !== i),
@@ -516,10 +569,12 @@ const CBRules = (() => {
 
   
   function evFor(ev, i) {
-    return ev.filter(x => !((x.e === 'ask5' || x.e === 'u5skip') && x.who !== i)).map(x => {      
+    return ev.filter(x => !((x.e === 'ask5' || x.e === 'u5skip' || (x.e === 'gem' && !x.pub)) && x.who !== i)).map(x => {      
       const o = { e: x.e };
       if (x.who != null) o.me = x.who === i;
-      if (x.e === 'x7') { o.n = x.n; if (x.who === i) o.drew = x.drew; }
+      if (x.e === 'x7') { o.n = x.n; if (x.who === i) o.drew = x.drew; if (x.tok && (x.who === i || x.pub)) o.tok = x.tok; }      
+      else if (x.e === 'gem') { o.g = x.g; o.c = x.c; }      
+      else if (x.e === 'tokgone') { o.u = x.u; if (x.who === i || x.pub) o.k = x.k; }      
       else if (x.e === 'x7r') { o.show = x.show; o.drop = x.drop; }      
       else if (x.e === 'set' || x.e === 'swap') { if (x.who === i) { o.u = x.u; if (x.back != null) o.back = x.back; } }
       else if (x.e === 'efft') { o.mine = x.has[i]; if (x.has[i]) o.st = x.st; o.first = !!x.first; if (x.first) o.other = x.has[1 - i]; }      
@@ -545,17 +600,19 @@ const CBRules = (() => {
     const v = view(S, i), out = [];
     if (v.can.set) out.push('set');
     if (v.can.x7r) out.push('x7r');                     
+    if (v.can.gem && v.can.gem.length) out.push('gem');      
     if (v.can.eff) out.push('eff');
     if (v.can.six) out.push('p6');                      
     if (v.pend && v.pend.mine) out.push(v.pend.type);
     return out;
   }
 
-  return { NUMS, KINDS, TURNS, HAND, COPIES, STEPS, power, compare, shuffle, newGame, act, view, evFor, legal };
+  return { NUMS, KINDS, TURNS, HAND, COPIES, STEPS, GEMS, GEM_W, GEM_HAND, power, compare, shuffle, newGame, act, view, evFor, legal };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = CBRules;
 
 ;
+
 
 
 
@@ -597,7 +654,7 @@ const CBCpu = (() => {
         const five = s.find(c => c.k === '5'); if (five && hand.length - 1 >= v.turns - v.turn && v.deckN >= 1) return { t: 'swap', u: five.u };      
         return { t: 'swap', u: s[s.length - 1].u };
       }
-      if (v.pend.type === 'u5') { const s = byS(hand); return { t: 'u5', drop: s.length ? s[s.length - 1].u : null }; }      
+      if (v.pend.type === 'u5') { const s = byS(hand), tk = hand.find(c => c.tok); return { t: 'u5', drop: tk ? tk.u : s.length ? s[s.length - 1].u : null }; }      
       if (v.pend.type === 'k') {
         const un = opHand.filter(c => c.k == null);
         return { t: 'k', pick: un.length ? pick(un, rng).u : null };
@@ -617,7 +674,7 @@ const CBCpu = (() => {
       const c = v.can.eff, s = byS(hand);
       if (c.e7) return { t: 'eff', use: rv ? {} : { x7: true } };      
       if (c.e3) return { t: 'eff', use: rng() < (v.turn >= 2 ? 0.55 : 0.35) ? { x3: true } : {} };
-      if (c.e5) { const weak = s[s.length - 1]; return { t: 'eff', use: weak ? { u5: weak.u } : {} }; }      
+      if (c.e5) { const weak = hand.find(x => x.tok) || s[s.length - 1]; return { t: 'eff', use: weak ? { u5: weak.u } : {} }; }      
       if (c.e4) return { t: 'eff', use: (v.turn >= v.turns ? true : v.turn >= 2 ? rng() < 0.5 : false) ? { u4: true } : {} };
       return { t: 'eff', use: {} };
     }
@@ -670,9 +727,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBCpu;
 
 
 
+
+
+
+
+
 const CBNet = (() => {
   'use strict';
-  const R = CBRules, PROTO = 10, MAXLEN = 20000;      
+  const R = CBRules, PROTO = 11, MAXLEN = 20000;      
   
   const STAKE_MAX = 999;
   function stakeOf(k) {
@@ -680,6 +742,8 @@ const CBNet = (() => {
     const w = Math.max(e, Math.min(e * 2, Math.floor(+(k && k.w) || 0)));
     return { e: e, w: e > 0 ? w : 0 };
   }
+  
+  const gmOf = o => ({ on: !!o && o.on === true });
   const say = (m, k, v) => { try { if (typeof m[k] === 'function') m[k](v); } catch (e) {   } };
   
   const DZID = /^[a-z0-9]{1,12}$/;
@@ -749,9 +813,10 @@ const CBNet = (() => {
   }
 
   
-  function host(link, rng, opt, stake, dz) {
+  
+  function host(link, rng, opt, stake, dz, gm) {
     rng = rng || Math.random;
-    const stk = stakeOf(stake), myDz = dzOf(dz);
+    const stk = stakeOf(stake), myDz = dzOf(dz), gmv = gmOf(gm);
     const mm = parent('host', rng, m => {
       let hello = false, joined = false, closed = false, want = false;
       const send = o => { if (!closed) link.send(JSON.stringify(o)); };
@@ -761,11 +826,15 @@ const CBNet = (() => {
         if (closed || typeof txt !== 'string' || txt.length > MAXLEN) return;
         let o; try { o = JSON.parse(txt); } catch (e) { return; }
         if (!o || typeof o !== 'object') return;
-        if (o.t === 'hello') { if (o.v !== PROTO) { send({ t: 'hello', v: PROTO }); m._.end('ver'); return; } if (!hello) { hello = true; m.opDz = dzOf(o.dz); send({ t: 'hello', v: PROTO, stake: stk, dz: myDz }); say(m, 'onState', 'ready'); } return; }
+        if (o.t === 'hello') { if (o.v !== PROTO) { send({ t: 'hello', v: PROTO }); m._.end('ver'); return; } if (!hello) { hello = true; m.opDz = dzOf(o.dz); send({ t: 'hello', v: PROTO, stake: stk, dz: myDz, gm: gmv }); say(m, 'onState', 'ready'); } return; }
         if (!hello) return;
         if (o.t === 'join') {                           
           const k = stakeOf(o.stake);
-          if (!joined && k.e === stk.e && k.w === stk.w) { joined = true; say(m, 'onState', 'joined'); if (want) deal(); }
+          if (!joined && k.e === stk.e && k.w === stk.w) {
+            joined = true;
+            if (gmv.on) m.setOpt(Object.assign({}, opt || {}, { gems: [R.GEMS.slice(), R.GEMS.slice()], gpub: true }));      
+            say(m, 'onState', 'joined'); if (want) deal();
+          }
           return;
         }
         if (o.t === 'bye') { m._.end('bye'); return; }
@@ -780,7 +849,7 @@ const CBNet = (() => {
         stop: mine => { if (closed) return; if (mine) send({ t: 'bye' }); closed = true; setTimeout(() => { try { link.close(); } catch (e) {   } }, mine ? 250 : 0); }
       };
     }, opt);
-    mm.stake = stk; mm.opDz = null;
+    mm.stake = stk; mm.opDz = null; mm.gm = gmv;
     return mm;
   }
 
@@ -788,14 +857,14 @@ const CBNet = (() => {
   function guest(link, dz) {
     let alive = true, id = 0, hello = false;
     const wait = {}, myDz = dzOf(dz);
-    const m = { kind: 'guest', me: 1, onUpdate: null, onState: null, stake: null, opDz: null };
+    const m = { kind: 'guest', me: 1, onUpdate: null, onState: null, stake: null, opDz: null, gm: null };      
     const send = o => { if (alive) link.send(JSON.stringify(o)); };
     const end = why => { if (!alive) return; alive = false; Object.keys(wait).forEach(k => wait[k]({ ok: false, why: 'off' })); try { link.close(); } catch (e) {   } say(m, 'onState', why); };
     link.onText = txt => {
       if (!alive || typeof txt !== 'string' || txt.length > MAXLEN) return;
       let o; try { o = JSON.parse(txt); } catch (e) { return; }
       if (!o || typeof o !== 'object') return;
-      if (o.t === 'hello') { if (o.v !== PROTO) end('ver'); else if (!hello) { hello = true; m.stake = stakeOf(o.stake); m.opDz = dzOf(o.dz); say(m, 'onState', 'ready'); say(m, 'onState', 'stake'); } }      
+      if (o.t === 'hello') { if (o.v !== PROTO) end('ver'); else if (!hello) { hello = true; m.stake = stakeOf(o.stake); m.opDz = dzOf(o.dz); m.gm = gmOf(o.gm); say(m, 'onState', 'ready'); say(m, 'onState', 'stake'); } }      
       else if (o.t === 'up' && o.view && Array.isArray(o.ev)) say(m, 'onUpdate', { n: o.n, ev: o.ev, view: o.view });
       else if (o.t === 'ack') { const f = wait[o.id]; if (f) { delete wait[o.id]; f({ ok: !!o.ok, why: o.why }); } }
       else if (o.t === 'again') say(m, 'onState', 'again');
@@ -843,7 +912,7 @@ const CBNet = (() => {
     };
   }
 
-  return { PROTO, STAKE_MAX, stakeOf, dzOf, cpu, host, guest, nativeRoom };
+  return { PROTO, STAKE_MAX, stakeOf, dzOf, gmOf, cpu, host, guest, nativeRoom };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = CBNet;
 
@@ -985,7 +1054,15 @@ const CBApp = (() => {
   const COINI = '<img class="cbci" src="cb_coin.webp" alt="">';      
   const STAKE_CHIPS = [0, 1, 2, 3, 5, 10, 20, 30, 50, 100];      
   const NAMES = { k: '神様馬', m: '幻の馬' };
-  const nameOf = k => NAMES[k] || String(k);
+  
+  
+  const GEMS = { m: { n: '幻影のアメジスト', t: '幻の馬トークン' }, k: { n: '日輪の黄金石', t: '神様馬トークン' }, 1: { n: '双炎のルビー', t: '1トークン' }, 3: { n: '双葉のエメラルド', t: '3トークン' }, 7: { n: '三峰の翡翠', t: '7トークン' } };
+  const GEM_SLOT = [[7.99, 11.24, 16.55, 69.38], [25.44, 11.24, 15.93, 69.38], [42.13, 11.24, 15.65, 69.38], [59.1, 11.24, 15.37, 69.38], [75.93, 11.24, 16.55, 69.38]];      
+  const gemPic = g => `cb_gm_${g}.webp`;
+  const nameOf = k => (typeof k === 'string' && k.length === 2 && k[0] === 't' && GEMS[k[1]] ? GEMS[k[1]].t : NAMES[k] || String(k));      
+  const TOKP = { m: 'tm', k: 'tk', 1: 't1', 3: 't3', 7: 't7' }, tokP = k => TOKP[k] || 't' + k;      
+  const picK = c => (!c || c.k == null ? null : c.tok ? tokP(c.k) : c.k);      
+  const headOf = w => (w > 1 ? `（1枚で ${w}頭分）` : '');
   
   
   const BACK_COST = 300;      
@@ -1039,7 +1116,7 @@ const CBApp = (() => {
 
   
   let st = null;
-  const DEF = () => ({ v: 1, streak: 0, win: 0, lose: 0, draw: 0, owe: 0, bgm: null, se: null, coin: 0, stake: null, backs: [], faces: [], back: '', face: {}, boards: [], board: '', ms: null, gifts: [], pkh: [], packs: 0, q: null });
+  const DEF = () => ({ v: 1, streak: 0, win: 0, lose: 0, draw: 0, owe: 0, bgm: null, se: null, coin: 0, stake: null, backs: [], faces: [], back: '', face: {}, boards: [], board: '', ms: null, gifts: [], pkh: [], packs: 0, q: null, rg: null });      
   let lostStake = 0;                                   
   let lostMs = '';                                     
   let lostLive = -1;                                   
@@ -1059,6 +1136,9 @@ const CBApp = (() => {
     const q0 = st.q && typeof st.q === 'object' ? st.q : {};
     st.q = { m: typeof q0.m === 'string' && /^\d{4}-\d{2}$/.test(q0.m) ? q0.m : monthKey(), clr: Math.max(0, Math.min(QN, Math.floor(+q0.clr || 0))) };
     if (st.ms.live === 'qc') { if (st.ms.cpu > 0) lostMs = 'cpu'; st.ms.cpu = 0; st.ms.live = ''; lostQ = true; save(); }
+    
+    delete st.gq;
+    { const r0 = st.rg && typeof st.rg === 'object' ? st.rg : {}; st.rg = { on: r0.on === true }; }      
     
     if (st.ms.live) { if (st.ms[st.ms.live] > 0) lostMs = st.ms.live; st.ms[st.ms.live] = 0; st.ms.live = ''; lostLive = st.streak; st.lose += 1; st.streak = 0; save(); }
     msRoll();
@@ -1289,7 +1369,7 @@ const CBApp = (() => {
 #cbOv .cbmenu .row{display:flex;gap:10px}#cbOv .cbmenu .row .cbb{flex:1 1 0;padding-left:6px;padding-right:6px}
 #cbOv .cbx{position:absolute;left:12px;top:calc(var(--sat,env(safe-area-inset-top)) + 8px);z-index:2}
 
-#cbOv .cbroom{align-items:center;justify-content:center;gap:12px;padding-left:22px;padding-right:22px;text-align:center}
+#cbOv .cbroom{align-items:center;justify-content:flex-start;gap:12px;padding-left:22px;padding-right:22px;text-align:center;overflow-y:auto}#cbOv .cbroom>h2{margin-top:auto}#cbOv .cbroom>:last-child{margin-bottom:auto}      /* 第4.197版：決戦宝石の ぶん 長い ときは スクロール（短い ときは まん中） */
 #cbOv .cbroom h2{margin:0;font-size:22px}
 #cbOv .cbroom p{margin:0;font-size:13.5px;line-height:1.7;color:#e6d3a6}
 #cbOv .cbroom .num{font-family:"Dela Gothic One","Hiragino Sans",sans-serif;font-size:56px;letter-spacing:.14em;line-height:1.1;color:#ffe9a8;text-shadow:0 3px 0 #7a4c0c,0 6px 14px rgba(0,0,0,.6);padding-left:.14em}
@@ -1477,7 +1557,7 @@ const CBApp = (() => {
 #cbOv .cbstk{display:flex;flex-direction:column;gap:9px;width:100%;max-width:330px}
 #cbOv .cbstk .blk{box-sizing:border-box;padding:9px 12px 11px;border-radius:16px;background:rgba(255,236,190,.07);border:1px solid rgba(255,226,160,.26);text-align:left}
 #cbOv .cbstk .blk>b{display:block;font-size:15px;color:#ffe9a8}
-#cbOv .cbstk .blk>small{display:block;font-size:11.5px;line-height:1.45;color:#d9c08c;margin-bottom:7px}
+#cbOv .cbstk .blk>small{display:block;font-size:11.5px;line-height:1.45;color:#d9c08c;margin-bottom:7px;word-break:keep-all;overflow-wrap:anywhere}
 #cbOv .cbstk .chips{display:flex;flex-wrap:wrap;gap:6px}
 #cbOv .cbstk .chips button{min-width:44px;height:40px;box-sizing:border-box;border-radius:20px;border:1.5px solid #c9a35a;background:#1b1209;color:#ffe9a8;font-size:15px;font-weight:700;padding:0 8px}
 #cbOv .cbstk .chips button.on{background:linear-gradient(180deg,#ffe9a8,#e2a83e);color:#3a2206;border-color:#f7d27c}
@@ -1797,6 +1877,38 @@ const CBApp = (() => {
 #cbOv .qpt .cn{position:absolute;top:-8%;width:30px;height:30px;opacity:0;animation:qcn 2.4s cubic-bezier(.4,0,.8,.6) var(--d) forwards}
 @keyframes qcn{0%{opacity:0;transform:translateY(0) scale(var(--s)) rotateY(0)}10%{opacity:1}100%{opacity:1;transform:translateY(115vh) scale(var(--s)) rotateY(900deg)}}
 @media (prefers-reduced-motion: reduce){#cbOv .qpo,#cbOv .qnd.op .ring,#cbOv .qnd .go,#cbOv .qsay .nx,#cbOv .qtap.on,#cbOv .qv .rays{animation:none}#cbOv .qv .rays{opacity:1}#cbOv .qpt{display:none}#cbOv .qfld.en>.qe{animation:none;opacity:1}}
+/* 第4.197版：決戦宝石（ケースは 手札の 下）・トークンの カード・宝石の 窓・相手の 宝石・部屋の あり／なし */
+#cbOv .cbgem{position:relative;flex:none;width:calc(100% - 20px);max-width:430px;margin:0 auto;aspect-ratio:1100/185}
+#cbOv .cbgem[hidden],#cbOv .ogem[hidden]{display:none}
+#cbOv .cbgem .case{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;filter:drop-shadow(0 4px 8px rgba(0,0,0,.55))}
+#cbOv .cbgem .gs{position:absolute;inset:0}
+#cbOv .cbgem .g{position:absolute;padding:0;margin:0;border:0;background:none;border-radius:14%;display:flex;align-items:center;justify-content:center}
+#cbOv .cbgem .g img{height:92%;width:auto;max-width:96%;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.65));transition:opacity .3s,filter .3s,transform .18s}
+#cbOv .cbgem .g.can::before{content:"";position:absolute;inset:6% 4%;border-radius:14%;box-shadow:0 0 0 1.5px rgba(255,232,160,.85),0 0 12px 2px rgba(255,214,110,.55);animation:cbgcan 2.4s ease-in-out infinite alternate;pointer-events:none}
+@keyframes cbgcan{from{opacity:.55}to{opacity:1}}
+#cbOv .cbgem .g.can img{filter:drop-shadow(0 0 6px rgba(255,236,170,.7)) drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+#cbOv .cbgem .g.off img{opacity:.8;filter:saturate(.75) drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+#cbOv .cbgem .g.used img{opacity:.3;filter:grayscale(.85) brightness(.7)}
+#cbOv .cbgem .g:active img{transform:scale(.93)}
+#cbOv .cbgem .g.pop img{animation:cbgpop .75s ease-out}
+@keyframes cbgpop{0%{transform:scale(1)}35%{transform:scale(1.22);filter:brightness(1.35) drop-shadow(0 0 10px rgba(255,236,170,.9))}100%{transform:scale(1)}}
+#cbOv .ogem{display:inline-flex;align-items:center;gap:1px;margin-left:6px;white-space:nowrap}
+#cbOv .ogem img{width:17px;height:17px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
+#cbOv .ogem img.u{opacity:.3;filter:grayscale(.9) brightness(.8)}
+#cbOv .cbhand .cbc.tok img,#cbOv .cbohand .cbc.tok img,#cbOv .cbslot .cbc.tok img{box-shadow:0 0 0 2px rgba(255,232,160,.85),0 0 10px 3px rgba(255,206,100,.55)}
+#cbOv .cbhand .cbc.gone{animation:cbtgone .55s ease-in forwards;pointer-events:none}
+@keyframes cbtgone{to{opacity:0;transform:translateY(-18px) scale(.86)}}
+#cbOv .cbgemq{display:flex;align-items:center;justify-content:center;gap:10px}
+#cbOv .cbgemq .gm{width:min(26vw,104px);height:auto;filter:drop-shadow(0 4px 10px rgba(0,0,0,.6))}
+#cbOv .cbgemq i{font-style:normal;font-size:22px;color:#ffe07a}
+#cbOv .cbgemq .cbc{display:block;width:min(36vw,150px)}#cbOv .cbgemq .cbc img{width:100%;height:auto;display:block;border-radius:6px;box-shadow:0 6px 16px rgba(0,0,0,.55)}
+#cbOv .cbmod.cbgemm p small{display:block;margin-top:4px;font-size:12px;color:#d9c08c}
+#cbOv .qgl{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px 8px;font-size:14px;color:#ffe9a8}#cbOv .qgl b{font-size:17px}#cbOv .qgl span{display:inline-flex;gap:2px}#cbOv .qgl img{width:24px;height:24px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}#cbOv .qgl img.u{opacity:.3;filter:grayscale(.9) brightness(.8)}
+#cbOv .gl5{display:flex;gap:6px;justify-content:center;margin-top:9px}#cbOv .gl5 img{width:38px;height:38px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+#cbOv .cbstk .blk .cbseg{margin-top:2px;width:max-content}
+#cbOv .cbjg{width:100%;max-width:330px;box-sizing:border-box;padding:9px 12px 11px;border-radius:16px;background:rgba(255,236,190,.07);border:1px solid rgba(255,226,160,.26);text-align:left}
+#cbOv .cbjg>b{display:block;font-size:15px;color:#ffe9a8}#cbOv .cbjg>small{display:block;font-size:12px;line-height:1.5;color:#d9c08c;word-break:keep-all;overflow-wrap:anywhere}
+@media (prefers-reduced-motion: reduce){#cbOv .cbgem .g.can::before{animation:none;opacity:.85}#cbOv .cbgem .g.pop img{animation:none}#cbOv .cbhand .cbc.gone{animation:none;opacity:0}}
 @media (max-height:720px){#cbOv .cbmenu .lg{width:min(44vw,168px)}#cbOv .cbmenu{gap:8px}}
 @media (max-height:760px){#cbOv .cbmenu .lg{width:min(36vw,132px)}#cbOv .cbmenu{gap:6px}#cbOv .cbmenu .btns{gap:8px}#cbOv .cbmenu .rec{margin:0}}      /* 第4.196版：決戦調査の ボタンが ふえた ぶん */
 @media (prefers-reduced-motion: reduce){#cbOv .cbglow.on{animation:none}#cbOv .cbhand .cbc.new{animation:none}#cbOv .cbflip .in{transition:none}#cbOv .cbget{animation:none}#cbOv .cbend .gift .cbmsn,#cbOv .cbend .gift .cbsbn,#cbOv .qvic .gift .cbmsn{animation:none}#cbOv .cbfire{animation:none;opacity:.88}#cbOv .cbuse,#cbOv .cbuse.on{transform:translate(-50%,-50%);transition:opacity .22s}}
@@ -1820,7 +1932,7 @@ const CBApp = (() => {
       + '<div class="cbtop"><button type="button" class="cbb dk sm" data-cb="quit">やめる</button><div class="cbturn"></div>'
       + '<div class="qhp" role="img"><img class="l" src="" alt=""><i class="m"></i><img class="r" src="cb_q_hr.webp" alt=""><div class="qbar"><i class="dmg"></i><i class="fill"></i><span class="sg"></span></div><b class="nm"></b><i class="fl"></i></div>'
       + '<button type="button" class="cbb dk sm" data-cb="help" aria-label="遊び方">？</button></div>'
-      + '<div class="cbmidw"><div class="cbopp"><div class="cbohand"></div><div class="cbwho"><b></b><span class="cbpips" data-p="op"></span><small class="qt"></small></div></div>'
+      + '<div class="cbmidw"><div class="cbopp"><div class="cbohand"></div><div class="cbwho"><b></b><span class="cbpips" data-p="op"></span><span class="ogem" hidden></span><small class="qt"></small></div></div>'
       + '<div class="cbboard"><img src="cb_board.webp" alt=""><div class="cbfire"></div><div class="cbglow"></div>'
       + '<div class="cbdeck"><img src="cb_deck.webp" alt=""><b class="cbn"></b></div>'
       + '<button type="button" class="cbdis" data-cb="discard" aria-label="捨て札を 見る"><span class="pl"></span><b class="cbn"></b></button>'
@@ -1828,7 +1940,7 @@ const CBApp = (() => {
       + '<button type="button" class="cbgear" data-cb="gear" aria-label="メニュー"></button></div>'
       + '<div class="cbmsg" aria-live="polite"></div>'
       + '<div class="cbme"><div class="cbwho"><b>あなた</b><span class="cbpips" data-p="my"></span></div></div>'
-      + '<div class="cbhand"></div><div class="cbact"></div></div></section>'
+      + '<div class="cbhand"></div><div class="cbgem" hidden><img class="case" src="cb_gmcase.webp" alt=""><div class="gs"></div></div><div class="cbact"></div></div></section>'
       + '<section class="cbs cbhelp" data-s="help"></section>'
       + '<section class="cbs cbdz" data-s="dz"></section>'
       + '<section class="cbs cbms" data-s="ms"></section>'
@@ -1879,14 +1991,14 @@ const CBApp = (() => {
     const W = WHO(), yours = x.me ? `${W}の` : 'あなたの';
     if (x.e === 'p6') return { k: '6', t: '6 の 効果', n: '手札を 1枚 見る', d: `6 を 2枚 見せて、${yours} 手札を 1枚 見るよ` };
     if (x.e === 'u5') return { k: '5', t: '5 の 効果', n: '捨てて 山札から セット', d: 'セットした 5 と 手札 1枚を 捨てて、山札から 1枚 伏せて セットするよ' };
-    if (x.e === 'x7') return { k: '7', t: '7 の 効果', n: '3枚 交換', d: '7 を 3枚 山札に 戻して、新しく 3枚 引くよ' };
-    if (x.e === 'x7r') return { k: '7', t: '7 の 効果', n: '強さ 逆転', d: '7 を 4枚 見せて 1枚 捨てるよ。この 対戦が 終わる まで、数字の 強さが 逆に なる！' };
-    if (x.e === 'x3') return { k: '3', t: '3 の 効果', n: '手札を 交換', d: `3 を 3枚 見せて、その 1枚と ${yours} 手札の 1枚（ランダム）を 交換するよ` };
+    if (x.e === 'x7') return x.tok ? { k: 't7', t: '7 の 効果', n: '3枚 交換', d: '7トークン（3頭分）を 戻して、新しく 3枚 引くよ（トークンは 山札に 入らない）' } : { k: '7', t: '7 の 効果', n: '3枚 交換', d: '7 を 3枚 山札に 戻して、新しく 3枚 引くよ' };      
+    if (x.e === 'x7r') return x.drop && x.drop.tok ? { k: 't7', t: '7 の 効果', n: '強さ 逆転', d: '7 を 4枚 ぶん 見せて（7トークンは 3頭分）、トークンを 捨てるよ。この 対戦が 終わる まで、数字の 強さが 逆に なる！' } : { k: '7', t: '7 の 効果', n: '強さ 逆転', d: '7 を 4枚 見せて 1枚 捨てるよ。この 対戦が 終わる まで、数字の 強さが 逆に なる！' };
+    if (x.e === 'x3') return { k: '3', t: '3 の 効果', n: '手札を 交換', d: x.three && x.three.length < 3 ? `3トークン（2頭分）と 3 で 3枚 ぶん 見せて、本物の 3 と ${yours} 手札の 1枚（ランダム）を 交換するよ` : `3 を 3枚 見せて、その 1枚と ${yours} 手札の 1枚（ランダム）を 交換するよ` };
     if (x.e === 'first') return { k: '4', t: '4 の 効果', n: '強制 交換', d: x.me ? `4 を 先に 見せたよ。${W}は セットした カードを 交換するよ` : '4 を 先に 見せたよ。あなたは セットした カードを、手札の 別の カードと 交換してね' };
     if (x.e === 'first2') return { k: '4', t: '4 の 効果', n: '打ち消して ドロー', d: '2人とも 4 の 効果を 使った ので、打ち消しあって この ターンは ドロー（引き分け）だよ', both: true };
     if (x.e === 'k') return { k: 'k', t: '神様馬の 効果', n: '手札を 1枚 見る', d: `前の ターンに 神様馬で 勝った ので、${yours} 手札を 1枚 見るよ` };
     if (x.e === 'm') return { k: 'm', t: '幻の馬の 効果', n: '捨てて 引き直す', d: `前の ターンに 幻の馬で 勝った ので、手札を 2枚 捨てて、山札から ${x.n}枚 引くよ` };
-    if (x.e === 'rev') return { k: x.k, t: `${x.k} の 効果`, n: '逆転勝利', d: `${x.k} を 3枚（場の 1枚 ＋ 手札の 2枚）見せて、手札の ${x.k} を 1枚 捨てると、${toName(x.beat)} 勝ち！` };
+    if (x.e === 'rev') return x.drop && x.drop.tok ? { k: tokP(x.k), t: `${x.k} の 効果`, n: '逆転勝利', d: `場の ${x.k} と ${x.k}トークン（2頭分）で 3枚 ぶん。トークンを 捨てて、${toName(x.beat)} 勝ち！` } : { k: x.k, t: `${x.k} の 効果`, n: '逆転勝利', d: `${x.k} を 3枚（場の 1枚 ＋ 手札の 2枚）見せて、手札の ${x.k} を 1枚 捨てると、${toName(x.beat)} 勝ち！` };      
     return null;
   }
   async function useShow(x) {
@@ -1974,6 +2086,13 @@ const CBApp = (() => {
       + '<li>強い 敵は、決まった 戦で <b>手札に 必ず 強い カード</b>を 持って いるよ（その 戦の 始めに 知らせるよ）</li>'
       + '<li>もらえるのは 決戦調査の バトルコインと、<b>ミッション</b>（コンピュータに 連続勝利）の 連勝。いつもの 勝ち負け・連勝・お世話トークンには 数えないよ</li>'
       + '<li>戦の 途中で やめる・アプリを 閉じると 調査 失敗（ミッションの 連勝も 0）。<b>毎月 1日に リセット</b>（討伐した エリアも 最初から）</li></ul>'
+      + `<h4>💎 決戦宝石</h4><ul><li><b>決戦調査では いつも 使えるよ</b>：1つの 調査（連勝が 続く 間）で <b>5つ 1回ずつ（合計 5個）</b>。負けて 1戦目から やり直すと また 5つ</li>`
+      + `<li>友達との 対戦は、部屋を 作る 人が「<b>決戦宝石 あり</b>」に した とき：2人とも <b>1試合で 5つ 1回ずつ</b>（おたがいの 宝石が 見える）</li>`
+      + `<li>宝石は 5つ：${R.GEMS.map(g => `${GEMS[g].n}＝<b>${GEMS[g].t}</b>${headOf(R.GEM_W[g])}`).join('・')}</li>`
+      + `<li>手札の 下の ケースの 宝石を タップ →「使う」で、<b>トークンの カードが 手札に 1枚</b>。使えるのは <b>手札が ${R.GEM_HAND}枚 以下</b>・<b>セットの 前</b>・<b>1ターンに 1つ</b></li>`
+      + '<li>トークンは <b>その ターン だけ</b>（使わないと ターンの 終わりに 消えるよ）。セットすると その カードと 同じ 強さ（神様馬トークンと 神様馬は かぶり）</li>'
+      + '<li>「2頭分・3頭分」は 手札の 効果の 数え方：1トークンで 1 の 逆転勝利・3トークン ＋ 3 で 3 の 交換・7トークンで 7 の 3枚 交換（トークンを 戻して 3枚 引く）・7トークン ＋ 7 で 4枚 公開。セット・捨てる ときは 1枚</li>'
+      + '<li>決戦調査の 敵は 宝石を 使わないよ（あなたが 使った ことも 敵には わからない）</li></ul>'
       + `<h4>ミッション</h4><ul><li>メニューの「<b>ミッション</b>」：<b>コンピュータに 連続勝利</b>・<b>友達バトルで 連続勝利</b>で バトルコインが もらえるよ</li>`
       + `<li>コンピュータ：${MS.cpu.map(t => `${t[0]}連勝 <b>${t[1]}枚</b>`).join('・')}</li><li>友達バトル：${MS.fr.map(t => `${t[0]}連勝 <b>${t[1]}枚</b>`).join('・')}</li>`
       + '<li>達成した ときに、その場で もらえるよ（受け取りは いらない）。<b>毎月 1日に リセット</b>（達成も 連勝も 0 に 戻る）</li>'
@@ -2330,10 +2449,10 @@ const CBApp = (() => {
   
   
   function showRoom(mode, keep) {
-    const old = keep && room && room.stake ? room.stake : null;
+    const old = keep && room && room.stake ? room.stake : null, oldG = keep && room && room.gm ? room.gm : null;      
     closeMod(); roomStop();
-    room = { mode: mode, code: mode === 'host' ? (CBApp._room || roomNumber()) : '', nr: null, tm: 0, step: '', stake: old || { e: 0, w: 0 } };
-    if (mode === 'host' && !old && st.coin > 0) { room.step = 'stake'; paintRoom(); show('room'); return; }
+    room = { mode: mode, code: mode === 'host' ? (CBApp._room || roomNumber()) : '', nr: null, tm: 0, step: '', stake: old || { e: 0, w: 0 }, gm: oldG };
+    if (mode === 'host' && !old) { room.step = 'stake'; paintRoom(); show('room'); return; }      
     paintRoom(); show('room');
     if (mode === 'host') roomGo();
   }
@@ -2350,20 +2469,26 @@ const CBApp = (() => {
     const digits = c => [0, 1, 2, 3].map(i => `<span class="${i === c.length ? 'cur' : ''}">${c.charAt(i)}</span>`).join('');
     let h = '<button type="button" class="cbb dk sm cbx" data-cb="roomx">← やめる</button>';
     if (r.mode === 'host' && r.step === 'stake') {      
-      const k = r.stake, maxE = Math.min(st.coin, CBNet.STAKE_MAX), chips = STAKE_CHIPS.filter(q => q <= maxE);
-      h += '<h2 class="gold">部屋を 作る</h2><p>参加コインと、勝った 人が もらう コインを 決めてね</p>'
-        + `<p class="cbcoinl">${COINI}<span>持って いる バトルコイン <b>${st.coin}</b>枚</span></p>`
-        + '<div class="cbstk"><div class="blk"><b>参加コイン</b><small>2人とも 初めに 出す 数。同じ 数を 持って いる 人 だけ 入れるよ</small>'
+      const k = r.stake, maxE = Math.min(st.coin, CBNet.STAKE_MAX), chips = STAKE_CHIPS.filter(q => q <= maxE), gm = st.rg, has = st.coin > 0;
+      
+      const gemBlk = '<div class="blk"><b>💎 決戦宝石</b><small>あり に すると、2人とも 5つの 宝石を 使えるよ（1試合で 1つ 1回ずつ・おたがいに 見える）</small>'
+        + `<div class="cbseg" role="group" aria-label="決戦宝石"><button type="button" class="${gm.on ? '' : 'on'}" data-cb="rgon" data-v="0" aria-pressed="${!gm.on}">なし</button><button type="button" class="${gm.on ? 'on' : ''}" data-cb="rgon" data-v="1" aria-pressed="${gm.on}">あり</button></div>`
+        + (gm.on ? `<div class="gl5" aria-hidden="true">${R.GEMS.map(g => `<img src="${gemPic(g)}" alt="">`).join('')}</div>` : '') + '</div>';
+      h += `<h2 class="gold">部屋を 作る</h2><p>${has ? '参加コインと、勝った 人が もらう コインを 決めてね' : '部屋の 決まりを 決めてね'}</p>`
+        + (has ? `<p class="cbcoinl">${COINI}<span>持って いる バトルコイン <b>${st.coin}</b>枚</span></p>` : '')
+        + '<div class="cbstk">' + (!has ? '' : '<div class="blk"><b>参加コイン</b><small>2人とも 初めに 出す 数。同じ 数を 持って いる 人 だけ 入れるよ</small>'
         + `<div class="chips" role="group" aria-label="参加コイン">${chips.map(q => `<button type="button" class="${q === k.e ? 'on' : ''}" data-cb="stke" data-n="${q}" aria-pressed="${q === k.e}">${q}</button>`).join('')}</div></div>`
         + '<div class="blk"><b>勝者の 獲得コイン</b><small>勝った 人への プレゼント。参加コインの 2倍 まで</small>'
-        + `<div class="cbstp"><button type="button" data-cb="stkw" data-d="-1"${k.w <= k.e ? ' disabled' : ''} aria-label="1枚 減らす">−</button><b aria-live="polite">${k.w}<small>枚</small></b><button type="button" data-cb="stkw" data-d="1"${k.w >= k.e * 2 ? ' disabled' : ''} aria-label="1枚 増やす">＋</button></div></div></div>`
-        + '<p class="hint">同点の ときは 参加コインが 戻るよ。<br>途中で やめると、参加コインは 戻らないよ</p>'
-        + `<button type="button" class="cbb" data-cb="stkgo">${k.e > 0 ? `参加 ${k.e}枚・勝者 ${k.w}枚で 部屋を 作る` : 'コインなしで 部屋を 作る'}</button>`;
+        + `<div class="cbstp"><button type="button" data-cb="stkw" data-d="-1"${k.w <= k.e ? ' disabled' : ''} aria-label="1枚 減らす">−</button><b aria-live="polite">${k.w}<small>枚</small></b><button type="button" data-cb="stkw" data-d="1"${k.w >= k.e * 2 ? ' disabled' : ''} aria-label="1枚 増やす">＋</button></div></div>`)
+        + gemBlk + '</div>'
+        + (has ? '<p class="hint">同点の ときは 参加コインが 戻るよ。<br>途中で やめると、参加コインは 戻らないよ</p>' : '')
+        + `<button type="button" class="cbb" data-cb="stkgo">${k.e > 0 ? `参加 ${k.e}枚・勝者 ${k.w}枚で 部屋を 作る` : has ? 'コインなしで 部屋を 作る' : '部屋を 作る'}</button>`;
       e.innerHTML = h; return;
     }
     if (r.mode === 'host') {
       h += '<h2 class="gold">部屋を 作ったよ</h2><p>この 番号を 友達に 教えてね</p>' + `<div class="num" aria-label="部屋番号 ${r.code}">${r.code}</div>`
         + (r.stake && r.stake.e > 0 ? `<p class="cbstkl">${COINI}参加コイン <b>${r.stake.e}枚</b>・勝者 <b>${r.stake.w}枚</b></p>` : '')
+        + (r.gm && r.gm.on ? '<p class="cbstkl">💎 決戦宝石 あり（2人とも 5つ）</p>' : '')      
         + `<div class="stt">${r.step === 'found' ? '<i class="cbspin"></i>友達が 来たよ！ つないで いるよ…' : r.step === 'fail' ? '部屋を 作れなかったよ' : '<i class="cbspin"></i>友達を 待って いるよ…'}</div>`
         + '<p class="hint">友達は「部屋に 入る」で この 番号を 入れるよ。<br>近くに いる 友達と 直接 つながるよ（2人とも Wi‑Fi か Bluetooth を オンに）</p>';
       if (r.step === 'fail') h += '<button type="button" class="cbb" data-cb="roomre">もう一度 作る</button>';
@@ -2387,7 +2512,7 @@ const CBApp = (() => {
       if (room !== r) { try { link.close(); } catch (e) {   } return; }
       clearTimeout(r.tm); room = null; se('join');
       const dz = { b: st.back, f: Object.assign({}, st.face) };      
-      startMatch(r.mode === 'host' ? CBNet.host(link, CBApp._rng || undefined, CBApp._opt || undefined, r.stake, dz) : CBNet.guest(link, dz));
+      startMatch(r.mode === 'host' ? CBNet.host(link, CBApp._rng || undefined, CBApp._opt || undefined, r.stake, dz, r.gm || null) : CBNet.guest(link, dz));      
     }).catch(e => {
       if (room !== r) return;
       clearTimeout(r.tm); r.step = 'fail'; r.nr = null; paintRoom();
@@ -2407,6 +2532,7 @@ const CBApp = (() => {
   
   let fin = false, ends = [];
   function onEv(u) {
+    if (qRun && u && u.view && u.view.my && u.view.my.gem) qRun.gu = u.view.my.gem.used.slice();      
     (u && u.ev || []).forEach(x => {
       if (!x) return;
       if (x.e === 'deal') fin = false;
@@ -2430,12 +2556,13 @@ const CBApp = (() => {
   
   function joinAsk() {
     const m = match; if (!m || m.kind !== 'guest' || !m.stake) return;
-    const k = m.stake;
-    if (k.e <= 0) { m.join(); return; }
+    const k = m.stake, gm = m.gm && m.gm.on ? m.gm : null;
+    if (k.e <= 0 && !gm) { m.join(); return; }
     const need = k.e - st.coin;
-    modal(`<h3 class="gold">この 部屋の 決まり</h3><div class="cbstkv">${COINI}参加コイン <b>${k.e}枚</b><i>→</i>勝者 <b>${k.w}枚</b></div>`
-      + `<p>2人とも 初めに ${k.e}枚 出すよ。勝った 人は ${k.w}枚 もらえる。<br>同点は 戻る・途中で やめると 戻らないよ</p>`
-      + `<p class="cbhave">${COINI}あなたの バトルコイン <b>${st.coin}</b>枚${need > 0 ? `<br><strong>あと ${need}枚 足りない ので、この 部屋には 入れないよ</strong>` : ''}</p>`
+    modal(`<h3 class="gold">この 部屋の 決まり</h3>` + (k.e > 0 ? `<div class="cbstkv">${COINI}参加コイン <b>${k.e}枚</b><i>→</i>勝者 <b>${k.w}枚</b></div>`
+      + `<p>2人とも 初めに ${k.e}枚 出すよ。勝った 人は ${k.w}枚 もらえる。<br>同点は 戻る・途中で やめると 戻らないよ</p>` : '')
+      + (gm ? `<div class="cbjg"><b>💎 決戦宝石 あり</b><small>2人とも 5つの 宝石を 使えるよ（1試合で 1つ 1回ずつ・おたがいに 見える）</small><div class="gl5" aria-hidden="true">${R.GEMS.map(g => `<img src="${gemPic(g)}" alt="">`).join('')}</div></div>` : '')
+      + (k.e > 0 ? `<p class="cbhave">${COINI}あなたの バトルコイン <b>${st.coin}</b>枚${need > 0 ? `<br><strong>あと ${need}枚 足りない ので、この 部屋には 入れないよ</strong>` : ''}</p>` : '')
       + (need > 0 ? '<div class="col"><button type="button" class="cbb" data-cb="joinno">メニューへ</button></div>'
         : '<div class="rowb"><button type="button" class="cbb dk" data-cb="joinno">やめる</button><button type="button" class="cbb" data-cb="joinyes">参加する</button></div>'), 'cbjoin');
   }
@@ -2506,7 +2633,7 @@ const CBApp = (() => {
     else mode = { k: 'idle' };
   }
   const sortHand = h => { const rv = !!(V && V.rv); return h.slice().sort((a, b) => power(a.k, rv) - power(b.k, rv) || a.u - b.u); };      
-  const cardBtn = (c, cls, extra, side) => `<button type="button" class="cbc ${cls || ''}" data-u="${c.u}" data-ck="${c.k ? esc(c.k) : ''}"${extra || ''} aria-label="${c.k ? esc(nameOf(c.k)) + ' の カード' : '伏せた カード'}"><img src="${pic(c.k, false, side)}" alt="" draggable="false">${c.seen ? '<i class="eye" aria-hidden="true"></i>' : ''}</button>`;
+  const cardBtn = (c, cls, extra, side) => `<button type="button" class="cbc ${cls || ''}${c.tok && c.k ? ' tok' : ''}" data-u="${c.u}" data-ck="${c.k ? esc(c.k) : ''}"${c.tok && c.k ? ` data-tok="${c.tok}"` : ''}${extra || ''} aria-label="${c.k ? esc(nameOf(picK(c))) + (c.tok > 1 ? `（${c.tok}頭分）` : '') + ' の カード' : '伏せた カード'}"><img src="${pic(picK(c), false, side)}" alt="" draggable="false">${c.seen ? '<i class="eye" aria-hidden="true"></i>' : ''}</button>`;      
   function pips(n, turns) { let h = ''; for (let i = 0; i < turns; i++) h += `<i class="${i < n ? 'on' : ''}"></i>`; return h; }
   const turnsOf = () => (V && V.turns) || R.TURNS;      
   function deckImg() { const im = $('.cbdeck img'), f = deckPic(); if (im && im.getAttribute('src') !== f) im.setAttribute('src', f); }      
@@ -2515,6 +2642,7 @@ const CBApp = (() => {
     deckImg(); boardImg(); $('.cbslot.op').innerHTML = ''; $('.cbslot.my').innerHTML = ''; $('.cbdeck .cbn').textContent = ''; $('.cbdis .cbn').textContent = '';
     ov.querySelectorAll('.cbpips').forEach(e => { e.innerHTML = pips(0, turnsOf()); });
     $('.cbglow').classList.remove('on');
+    const g = $('.cbgem'), o = $('.cbopp .ogem'); if (g) g.hidden = true; if (o) o.hidden = true;      
   }
   function layout() {
     if (screen !== 'game') return;
@@ -2552,13 +2680,14 @@ const CBApp = (() => {
     if (v.phase === 'six') return v.can.six ? `${SIX.head} ${SIX.q}\n${SIX.bar}` : `${w}が 6 の 効果を 使うか 選んで いるよ…`;      
     if (v.phase === 'eff') return `${w}が 効果を 使うか 選んで いるよ…`;      
     if (v.can.set && v.can.x7r) return (v.op.set ? `${w}は もう セットしたよ。カードを 選んでね` : 'セットする カードを 選んでね（カードを タップ）') + '\n7 が 4枚！ セットの 前なら 逆転を 使えるよ';      
+    if (v.can.set && v.can.gem && v.can.gem.length) return (v.op.set ? `${w}は もう セットしたよ。カードを 選んでね` : 'セットする カードを 選んでね（カードを タップ）') + '\n💎 セットの 前なら 決戦宝石を 使えるよ（下の ケース）';      
     if (v.can.set) return v.op.set ? `${w}は もう セットしたよ。セットする カードを 選んでね` : 'セットする カードを 選んでね（カードを タップ）';
     return `${w}が 選んで いるよ…`;
   }
   
   function paintDis(list) {
     const top = list.length ? list[list.length - 1] : null;
-    $('.cbdis .pl').innerHTML = top ? `<img src="${pic(top.k, false, top.mine === false ? 'op' : 'my')}" alt="" draggable="false">` : '';      
+    $('.cbdis .pl').innerHTML = top ? `<img src="${pic(top.tok ? tokP(top.k) : top.k, false, top.mine === false ? 'op' : 'my')}" alt="" draggable="false">` : '';      
     $('.cbdis .cbn').textContent = String(list.length);
     $('.cbdis').setAttribute('aria-label', `捨て札を 見る（${list.length}枚）`);
   }
@@ -2567,8 +2696,8 @@ const CBApp = (() => {
   const MARK = k => (k === 'k' ? '神' : k === 'm' ? '幻' : String(k));
   const mySet = (s, tap) => {
     if (!s) return '';
-    if (s.open || s.up || s.blind || !s.k) return cardBtn({ u: s.u, k: s.open || s.up ? s.k : null }, '', tap ? ' data-cb="mset"' : '') + setTag(s, true);
-    return `<button type="button" class="cbc dn" data-u="${s.u}" data-ck=""${tap ? ' data-cb="mset"' : ''} aria-label="あなたが 伏せて セットした カード（${esc(nameOf(s.k))}）"><img src="${pic(null)}" alt="" draggable="false"><i class="mk" aria-hidden="true">${esc(MARK(s.k))}</i></button>` + setTag(s, true);
+    if (s.open || s.up || s.blind || !s.k) return cardBtn({ u: s.u, k: s.open || s.up ? s.k : null, tok: s.open || s.up ? s.tok : 0 }, '', tap ? ' data-cb="mset"' : '') + setTag(s, true);
+    return `<button type="button" class="cbc dn${s.tok ? ' tok' : ''}" data-u="${s.u}" data-ck=""${tap ? ' data-cb="mset"' : ''} aria-label="あなたが 伏せて セットした カード（${esc(nameOf(picK(s)))}）"><img src="${pic(null)}" alt="" draggable="false"><i class="mk" aria-hidden="true">${esc(MARK(s.k))}</i></button>` + setTag(s, true);
   };
   function render() {
     const v = V; if (!v || screen !== 'game') return;
@@ -2576,19 +2705,43 @@ const CBApp = (() => {
     $('.cbturn').innerHTML = v.phase === 'end' ? '結果' : `ターン ${v.turn}<small>／${v.turns}</small>` + (st.stake ? `<small class="stk">${COINI}勝者 ${st.stake.w}枚</small>` : '') + (v.rv ? '<small class="rv">強さ 逆転中</small>' : '');      
     $('.cbpips[data-p=op]').innerHTML = pips(v.op.wins, v.turns); $('.cbpips[data-p=my]').innerHTML = pips(v.my.wins, v.turns);
     if (qRun) $('.cbopp .qt').textContent = `第${qRun.won + 1}戦・` + (v.phase === 'end' ? '結果' : `ターン ${v.turn}／${v.turns}`);      
-    $('.cbohand').innerHTML = v.op.hand.map(c => cardBtn({ u: c.u, k: c.k }, c.k ? 'knw' : '', ' data-cb="ocard"', 'op')).join('');
+    $('.cbohand').innerHTML = v.op.hand.map(c => cardBtn({ u: c.u, k: c.k, tok: c.tok }, c.k ? 'knw' : '', ' data-cb="ocard"', 'op')).join('');
     deckImg(); $('.cbdeck .cbn').textContent = String(v.deckN); paintDis(v.discard);
     const os = v.op.set, ms = v.my.set;
-    $('.cbslot.op').innerHTML = os ? cardBtn({ u: os.u, k: os.k }, '', ' data-cb="oset"', 'op') + setTag(os, false) : '';
+    $('.cbslot.op').innerHTML = os ? cardBtn({ u: os.u, k: os.k, tok: os.tok }, '', ' data-cb="oset"', 'op') + setTag(os, false) : '';
     $('.cbslot.my').innerHTML = mySet(ms, true);      
     $('.cbglow').classList.toggle('on', v.can.set || !!(v.pend && v.pend.mine && v.pend.type === 'swap'));
     const asking = dealHold ? false : askSync();       
-    paintHand(); paintAct(asking);
+    paintHand(); paintAct(asking); paintGem(v);
     say(dealHold ? '' : asking ? '効果を 使うか 選んでね' : (modeText() || statusText(v)));
     layout();
   }
+  
+  function paintGem(v) {
+    const g = $('.cbgem'), o = $('.cbopp .ogem'), my = v && v.my.gem, op = v && v.op.gem;
+    if (!g || !o) return;
+    g.hidden = !my; o.hidden = !op;
+    if (my) $('.gs', g).innerHTML = R.GEMS.map((k, i) => {
+      if (my.list.indexOf(k) < 0) return '';
+      const used = my.used.indexOf(k) >= 0, can = my.can.indexOf(k) >= 0, s = GEM_SLOT[i];
+      return `<button type="button" class="g ${used ? 'used' : can ? 'can' : 'off'}" data-cb="gem" data-g="${k}" style="left:${s[0]}%;top:${s[1]}%;width:${s[2]}%;height:${s[3]}%" aria-label="${GEMS[k].n}（${used ? 'この 戦では もう 使った' : can ? '使える' : '今は 使えない'}）"><img src="${gemPic(k)}" alt="" draggable="false"></button>`;
+    }).join('');
+    if (op) { const left = op.list.filter(k => op.used.indexOf(k) < 0); o.setAttribute('aria-label', `${WHO()}の 決戦宝石：のこり ${left.length}つ（${left.map(k => GEMS[k].n).join('・') || 'なし'}）`); o.setAttribute('role', 'img');
+      o.innerHTML = op.list.map(k => `<img class="${op.used.indexOf(k) >= 0 ? 'u' : ''}" src="${gemPic(k)}" alt="" data-g="${k}">`).join(''); }      
+  }
+  
+  function gemAsk(g) {
+    const v = V, my = v && v.my.gem; if (!my || !GEMS[g] || my.list.indexOf(g) < 0 || ended) return;
+    se('tap', 0.6);
+    const why = my.used.indexOf(g) >= 0 ? (qRun ? 'この 調査では もう 使ったよ（5つの 宝石は 1つの 調査で 1回ずつ）' : 'この 試合では もう 使ったよ') : my.now ? '決戦宝石は 1ターンに 1つ までだよ' : v.phase !== 'set' || !v.can.set ? 'セットする 前に 使えるよ'
+      : v.my.hand.length > R.GEM_HAND ? `手札が ${R.GEM_HAND}枚 以下の ときに 使えるよ` : my.can.indexOf(g) < 0 ? '今は 使えないよ' : '';
+    if (why || mode.k !== 'idle' || busy || lock) { toast(`💎 ${GEMS[g].n}\n${why || '今は 使えないよ'}`, 2.4); return; }
+    modal(`<h3 class="gold">${esc(GEMS[g].n)}</h3><div class="cbgemq"><img class="gm" src="${gemPic(g)}" alt=""><i aria-hidden="true">▶</i><span class="cbc"><img src="${pic(tokP(g), true)}" alt="${esc(GEMS[g].t)}"></span></div>`
+      + `<p><b>${esc(GEMS[g].t)}</b>${headOf(R.GEM_W[g])}が 手札に 1枚 来るよ<small>この ターン だけ（使わないと ターンの 終わりに 消えるよ）・この 宝石は ${qRun ? 'この 調査で 1回（連勝が 続く 間）' : 'この 試合で 1回'}</small></p>`
+      + `<div class="rowb"><button type="button" class="cbb dk" data-cb="modx">使わない</button><button type="button" class="cbb" data-cb="gemgo" data-g="${g}">使う</button></div>`, 'cbgemm');
+  }
   function modeText() {
-    if (mode.k === 'eff') return mode.step === 'drop5' ? '5 と 一緒に 捨てる カードを 選んでね（カードを タップ）' : `効果タイム！ ${effQ(mode.q)}\n${EFFBAR[mode.q] || EFFTXT[mode.q]}`;
+    if (mode.k === 'eff') return mode.step === 'drop5' ? '5 と 一緒に 捨てる カードを 選んでね（カードを タップ）' : `効果タイム！ ${effQ(mode.q)}\n${effBar(mode.q)}`;
     if (mode.k === 'dropm') return `捨てる カードを 2枚 選んでね（${mode.sel.length}／2）`;
     if (mode.k === 'u5') return '5 と 一緒に 捨てる カードを 選んでね（カードを タップ）';      
     return '';
@@ -2631,15 +2784,19 @@ const CBApp = (() => {
   
   const ASK_GUARD = 350;
   let askAt = 0;
+  const tokIn = k => (V && V.my.hand.find(c => c.tok && c.k === k)) || null;      
+  const effKey = q => ((q === '7' || q === '3') && tokIn(q) ? tokP(q) : effK(q));
+  const effBar = q => (q === '7' && tokIn('7') ? '7トークン（3頭分）を 戻して、新しく 3枚 引けるよ' : q === '3' && tokIn('3') ? '3トークン（2頭分）と 3 を 見せて、本物の 3 を 交換できるよ' : EFFBAR[q] || EFFTXT[q]);      
+  const effText = q => (q === '7' && tokIn('7') ? '7トークン（3頭分）を 戻して、新しく 3枚 引けるよ（トークンは 山札に 入らない）' : q === '3' && tokIn('3') ? '3トークン（2頭分）と 3 で 3枚 ぶん 見せて、本物の 3 と 相手の 手札の 1枚（ランダム）を 交換できるよ' : EFFTXT[q]);
   function askInfo() {
     const v = V; if (!v || ended || !match) return null;
     if (mode.k === 'idle' && v.can.six) return { id: `s${gameNo}.${v.turn}`, k: '6', head: SIX.head, q: SIX.q, text: SIX.text, yes: 'sixyes', no: 'sixno' };      
-    if (mode.k === 'eff' && mode.step === 'ask') return { id: `e${gameNo}.${v.turn}.${mode.n}`, k: effK(mode.q), head: '効果タイム！', q: effQ(mode.q), text: EFFTXT[mode.q], yes: 'effyes', no: 'effno' };
+    if (mode.k === 'eff' && mode.step === 'ask') return { id: `e${gameNo}.${v.turn}.${mode.n}`, k: effKey(mode.q), head: '効果タイム！', q: effQ(mode.q), text: effText(mode.q), yes: 'effyes', no: 'effno' };
     if (mode.k === 'idle' && v.pend && v.pend.mine && v.pend.type === 'k') return { id: `k${gameNo}.${v.turn}`, k: 'k', head: '神様馬で 勝った！', q: '神様馬の 効果を 使う？', text: '相手の 手札を 1枚 見られるよ', yes: 'kgo', no: 'kskip' };
     if (mode.k === 'idle' && v.pend && v.pend.mine && v.pend.type === 'm') return { id: `m${gameNo}.${v.turn}`, k: 'm', head: '幻の馬で 勝った！', q: '幻の馬の 効果を 使う？', text: '手札を 2枚 捨てて、山札から 2枚 引けるよ', yes: 'mpick', no: 'mskip' };
     if (mode.k === 'idle' && v.pend && v.pend.mine && v.pend.type === 'u5') return { id: `u${gameNo}.${v.turn}`, k: '5', head: '交換で 5 を セット！', q: '5 の 効果を 使う？', text: EFFTXT[5], yes: 'u5yes', no: 'u5no' };      
-    if (mode.k === 'idle' && v.pend && v.pend.mine && v.pend.type === 'rev' && v.my.set && v.op.set) return { id: `r${gameNo}.${v.turn}`, k: v.my.set.k, head: '逆転の チャンス！', q: `${v.my.set.k} の 効果を 使う？`, text: REVTXT(v.my.set.k, v.op.set.k), yes: 'revyes', no: 'revno' };      
-    if (mode.k === 'idle' && v.can.x7r && x7off !== x7id(v)) return { id: x7id(v), k: '7', head: X7.head, q: X7.q, text: X7.text, ord: X7.ord, yes: 'x7yes', no: 'x7no' };      
+    if (mode.k === 'idle' && v.pend && v.pend.mine && v.pend.type === 'rev' && v.my.set && v.op.set) { const k = v.my.set.k, tr = tokIn(k); return { id: `r${gameNo}.${v.turn}`, k: tr ? tokP(k) : k, head: '逆転の チャンス！', q: `${k} の 効果を 使う？`, text: tr ? `場の ${k} と ${nameOf(tokP(k))}（2頭分）で 3枚 ぶん。トークンを 捨てると、${toName(v.op.set.k)} 勝てるよ` : REVTXT(k, v.op.set.k), yes: 'revyes', no: 'revno' }; }      
+    if (mode.k === 'idle' && v.can.x7r && x7off !== x7id(v)) return { id: x7id(v), k: tokIn('7') ? 't7' : '7', head: X7.head, q: X7.q, text: X7.text + (tokIn('7') ? '（7トークンは 3頭分：捨てるのは トークン）' : ''), ord: X7.ord, yes: 'x7yes', no: 'x7no' };      
     return null;
   }
   
@@ -2665,7 +2822,8 @@ const CBApp = (() => {
     else if (mode.k === 'eff') { if (mode.step === 'drop5') btn = `<button type="button" class="cbb" data-cb="drop5" data-u="${u}">この カードを 捨てる<small>5 と 一緒に 捨てて、山札から 1枚 セット</small></button>`; }      
     else if (mode.k === 'u5') btn = `<button type="button" class="cbb" data-cb="u5drop" data-u="${u}">この カードを 捨てる<small>5 と 一緒に 捨てて、山札から 1枚 セット</small></button>`;      
     else if (v.can.set) btn = `<button type="button" class="cbb" data-cb="set" data-u="${u}">この カードを セットする<small>セットしたら もう 変えられないよ</small></button>`;
-    modal(`<div class="big"><img src="${pic(c.k, true)}" alt="${esc(nameOf(c.k))}"></div>${c.seen ? '<p>この カードは 相手に 見られて いるよ</p>' : ''}${note}<div class="col">${btn}<button type="button" class="cbb dk" data-cb="modx">戻る</button></div>`);
+    if (c.tok) note += `<p>${esc(nameOf(picK(c)))}${headOf(c.tok)}：この ターン だけ（使わないと ターンの 終わりに 消えるよ）</p>`;      
+    modal(`<div class="big"><img src="${pic(picK(c), true)}" alt="${esc(nameOf(picK(c)))}"></div>${c.seen ? '<p>この カードは 相手に 見られて いるよ</p>' : ''}${note}<div class="col">${btn}<button type="button" class="cbb dk" data-cb="modx">戻る</button></div>`);
   }
   
   function showCard(k, text, back, side) { modal(`<div class="big"><img src="${pic(k, true, side)}" alt="${esc(k ? nameOf(k) : '伏せた カード')}"></div>${text ? `<p>${esc(text)}</p>` : ''}<div class="col"><button type="button" class="cbb dk" data-cb="${back === 'discard' ? 'discard' : 'modx'}">戻る</button></div>`); }
@@ -2688,7 +2846,7 @@ const CBApp = (() => {
       if (!g) { g = { turn: x.turn, why: x.why, mine: x.mine, cards: [] }; effs.push(g); }
       g.cards.push(x);
     });
-    const card = x => `<button type="button" class="cbc" data-cb="dcard" data-k="${esc(x.k)}" data-sd="${x.mine ? 'my' : 'op'}" aria-label="${esc(nameOf(x.k))} の カード"><img src="${pic(x.k, false, x.mine ? 'my' : 'op')}" alt="" draggable="false"></button>`;
+    const card = x => `<button type="button" class="cbc" data-cb="dcard" data-k="${esc(picK(x))}" data-sd="${x.mine ? 'my' : 'op'}" aria-label="${esc(nameOf(picK(x)))} の カード"><img src="${pic(picK(x), false, x.mine ? 'my' : 'op')}" alt="" draggable="false"></button>`;      
     const pair = (name, cs) => `<div class="pr"><span>${name}</span><div class="cs">${cs.map(card).join('')}</div></div>`;
     let h = `<h3 class="gold">捨て札（${d.length}枚）</h3><div class="cbdl"><h4>終わった ターンの 捨て札</h4>`;
     if (!turns.some(Boolean)) h += '<p class="none">まだ ないよ（ターンが 終わると、出した カードが ここに 来るよ）</p>';
@@ -2798,7 +2956,8 @@ const CBApp = (() => {
     if (a === 'roomre') return showRoom('host', true);
     if (a === 'stke') return stakeSet('e', +b.dataset.n);
     if (a === 'stkw') return stakeSet('w', +b.dataset.d);
-    if (a === 'stkgo') { const r = room; if (!r || r.step !== 'stake') return; se('tap'); r.step = ''; paintRoom(); return roomGo(); }
+    if (a === 'stkgo') { const r = room; if (!r || r.step !== 'stake') return; se('tap'); r.step = ''; r.gm = { on: st.rg.on }; paintRoom(); return roomGo(); }
+    if (a === 'rgon') { const r = room; if (!r || r.mode !== 'host' || r.step !== 'stake') return; st.rg.on = b.dataset.v === '1'; save(); se('tap', 0.6); return paintRoom(); }      
     if (a === 'joinyes') { const m = match; if (!m || m.kind !== 'guest' || !m.stake || st.coin < m.stake.e || V) return; se('tap'); closeMod(); m.join(); say('相手を 待って いるよ…'); return; }
     if (a === 'joinno') { leave(false); return showMenu(); }
     if (a === 'menu') { leave(false); return showMenu(); }
@@ -2810,16 +2969,18 @@ const CBApp = (() => {
     if (a === 'quitgo') { const qq = !!qRun; leave(true); return qq ? showQMap() : showMenu(); }      
     if (a === 'again') return again();
     if (a === 'discard') { if (modEl.classList.contains('cbopen')) return; return discardModal(); }
-    if (a === 'dcard') { const k = b.dataset.k; if (R.KINDS.indexOf(k) >= 0) showCard(k, '捨て札の カード', 'discard', b.dataset.sd === 'op' ? 'op' : 'my'); return; }
+    if (a === 'dcard') { const k = b.dataset.k; if (R.KINDS.indexOf(k) >= 0 || (k.length === 2 && k[0] === 't' && GEMS[k[1]])) showCard(k, '捨て札の カード', 'discard', b.dataset.sd === 'op' ? 'op' : 'my'); return; }
     if (!match || !V || busy || lock || ended || modEl.classList.contains('cbopen')) return;
     const v = V;
-    if (a === 'ocard' || a === 'oset') { const c = a === 'oset' ? v.op.set : v.op.hand.find(x => x.u === u); if (c && c.k) showCard(c.k, a === 'oset' ? '相手が セットした カード' : '効果で 見た 相手の カード', '', 'op'); return; }
-    if (a === 'mset') { const c = v.my.set; if (c) showCard(c.k, c.open ? 'あなたが セットした カード' : c.blind ? '山札から 来た カード（オープンまで 分からない）' : c.up ? '4 の 効果で 見せた カード' : 'あなたが 伏せて セットした カード（相手には 裏・もう 変えられない）'); return; }
+    if (a === 'ocard' || a === 'oset') { const c = a === 'oset' ? v.op.set : v.op.hand.find(x => x.u === u); if (c && c.k) showCard(picK(c), a === 'oset' ? '相手が セットした カード' : c.tok ? '相手の トークン（この ターン だけ）' : '効果で 見た 相手の カード', '', 'op'); return; }
+    if (a === 'mset') { const c = v.my.set; if (c) showCard(c.k ? picK(c) : null, c.open ? 'あなたが セットした カード' : c.blind ? '山札から 来た カード（オープンまで 分からない）' : c.up ? '4 の 効果で 見せた カード' : 'あなたが 伏せて セットした カード（相手には 裏・もう 変えられない）'); return; }
     if (a === 'card') {
       if (mode.k === 'dropm') { const j = mode.sel.indexOf(u); if (j >= 0) mode.sel.splice(j, 1); else if (mode.sel.length < 2) mode.sel.push(u); se('tap', 0.6); paintHand(); paintAct(); say(modeText()); layout(); return; }
       se('tap', 0.6); return cardModal(u);
     }
     if (a === 'set') { if (!v.can.set || mode.k !== 'idle') return; return send({ t: 'set', u: u }); }
+    if (a === 'gem') return gemAsk(b.dataset.g);      
+    if (a === 'gemgo') { const g = b.dataset.g; if (!v.my.gem || v.my.gem.can.indexOf(g) < 0 || mode.k !== 'idle') { closeMod(); return; } se('tap'); return send({ t: 'gem', g: g }); }
     
     if (a === 'x7yes') { if (!v.can.x7r || mode.k !== 'idle') return; se('tap', 0.6); return send({ t: 'x7r' }); }
     if (a === 'x7no') { if (!v.can.x7r) return; se('tap', 0.6); x7off = x7id(v); closeMod(); render(); return; }
@@ -2883,10 +3044,11 @@ const CBApp = (() => {
   
   async function openShow(x, rv) {                     
     const hold = x.rev === 'me' || x.rev === 'op', rn = rv && R.NUMS.indexOf(x.my.k) >= 0 && R.NUMS.indexOf(x.op.k) >= 0 ? '（強さ 逆転中）' : '';
-    const txt = x.rev === 'me' ? ['チャンス！', `${nameOf(x.op.k)} の ほうが 強い…でも ${x.my.k} の「逆転勝利」を 使えるよ`] : x.rev === 'op' ? ['勝負は まだ！', `${WHO()}は ${x.op.k} の「逆転勝利」を 使えるよ`]
-      : x.res === 'win' ? ['勝ち！', `${nameOf(x.my.k)} が ${nameOf(x.op.k)} に 勝ったよ${rn}`] : x.res === 'lose' ? ['負け…', `${nameOf(x.op.k)} の ほうが 強いよ${rn}`] : x.res === 'clash' ? ['かぶり！', `同じ カード（${nameOf(x.my.k)}）＝どちらも 負け`] : x.d4 ? ['ドロー！', 'どちらも 4 の 効果を 使った ので 引き分け'] : ['引き分け', '神様馬 と 幻の馬 は 同じ 強さ'];
+    const nm = c => nameOf(picK(c));      
+    const txt = x.rev === 'me' ? ['チャンス！', `${nm(x.op)} の ほうが 強い…でも ${x.my.k} の「逆転勝利」を 使えるよ`] : x.rev === 'op' ? ['勝負は まだ！', `${WHO()}は ${x.op.k} の「逆転勝利」を 使えるよ`]
+      : x.res === 'win' ? ['勝ち！', `${nm(x.my)} が ${nm(x.op)} に 勝ったよ${rn}`] : x.res === 'lose' ? ['負け…', `${nm(x.op)} の ほうが 強いよ${rn}`] : x.res === 'clash' ? ['かぶり！', `同じ カード（${nameOf(x.my.k)}）＝どちらも 負け`] : x.d4 ? ['ドロー！', 'どちらも 4 の 効果を 使った ので 引き分け'] : ['引き分け', '神様馬 と 幻の馬 は 同じ 強さ'];
     const side = (who, k) => `<div class="sd" data-sd="${who}"><span>${who === 'my' ? 'あなた' : esc(WHO())}</span><div class="cbflip"><div class="in"><img src="${pic(null, true, who)}" alt=""><img class="fc" src="${pic(k, true, who)}" alt="${esc(nameOf(k))}"></div></div></div>`;
-    modal(`<h3 class="gold">ターン ${x.turn}　オープン！</h3><div class="cbvs">${side('my', x.my.k)}<b class="mid gold">VS</b>${side('op', x.op.k)}</div><div class="cbres gold" aria-live="assertive"><span></span><small></small></div>`, 'cbopen');
+    modal(`<h3 class="gold">ターン ${x.turn}　オープン！</h3><div class="cbvs">${side('my', picK(x.my))}<b class="mid gold">VS</b>${side('op', picK(x.op))}</div><div class="cbres gold" aria-live="assertive"><span></span><small></small></div>`, 'cbopen');
     await T(450); se('flip');
     modEl.querySelectorAll('.cbflip').forEach(f => f.classList.add('up'));
     await T(700);
@@ -2898,7 +3060,7 @@ const CBApp = (() => {
     else if (x.res === 'tie') se('even');             
     else { my.classList.add('ls'); op.classList.add('ls'); se('even'); }
     $('.cbpips[data-p=op]').innerHTML = pips(x.wins[1], turnsOf()); $('.cbpips[data-p=my]').innerHTML = pips(x.wins[0], turnsOf());
-    $('.cbslot.my').innerHTML = cardBtn({ u: x.my.u, k: x.my.k }, ''); $('.cbslot.op').innerHTML = cardBtn({ u: x.op.u, k: x.op.k }, '', '', 'op');
+    $('.cbslot.my').innerHTML = cardBtn({ u: x.my.u, k: x.my.k, tok: x.my.tok }, ''); $('.cbslot.op').innerHTML = cardBtn({ u: x.op.u, k: x.op.k, tok: x.op.tok }, '', '', 'op');
     await T(1900);
     closeMod();
   }
@@ -2914,7 +3076,8 @@ const CBApp = (() => {
     let hand = P ? P.my.hand.slice() : [], dis = P ? P.discard.slice() : [];
     const rehand = fresh => { paintHand(fresh, hand); layout(); };
     const toDis = cs => { cs.forEach(c => dis.push({ k: c.k, mine: c.mine })); paintDis(dis); };      
-    const kIn = (sd) => { const el = $('.cbslot.' + sd + ' .cbc'); return el && el.dataset.ck ? el.dataset.ck : null; };      
+    const tokOf = u => (hand.find(q => q.u === u && q.tok) || (P ? P.op.hand.find(q => q.u === u && q.tok) : null)) || null;      
+    const kIn = (sd) => { const el = $('.cbslot.' + sd + ' .cbc'); return el && el.dataset.ck ? (el.dataset.tok ? tokP(el.dataset.ck) : el.dataset.ck) : null; };      
     for (const x of ev) {
       if (!match || g0 !== GEN) return;
       if (x.e === 'deal') {
@@ -2931,6 +3094,7 @@ const CBApp = (() => {
         for (let i = 0; i < nDeal; i++) { jobs.push(T(i * 90).then(() => fly(null, mid(d, w), mid(hm, w), 320))); jobs.push(T(i * 90 + 45).then(() => fly(null, mid(d, w), mid(ho, w * 0.7), 320, false, 'op'))); }
         await Promise.all(jobs);
         dealHold = ev.indexOf(x) < ev.length - 1;     
+        if (v.my.gem || v.op.gem) R.GEMS.forEach(g => [false, true].forEach(big => { const im = new Image(); im.src = pic(tokP(g), big); }));      
         V = v; mode = { k: 'idle' }; render();
         hand = v.my.hand.slice(); dis = v.discard.slice();
         $('.cbhand').querySelectorAll('.cbc').forEach((c, i) => { c.classList.add('new'); c.style.animationDelay = (i * 50 * SPEED) + 'ms'; });
@@ -2944,7 +3108,7 @@ const CBApp = (() => {
         if (x.me) {                                    
           const c = hand.find(q => q.u === x.u);
           await fly(null, cardBox('my', x.u) || mid(handBox('my'), 60), slotBox('my'), 300);
-          $('.cbslot.my').innerHTML = mySet({ u: x.u, k: c ? c.k : null, up: false, blind: false, open: false });
+          $('.cbslot.my').innerHTML = mySet({ u: x.u, k: c ? c.k : null, tok: c ? c.tok : 0, up: false, blind: false, open: false });
           hand = hand.filter(q => q.u !== x.u); const h = $('.cbhand').querySelector(`[data-u="${x.u}"]`); if (h) h.remove();
         } else {                                       
           const hs = Array.from($('.cbohand').children), h = hs.filter(e => !e.dataset.ck).pop() || hs[hs.length - 1];
@@ -2971,45 +3135,49 @@ const CBApp = (() => {
       } else if (x.e === 'u5') {                       
         await useShow(x);
         const sd = x.me ? 'my' : 'op';
-        toast(x.me ? `5 の 効果！\n5 と ${nameOf(x.drop.k)} を 捨てて、山札から 1枚 セットしたよ` : `${WHO()}が 5 の 効果を 使ったよ\n5 と ${nameOf(x.drop.k)} を 捨てて、山札から 1枚`, 3);
+        toast(x.me ? `5 の 効果！\n5 と ${nameOf(picK(x.drop))} を 捨てて、山札から 1枚 セットしたよ` : `${WHO()}が 5 の 効果を 使ったよ\n5 と ${nameOf(picK(x.drop))} を 捨てて、山札から 1枚`, 3);
         se('flip'); $('.cbslot.' + sd).innerHTML = cardBtn({ u: 0, k: '5' }, '', '', sd); await T(600);      
         $('.cbslot.' + sd).innerHTML = '';
         const oc = x.me ? null : $('.cbohand').querySelector(`[data-u="${x.drop.u}"]`) || $('.cbohand').lastElementChild;
-        await Promise.all([fly('5', slotBox(sd), mid(disBox(), 20), 380, true, sd), fly(x.drop.k, x.me ? (cardBox('my', x.drop.u) || mid(handBox('my'), 60)) : (oc ? box(oc) : mid(handBox('op'), 40)), mid(disBox(), 20), 380, true, sd)]);
+        await Promise.all([fly('5', slotBox(sd), mid(disBox(), 20), 380, true, sd), fly(picK(x.drop), x.me ? (cardBox('my', x.drop.u) || mid(handBox('my'), 60)) : (oc ? box(oc) : mid(handBox('op'), 40)), mid(disBox(), 20), 380, true, sd)]);
         if (x.me) { hand = hand.filter(q => q.u !== x.drop.u); rehand(); } else if (oc) oc.remove();
-        toDis([{ k: '5', mine: x.me }, { k: x.drop.k, mine: x.me }]);
+        toDis([{ k: '5', mine: x.me }, { k: picK(x.drop), mine: x.me }]);
         se('set'); await fly(null, mid(deckBox(), 40), slotBox(sd), 340, false, sd);
         $('.cbslot.' + sd).innerHTML = cardBtn({ u: 0, k: null }, '', '', sd) + (x.me ? '<span class="tag">山札から</span>' : '');
         await T(250);
       } else if (x.e === 'x7') {
         await useShow(x);
-        toast(x.me ? '7 の 効果！\n7 を 3枚 戻して、新しく 3枚 引いたよ' : `${WHO()}が 7 の 効果を 使ったよ\n7 を 3枚 戻して 3枚 引いた`, 3);
+        const t7 = x.tok ? tokOf(x.tok) || { u: x.tok, k: '7', tok: 3 } : null;      
+        toast(t7 ? (x.me ? '7 の 効果！\n7トークン（3頭分）を 戻して、新しく 3枚 引いたよ' : `${WHO()}が 7 の 効果を 使ったよ\n7トークン（3頭分）を 戻して 3枚 引いた`) : x.me ? '7 の 効果！\n7 を 3枚 戻して、新しく 3枚 引いたよ' : `${WHO()}が 7 の 効果を 使ったよ\n7 を 3枚 戻して 3枚 引いた`, 3);
         const s7 = x.me ? 'my' : 'op', hb = handBox(s7), d = deckBox(), w = x.me ? 56 : 36;
-        await Promise.all([0, 1, 2].map(i => T(i * 70).then(() => fly('7', mid(hb, w), mid(d, 36), 320, true, s7))));
-        if (x.me) { let n = 0; hand = hand.filter(q => !(q.k === '7' && n++ < 3)); rehand(); }
+        if (t7) await fly('t7', x.me ? (cardBox('my', t7.u) || mid(hb, w)) : mid(hb, w), mid(d, 36), 380, true, s7);
+        else await Promise.all([0, 1, 2].map(i => T(i * 70).then(() => fly('7', mid(hb, w), mid(d, 36), 320, true, s7))));
+        if (x.me) { let n = 0; hand = t7 ? hand.filter(q => q.u !== t7.u) : hand.filter(q => !(q.k === '7' && n++ < 3)); rehand(); }
         await Promise.all([0, 1, 2].map(i => T(i * 70).then(() => fly(null, mid(d, 36), mid(hb, w), 320, false, s7))));
         if (x.me && x.drew) { hand = hand.concat(x.drew.map(c => ({ u: c.u, k: c.k }))); rehand(x.drew.map(c => c.u)); await T(420); }
       } else if (x.e === 'x7r') {                      
         await useShow(x);
         const sd = x.me ? 'my' : 'op';
-        modal(`<h3 class="gold">7 の 効果！ 強さ 逆転</h3><div class="three four">${[0, 1, 2, 3].map(() => `<span class="cbc"><img src="${pic('7', false, sd)}" alt="7 の カード" draggable="false"></span>`).join('')}</div>`
-          + `<p>${x.me ? '手札の 7 を 4枚 見せて、1枚 捨てたよ' : `${esc(WHO())}が 手札の 7 を 4枚 見せて、1枚 捨てたよ`}<br><b>この 対戦が 終わる まで、数字の 強さが 逆に なるよ</b></p><p class="rvord">7＞6＞5＞4＞3＞2＞1<small>神様馬・幻の馬は 一番 強い まま</small></p>`, 'cbopen');
+        const tw7 = x.drop.tok || 0, ks7 = tw7 ? ['t7'].concat(Array.from({ length: x.show.length - 1 }, () => '7')) : ['7', '7', '7', '7'];      
+        modal(`<h3 class="gold">7 の 効果！ 強さ 逆転</h3><div class="three four">${ks7.map(k => `<span class="cbc"><img src="${pic(k, false, sd)}" alt="${esc(nameOf(k))} の カード" draggable="false"></span>`).join('')}</div>`
+          + `<p>${tw7 ? `${x.me ? '' : esc(WHO()) + 'が '}7トークン（3頭分）と 7 で 4枚 ぶん 見せて、7トークンを 捨てたよ` : x.me ? '手札の 7 を 4枚 見せて、1枚 捨てたよ' : `${esc(WHO())}が 手札の 7 を 4枚 見せて、1枚 捨てたよ`}<br><b>この 対戦が 終わる まで、数字の 強さが 逆に なるよ</b></p><p class="rvord">7＞6＞5＞4＞3＞2＞1<small>神様馬・幻の馬は 一番 強い まま</small></p>`, 'cbopen');
         await T(2000); closeMod();
         const oc = x.me ? null : $('.cbohand').querySelector(`[data-u="${x.drop.u}"]`) || $('.cbohand').lastElementChild;
-        await fly('7', x.me ? (cardBox('my', x.drop.u) || mid(handBox('my'), 60)) : (oc ? box(oc) : mid(handBox('op'), 40)), mid(disBox(), 20), 380, true, sd);
-        if (x.me) { hand = hand.filter(q => q.u !== x.drop.u).map(q => (x.show.indexOf(q.u) >= 0 ? { u: q.u, k: q.k, seen: true } : q)); rehand(); } else if (oc) oc.remove();
-        toDis([{ k: '7', mine: x.me }]);
+        await fly(picK(x.drop), x.me ? (cardBox('my', x.drop.u) || mid(handBox('my'), 60)) : (oc ? box(oc) : mid(handBox('op'), 40)), mid(disBox(), 20), 380, true, sd);
+        if (x.me) { hand = hand.filter(q => q.u !== x.drop.u).map(q => (x.show.indexOf(q.u) >= 0 ? Object.assign({}, q, { seen: true }) : q)); rehand(); } else if (oc) oc.remove();
+        toDis([{ k: picK(x.drop), mine: x.me }]);
         await banner('強さ 逆転！', '7＞6＞5＞4＞3＞2＞1（この 対戦が 終わる まで）', 1500);
       } else if (x.e === 'x3') {                       
         const hm = handBox('my'), ho = handBox('op'), tk = x.take.k;
         await useShow(x);
         
-        modal(`<h3 class="gold">3 の 効果！</h3><div class="three">${[0, 1, 2].map(() => `<span class="cbc"><img src="${pic('3', false, x.me ? 'my' : 'op')}" alt="3 の カード" draggable="false"></span>`).join('')}</div><p>${x.me ? `手札の 3 を 3枚 見せたよ<br>その 1枚と、${esc(WHO())}の 手札の 1枚を 交換！` : `${esc(WHO())}が 手札の 3 を 3枚 見せたよ<br>その 1枚と、あなたの 手札の 1枚を 交換！`}</p>`, 'cbopen');
+        const ks3 = x.three.length < 3 ? x.three.map(u => (u === x.give.u ? '3' : 't3')) : ['3', '3', '3'];      
+        modal(`<h3 class="gold">3 の 効果！</h3><div class="three">${ks3.map(k => `<span class="cbc"><img src="${pic(k, false, x.me ? 'my' : 'op')}" alt="${esc(nameOf(k))} の カード" draggable="false"></span>`).join('')}</div><p>${x.three.length < 3 ? (x.me ? '3トークン（2頭分）と 3 で 3枚 ぶん 見せたよ' : `${esc(WHO())}が 3トークン（2頭分）と 3 で 3枚 ぶん 見せたよ`) : x.me ? '手札の 3 を 3枚 見せたよ' : `${esc(WHO())}が 手札の 3 を 3枚 見せたよ`}<br>${x.me ? `その 1枚と、${esc(WHO())}の 手札の 1枚を 交換！` : 'その 1枚と、あなたの 手札の 1枚を 交換！'}</p>`, 'cbopen');
         await T(1700); closeMod();
         if (x.me) {
           await peekShow('3 の 効果：交換！', tk, `${WHO()}の 手札から ${nameOf(tk)} を もらったよ（3 を 1枚 渡した）`, 'op');
           await Promise.all([fly('3', cardBox('my', x.give.u) || mid(hm, 56), mid(ho, 36), 400, false, 'op'), fly(tk, mid(ho, 36), mid(hm, 56), 400)]);
-          hand = hand.filter(q => q.u !== x.give.u).map(q => (x.three.indexOf(q.u) >= 0 ? { u: q.u, k: q.k, seen: true } : q)).concat([{ u: x.take.u, k: tk, seen: true }]);
+          hand = hand.filter(q => q.u !== x.give.u).map(q => (x.three.indexOf(q.u) >= 0 ? Object.assign({}, q, { seen: true }) : q)).concat([{ u: x.take.u, k: tk, seen: true }]);
           rehand([x.take.u]);
         } else {
           toast(`${WHO()}が 3 の 効果を 使ったよ\nあなたの ${nameOf(tk)} と 3 を 交換した`, 3.4);
@@ -3032,8 +3200,8 @@ const CBApp = (() => {
         await fly(null, slotBox(sd), mid(hb, x.me ? 56 : 36), 300, false, sd);
         const c = x.me ? hand.find(q => q.u === x.u) : null;
         await fly(null, x.me ? (cardBox('my', x.u) || mid(hb, 56)) : mid(hb, 36), slotBox(sd), 300, false, sd);      
-        $('.cbslot.' + sd).innerHTML = x.me ? mySet({ u: x.u, k: c ? c.k : null, up: false, blind: false, open: false }) : cardBtn({ u: 0, k: null }, '', '', sd);
-        if (x.me) { const bk = v.my.hand.find(q => q.u === x.back) || (P && P.my.set && P.my.set.u === x.back ? { u: x.back, k: P.my.set.k } : null); hand = hand.filter(q => q.u !== x.u); if (bk) hand.push({ u: bk.u, k: bk.k, seen: !!bk.seen }); rehand(bk ? [bk.u] : null); }
+        $('.cbslot.' + sd).innerHTML = x.me ? mySet({ u: x.u, k: c ? c.k : null, tok: c ? c.tok : 0, up: false, blind: false, open: false }) : cardBtn({ u: 0, k: null }, '', '', sd);
+        if (x.me) { const bk = v.my.hand.find(q => q.u === x.back) || (P && P.my.set && P.my.set.u === x.back ? { u: x.back, k: P.my.set.k, tok: P.my.set.tok } : null); hand = hand.filter(q => q.u !== x.u); if (bk) hand.push(Object.assign({ u: bk.u, k: bk.k, seen: !!bk.seen }, bk.tok ? { tok: bk.tok } : {})); rehand(bk ? [bk.u] : null); }
         else toast(`${WHO()}が カードを 交換したよ`, 1.8);
       } else if (x.e === 'open') {
         hush();                                        
@@ -3056,13 +3224,15 @@ const CBApp = (() => {
         if (!x.me) { toast(`${WHO()}は 効果を 使わなかったよ`, 1.8); await T(500); }
       } else if (x.e === 'rev') {                      
         hush(); await useShow(x);
-        modal(`<h3 class="gold">${esc(x.k)} の 効果！</h3><div class="three">${[0, 1, 2].map(() => `<span class="cbc"><img src="${pic(x.k, false, x.me ? 'my' : 'op')}" alt="${esc(x.k)} の カード" draggable="false"></span>`).join('')}</div>`
-          + `<p>${x.me ? '' : esc(WHO()) + 'が '}${esc(x.k)} を 3枚（場の 1枚 ＋ 手札の 2枚）見せたよ<br>手札の ${esc(x.k)} を 1枚 捨てて、${esc(toName(x.beat))} 逆転！</p>`, 'cbopen');
+        const tr = x.drop.tok ? tokP(x.k) : null;      
+        modal(`<h3 class="gold">${esc(x.k)} の 効果！</h3><div class="three">${(tr ? [x.k, tr] : [x.k, x.k, x.k]).map(k => `<span class="cbc"><img src="${pic(k, false, x.me ? 'my' : 'op')}" alt="${esc(nameOf(k))} の カード" draggable="false"></span>`).join('')}</div>`
+          + (tr ? `<p>${x.me ? '' : esc(WHO()) + 'が '}場の ${esc(x.k)} と ${esc(nameOf(tr))}（2頭分）で 3枚 ぶん 見せたよ<br>${esc(nameOf(tr))}を 捨てて、${esc(toName(x.beat))} 逆転！</p>`
+            : `<p>${x.me ? '' : esc(WHO()) + 'が '}${esc(x.k)} を 3枚（場の 1枚 ＋ 手札の 2枚）見せたよ<br>手札の ${esc(x.k)} を 1枚 捨てて、${esc(toName(x.beat))} 逆転！</p>`), 'cbopen');
         await T(1700); closeMod();
         const oc = x.me ? null : $('.cbohand').querySelector(`[data-u="${x.drop.u}"]`) || $('.cbohand').lastElementChild;
-        await fly(x.k, x.me ? (cardBox('my', x.drop.u) || mid(handBox('my'), 60)) : (oc ? box(oc) : mid(handBox('op'), 40)), mid(disBox(), 20), 380, true, x.me ? 'my' : 'op');
-        if (x.me) { hand = hand.filter(q => q.u !== x.drop.u).map(q => (x.show.indexOf(q.u) >= 0 ? { u: q.u, k: q.k, seen: true } : q)); rehand(); } else if (oc) oc.remove();
-        toDis([{ k: x.k, mine: x.me }]);
+        await fly(picK(x.drop), x.me ? (cardBox('my', x.drop.u) || mid(handBox('my'), 60)) : (oc ? box(oc) : mid(handBox('op'), 40)), mid(disBox(), 20), 380, true, x.me ? 'my' : 'op');
+        if (x.me) { hand = hand.filter(q => q.u !== x.drop.u).map(q => (x.show.indexOf(q.u) >= 0 ? Object.assign({}, q, { seen: true }) : q)); rehand(); } else if (oc) oc.remove();
+        toDis([{ k: picK(x.drop), mine: x.me }]);
         await T(200);
       } else if (x.e === 'revskip') {
         hush();
@@ -3079,6 +3249,27 @@ const CBApp = (() => {
         $('.cbslot.my').innerHTML = ''; $('.cbslot.op').innerHTML = '';
         await Promise.all(jobs);
         toDis((v.me === 0 ? [{ k: ka, mine: true }, { k: kb, mine: false }] : [{ k: kb, mine: false }, { k: ka, mine: true }]).filter(c => c.k));      
+      } else if (x.e === 'gem') {                     
+        const gm = GEMS[x.g], c = x.c, w = c.tok || 1, sd = x.me ? 'my' : 'op';
+        se('magic');
+        if (x.me) {
+          const sl = $(`.cbgem .g[data-g="${x.g}"]`); if (sl) { sl.classList.remove('can'); sl.classList.add('pop'); }
+          const from = sl ? box(sl) : mid(handBox('my'), 60);
+          await fly(picK(c), from, mid(handBox('my'), 60), 460);
+          hand = hand.concat([{ u: c.u, k: c.k, tok: c.tok }]); rehand([c.u]);
+          await banner(`${gm.n}！`, `${gm.t}${headOf(w)}が 手札に 来たよ\nこの ターン だけ`, 1300);
+        } else {
+          const og = $('.cbopp .ogem');
+          await fly(picK(c), og ? box(og) : mid(handBox('op'), 40), mid(handBox('op'), 40), 420, false, sd);
+          await banner(`${WHO()}が ${gm.n}を 使った！`, `${gm.t}${headOf(w)}が ${WHO()}の 手札に`, 1300);
+        }
+      } else if (x.e === 'tokgone') {                 
+        if (x.me) {
+          x.u.forEach(u => { const el = $('.cbhand').querySelector(`[data-u="${u}"]`); if (el) el.classList.add('gone'); });
+          toast('トークンは この ターン だけ…\n消えたよ', 1.8);
+          await T(600);
+          hand = hand.filter(q => x.u.indexOf(q.u) < 0); rehand();
+        } else { x.u.forEach(u => { const el = $('.cbohand').querySelector(`[data-u="${u}"]`); if (el) el.remove(); }); }
       } else if (x.e === 'end') {
         V = v; render();
         await endShow(x);
@@ -3196,7 +3387,10 @@ const CBApp = (() => {
   
   function qOpt(lv, n) {
     const t = typeof CBApp._qopt === 'function' ? CBApp._qopt(lv, n) : qEasy && testOn() ? { turns: 1, hands: [['k', '1', '1', '2', '2', '3', '3'], ['7', '7', '6', '6', '4', '4', '4']] } : null;
-    return t || { rig: [[], (QUEST[lv - 1].rig[n] || []).slice()] };
+    const o = Object.assign({}, t || { rig: [[], (QUEST[lv - 1].rig[n] || []).slice()] });
+    o.gems = [R.GEMS.slice(), []]; o.gpub = false;      
+    o.gused = [qRun && qRun.gu ? qRun.gu.slice() : [], []];      
+    return o;
   }
 
   
@@ -3342,7 +3536,7 @@ const CBApp = (() => {
   function qBattle() {
     if (!qs || qs.step !== 'en') return;
     const lv = qs.lv; qs.step = 'go'; se('tap');
-    qRun = { lv: lv, won: 0, m: st.q.m };
+    qRun = { lv: lv, won: 0, m: st.q.m, gu: [] };
     startMatch(CBNet.cpu(CBApp._rng || undefined, CBApp._think || undefined, qOpt(lv, 1)));
     bgmTrack('quest');
   }
@@ -3396,7 +3590,7 @@ const CBApp = (() => {
       if (no !== gameNo || !match) return;
       if (r.cleared) return qVictory(r, msh);
       se('magic', 0.6);
-      modal(`<h3 class="gold">勝利！</h3><div class="sc">${r.won}連勝<small>あと ${q.w - r.won}連勝で 討伐！</small></div><div class="gift">${msh}`
+      modal(`<h3 class="gold">勝利！</h3><div class="sc">${r.won}連勝<small>あと ${q.w - r.won}連勝で 討伐！</small></div><div class="gift">${qGemLeft()}${msh}`
         + (r.ms.length ? `<div class="cbcl">${COINI}バトルコイン（今 ${r.coins}枚）</div>` : '') + '</div>'
         + `<div class="col"><button type="button" class="cbb" data-cb="qnext">第${r.won + 1}戦へ</button><button type="button" class="cbb dk" data-cb="qmapgo">マップへ 戻る<small>この 調査は ここまで</small></button></div>`, 'cbend qend');
       return;
@@ -3404,14 +3598,19 @@ const CBApp = (() => {
     if (x.res === 'lose') {
       se('over');
       modal(`<h3 class="gold">調査 失敗…</h3><div class="sc">${x.wins[0]} － ${x.wins[1]}<small>あなた － ${esc(q.s)}（勝った 数）</small></div>`
-        + `<div class="gift"><div>${esc(q.s)}に 負けた…。${r.won ? `${r.won}連勝で 止まったよ` : ''}</div><div>もう 一度 1戦目から 挑戦できるよ</div>${msh}</div>`
+        + `<div class="gift"><div>${esc(q.s)}に 負けた…。${r.won ? `${r.won}連勝で 止まったよ` : ''}</div><div>もう 一度 1戦目から 挑戦できるよ（💎 決戦宝石も 5つに 戻るよ）</div>${msh}</div>`
         + '<div class="col"><button type="button" class="cbb" data-cb="qretry">もう 一度 挑戦</button><button type="button" class="cbb dk" data-cb="qmapgo">マップへ</button></div>', 'cbend qend');
       return;
     }
     se('even');
     modal(`<h3 class="gold">同点！</h3><div class="sc">${x.wins[0]} － ${x.wins[1]}<small>あなた － ${esc(q.s)}（勝った 数）</small></div>`
-      + `<div class="gift"><div>同点は 負けじゃ ないよ。<br>第${r.won + 1}戦を やり直そう！（HP は そのまま）</div>${msh}</div>`
+      + `<div class="gift"><div>同点は 負けじゃ ないよ。<br>第${r.won + 1}戦を やり直そう！（HP は そのまま）</div>${qGemLeft()}${msh}</div>`
       + `<div class="col"><button type="button" class="cbb" data-cb="qnext">第${r.won + 1}戦を やり直す</button><button type="button" class="cbb dk" data-cb="qmapgo">マップへ 戻る<small>この 調査は ここまで</small></button></div>`, 'cbend qend');
+  }
+  
+  function qGemLeft() {
+    const gu = qRun && qRun.gu ? qRun.gu : [], left = R.GEMS.filter(g => gu.indexOf(g) < 0);
+    return `<div class="qgl">💎 決戦宝石 のこり <b>${left.length}</b>／${R.GEMS.length}<span aria-hidden="true">${R.GEMS.map(g => `<img class="${gu.indexOf(g) >= 0 ? 'u' : ''}" src="${gemPic(g)}" alt="">`).join('')}</span></div>`;
   }
   
   function qNext() {
@@ -3422,7 +3621,7 @@ const CBApp = (() => {
   }
   function qRetry() {
     if (!qRun || qRun.dead || !match || !ended) return;
-    qRun.won = 0; qRun.m = st.q.m; qHP(QUEST[qRun.lv - 1].w, false);
+    qRun.won = 0; qRun.m = st.q.m; qRun.gu = []; qHP(QUEST[qRun.lv - 1].w, false);      
     qNext();
   }
   
