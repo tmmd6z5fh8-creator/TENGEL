@@ -2137,19 +2137,28 @@ try:
         pg.wait_for_function("() => CBApp._t.ended", timeout=30000); idle(pg); s7 = said(pg); v3 = pg.evaluate(V)
         check(v3['res'] == 'win' and pg.evaluate(TOKV) == '' and any('トークンは この ターン だけ' in x and '消えたよ' in x for x in s7),
               f'使わなかった トークンは ターンの 終わりに 消える（「トークンは この ターン だけ… 消えたよ」）（{[x for x in s7 if "消えた" in x]}）')
-        # C：7トークン（3頭分）で 7 の 3枚 交換 → 手札 7枚（使えない）・3トークン（2頭分）＋ 3 で 3 の 交換
+        # C：7トークン（3頭分）で 7 の 効果（第4.199版・まさちゃん 22:01：7トークンを 見せて 捨てる → 山札から 3枚 引く）→ 手札 7枚（使えない）・3トークン（2頭分）＋ 3 で 3 の 交換
         startG('12345', '2356m', deck='124')
         guse(pg, '7'); cset(pg, '1'); opp(pg, {'t': 'set', 'k': 2})
         aq = pg.evaluate(ASKQ)
-        check(aq and aq['q'] == '7 の 効果を 使う？' and aq['text'] == '7トークン（3頭分）を 戻して、新しく 3枚 引けるよ（トークンは 山札に 入らない）' and aq['img'] == 'cb_ct7.webp',
+        check(aq and aq['q'] == '7 の 効果を 使う？' and aq['text'] == '7トークン（3頭分）を 見せて 捨てて、山札から 3枚 引けるよ（トークンは 山札に 戻せないので 捨てる）' and aq['img'] == 'cb_ct7.webp',
               f'7トークン（3頭分）＝ 7 が 3枚 → 効果タイムで 7 の 効果（{aq and aq["text"]}）')
         peek(pg); mb = pg.evaluate(MSG)
-        check(mb == '効果タイム！ 7 の 効果を 使う？\n7トークン（3頭分）を 戻して、新しく 3枚 引けるよ', f'窓を 下げた ときの 下の 字も トークン（{mb!r}）')
+        check(mb == '効果タイム！ 7 の 効果を 使う？\n7トークン（3頭分）を 見せて 捨てると、山札から 3枚 引けるよ', f'窓を 下げた ときの 下の 字も トークン（{mb!r}）')
+        pg.evaluate("""() => { window.__t7 = []; const o = new MutationObserver(() => { const m = document.querySelector('#cbOv .cbmod.on.cbopen'); if (m && !window.__t7.some(x => x.t === m.innerText)) window.__t7.push({ t: m.innerText, img: [...m.querySelectorAll('.three img')].map(i => i.getAttribute('src')) }); });
+          o.observe(document.querySelector('#cbOv'), { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] }); window.__t7o = o; }""")
         pg.locator('#cbOv [data-cb=effyes]').click(); idle(pg)
-        s8 = said(pg); c1 = pg.evaluate(GEMQ); v4 = pg.evaluate(V)
-        check(pg.evaluate(TOKV) == '' and pg.evaluate(HAND) == '1223445' and any(x.startswith('use:') and '7トークン（3頭分）を 戻して、新しく 3枚 引くよ' in x for x in s8) and any('7トークン（3頭分）を 戻して、新しく 3枚 引いたよ' in x for x in s8)
+        s8 = said(pg); c1 = pg.evaluate(GEMQ); v4 = pg.evaluate(V); t7m = pg.evaluate("() => { window.__t7o.disconnect(); return window.__t7; }")
+        check(pg.evaluate(TOKV) == '' and pg.evaluate(HAND) == '1223445' and any(x.startswith('use:') and '3枚 引く' in x and '7トークン（3頭分）を 見せて 捨てて、山札から 3枚 引くよ' in x for x in s8) and any('7トークン（3頭分）を 捨てて、山札から 3枚 引いたよ' in x for x in s8)
               and v4['turn'] == 2 and c1['gs'] == 'm:off k:off 1:off 3:off 7:used',
-              f'使う → 7トークンを 戻して 3枚 引いた（手札 {pg.evaluate(HAND)}：7枚 → 2ターン目は 宝石を 使えない）（{c1["gs"]}）')
+              f'使う → 7トークンを 捨てて 山札から 3枚 引いた（手札 {pg.evaluate(HAND)}：7枚 → 2ターン目は 宝石を 使えない）（{c1["gs"]}）')
+        t7m = [x for x in t7m if x['t'].startswith('7 の 効果！')]      # オープンの 窓（同じ cbopen）は 数えない
+        check(len(t7m) == 1 and t7m[0]['img'] == ['cb_st7.webp'] and '7トークン（3頭分）を 見せて 捨てたよ' in t7m[0]['t'] and '山札から 3枚 引くよ' in t7m[0]['t'],
+              f'7トークン 1枚を 見せる 窓（「7 の 効果！」・7トークンの 絵 1枚・「7トークン（3頭分）を 見せて 捨てたよ／山札から 3枚 引くよ」）（{t7m}）')
+        pg.locator('#cbOv [data-cb=discard]').click(); pg.wait_for_timeout(100)
+        dt7 = pg.evaluate(DM); pg.locator('#cbOv .cbmod [data-cb=modx]').click(); pg.wait_for_timeout(60)
+        check(dt7['h'] == '捨て札（3枚）' and 'ターン 1|あなたの 7 の 効果=t7' in dt7['effs'] and v4['my']['hand'] and not any(c.get('tok') for c in v4['my']['hand']),
+              f'捨て札の 窓：「あなたの 7 の 効果」に 捨てた 7トークン（山札には 戻らない）（{dt7["h"]}・{dt7["effs"]}）')
         gtap(pg, 'm'); s9 = said(pg)
         check(any('手札が 6枚 以下の ときに 使えるよ' in x for x in s9), '手札 7枚：「手札が 6枚 以下の ときに 使えるよ」')
         cset(pg, '2'); opp(pg, {'t': 'set', 'k': 3})

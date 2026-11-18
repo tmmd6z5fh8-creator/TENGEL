@@ -1265,24 +1265,27 @@ console.log('■ 第4.197版：決戦宝石（まさちゃん 18:58「呼び寄�
     check(x3 && x3.give.u === real3.u && !x3.give.tok && !x3.take.tok && x3.three.indexOf(t3.u) >= 0 && !S.p[1].hand.some(c => c.u === t3.u) && S.p[1].hand.some(c => c.u === real3.u) && tg && tg.u.indexOf(t3.u) >= 0,
       '相手に わたすのは 本物の 3（トークンは 手元に のこる：ターンで 消える）・もらうのも 本物の カード');
   }
-  // 7トークン（3頭分）：3まい 交換（トークンを もどして 3まい 引く）
+  // 7トークン（3頭分）：7 の 効果（第4.199版・まさちゃん 22:01：トークンを 見せて 捨てる → 山札から 3まい 引く）
   {
     const S = GG('1234566', '1234565', '1234567', [R.GEMS, []]);
     turn(S, '6', '5'); gem(S, 0, '7'); const t7 = S.p[0].hand.find(c => c.tok), d0 = S.deck.length, h0 = S.p[0].hand.length;
     no6(S); set(S, 0, '1'); set(S, 1, '1');
     check(S.phase === 'eff' && S.step === 'x7' && S.p[0].eff.can && t7.tok === 3, '7トークン（3頭分）1まい ＝ 7 が 3まい → 7 の 3まい 交換を 聞かれる');
     const r = eff(S, 0, { x7: true }), x7 = r.ev.find(e => e.e === 'x7');
-    check(x7 && x7.tok === t7.u && x7.drew.length === 3 && !S.p[0].hand.some(c => c.u === t7.u) && S.deck.length === d0 - 3 && !S.deck.some(c => c.tok) && S.p[0].hand.length === h0 - 1 - 1 + 3 && saneG(S),
-      'トークンを もどして（山札には 入らない：消える）3まい 引く ＝ 手札が 2まい ふえる（まさちゃんに 伝えた 形）');
+    const dz = S.discard.filter(d => d.u === t7.u);
+    check(x7 && x7.tok === t7.u && x7.drop && x7.drop.u === t7.u && x7.drop.k === '7' && x7.drop.tok === 3 && x7.drew.length === 3 && !S.p[0].hand.some(c => c.u === t7.u) && S.deck.length === d0 - 3 && !S.deck.some(c => c.tok) && S.p[0].hand.length === h0 - 1 - 1 + 3 && saneG(S),
+      'トークンを 見せて 捨てて（山札には 戻せない）山札から 3まい 引く ＝ 手札が 2まい ふえる・山札は 3まい へる');
+    check(dz.length === 1 && dz[0].k === '7' && dz[0].tok === 3 && dz[0].why === '7' && dz[0].by === 0 && R.view(S, 0).discard.some(d => d.tok === 3 && d.k === '7' && d.why === '7' && d.mine) && R.view(S, 1).discard.some(d => d.tok === 3 && d.k === '7' && d.why === '7' && !d.mine),
+      '捨てた 7トークンは 捨て札に（7 の 効果：2人の 画面とも 捨て札に 7トークン）');
     const o1 = R.evFor(r.ev, 1).find(e => e.e === 'x7');
-    check(o1 && o1.tok === undefined && o1.drew === undefined, '決戦調査（宝石は 自分 だけ）：敵には トークンを もどした ことを 知らせない（引いた カードも）');
+    check(o1 && o1.tok === t7.u && o1.drop && o1.drop.tok === 3 && o1.drew === undefined, '見せて 捨てる ので 決戦調査の 敵にも 7トークンが わかる（引いた カードは わからない）');
   }
-  {      // 友だちとの 対戦：相手にも「7トークンを もどした」が わかる（引いた カードは わからない）
+  {      // 友だちとの 対戦：相手にも「7トークンを 見せて 捨てた」が わかる（引いた カードは わからない）
     const S = GG('1234566', '1234565', '1234567', [['7'], ['1']], true);
     turn(S, '6', '5'); gem(S, 0, '7'); const t7 = S.p[0].hand.find(c => c.tok);
     no6(S); set(S, 0, '1'); set(S, 1, '1');
     const r = eff(S, 0, { x7: true }), o1 = R.evFor(r.ev, 1).find(e => e.e === 'x7'), o0 = R.evFor(r.ev, 0).find(e => e.e === 'x7');
-    check(o1 && o1.tok === t7.u && o1.drew === undefined && o0 && o0.tok === t7.u && o0.drew.length === 3, '友だちとの 対戦：相手にも 7トークンを もどした ことが わかる（引いた カードは 自分 だけ）');
+    check(o1 && o1.tok === t7.u && o1.drop && o1.drop.u === t7.u && o1.drew === undefined && o0 && o0.tok === t7.u && o0.drop.tok === 3 && o0.drew.length === 3 && S.discard.some(d => d.u === t7.u && d.why === '7'), '友だちとの 対戦：相手にも 7トークンを 見せて 捨てた ことが わかる（引いた カードは 自分 だけ）・捨て札に 7トークン');
   }
   // 7トークン（3頭分）＋ 7 ＝ 4まい 公開（強さ 逆転：捨てるのは トークン）
   {

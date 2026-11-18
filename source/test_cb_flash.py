@@ -17,6 +17,7 @@
 #     オープン（勝ち）→「ターン 2」→「6 の 効果」の 帯（open_win）・6 を 使わない →「神様馬の 効果」の 帯（six_pre）・相手の 5 で「効果タイム」の 帯（set_efft）→ 負け（open_lose）。
 #     前の efft・eff6_open（効果タイムの 6）は なくなった
 #   第4.197版：6つ目＝決戦宝石（gem_deal：ケースの 宝石が ゆっくり 光る・gem_ask：宝石の 窓・gem_use：宝石が はねる・トークンが 手札へ・帯・gem_tokgone：使わなかった トークンが 消える）
+#   第4.199版：7つ目＝7トークンで 7 の 効果（gem7_x7：効果の 札 → 7トークン 1枚を 見せる 窓 → 捨て札へ → 山札から 3枚：まさちゃん 22:01）
 #   python3 test_cb_flash.py [場面の 名前,…]   （時間が かかる ので ふだんの テストとは 別に 動かす。コマは t5/cb_frames/<場面>/ に 残す）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -191,6 +192,17 @@ try:
             seg('gem_tokgone', 7.0, lambda: pg.evaluate(OPP, {'t': 'set', 'k': 3}))      # オープン（負け）→ 片付け → 使わなかった トークンが 消える →「ターン 2」
             g6 = pg.evaluate("() => { const v = CBApp._t.view; return v ? [v.turn, v.my.hand.filter(c => c.tok).length, v.my.gem.used.join(''), document.querySelectorAll('#cbOv .cbgem .g').length] : null; }")
             check(g6 == [2, 0, '1', 5], f'6つ目の 対戦（決戦宝石）も 場面の とおり（2ターン目・トークンは 消えた・使った 宝石 1・ケースに 5つ）{g6}')
+            # ---- 7つ目（第4.199版・まさちゃん 22:01）：7トークンで 7 の 効果 ＝ 7トークンを 見せて 捨てる → 山札から 3枚 引く ----
+            settle(pg, 1.0)
+            pg.evaluate("() => { const T = CBApp._t; if (T.screen !== 'menu') T.menu(); CBApp._rng = () => 0.1; CBApp._opt = { hands: [['1', '2', '3', '4', '5'], ['2', '3', '4', '5', '6']], turns: 3, gems: [['7'], []] }; }"); pg.wait_for_timeout(100)
+            pg.locator('#cbOv .cbmenu [data-cb=cpu]').click(); settle(pg, 4.6)
+            pg.locator('#cbOv .cbgem .g[data-g="7"]').click(); settle(pg, 0.6)
+            pg.locator('#cbOv .cbmod.cbgemm [data-cb=gemgo]').click(); settle(pg, 3.0)
+            tap_play(pg, '1'); settle(pg, 0.8)
+            pg.evaluate(OPP, {'t': 'set', 'k': 2}); settle(pg, 2.2)                          # 2人とも セット →「効果タイム」→ 7 の 効果を 使う？
+            seg('gem7_x7', 6.0, lambda: pg.locator('#cbOv [data-cb=effyes]').click())      # 使う → 効果の 札 → 7トークン 1枚を 見せる 窓 → 捨て札へ とぶ → 山札から 3枚
+            g7 = pg.evaluate("() => { const v = CBApp._t.view; return v ? [v.my.hand.filter(c => c.tok).length, v.discard.filter(d => d.tok && d.k === '7' && d.why === '7').length, v.my.gem.used.join('')] : null; }")
+            check(g7 == [0, 1, '7'], f'7つ目の 対戦（7トークンで 7 の 効果）も 場面の とおり（トークンは 捨て札へ・使った 宝石 7）{g7}')
             if calm < 2:
                 # ---- 5つ目（第4.189版）：カードパック ----
                 settle(pg, 1.0)
