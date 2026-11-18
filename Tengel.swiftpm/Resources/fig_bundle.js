@@ -332,9 +332,11 @@ const FigGL = (() => {
 
 
 
+
+
 const FigApp = (() => {
   'use strict';
-  const PAGES = 7, PER = 8, MAX = PAGES * PER;
+  const PAGES = 5, PER = 8, MAX = PAGES * PER;      
   const LIST = [1, 3, 4, 5, 8];
   const NAMES = ['', 'ロイヤルポニー', '', 'フローラルゴールド', 'ロイヤルゴールデン', 'ロイヤルフォーチュン', '', '', '幻の馬＆神様馬'];
   const KIND = ['', 'normal', '', 'normal', 'normal', 'normal', '', '', 'both'];
