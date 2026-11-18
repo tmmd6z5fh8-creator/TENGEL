@@ -508,7 +508,7 @@
       } catch (e) { out.setsErr = String(e); }
       await mark('cb-game');
       out.auto = await cbAuto(150000);
-      var v = window.CBApp._t.view; out.res = v ? v.res : null; out.wins = v ? [v.my.wins, v.op.wins] : null; out.discard = v ? v.discard.length : null;
+      var v = window.CBApp._t.view; out.res = v ? v.res : null; out.wins = v ? [v.my.wins, v.op.wins] : null; out.discard = v ? v.discard.length : null; out.early = v ? v.early || 0 : null;      // 第4.202版：決着で おわった ターン（0＝さいごまで）
       out.gift = await waitFor(function () { var e = document.querySelector('#cbOv .cbend .gift'); return e && e.textContent.length > 3 ? e.textContent : null; }, 20000);
       out.state = JSON.parse(JSON.stringify(window.CBApp._t.state)); out.tokens = window.TCApp && window.TCApp.state ? window.TCApp.state.stock : null;
       await mark('cb-end');
@@ -721,8 +721,8 @@
     var click = function (sel) { var e = document.querySelector(sel); if (e && !e.disabled) { e.click(); return true; } return false; };
     while (Date.now() - t0 < ms && !T.ended && T.match) {
       if (T.idle && T.view) {
-        var v = T.view, s = v.pend && v.pend.mine ? v.pend.type : v.can.six ? 'six' : v.can.eff ? 'eff' : v.can.set ? (v.can.x7r && T.ask ? 'x7' : 'set') : 'wait';
-        if (s === 'x7') { if (click('#cbOv .cbask [data-cb=x7no]')) { n++; kinds.x7 = (kinds.x7 || 0) + 1; } }      // 第4.187版：7 が 4まい（セットの 前）→ 使わない
+        var v = T.view, s = v.pend && v.pend.mine ? v.pend.type : v.can.six ? 'six' : v.can.eff ? 'eff' : v.can.set ? ((v.can.x7r || v.can.x7 || v.can.x3) && T.ask ? 'x7' : 'set') : 'wait';
+        if (s === 'x7') { if (click('#cbOv .cbask [data-cb=x7no]') || click('#cbOv .cbask [data-cb=p7no]') || click('#cbOv .cbask [data-cb=p3no]')) { n++; kinds.x7 = (kinds.x7 || 0) + 1; } }      // 第4.187版：7 が 4まい・第4.202版：7 が 3まい・3 が 3まい（セットの 前）→ 使わない
         else if (s === 'k' || s === 'm') { if (click('#cbOv [data-cb=' + s + 'skip]')) { n++; kinds[s] = (kinds[s] || 0) + 1; } }
         else if (s === 'rev') { if (click('#cbOv [data-cb=revyes]')) { n++; kinds.rev = (kinds.rev || 0) + 1; } }      // 第4.178版：逆転勝利（1・2 の 効果）を 聞かれたら 使う
         else if (s === 'u5') { if (click('#cbOv [data-cb=u5no]')) { n++; kinds.u5 = (kinds.u5 || 0) + 1; } }      // 第4.183版：4 の 効果で 交換して 5 を 出した → 5 の 効果は 使わない
@@ -767,7 +767,7 @@
     if (!R.connected) { R.text = ((document.querySelector('#cbOv .cbroom') || {}).textContent || '').slice(0, 240); R.evs = R.evs.slice(0, 60); report(String(PH), R); return; }
     R.kind = window.CBApp._t.match ? window.CBApp._t.match.kind : null;
     R.auto = await cbAuto(150000);
-    var v = window.CBApp._t.view; R.res = v ? v.res : null; R.wins = v ? [v.my.wins, v.op.wins] : null; R.discard = v ? v.discard.length : null;
+    var v = window.CBApp._t.view; R.res = v ? v.res : null; R.wins = v ? [v.my.wins, v.op.wins] : null; R.discard = v ? v.discard.length : null; R.early = v ? v.early || 0 : null;
     R.gift = await waitFor(function () { var e = document.querySelector('#cbOv .cbend .gift'); return e && e.textContent.length > 3 ? e.textContent : null; }, 15000);
     R.evs = R.evs.filter(function (x) { return x !== 'data'; }).concat(['data×' + R.evs.filter(function (x) { return x === 'data'; }).length]);
     report(String(PH), R);

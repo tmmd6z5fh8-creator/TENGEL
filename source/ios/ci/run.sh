@@ -120,6 +120,7 @@ CBPY='
 # 第4.179版：メニューに バトルコインの 行（はじめ 0枚）・コンピュータに 勝ったら 1枚
 # 第4.188版：コンピュータに 勝ったら 2枚（1連勝目）・ログインボーナスの バトルコイン（はじめの 日 2枚）を 受け取って いれば その ぶんも（開いた とき：gift0・さいご：state.gifts）
 # 第4.185版：設定は BGM・効果音 だけ（エフェクトは なくした）・プレイボードは いつもの 絵（cb_board.webp）
+# 第4.202版：決着したら 試合終了（early＝おわった ターン：捨て札は その ターンの 数 × 2 以上）・手札の 効果（7 の 3まい・3）は セットの 前に 聞く（自動の 対戦は「使わない」）
 # 第4.196版：メニューに「⚔️ 決戦調査」（ボタンは 9こ：戻る・コンピュータと 対戦・決戦調査・部屋を 作る・部屋に 入る・遊び方・設定・ミッション・デザインカスタム）
 import json, sys
 o = json.load(open(sys.argv[1])).get("cb") or {}
@@ -127,13 +128,13 @@ rm = o.get("room") or {}; rb = o.get("roomBad") or {}; st = o.get("start") or {}
 fd = o.get("fd") or []
 ok = (o.get("fab") or [])[:4] == ["tcFab", "oshiFab", "cbFab", "figFab"] and (o.get("col") is True or o.get("g2") is True) and len(fd) == 4 and len(set(fd)) == 1 and 36 <= fd[0] <= 66 and o.get("clear") is True and o.get("api") == "object" and rm.get("ok") is True and rm.get("state") == "idle" and rb.get("ok") is False and rb.get("why") == "room" \
      and o.get("open") is True and len(o.get("menu") or []) == 9 and o.get("roomBtn") == [True, True] and st.get("hand") == 7 and st.get("op") in (6, 7) and st.get("deck") == 16 and st.get("turn") == 1 and st.get("turns") == 5 and au.get("ended") is True \
-     and o.get("res") in ("win", "lose", "draw") and (o.get("discard") or 0) >= 10 and bool(o.get("gift")) and (s.get("win", 0) + s.get("lose", 0) + s.get("draw", 0)) == 1 and o.get("closed") is True \
+     and o.get("res") in ("win", "lose", "draw") and (o.get("discard") or 0) >= 2 * ((o.get("early") or 0) or 5) and bool(o.get("gift")) and (s.get("win", 0) + s.get("lose", 0) + s.get("draw", 0)) == 1 and o.get("closed") is True \
      and (o.get("res") != "win" or o.get("tokens") == 6) and ("バトルコイン %d" % (2 * (o.get("gift0") or 0))) in (o.get("coinl") or "") and o.get("coin0") == 2 * (o.get("gift0") or 0) \
      and s.get("coin") == (2 if o.get("res") == "win" else 0) + 2 * len(s.get("gifts") or []) and len(s.get("gifts") or []) <= 1
 se = o.get("sets") or {}; bg = o.get("bgm") or {}; fire = o.get("fire") or []
 ok2 = se.get("fx") is False and isinstance(se.get("se"), bool) and isinstance(se.get("bgm"), bool) and bg.get("on") is False and abs((bg.get("len") or 0) - 80.53) < 0.02 and len(fire) == 2 and all(f.startswith("cbfire ") for f in fire) \
       and o.get("gear") == "bgm,se" and o.get("fxBtn") is False and o.get("board") == ["cb_board.webp", False] and not o.get("setsErr")
-print("fab %s column %s 2x2 %s icon %s clear-of-kise %s (view %s kise %s fabs %s) room-api %s bad-room %s open %s start %s played %s res %s wins %s discard %s tokens %s closed %s coin %s->%s gifts %s -> %s" % ((o.get("fab") or [])[:4], o.get("col"), o.get("g2"), fd[:1], o.get("clear"), o.get("view"), o.get("kise"), o.get("fabRect"), rm, rb.get("why"), o.get("open"), st, au.get("kinds"), o.get("res"), o.get("wins"), o.get("discard"), o.get("tokens"), o.get("closed"), o.get("coin0"), s.get("coin"), len(s.get("gifts") or []), "OK" if ok else "CHECK " + json.dumps(o, ensure_ascii=False)[:400]))
+print("fab %s column %s 2x2 %s icon %s clear-of-kise %s (view %s kise %s fabs %s) room-api %s bad-room %s open %s start %s played %s res %s wins %s discard %s early %s tokens %s closed %s coin %s->%s gifts %s -> %s" % ((o.get("fab") or [])[:4], o.get("col"), o.get("g2"), fd[:1], o.get("clear"), o.get("view"), o.get("kise"), o.get("fabRect"), rm, rb.get("why"), o.get("open"), st, au.get("kinds"), o.get("res"), o.get("wins"), o.get("discard"), o.get("early"), o.get("tokens"), o.get("closed"), o.get("coin0"), s.get("coin"), len(s.get("gifts") or []), "OK" if ok else "CHECK " + json.dumps(o, ensure_ascii=False)[:400]))
 print("   card battle settings: sets %s bgm %s fire %s gear %s fx-button %s board %s err %s -> %s" % (se, bg, fire, o.get("gear"), o.get("fxBtn"), o.get("board"), o.get("setsErr"), "OK" if ok2 else "CHECK"))
 '
 # 第4.177版：お世話の 札の「描く 命令を 書きとめる 役」（tc/tc_care.js の REC）を 本物の WebKit で：16コマ（描く 8〈はじめの 2コマ・場面が かわった 3コマ・中身の かわる 紙の 2コマ・かくれた あとの 1コマ〉・同じ 絵で 描かない 6・かくれて いて 描かない 2）・
@@ -337,8 +338,8 @@ if h is None or g is None:
 flip = {"win": "lose", "lose": "win", "draw": "draw"}
 bad = lambda r: [e for e in (r.get("errors") or []) if "ResizeObserver loop" not in str(e)]      # 第4.192版：WebKit の「ResizeObserver loop …」の 知らせは 数えない（画面の 大きさの 知らせが 1コマ おくれた だけ：run 160）
 ok = (h.get("connected") is True and g.get("connected") is True and h.get("kind") == "host" and g.get("kind") == "guest" and h.get("res") in flip and flip[h["res"]] == g.get("res")
-      and h.get("wins") == list(reversed(g.get("wins") or [])) and (h.get("discard") or 0) >= 10 and h.get("discard") == g.get("discard") and not bad(h) and not bad(g))      # 第4.178版：5ターン ＝ 捨て札は 10まい 以上
-print("host connected %s res %s wins %s discard %s evs %s / guest connected %s res %s wins %s evs %s errors %d -> %s" % (h.get("connected"), h.get("res"), h.get("wins"), h.get("discard"), h.get("evs"), g.get("connected"), g.get("res"), g.get("wins"), g.get("evs"),
+      and h.get("wins") == list(reversed(g.get("wins") or [])) and (h.get("discard") or 0) >= 2 * ((h.get("early") or 0) or 5) and h.get("discard") == g.get("discard") and h.get("early") == g.get("early") and not bad(h) and not bad(g))      # 第4.178版：5ターン ＝ 捨て札は 10まい 以上（第4.202版：決着で おわったら その ターンの 数 × 2 以上・2人とも 同じ ターン）
+print("host connected %s res %s wins %s discard %s early %s evs %s / guest connected %s res %s wins %s evs %s errors %d -> %s" % (h.get("connected"), h.get("res"), h.get("wins"), h.get("discard"), h.get("early"), h.get("evs"), g.get("connected"), g.get("res"), g.get("wins"), g.get("evs"),
       len(bad(h)) + len(bad(g)), "OK" if ok else "CHECK " + (h.get("text") or "")[:80] + " / " + (g.get("text") or "")[:80]))
 ' "$OUT/room-iphone-report-6.json" "$OUT/room-ipad-report-7.json" 2>&1)"
     for f in "$DH/Documents"/report-crash-*.json "$DG/Documents"/report-crash-*.json; do [ -f "$f" ] && cp "$f" "$OUT/room-$(basename "$f")" && say "   room: CRASH $(basename "$f")"; done

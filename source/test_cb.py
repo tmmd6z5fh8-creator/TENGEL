@@ -158,10 +158,11 @@ def modbtns(pg):
     return pg.evaluate("() => [...document.querySelectorAll('#cbOv .cbmod .cbb')].map(b => b.textContent.trim())")
 
 
-def start(pg, h0, h1, deck='', turns=3):
+def start(pg, h0, h1, deck='', turns=3, full=True):
     """手札を 決めて コンピュータと 対戦を はじめる。コンピュータは 自分では 動かない（テストが opp() で 相手の 手を 打つ）。
-       turns＝ターンの 数（決めなければ 3：前から ある 場面は「3ターン・手札 5まい」の まま。本番の 形は turns=5 で 手札 7まい）"""
-    pg.evaluate("""([h0, h1, dk, tn]) => { CBApp._think = () => 1e9; CBApp._opt = { hands: [h0.split(''), h1.split('')], deck: dk ? dk.split('') : undefined, turns: tn }; }""", [h0, h1, deck, turns])
+       turns＝ターンの 数（決めなければ 3：前から ある 場面は「3ターン・手札 5まい」の まま。本番の 形は turns=5 で 手札 7まい）
+       full＝決着しても さいごの ターンまで（第4.202版：前から ある 場面の まま 動かす テスト用。本番と 同じ「決着で おわり」は full=False）"""
+    pg.evaluate("""([h0, h1, dk, tn, fu]) => { CBApp._think = () => 1e9; CBApp._opt = { hands: [h0.split(''), h1.split('')], deck: dk ? dk.split('') : undefined, turns: tn, full: fu }; }""", [h0, h1, deck, turns, full])
     if pg.evaluate("() => CBApp._t.screen") != 'menu': pg.evaluate("() => CBApp._t.menu()")      # 前の 対戦を（勝ち負けに 数えずに）片付けて メニューへ
     pg.locator('#cbOv .cbmenu [data-cb=cpu]').click(); idle(pg)
 
@@ -281,18 +282,18 @@ try:
         shot(pg, 'cb_menu')
         pg.locator('#cbOv .cbmenu [data-cb=help]').click(); pg.wait_for_timeout(200)
         ht = pg.locator('#cbOv .cbhelp .bd').inner_text()
-        need = ['手札は 7枚。5ターンで 勝負', '5ターン 終わって', '2枚は 使わずに 残るよ', '強い カードの 勝ち', '勝った 数が 多い 人の 勝ち', '神様馬と 幻の馬が 一番 強い', '1 が 一番 強くて、7 が 一番 弱い', '「かぶり」＝どちらも 負け', '4 同士で 2人とも 4 の 効果を 使った ときは ドロー', '2人とも 4 を 出して、2人とも 効果を 使ったら、打ち消して その ターンは ドロー', '1〜7 が 4枚 ずつ・神様馬 1枚・幻の馬 1枚',
+        need = ['手札は 7枚。5ターンで 勝負', '5ターン 終わって', '先に 勝ちが 決まったら、その ターンで 試合終了だよ（3勝した とき・残りの ターンを 全部 勝っても 追いつけない とき）', '手札の 数は、手札の 効果（6・7・3）は セットする 前の 手札で、5 の 効果は セットした あとの 手札で 数えるよ', '2枚は 使わずに 残るよ', '強い カードの 勝ち', '勝った 数が 多い 人の 勝ち', '神様馬と 幻の馬が 一番 強い', '1 が 一番 強くて、7 が 一番 弱い', '「かぶり」＝どちらも 負け', '4 同士で 2人とも 4 の 効果を 使った ときは ドロー', '2人とも 4 を 出して、2人とも 効果を 使ったら、打ち消して その ターンは ドロー', '1〜7 が 4枚 ずつ・神様馬 1枚・幻の馬 1枚',
                 '① ターンの 始め：手札に 6 が 2枚 ある 人に「6 の 効果を 使う？」と 聞くよ（セットの 前に 相手の 手札を 1枚 見られる）。その 後、前の ターンに 神様馬・幻の馬で 勝った 人が 効果を 使うか 選ぶよ', '② セット', 'セットしたら もう 変えられない', '③ 効果タイム',
-                '2人とも セットしたら、効果を 1つずつ 聞くよ（7 → 3 → 5 → 4 の 順）。その 効果を 使える 人に「○ の 効果を 使う？」→ 決めたら すぐ 効果が 出て、終わって から 次の 効果を 聞くよ', '同じ 効果を 2人とも 使える ときは、2人とも 決めて から 一緒に 出る', '④ オープン', '次の ターンの 始めに、使うか 選ぶよ',
-                '効果は 1つ 終わってから 次の 効果を 聞くよ（前の 効果で 変わった 手札で 決められる。例：7 で 引いた 後の 手札で、5 を 使うか・どの カードを 捨てるか）', '効果が 出る 順番：① ターンの 始め（6 → 神様馬・幻の馬）→ ② セット（7 の 4枚 公開は セットの 前）→ ③ 効果タイム（7 → 3 → 5 → 4：手札の 効果 → セットした カードの 効果。4 は 一番 後）',
+                '2人とも セットしたら、セットした カードの 効果を 1つずつ 聞くよ（5 → 4 の 順）。その 効果を 使える 人に「○ の 効果を 使う？」→ 決めたら すぐ 効果が 出て、終わって から 次の 効果を 聞くよ', '同じ 効果を 2人とも 使える ときは、2人とも 決めて から 一緒に 出る', '④ オープン', '次の ターンの 始めに、使うか 選ぶよ',
+                '効果は 1つ 終わってから 次の 効果を 聞くよ（前の 効果で 変わった 手札で 決められる。例：7 で 引いた 後の 手札で、セットする カードを 選ぶ・5 で 捨てる カードを 選ぶ）', '効果が 出る 順番：① ターンの 始め（6 → 神様馬・幻の馬）→ ② セット（手札の 効果 7・3 は セットの 前）→ ③ 効果タイム（5 → 4：セットした カードの 効果。4 は 一番 後）',
                 '6 の 効果は ターンの 始め（セットの 前）に 使うか 選ぶよ', 'ターンの 始め（セットの 前）に、その 2枚を 相手に 見せて、相手の 手札を 1枚 選んで 見られるよ（見てから セットする カードを 選べる）。神様馬・幻の馬の 効果より 先だよ', '4 の 効果は 一番 後：相手が 5 の 効果で 山札から 伏せた カードも 交換に なるよ', '「使う」「使わない」は 自分で 選べる', '使うか 使わないかは 自分で 選べる',
                 '終わった ターンの 捨て札', '効果で 捨てた カード',
-                '7：3枚 交換・4枚 公開で 逆転', '【4枚】手札に 7 が 4枚 あれば、セットの 前に 4枚 見せて 1枚 捨てると、その 対戦が 終わる まで 数字の 強さが 逆に なるよ', '【4枚】を 使った ターンは【3枚】は 使えない（どちらか 1つ）',
-                '伏せて（裏で）出すよ（自分の カードには 数字の 印・タップで 見られる）', '手札に 7 が 4枚 ある ときは、セットの 前に「7 を 4枚 見せて 逆転する？」と 聞くよ', '7 の 4枚 公開（強さ 逆転）は、セットの 前に 使うか 選ぶよ（セットしなくて いい）',
+                '7：3枚 交換・4枚 公開で 逆転', '【4枚】手札に 7 が 4枚 あれば、セットの 前に 4枚 見せて 1枚 捨てると、その 対戦が 終わる まで 数字の 強さが 逆に なるよ', '【3枚】と【4枚】は 1ターンに どちらか 1つ', '【3枚】手札に 7 が 3枚 あれば、セットの 前に 3枚を 山札に 戻して、新しく 3枚 引けるよ',
+                '伏せて（裏で）出すよ（自分の カードには 数字の 印・タップで 見られる）', '手札の 効果（7 の 3枚 交換・4枚 公開・3 の 交換）は、セットの 前に「○ の 効果を 使う？」と 聞くよ（手札は セットする 前の 枚数で 数える。使った 後で セットする カードを 選べる）', '7（3枚 交換・4枚 公開）・3 の 効果は、セットの 前に 使うか 選ぶよ（手札の 効果：セットしなくて いい）',
                 'セットした カードは、前に 見た カードでも 裏（4 の 効果で 見せる か、オープン するまで）', '見た カードは オープンまで 手札に ある ように 見えるよ',
                 '7 の 効果（4枚 公開）で 強さ 逆転したら、その 対戦が 終わる まで 7 が 一番 強くて、1 が 一番 弱い', '6：2枚 見せて 手札を 見る',
                 '効果を 使うと、ボードの 真ん中に 誰が・どの 効果を・何を するかの 札が 出るよ（タップすると すぐ 次へ）', '5：2枚 捨てて 山札から セット', '残りの ターンの 数より 少なく ならない とき', '最後の ターンは、手札が 1枚 あれば 使える', '4：見せて 強制交換',
-                '3：3枚 見せて 手札を 交換', 'ランダムに 選んだ 1枚を 交換できるよ', '7（3枚 交換）・3・5・4 の 効果は、2人とも セットした 後の「効果タイム」で、1つずつ 使うか 選ぶよ', '神様馬：勝ったら 手札を 見る', '幻の馬：勝ったら 手札を 交換', 'お世話トークン 1個', '5連勝 ごとに 3個', '部屋番号（4桁）', '近くに いる 友達',
+                '3：3枚 見せて 手札を 交換', '裏の カードから 自分で 選んだ 1枚（何が 来るかは わからない）を 交換できるよ。もう 見た カード（表）は 選べないよ', '5・4 の 効果は、2人とも セットした 後の「効果タイム」で、1つずつ 使うか 選ぶよ', '手札に 3 が 3枚 あれば、セットの 前に その 3枚を 相手に 見せて', '神様馬：勝ったら 手札を 見る', '幻の馬：勝ったら 手札を 交換', 'お世話トークン 1個', '5連勝 ごとに 3個', '部屋番号（4桁）', '近くに いる 友達',
                 'もう 見た カード だけの ときは 使えないよ', 'まだ 見て いない カードが ある とき', 'メニューの「デザインカスタム」で、カードの 表・裏と プレイボードの デザインを 変えられるよ', 'コンピュータと 対戦する ときは、コンピュータの カード（裏・表）も あなたが 選んだ デザインに なるよ',
                 '友達と 対戦する ときは、あなたの カードは あなたの デザイン・友達の カードは 友達が 選んだ デザインで 出るよ（山札は あなたの 裏）',
                 'メニューの「ミッション」：コンピュータに 連続勝利・友達バトルで 連続勝利で バトルコインが もらえるよ', 'コンピュータ：3連勝 30枚・5連勝 60枚・6連勝 90枚・7連勝 120枚・8連勝 150枚・9連勝 200枚・10連勝 300枚',
@@ -397,49 +398,52 @@ try:
               f'3ターン 終わり：1勝 1勝 →「同点！」・「もう 1回」「メニューへ」（{e["h"]}・{e["sc"]}・{e["g"]}）')
         shot(pg, 'cb_end_draw')
 
-        print('■ 効果タイム：2人とも セットしたら、効果を 使うか 選ぶ（まさちゃん 23:12）― 7（3枚 交換）')
-        start(pg, '77712', '12345', '346')
-        tap(pg, '7')
-        check(acts(pg) == [] and modbtns(pg) == ['この カードを セットするセットしたら もう 変えられないよ', '戻る'], 'セットの 前：効果の ボタンは どこにも 出ない（7 が 3枚 あっても、まず セット）')
-        pg.locator('#cbOv .cbmod [data-cb=modx]').click(); pg.wait_for_timeout(60)
-        play(pg, '1')
-        check(acts(pg) == [] and 'コンピュータが 選んで いるよ' in pg.evaluate(MSG), '自分だけ セットした：まだ 効果は 聞かれない（相手の セットを 待つ）')
-        said(pg); pg.evaluate("() => { window.__seen = []; }")
-        opp(pg, {'t': 'set', 'k': 2})
-        sd = said(pg); md = pg.evaluate("() => CBApp._t.mode")
-        check(any(s.startswith('ban:効果タイム') and 'カードの 効果を 使うか 選んでね' in s for s in sd) and pg.evaluate(V)['phase'] == 'eff' and md['k'] == 'eff' and md['q'] == '7' and md['step'] == 'ask'
-              and asked(pg) == ['7 の 効果を 使う？', '7 を 3枚 山札に 戻して、新しく 3枚 引けるよ'] and acts(pg) == [] and pg.evaluate(MSG) == '効果を 使うか 選んでね' and pg.evaluate(SLOT) == 'b b[1]:伏せて セット' and pg.evaluate("() => window.__seen.length") == 0,
-              f'2人とも セットした →「効果タイム」→ 聞く 窓「7 の 効果を 使う？」。オープンは まだ（{pg.evaluate(SLOT)}）')
+        print('■ セットの 前の 手札の 効果：7（3枚 交換）（第4.202版・まさちゃん 23:42「手札から使える効果は、カードセット前に使えるようにして！」）')
+        start(pg, '77712', '12345', '346'); said(pg); pg.evaluate("() => { window.__seen = []; }")
+        aw = pg.evaluate(ASKQ); md = pg.evaluate("() => CBApp._t.mode"); v0 = pg.evaluate(V)
+        check(aw and aw['head'] == '7 が 3枚！' and [aw['q'], aw['text']] == ['7 の 効果を 使う？', 'セットの 前に 使えるよ。7 を 3枚 山札に 戻して、新しく 3枚 引けるよ'] and aw['img'] == 'cb_c7.webp' and aw['btns'] == ['使わない', '使う', '手札と ボードを 見る']
+              and md['k'] == 'idle' and v0['phase'] == 'set' and v0['can']['x7'] is True and v0['can']['eff'] is None and pg.evaluate(SLOT) == '- -',
+              f'配った すぐ あと（セットの 前）：聞く 窓「7 が 3枚！／7 の 効果を 使う？」（7 の カードの 絵・セットの 前に 使えるよ）（{aw and aw["text"]}）')
         # 第4.177版（まさちゃん「カードの効果は使うか使わないか選べるようにして！」）：聞く 窓＝まん中に カードの 絵・質問・大きい「使わない」「使う」
-        aw = pg.evaluate(ASKQ)
         geo = pg.evaluate("""() => { const m = document.querySelector('#cbOv .cbmod.cbask'), R = e => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)]; };
           const bs = [...m.querySelectorAll('.rowb .cbb')], cs = getComputedStyle(bs[1]); return { vw: innerWidth, vh: innerHeight, img: R(m.querySelector('.big')), no: R(bs[0]), yes: R(bs[1]), peek: R(m.querySelector('[data-cb=askpeek]')), h3: R(m.querySelector('h3')),
             fs: parseFloat(cs.fontSize), qfs: parseFloat(getComputedStyle(m.querySelector('.askq b')).fontSize), z: +getComputedStyle(m).zIndex, cover: document.elementFromPoint(innerWidth / 2, innerHeight - 30).closest('.cbmod') === m }; }""")
-        check(aw['head'] == '効果タイム！' and aw['btns'] == ['使わない', '使う', '手札と ボードを 見る'] and aw['img'] == 'cb_c7.webp', f'聞く 窓：見出し「効果タイム！」・7 の カードの 大きい 絵・ボタンは「使わない」「使う」「手札と ボードを 見る」（{aw["btns"]}）')
         check(geo['yes'][3] - geo['yes'][1] >= 56 and geo['no'][3] - geo['no'][1] >= 56 and geo['yes'][2] - geo['yes'][0] >= 130 and geo['no'][2] - geo['no'][0] >= 130 and geo['fs'] >= 18 and geo['qfs'] >= 19
               and geo['no'][2] <= geo['yes'][0] and abs(geo['no'][1] - geo['yes'][1]) <= 1 and geo['img'][2] - geo['img'][0] >= 150 and geo['h3'][1] >= 0 and geo['peek'][3] <= geo['vh'] and geo['img'][3] <= geo['no'][1] and geo['cover'],
               f'「使わない」「使う」は 大きい ボタン（高さ {geo["yes"][3] - geo["yes"][1]}px・幅 {geo["yes"][2] - geo["yes"][0]}px・字 {geo["fs"]}px）が 横に 並ぶ・質問の 字 {geo["qfs"]}px・カードの 絵 幅 {geo["img"][2] - geo["img"][0]}px・全部 画面の 中')
-        shot(pg, 'cb_eff_ask')
+        shot(pg, 'cb_pre7_ask')
         peek(pg)
-        check(asked(pg) is None and not pg.evaluate("() => CBApp._t.modOn()") and pg.evaluate(MSG) == '効果タイム！ 7 の 効果を 使う？\n7 を 3枚 山札に 戻して、新しく 3枚 引けるよ' and acts(pg) == ['使わない', '7 の 効果を 使う'] and pg.evaluate(V)['phase'] == 'eff',
-              '「手札と ボードを 見る」→ 窓が 下がって 手札と ボードが 見える・下の 行の「使わない」「7 の 効果を 使う」で 答えられる（まだ 決まって いない）')
-        shot(pg, 'cb_eff_bar')
-        tap(pg, '7'); check(modbtns(pg) == ['戻る'], '効果タイムの 間：手札を タップしても 見る だけ（セットし直せない）')
+        check(asked(pg) is None and not pg.evaluate("() => CBApp._t.modOn()") and pg.evaluate(MSG) == 'セットする カードを 選んでね（カードを タップ）\n7 が 3枚！ セットの 前なら 交換を 使えるよ' and acts(pg) == ['使わない', '7 の 効果を 使う'] and pg.evaluate(V)['phase'] == 'set',
+              '「手札と ボードを 見る」→ 窓が 下がる・下の 行の「使わない」「7 の 効果を 使う」で 答えられる')
+        shot(pg, 'cb_pre7_bar')
+        tap(pg, '1'); mb = modbtns(pg)
+        check(mb == ['この カードを セットするセットしたら もう 変えられないよ', '戻る'], f'まだ 決めて いなくても、手札を タップすると セットも できる（使わずに セット＝使わない）（{mb}）')
         pg.locator('#cbOv .cbmod [data-cb=modx]').click(); pg.wait_for_timeout(60)
         check(asked(pg) is None and acts(pg) == ['使わない', '7 の 効果を 使う'], 'カードを 見て 戻っても、下げた 窓は また 出て こない（下の ボタンの まま）')
-        pg.locator('#cbOv [data-cb=effyes]').click(); idle(pg)
-        sd = said(pg); seen = pg.evaluate("() => window.__seen")
+        pg.locator('#cbOv .cbact [data-cb=p7yes]').click(); idle(pg)
+        sd = said(pg); v1 = pg.evaluate(V)
         iu = [i for i, x in enumerate(sd) if x.startswith('use:')]; it = [i for i, x in enumerate(sd) if '7 を 3枚 戻して、新しく 3枚 引いたよ' in x]
         check(len(iu) == 1 and sd[iu[0]] == 'use:あなたが 使った！7 の 効果3枚 交換7 を 3枚 山札に 戻して、新しく 3枚 引くよ' and it and iu[0] < it[0],
-              f'第4.185版：効果を 使う とき、まず 効果の 札「あなたが 使った！ 7 の 効果 3枚 交換 …」→ その あと カードが 動いて「…3枚 引いたよ」（{sd[iu[0]] if iu else None}）')
-        check(pg.evaluate(HAND) == '2346' and pg.evaluate(DOMHAND) == '2346' and pg.locator('#cbOv .cbdeck .cbn').inner_text() == '20' and any('7 を 3枚 戻して、新しく 3枚 引いたよ' in s for s in sd)
-              and any('勝ち！' in s for s in seen) and pg.evaluate(V)['turn'] == 2 and acts(pg) == [],
-              f'「使う」→ 7 を 3枚 戻して 3枚 引いた（手札 {pg.evaluate(DOMHAND)}・山札 20 の まま）→ オープン → 2ターン目')
-        start(pg, '77712', '12345'); play(pg, '1'); opp(pg, {'t': 'set', 'k': 2}); pg.evaluate("() => { window.__seen = []; }")
+              f'「使う」→ 効果の 札「あなたが 使った！ 7 の 効果 3枚 交換 …」→ カードが 動いて「…3枚 引いたよ」（{sd[iu[0]] if iu else None}）')
+        check(pg.evaluate(HAND) == '12346' and sorted(pg.evaluate(DOMHAND)) == sorted('12346') and pg.locator('#cbOv .cbdeck .cbn').inner_text() == '20' and v1['phase'] == 'set' and v1['turn'] == 1 and not v1['can']['x7']
+              and asked(pg) is None and acts(pg) == [] and pg.evaluate(MSG) == 'セットする カードを 選んでね（カードを タップ）' and pg.evaluate(SLOT) == '- -',
+              f'7 を 3枚 戻して 3枚 引いた（手札 {pg.evaluate(HAND)}・山札 20 の まま）→ まだ セットの 前（1ターンに 1回：もう 聞かない）→ セットする カードを 選ぶ')
+        play(pg, '1'); opp(pg, {'t': 'set', 'k': 2})
+        check(pg.evaluate(V)['turn'] == 2 and pg.evaluate(V)['my']['wins'] == 1 and any('勝ち！' in s for s in pg.evaluate("() => window.__seen")), 'その あと セット → オープン（1 と 2 → 勝ち）→ 2ターン目')
+        start(pg, '77712', '12345'); pg.locator('#cbOv .cbmod.cbask [data-cb=p7no]').click(); pg.wait_for_timeout(120)
+        check(asked(pg) is None and acts(pg) == ['7 を 3枚 交換'] and pg.evaluate(MSG) == 'セットする カードを 選んでね（カードを タップ）\n7 が 3枚！ セットの 前なら 交換を 使えるよ' and pg.evaluate(HAND) == '12777',
+              f'「使わない」→ 窓は もう 出さない（この ターン）・下の ボタン「7 を 3枚 交換」で セットする まで 使える（{acts(pg)}）')
+        play(pg, '1'); opp(pg, {'t': 'set', 'k': 2})
+        a2 = pg.evaluate(ASKQ)
+        check(pg.evaluate(HAND) == '2777' and pg.evaluate(V)['turn'] == 2 and a2 and a2['q'] == '7 の 効果を 使う？', '使わずに セット → オープン → 2ターン目も 7 が 3枚 → また 聞く（ターンごと）')
+        pg.locator('#cbOv .cbmod.cbask [data-cb=p7no]').click(); pg.wait_for_timeout(80)
+        # 効果タイムは セットした カードの 効果 だけ（5 → 4）：「使わない」を 押した すぐ あと、前の 質問と ボタンは 消える
+        start(pg, '51234', '12346', '6'); play(pg, '5'); opp(pg, {'t': 'set', 'k': 2})
+        a5 = pg.evaluate(ASKQ)
+        check(a5 and a5['head'] == '効果タイム！' and a5['q'] == '5 の 効果を 使う？' and pg.evaluate(V)['phase'] == 'eff', '2人とも セットした →「効果タイム」→ セットした カード（5）の 効果を 聞く')
         pg.locator('#cbOv [data-cb=effno]').click()
         hs = pg.evaluate("() => [document.querySelector('#cbOv .cbact').children.length, document.querySelector('#cbOv .cbmsg').textContent, CBApp._t.idle]"); idle(pg)
-        check(pg.evaluate(HAND) == '2777' and any('勝ち！' in s for s in pg.evaluate("() => window.__seen")) and pg.evaluate(V)['turn'] == 2, '「使わない」→ 手札は そのまま オープン')
-        check(hs == [0, '', False], f'「使わない」を 押した すぐ あと：前の 質問「効果を 使う？」と ボタンは 消える（結果を 見せ終わる まで 残さない：前は 5秒 ほど 残って いた）{hs}')
+        check(hs == [0, '', False] and pg.evaluate(V)['turn'] == 2, f'「使わない」を 押した すぐ あと：前の 質問「効果を 使う？」と ボタンは 消える（結果を 見せ終わる まで 残さない）{hs}')
 
         print('■ 6（第4.190版・まさちゃん 17:14「6は、カードをセットする前に相手のカード見れる！」：ターンの 始め）：2枚 見せて 相手の 手札を 見る')
         start(pg, '66123', '12345'); sd = said(pg); aw = pg.evaluate(ASKQ); v = pg.evaluate(V)
@@ -623,40 +627,43 @@ try:
         pg.locator('#cbOv [data-cb=effno]').click(); idle(pg)
         check(any('かぶり！' in x and '同じ カード（4）＝どちらも 負け' in x for x in pg.evaluate("() => window.__seen")) and pg.evaluate(V)['last']['d4'] is False, '2人とも 4 で、2人とも 効果を 使わない → 今まで どおり「かぶり！ どちらも 負け」')
 
-        print('■ 効果タイム：使える 効果が 2つ（7 と 5）→ 1つずつ（第4.190版・まさちゃん 17:14「効果はそれぞれの一つ一つ終わってから効果の選択するようにして！」：7 を 行って から 5 を 聞く）')
-        start(pg, '57771', '12346', '2346'); play(pg, '5'); opp(pg, {'t': 'set', 'k': 1})
-        check(pg.evaluate("() => CBApp._t.mode.q") == '7' and asked(pg)[0] == '7 の 効果を 使う？', '1つ目：「7 の 効果を 使う？」（手札の 効果が 先）')
-        said(pg); pg.locator('#cbOv [data-cb=effyes]').click(); idle(pg); sd = said(pg)
-        check(pg.evaluate(V)['phase'] == 'eff' and pg.evaluate("() => CBApp._t.mode.q") == '5' and asked(pg)[0] == '5 の 効果を 使う？' and pg.evaluate(ASKQ)['img'] == 'cb_c5.webp' and pg.evaluate(DOMHAND) == '1234'
-              and any('7 を 3枚 戻して' in s for s in sd) and not any(s.startswith('ban:効果タイム') for s in sd),
-              '7 を「使う」→ すぐ 3枚 交換（手札 1・2・3・4）→ その あと 2つ目：「5 の 効果を 使う？」（「効果タイム」の 帯は 初めの 1回 だけ）')
+        print('■ 手札の 効果（セットの 前）と セットした カードの 効果（効果タイム）：7 を 行って から セット → 5 を 聞く（第4.202版）')
+        start(pg, '57771', '12346', '2346')
+        check(asked(pg)[0] == '7 の 効果を 使う？' and pg.evaluate(ASKQ)['head'] == '7 が 3枚！', 'セットの 前：「7 の 効果を 使う？」')
+        said(pg); pg.locator('#cbOv .cbmod.cbask [data-cb=p7yes]').click(); idle(pg); sd = said(pg)
+        check(sorted(pg.evaluate(DOMHAND)) == sorted('12345') and any('7 を 3枚 戻して' in s for s in sd) and asked(pg) is None and pg.evaluate(V)['phase'] == 'set', '7 を「使う」→ すぐ 3枚 交換（手札 1・2・3・4・5：まだ セットの 前）')
+        play(pg, '5'); opp(pg, {'t': 'set', 'k': 1})
+        check(pg.evaluate(V)['phase'] == 'eff' and pg.evaluate("() => CBApp._t.mode.q") == '5' and asked(pg)[0] == '5 の 効果を 使う？' and pg.evaluate(ASKQ)['img'] == 'cb_c5.webp' and pg.evaluate(ASKQ)['head'] == '効果タイム！',
+              '7 で 引いた 5 を セット → 効果タイム：「5 の 効果を 使う？」')
         pg.locator('#cbOv [data-cb=effyes]').click(); pg.wait_for_timeout(80); tap(pg, '4'); m4 = modbtns(pg)
         check(m4 == ['この カードを 捨てる5 と 一緒に 捨てて、山札から 1枚 セット', '戻る'], f'5 で 捨てる カード：7 で 引いた カード（4）も 選べる（{m4}）')
         said(pg); pg.locator('#cbOv .cbmod [data-cb=drop5]').click(); idle(pg); sd = said(pg)
         check(any('5 と 4 を 捨てて' in s for s in sd) and pg.evaluate(HAND) == '123' and pg.evaluate(V)['last']['c'][1] == '1' and pg.evaluate(V)['turn'] == 2, f'5 の 効果（4 を 捨てる）→ オープン（手札 {pg.evaluate(HAND)}）')
-        start(pg, '57771', '12346', '2346'); play(pg, '5'); opp(pg, {'t': 'set', 'k': 1})
-        pg.locator('#cbOv [data-cb=effno]').click(); idle(pg)
-        check(asked(pg)[0] == '5 の 効果を 使う？' and pg.evaluate(DOMHAND) == '1777', '7 を「使わない」→（何も おきずに）「5 の 効果を 使う？」')
+        start(pg, '57771', '12346', '2346'); pg.locator('#cbOv .cbmod.cbask [data-cb=p7no]').click(); pg.wait_for_timeout(80)
+        play(pg, '5'); opp(pg, {'t': 'set', 'k': 1})
+        check(asked(pg)[0] == '5 の 効果を 使う？' and pg.evaluate(DOMHAND) == '1777', '7 を「使わない」→ 5 を セット → 効果タイムで「5 の 効果を 使う？」')
         pg.locator('#cbOv [data-cb=effyes]').click(); pg.wait_for_timeout(80); tap(pg, '7'); pg.locator('#cbOv .cbmod [data-cb=drop5]').click(); idle(pg)
         check(pg.evaluate(V)['turn'] == 2 and pg.evaluate(HAND) == '177', '7 の 効果を 使わない ときは、5 で 7 を 捨てても いい（7 が 2枚に なる）')
 
         print('■ うっかり 押し 防止：聞く 窓が 出て すぐ（0.35秒）は 答えを 受けつけない（すばやく 2回 押しても 次の 質問は 答えた ことに ならない）')
         pg.evaluate("() => { CBApp._guard = null; }")      # ふだんの 動き（0.35秒）
-        WAIT5 = "() => CBApp._t.mode.q === '5' && CBApp._t.ask && CBApp._t.idle && !!document.querySelector('#cbOv .cbask [data-cb=effno]')"
-        start(pg, '57771', '12346', '2346'); play(pg, '5'); opp(pg, {'t': 'set', 'k': 1}); pg.wait_for_timeout(450)
-        q0 = pg.evaluate("() => CBApp._t.mode.q"); pg.locator('#cbOv .cbask [data-cb=effno]').click()
-        pg.wait_for_function(WAIT5, timeout=10000, polling=10)
-        g = pg.evaluate("() => { const T = CBApp._t, b = document.querySelector('#cbOv .cbask [data-cb=effno]'); if (b) b.click(); const pk = document.querySelector('#cbOv .cbask [data-cb=askpeek]'); return { q: T.mode.q, ask: T.ask, has: !!b, peek: !!pk, ph: T.view.phase }; }")
-        check(q0 == '7' and g == {'q': '5', 'ask': True, 'has': True, 'peek': True, 'ph': 'eff'} and asked(pg)[0] == '5 の 効果を 使う？',
-              f'7 の「使わない」の あと すぐ 出た「5 の 効果を 使う？」は、出て すぐ 押しても 答えた ことに ならない（まだ 聞いて いる：{g}）')
-        pg.wait_for_timeout(420); pg.locator('#cbOv .cbask [data-cb=effno]').click(); idle(pg)
-        check(pg.evaluate(V)['turn'] == 2 and pg.evaluate(HAND) == '1777', f'0.35秒 たてば 押せる：5 の 効果も「使わない」→ そのまま オープン（手札 {pg.evaluate(HAND)}）')
-        start(pg, '57771', '12346', '2346'); play(pg, '5'); opp(pg, {'t': 'set', 'k': 1}); pg.wait_for_timeout(450)
-        pg.locator('#cbOv .cbask [data-cb=effno]').click(); pg.wait_for_function(WAIT5, timeout=10000, polling=10)
+        WAIT3 = "() => CBApp._t.ask && CBApp._t.idle && !!document.querySelector('#cbOv .cbask [data-cb=p3no]')"
+        start(pg, '7773331', '1224556', turns=5); pg.wait_for_timeout(450)
+        q0 = pg.evaluate(ASKQ); pg.locator('#cbOv .cbask [data-cb=p7no]').click()
+        pg.wait_for_function(WAIT3, timeout=10000, polling=10)
+        g = pg.evaluate("() => { const T = CBApp._t, b = document.querySelector('#cbOv .cbask [data-cb=p3no]'); if (b) b.click(); const pk = document.querySelector('#cbOv .cbask [data-cb=askpeek]'); return { q: document.querySelector('#cbOv .cbask .askq b').textContent, ask: T.ask, has: !!b, peek: !!pk, ph: T.view.phase }; }")
+        check(q0 and q0['q'] == '7 の 効果を 使う？' and g == {'q': '3 の 効果を 使う？', 'ask': True, 'has': True, 'peek': True, 'ph': 'set'},
+              f'7 の「使わない」の あと すぐ 出た「3 の 効果を 使う？」（セットの 前の 次の 効果）は、出て すぐ 押しても 答えた ことに ならない（まだ 聞いて いる：{g}）')
+        pg.wait_for_timeout(420); pg.locator('#cbOv .cbask [data-cb=p3no]').click(); pg.wait_for_timeout(120)
+        check(asked(pg) is None and acts(pg) == ['セットの 前の 効果'] and pg.evaluate(HAND) == '1333777', f'0.35秒 たてば 押せる：3 も「使わない」→ 下の ボタン「セットの 前の 効果」（2つ のこって いる）（{acts(pg)}）')
+        pg.locator('#cbOv .cbact [data-cb=prere]').click(); pg.wait_for_timeout(450)
+        a7 = pg.evaluate(ASKQ)
+        check(a7 and a7['q'] == '7 の 効果を 使う？', '「セットの 前の 効果」→ もう 一度 聞く（7 から）')
         g2 = pg.evaluate("() => { const b = document.querySelector('#cbOv .cbask [data-cb=askpeek]'); if (b) b.click(); return { had: !!b, ask: CBApp._t.ask, bar: [...document.querySelectorAll('#cbOv .cbact .cbb')].map(x => x.textContent.trim()) }; }")
-        check(g2['had'] and not g2['ask'] and g2['bar'] == ['使わない', '5 の 効果を 使う'], f'「手札と ボードを 見る」は 出て すぐでも 押せる（何も 決まらない：下の 行で 答える {g2["bar"]}）')
-        pg.locator('#cbOv .cbact [data-cb=effno]').click(); idle(pg)
-        check(pg.evaluate(V)['turn'] == 2 and pg.evaluate(HAND) == '1777', '下の 行の「使わない」は すぐ 押せる（手札は そのまま）')
+        check(g2['had'] and not g2['ask'] and g2['bar'] == ['使わない', '7 の 効果を 使う'], f'「手札と ボードを 見る」は 出て すぐでも 押せる（何も 決まらない：下の 行で 答える {g2["bar"]}）')
+        pg.locator('#cbOv .cbact [data-cb=p7no]').click(); pg.wait_for_timeout(450)
+        check(pg.evaluate(ASKQ)['q'] == '3 の 効果を 使う？', '下の 行の「使わない」は すぐ 押せる → 次（3）を 聞く')
+        pg.locator('#cbOv .cbask [data-cb=p3no]').click(); pg.wait_for_timeout(80)
         pg.evaluate("() => { CBApp._guard = 1500; }")      # ターンの はじめ：配った あと すぐ 出る 窓（テストの 待ち時間に よらない ように 1.5秒に のばして 見る）
         start(pg, '66123', '12345')
         g3 = pg.evaluate("() => { const b = document.querySelector('#cbOv .cbask [data-cb=sixno]'); if (b) b.click(); return { has: !!b, ask: CBApp._t.ask, ph: CBApp._t.view.phase }; }")
@@ -711,44 +718,74 @@ try:
         check(pg.evaluate(V)['res'] is not None and not any('5 の 効果' in s for s in said(pg)), '5 を セットしなければ 効果タイムは 出ない（5 を 手札に 持って いる だけでは 聞かれない）')
         pg.locator('#cbOv .cbend [data-cb=menu]').click(); pg.wait_for_timeout(120)
 
-        print('■ 3：手札に 3 が 3枚 → 3枚を 見せて、その 1枚と 相手の 手札の 1枚（ランダム）を 交換（第4.177版）')
+        print('■ 3：手札に 3 が 3枚 → 3枚を 見せて、その 1枚と 相手の 手札の 1枚（裏の カードから 自分で 選ぶ）を 交換（第4.177版・第4.202版：セットの 前・まさちゃん 11/19 00:38「CPUが勝手に選ぶ形にならないようにして！」）')
         pg.evaluate("""() => { if (window.__win) return; window.__win = []; new MutationObserver(() => { const m = document.querySelector('#cbOv .cbmod'); if (!m.classList.contains('cbopen')) return;
           const s = (m.querySelector('h3') || {}).textContent + '|' + (m.querySelector('p') ? m.querySelector('p').textContent : '') + '|' + [...m.querySelectorAll('img')].map(i => i.getAttribute('src')).join(','); if (window.__win[window.__win.length - 1] !== s) window.__win.push(s); })
           .observe(document.querySelector('#cbOv .cbmod'), { childList: true, subtree: true, attributes: true }); }""")
-        start(pg, '33312', '4567k'); play(pg, '1'); opp(pg, {'t': 'set', 'k': 7})
+        start(pg, '33312', '4567k')
         aw = pg.evaluate(ASKQ)
-        check(pg.evaluate(V)['can']['eff']['e3'] is True and aw and aw['q'] == '3 の 効果を 使う？' and aw['text'] == '3 を 3枚 見せて、その 1枚と 相手の 手札の 1枚（ランダム）を 交換できるよ' and aw['img'] == 'cb_c3.webp' and aw['head'] == '効果タイム！',
-              '3 が 3枚（セットした 後の 手札）→ 聞く 窓「3 の 効果を 使う？」（3 の カードの 絵）')
+        check(pg.evaluate(V)['can']['x3'] is True and aw and aw['q'] == '3 の 効果を 使う？' and aw['text'] == 'セットの 前に 使えるよ。3 を 3枚 見せて、その 1枚と 相手の 手札の 1枚（裏の カードから 選ぶ）を 交換できるよ' and aw['img'] == 'cb_c3.webp' and aw['head'] == '3 が 3枚！',
+              '3 が 3枚（セットする 前の 手札：第4.202版）→ 配った あと すぐ 聞く 窓「3 が 3枚！／3 の 効果を 使う？」（3 の カードの 絵）')
         shot(pg, 'cb_ask3')
         peek(pg)
         fit = pg.evaluate("() => { const m = document.querySelector('#cbOv .cbmsg'); return [m.textContent, m.scrollHeight <= m.clientHeight, m.clientHeight, getComputedStyle(m).fontSize]; }")
-        check(fit[0] == '効果タイム！ 3 の 効果を 使う？\n3 を 3枚 見せて、手札を 1枚 交換できるよ' and fit[1] and fit[2] == 44 and acts(pg) == ['使わない', '3 の 効果を 使う'], f'窓を 下げた とき：下の 行に 短い 文（2行に おさまる：字 {fit[3]}）・「使わない」「3 の 効果を 使う」')
+        check(fit[0] == 'セットする カードを 選んでね（カードを タップ）\n3 が 3枚！ セットの 前なら 交換を 使えるよ' and fit[1] and fit[2] == 44 and acts(pg) == ['使わない', '3 の 効果を 使う'], f'窓を 下げた とき：下の 行に 短い 文（2行に おさまる：字 {fit[3]}）・「使わない」「3 の 効果を 使う」')
         said(pg); pg.evaluate("() => { window.__win.length = 0; }"); h0 = pg.evaluate("() => CBApp._t.view.op.hand.length")
-        pg.locator('#cbOv [data-cb=effyes]').click(); idle(pg)
-        win = pg.evaluate("() => window.__win"); v = pg.evaluate(V); mine = sorted(c['k'] for c in v['my']['hand']); got = [c for c in v['my']['hand'] if c['k'] not in ('3', '2')] or [c for c in v['my']['hand'] if c['seen'] and c['k'] != '3']
+        PK3 = """() => { const m = document.querySelector('#cbOv .cbmod.on.cbx3'); return m ? { h: m.querySelector('h3').textContent, t: m.querySelector('p').innerText, n: m.querySelectorAll('.pick .cbc').length, ok: m.querySelectorAll('.pick .cbc[data-cb=pick]').length,
+          dis: [...m.querySelectorAll('.pick .cbc:disabled img')].map(i => i.getAttribute('src')), backs: [...m.querySelectorAll('.pick .cbc[data-cb=pick] img')].every(i => i.getAttribute('src') === 'cb_sb.webp'), btn: [...m.querySelectorAll('.col .cbb')].map(b => b.textContent.trim()) } : null; }"""
+        pg.locator('#cbOv .cbact [data-cb=p3yes]').click(); pg.wait_for_timeout(150)
+        pk = pg.evaluate(PK3); v_ = pg.evaluate(V)
+        check(pk and pk['h'] == '3 の 効果' and '交換する カードを 1枚 選んでね' in pk['t'] and '何が 来るかは わからないよ' in pk['t'] and '手札の 3 を 3枚 相手に 見せて、1枚 わたすよ' in pk['t'] and 'もう 見た' not in pk['t']
+              and pk['n'] == 5 and pk['ok'] == 5 and pk['dis'] == [] and pk['backs'] and pk['btn'] == ['戻る'] and v_['phase'] == 'set' and pg.evaluate(HAND) == '12333' and v_['can']['x3p'] and len(v_['can']['x3p']) == 5,
+              '第4.202版：「3 の 効果を 使う」→ 交換する カードを 自分で 選ぶ 窓（相手の 手札の 裏の カード 5枚・何が 来るかは わからない）・まだ 何も おきない（プログラムが かってに 選ばない）')
+        shot(pg, 'cb_pick3')
+        pg.locator('#cbOv .cbmod.cbx3 [data-cb=modx]').click(); pg.wait_for_timeout(200)
+        check(asked(pg) is None and acts(pg) == ['使わない', '3 の 効果を 使う'] and pg.evaluate(HAND) == '12333' and pg.evaluate(V)['can']['x3'], '「戻る」→ 何も おきない（下の ボタンで また 使える）')
+        pg.locator('#cbOv .cbact [data-cb=p3yes]').click(); pg.wait_for_timeout(150)
+        tu = pg.evaluate("() => +document.querySelectorAll('#cbOv .cbmod.cbx3 .pick .cbc[data-cb=pick]')[3].dataset.u"); tk = pg.evaluate("(u) => CBApp._t.match._.state().p[1].hand.find(c => c.u === u).k", tu)
+        pg.locator('#cbOv .cbmod.cbx3 .pick .cbc[data-cb=pick]').nth(3).click(); idle(pg)
+        win = pg.evaluate("() => window.__win"); v = pg.evaluate(V); mine = sorted(c['k'] for c in v['my']['hand']); got = [c for c in v['my']['hand'] if c['u'] == tu]
         w3 = [s for s in win if s.startswith('3 の 効果！|')]; wx = [s for s in win if s.startswith('3 の 効果：交換！|')]
-        check(w3 and '手札の 3 を 3枚 見せたよ' in w3[0] and w3[0].count('cb_s3.webp') == 3 and wx and len(got) == 1 and f'cb_c{got[0]["k"]}.webp' in wx[0] and 'を もらったよ' in wx[0] and win.index(w3[0]) < win.index(wx[0]),
-              f'「使う」→ 3 の カードを 3枚 見せる 窓 → もらった カード（{got[0]["k"] if got else "?"}）を 大きく 見せる 窓')
-        check(len(v['my']['hand']) == 4 and mine.count('3') == 2 and '2' in mine and got and got[0]['k'] in ('4', '5', '6', 'k') and len(v['op']['hand']) == h0 and [c['k'] for c in v['op']['hand'] if c['k']] == ['3'] and v['turn'] == 2,
-              f'交換した あと：自分の 手札は 3 が 2枚・2・もらった カード（{mine}）・相手の 手札は 4枚の まま で、渡した 3 だけ 表に 見える → オープン → 2ターン目')
+        check(w3 and '手札の 3 を 3枚 見せたよ' in w3[0] and w3[0].count('cb_s3.webp') == 3 and wx and len(got) == 1 and got[0]['k'] == tk and f'cb_c{tk}.webp' in wx[0] and 'を もらったよ' in wx[0] and win.index(w3[0]) < win.index(wx[0]),
+              f'裏の カードを 1枚 選ぶ → 3 の カードを 3枚 見せる 窓 → 選んだ カード（中身は {tk}）が 来て 大きく 見せる 窓（選んだ カードが そのまま 来る）')
+        check(len(v['my']['hand']) == 5 and mine.count('3') == 2 and '2' in mine and '1' in mine and got and got[0]['k'] in ('4', '5', '6', '7', 'k') and len(v['op']['hand']) == h0 and [c['k'] for c in v['op']['hand'] if c['k']] == ['3'] and v['turn'] == 1 and v['phase'] == 'set' and asked(pg) is None,
+              f'交換した あと：自分の 手札は 3 が 2枚・1・2・もらった カード（{mine}）・相手の 手札は 5枚の まま で、渡した 3 だけ 表に 見える・まだ セットの 前')
         eyes = pg.evaluate("() => [...document.querySelectorAll('#cbOv .cbhand .cbc')].filter(c => c.querySelector('.eye')).map(c => c.querySelector('img').getAttribute('src').replace('cb_s', '').replace('.webp', '')).sort().join('')")
-        check(eyes == ''.join(sorted(['3', '3', got[0]['k']])) and pg.locator('#cbOv .cbohand .cbc img[src="cb_s3.webp"]').count() == 1 and pg.locator('#cbOv .cbohand .cbc img[src="cb_sb.webp"]').count() == 3,
+        check(eyes == ''.join(sorted(['3', '3', got[0]['k']])) and pg.locator('#cbOv .cbohand .cbc img[src="cb_s3.webp"]').count() == 1 and pg.locator('#cbOv .cbohand .cbc img[src="cb_sb.webp"]').count() == 4,
               f'見せた 3（2枚）と もらった カードに 目の 印（相手が 知って いる：{eyes}）・相手の 手札の 中に 3 が 1枚 表で 見える')
         shot(pg, 'cb_after3')
-        start(pg, '33312', '4567k'); play(pg, '1'); opp(pg, {'t': 'set', 'k': 7}); pg.locator('#cbOv [data-cb=effno]').click(); idle(pg)
-        check(pg.evaluate(HAND) == '2333' and pg.evaluate(V)['turn'] == 2 and all(c['k'] is None for c in pg.evaluate(V)['op']['hand']), '「使わない」→ 交換しないで オープン（手札は 3・3・3・2 の まま）')
-        # 相手が 3 の 効果を 使う
-        start(pg, '12456', '33312'); play(pg, '1'); said(pg); pg.evaluate("() => { window.__win.length = 0; }")
-        opp(pg, {'t': 'set', 'k': 2})
-        check(pg.evaluate(V)['phase'] == 'eff' and pg.evaluate(V)['can']['eff'] is None and asked(pg) is None and 'コンピュータが 効果を 使うか 選んで いるよ' in pg.evaluate(MSG), '相手だけ 3 が 3枚：自分は 待つ（聞かれない）')
-        b0 = pg.evaluate(HAND); r = opp(pg, {'t': 'eff', 'use': {'x3': True}}); sd = said(pg); win = pg.evaluate("() => window.__win"); v = pg.evaluate(V); b1 = pg.evaluate(HAND)
-        lost = [k for k in '2456' if b0.count(k) > b1.count(k)]
-        check(r['ok'] and any(s.startswith('3 の 効果！|') and 'コンピュータが 手札の 3 を 3枚 見せたよ' in s and s.count('cb_s3.webp') == 3 for s in win) and len(lost) == 1 and b1.count('3') == 1 and len(b1) == 4
+        play(pg, '1'); opp(pg, {'t': 'set', 'k': 3})
+        check(pg.evaluate(V)['turn'] == 2 and pg.evaluate(V)['my']['wins'] == 1, 'その あと セット（1）→ オープン（相手は もらった 3）→ 2ターン目')
+        start(pg, '33312', '4567k'); pg.locator('#cbOv .cbmod.cbask [data-cb=p3no]').click(); pg.wait_for_timeout(80); play(pg, '1'); opp(pg, {'t': 'set', 'k': 7})
+        check(pg.evaluate(HAND) == '2333' and pg.evaluate(V)['turn'] == 2 and all(c['k'] is None for c in pg.evaluate(V)['op']['hand']), '「使わない」→ 交換しないで セット → オープン（手札は 3・3・3・2 の まま）')
+        start(pg, '33312', '4567k'); pg.locator('#cbOv .cbmod.cbask [data-cb=askpeek]').click(); pg.wait_for_timeout(80); play(pg, '3')
+        check(pg.evaluate(V)['my']['set'] and pg.evaluate(V)['my']['set']['k'] == '3' and not pg.evaluate(V)['can']['x3'] and asked(pg) is None and acts(pg) == [], '使わずに 3 を セット → もう 使えない（セットの 前 だけ・下の ボタンも 消える）')
+        opp(pg, {'t': 'set', 'k': 7})
+        # もう 見た カード（表）は 選べない（第4.202版：選べるのは 裏の カード だけ ＝ 何が 来るかは わからない）・相手が 先に セットして いても 使える
+        start(pg, '33312', '4567k'); pg.evaluate("() => { const S = CBApp._t.match._.state(); S.p[1].hand.filter(c => c.k === 'k' || c.k === '4').forEach(c => S.p[0].known.push(c.u)); }")      # テスト用：相手の 4 と 神様馬を「もう 見た」ことに する
+        opp(pg, {'t': 'set', 'k': 7}); pg.wait_for_timeout(150)
+        pg.locator('#cbOv .cbmod.cbask [data-cb=p3yes]').click(); pg.wait_for_timeout(150); pk = pg.evaluate(PK3)
+        check(pk and pk['n'] == 4 and pk['ok'] == 2 and sorted(pk['dis']) == ['cb_s4.webp', 'cb_sk.webp'] and 'もう 見た カードは 選べないよ' in pk['t'] and pg.evaluate(V)['op']['set'],
+              f'相手が もう セット：もう 見た カード（表：4・神様馬）は 押せない・選べるのは 裏の 2枚 だけ（{pk and pk["dis"]}）')
+        shot(pg, 'cb_pick3_known')
+        pg.evaluate("() => { const b = document.querySelector('#cbOv .cbmod.cbx3 .pick .cbc:disabled'); if (b) b.click(); }"); pg.wait_for_timeout(100)
+        check(pg.evaluate("() => !!document.querySelector('#cbOv .cbmod.on.cbx3')") and pg.evaluate(HAND) == '12333', '表の カードを 押しても 何も おきない')
+        pg.locator('#cbOv .cbmod.cbx3 .pick .cbc[data-cb=pick]').first.click(); idle(pg); hb = pg.evaluate(HAND)
+        check(hb in ('12335', '12336') and not pg.evaluate(V)['can']['x3'], f'裏の カードを 選ぶ → 見て いない カード（5 か 6）が 来る（{hb}）')
+        play(pg, '1')
+        # 相手が 3 の 効果を 使う（セットの 前）
+        start(pg, '12456', '33312'); said(pg); pg.evaluate("() => { window.__win.length = 0; }")
+        check(pg.evaluate(V)['phase'] == 'set' and not pg.evaluate(V)['can']['x3'] and asked(pg) is None, '相手だけ 3 が 3枚：自分は 聞かれない（セットできる）')
+        b0 = pg.evaluate(HAND); r = opp(pg, {'t': 'x3', 'pickk': '2'}); sd = said(pg); win = pg.evaluate("() => window.__win"); v = pg.evaluate(V); b1 = pg.evaluate(HAND)      # 第4.202版：相手も 裏の カードから 選ぶ（ここでは 2）
+        lost = [k for k in '12456' if b0.count(k) > b1.count(k)]
+        check(r['ok'] and any(s.startswith('3 の 効果！|') and 'コンピュータが 手札の 3 を 3枚 見せたよ' in s and s.count('cb_s3.webp') == 3 for s in win) and len(lost) == 1 and b1.count('3') == 1 and len(b1) == 5
               and any('コンピュータが 3 の 効果を 使ったよ' in s and f'あなたの {lost[0]} と 3 を 交換した' in s for s in sd),
-              f'相手が 3 の 効果：3 を 3枚 見せる 窓 →「あなたの {lost[0] if lost else "?"} と 3 を 交換した」・自分の 手札は {b0} → {b1}')
-        check(pg.locator('#cbOv .cbohand .cbc img[src="cb_s3.webp"]').count() == 2 and len([c for c in v['op']['hand'] if c['k'] == lost[0]]) == 1 and pg.locator('#cbOv .cbohand .cbc img[src="cb_sb.webp"]').count() == 1
-              and pg.locator('#cbOv .cbhand .cbc .eye').count() == 1 and pg.locator('#cbOv .cbhand .cbc:has(.eye) img').get_attribute('src') == 'cb_s3.webp' and v['turn'] == 2,
-              '相手の 手札の 中に、見せた 3（2枚）と もと 自分の カードが 表で 見える（残りの 1枚は 裏）・自分に 来た 3 には 目の 印（相手が 知って いる カード）')
+              f'相手が セットの 前に 3 の 効果：3 を 3枚 見せる 窓 →「あなたの {lost[0] if lost else "?"} と 3 を 交換した」・自分の 手札は {b0} → {b1}（まだ セットの 前）')
+        check(pg.locator('#cbOv .cbohand .cbc img[src="cb_s3.webp"]').count() == 2 and len([c for c in v['op']['hand'] if c['k'] == lost[0]]) == 1 and pg.locator('#cbOv .cbohand .cbc img[src="cb_sb.webp"]').count() == 2
+              and pg.locator('#cbOv .cbhand .cbc .eye').count() == 1 and pg.locator('#cbOv .cbhand .cbc:has(.eye) img').get_attribute('src') == 'cb_s3.webp' and v['turn'] == 1 and v['can']['set'],
+              '相手の 手札の 中に、見せた 3（2枚）と もと 自分の カードが 表で 見える（残りは 裏）・自分に 来た 3 には 目の 印（相手が 知って いる カード）・自分は そのまま セットできる')
+        play(pg, '3'); opp(pg, {'t': 'set', 'k': lost[0]})
+        check(pg.evaluate(V)['turn'] == 2, '（もらった 3 を セット → オープン → 2ターン目）')
 
         print('■ 説明の 字が 2行に なっても 画面は 動かない（第4.177版・まさちゃん「説明の文字が二行になると画面が上下して、不自然」）')
         POS = """() => { const R = s => { const r = document.querySelector('#cbOv ' + s).getBoundingClientRect(); return [Math.round(r.top * 10) / 10, Math.round(r.height * 10) / 10]; }, m = document.querySelector('#cbOv .cbmsg');
@@ -769,7 +806,9 @@ try:
                  '逆転の チャンス！ 1 の 効果を 使う？\n手札の 1 を 1枚 捨てて、幻の馬に 勝てるよ', '逆転の チャンス！ 1 の 効果を 使う？\n手札の 1 を 1枚 捨てて、神様馬に 勝てるよ', '逆転の チャンス！ 2 の 効果を 使う？\n手札の 2 を 1枚 捨てて、1 に 勝てるよ',
                  'コンピュータが 逆転勝利を 使うか 選んで いるよ…', '友達が 逆転勝利を 使うか 選んで いるよ…',
                  'ターンの 始め！ 6 の 効果を 使う？\n6 を 2枚 見せて、相手の 手札を 1枚 見られるよ', 'コンピュータが 6 の 効果を 使うか 選んで いるよ…', '友達が 6 の 効果を 使うか 選んで いるよ…']
-        TEXTS += [f'効果タイム！ {k} の 効果を 使う？\n{t}' for k, t in (('5', '5 と 手札 1枚を 捨てて、山札から 1枚 セットできるよ'), ('7', '7 を 3枚 山札に 戻して、新しく 3枚 引けるよ'), ('3', '3 を 3枚 見せて、手札を 1枚 交換できるよ'), ('4', '4 を 見せて、相手に カードを 交換させるよ'))]
+        TEXTS += [f'{h}\n{t}' for h in ('セットする カードを 選んでね（カードを タップ）', 'コンピュータは もう セットしたよ。カードを 選んでね', '友達は もう セットしたよ。カードを 選んでね')
+                  for t in ('7 が 3枚！ セットの 前なら 交換を 使えるよ', '7トークン！ セットの 前なら 山札から 3枚 引けるよ', '3 が 3枚！ セットの 前なら 交換を 使えるよ', '3 が 3枚 ぶん！ セットの 前なら 交換を 使えるよ', '7 が 4枚！ セットの 前なら 逆転を 使えるよ')]      # 第4.202版：セットの 前の 手札の 効果
+        TEXTS += [f'効果タイム！ {k} の 効果を 使う？\n{t}' for k, t in (('5', '5 と 手札 1枚を 捨てて、山札から 1枚 セットできるよ'), ('4', '4 を 見せて、相手に カードを 交換させるよ'))]      # 第4.202版：効果タイムは 5 と 4 だけ
         FIT = """(ts) => ts.map(t => { CBApp._t.say(t); const m = document.querySelector('#cbOv .cbmsg'), r = m.getBoundingClientRect(); return [m.scrollHeight <= m.clientHeight, parseFloat(getComputedStyle(m).fontSize), Math.round(r.height), Math.round(document.querySelector('#cbOv .cbboard').getBoundingClientRect().top * 10) / 10]; })"""
         f390 = pg.evaluate(FIT, TEXTS)
         check(all(x[0] and x[2] == 44 for x in f390) and len(set(x[3] for x in f390)) == 1 and min(x[1] for x in f390) >= 12.5, f'言葉の 行に 出る 文 {len(TEXTS)}こ：どれも 行の 中に おさまる・行の 高さは 44px の まま（幅 390px：字 {min(x[1] for x in f390)}〜{max(x[1] for x in f390)}px）')
@@ -778,14 +817,14 @@ try:
             check(all(x[0] and x[2] == 44 for x in ff) and len(set(x[3] for x in ff)) == 1 and min(x[1] for x in ff) >= 10.5, f'幅 {vw}px でも：どれも おさまる・ボードは 動かない（入らない 文は 字を 小さく：{min(x[1] for x in ff)}〜{max(x[1] for x in ff)}px）')
         # 小さい 画面（iPhone SE：375×647）でも 聞く 窓・GET の 札が 画面に おさまる
         pg.set_viewport_size({'width': 375, 'height': 647}); pg.wait_for_timeout(250)
-        start(pg, '33312', '4567k'); play(pg, '1'); opp(pg, {'t': 'set', 'k': 7})
+        start(pg, '33312', '4567k')      # 第4.202版：3 が 3枚 → 配った あと すぐ 聞く 窓（セットの 前）
         se_ = pg.evaluate("""() => { const m = document.querySelector('#cbOv .cbmod.cbask'), R = e => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)]; };
           return { h3: R(m.querySelector('h3')), img: R(m.querySelector('.big')), q: R(m.querySelector('.askq')), row: R(m.querySelector('.rowb')), peek: R(m.querySelector('[data-cb=askpeek]')), vh: innerHeight, vw: innerWidth }; }""")
         order = [se_['h3'], se_['img'], se_['q'], se_['row'], se_['peek']]
         check(se_['h3'][1] >= 0 and se_['peek'][3] <= se_['vh'] and all(a[3] <= b[1] + 1 for a, b in zip(order, order[1:])) and all(r[0] >= 0 and r[2] <= se_['vw'] for r in order) and se_['img'][2] - se_['img'][0] >= 130,
               f'iPhone SE（375×647）：聞く 窓は 上から 見出し・絵・質問・ボタン・「見る」が 重ならずに 画面の 中（絵の 幅 {se_["img"][2] - se_["img"][0]}px・下の はし {se_["peek"][3]}／{se_["vh"]}）')
         shot(pg, 'cb_ask_se')
-        pg.locator('#cbOv [data-cb=effno]').click(); idle(pg)
+        pg.locator('#cbOv [data-cb=p3no]').click(); pg.wait_for_timeout(80)
         pg.set_viewport_size({'width': 390, 'height': 844}); pg.wait_for_timeout(250)
 
         print('■ 5ターン・手札 7枚（第4.178版・まさちゃん「カードバトル５ターン勝負にする 手札7枚にして！」）')
@@ -818,11 +857,37 @@ try:
         sd = said(pg); v = pg.evaluate(V)
         e = pg.evaluate("() => ({ h: document.querySelector('#cbOv .cbend h3').textContent, sc: document.querySelector('#cbOv .cbend .sc').textContent, pips: [...document.querySelectorAll('#cbOv .cbpips')].map(p => p.querySelectorAll('i.on').length + '/' + p.querySelectorAll('i').length).join() })")
         check(log5 == [(2, 1, 0, 'set'), (3, 2, 0, 'set'), (4, 2, 1, 'set'), (5, 3, 1, 'set'), (5, 3, 2, 'end')] and v['res'] == 'win' and len(v['discard']) == 10 and len(v['my']['hand']) == 2 and len(v['op']['hand']) == 2,
-              f'5ターン 全部 やる（3ターンで 勝ちが 決まっても 続く）：1ターンに 1枚 ずつ 出して 5ターンで 終わり・手札は 2枚 残る・捨て札 10枚（{log5}）')
+              f'5ターン 全部 やる（テスト用の full：決着しても さいごまで）：1ターンに 1枚 ずつ 出して 5ターンで 終わり・手札は 2枚 残る・捨て札 10枚（{log5}）')
         bans = [s for s in sd if s.startswith('ban:ターン')]
         check(bans == ['ban:ターン 2', 'ban:ターン 3', 'ban:ターン 4', 'ban:ターン 5最後の 勝負！'] and e['h'] == 'あなたの 勝ち！' and e['sc'].startswith('3 － 2') and e['pips'] == '2/5,3/5',
               f'ターンの 帯：2〜4 は「ターン n」・5ターン目に「最後の 勝負！」・結果「あなたの 勝ち！ 3 － 2」・勝ちの 印（相手 2／5・自分 3／5）（{bans}・{e["pips"]}）')
         shot(pg, 'cb7_end')
+        pg.locator('#cbOv .cbend [data-cb=menu]').click(); pg.wait_for_timeout(150)
+
+        print('■ 決着したら 試合終了（第4.202版・まさちゃん 11/18 23:55「５ターンのうち、どちらかが３ターン勝利したら、試合終了にして！ 数値的にターンを回しても勝てないなら、勝っている方の勝ちになるようにして！」）')
+        EG = "() => ({ h: document.querySelector('#cbOv .cbend h3').textContent, sc: document.querySelector('#cbOv .cbend .sc').textContent, t: document.querySelector('#cbOv .cbturn').textContent.replace(/\\s+/g, ''), pips: [...document.querySelectorAll('#cbOv .cbpips')].map(p => p.querySelectorAll('i.on').length + '/' + p.querySelectorAll('i').length).join() })"
+        for me_, op_, plays, who, res in (('1112345', '2233677', (('1', '2'), ('1', '3'), ('1', '6')), 'あなた', 'win'), ('2233677', '1112345', (('2', '1'), ('3', '1'), ('6', '1')), 'コンピュータ', 'lose')):
+            start(pg, me_, op_, turns=5, full=False); said(pg); loge = []
+            for mine, his in plays:
+                play(pg, mine); opp(pg, {'t': 'set', 'k': his}); vv = pg.evaluate(V); loge.append((vv['turn'], vv['my']['wins'], vv['op']['wins'], vv['phase'], vv['early']))
+            pg.wait_for_function("() => { const g = document.querySelector('#cbOv .cbend .gift'); return CBApp._t.ended && g && g.textContent.length > 3; }", timeout=30000)
+            sd = said(pg); v = pg.evaluate(V); e = pg.evaluate(EG); w3 = (3, 0) if res == 'win' else (0, 3)
+            check(loge == [(2, w3[0] // 3, w3[1] // 3, 'set', 0), (3, 2 * (w3[0] // 3), 2 * (w3[1] // 3), 'set', 0), (3, w3[0], w3[1], 'end', 3)] and v['res'] == res and v['turns'] == 5 and len(v['my']['hand']) == 4 and len(v['op']['hand']) == 4,
+                  f'{"自分" if res == "win" else "相手"}が 3連勝：2勝 0敗では 続く（のこり 3ターンで 追いつける）→ 3勝で のこりの 2ターンでは 追いつけない → 3ターン目で 試合終了（手札は 4枚 残る）（{loge}）')
+            bans = [x for x in sd if x.startswith('ban:')]
+            check(bans == ['ban:ターン 2', 'ban:ターン 3', f'ban:決着！{who}の 勝ちが 決まったよ（のこりの ターンでは 追いつけない）'] and not any('最後の 勝負' in x for x in sd),
+                  f'帯：「決着！ {who}の 勝ちが 決まったよ（のこりの ターンでは 追いつけない）」（{bans[-1:]}）')
+            check(e['h'] == ('あなたの 勝ち！' if res == 'win' else 'あなたの 負け…') and e['sc'] == f'{w3[0]} － {w3[1]}あなた － コンピュータ（勝った 数）3ターン目で 決着！' and e['pips'] == f'{w3[1]}/5,{w3[0]}/5',
+                  f'結果の 窓：「{e["h"]} {w3[0]} － {w3[1]}」の 下に「3ターン目で 決着！」・勝ちの 印（{e["pips"]}）')
+            if res == 'win': shot(pg, 'cb_early_end')
+            pg.locator('#cbOv .cbend [data-cb=menu]').click(); pg.wait_for_timeout(150)
+        # 2勝 1敗・のこり 1ターンは 続く（追いつけば 同点）→ 3勝 1敗で 終わり
+        start(pg, '1112345', '2234677', turns=5, full=False); loge = []
+        for mine, his in (('1', '2'), ('1', '3'), ('3', '2'), ('1', '6')):
+            play(pg, mine); opp(pg, {'t': 'set', 'k': his}); vv = pg.evaluate(V); loge.append((vv['turn'], vv['my']['wins'], vv['op']['wins'], vv['phase'], vv['early']))
+        pg.wait_for_function("() => CBApp._t.ended", timeout=30000)
+        check(loge == [(2, 1, 0, 'set', 0), (3, 2, 0, 'set', 0), (4, 2, 1, 'set', 0), (4, 3, 1, 'end', 4)] and pg.evaluate(EG)['sc'].endswith('4ターン目で 決着！'),
+              f'2勝 1敗（のこり 2ターン）は 続く → 3勝 1敗（のこり 1ターン）で 4ターン目に 決着（{loge}）')
         pg.locator('#cbOv .cbend [data-cb=menu]').click(); pg.wait_for_timeout(150)
 
         print('■ 設定の 窓：BGM・効果音（第4.178版・まさちゃん「プレイボードの右下の設定ボタンを押すと、BGMオンかオフと効果エフェクトオンかオフを選べるようにして！」・第4.185版：23:04「設定のエフェクトオフもいらない！」→ エフェクトは なくした）')
@@ -914,8 +979,8 @@ try:
           return { cls: e.className, p: p, b: R(b), vw: innerWidth, vh: innerHeight, who: e.querySelector('.who').textContent, t: e.querySelector('b').textContent, n: e.querySelector('em').textContent, d: e.querySelector('small').textContent,
             img: e.querySelector('.cd img').getAttribute('src'), z: +getComputedStyle(e).zIndex, fs: [ts('b'), ts('em'), ts('small'), ts('.who')], gold: e.querySelector('b').classList.contains('gold'), bd: getComputedStyle(i).borderTopColor,
             top: !!hit && hit.closest('.cbuse') === e, msg: document.querySelector('#cbOv .cbmsg').textContent, fit: [...e.querySelectorAll('.tx > *')].every(x => x.scrollWidth <= x.clientWidth + 1) }; }"""
-        start(pg, '77712', '12345', '346'); play(pg, '1'); opp(pg, {'t': 'set', 'k': 2})
-        pg.evaluate("() => CBApp._t.speed(1)"); pg.locator('#cbOv [data-cb=effyes]').click()
+        start(pg, '77712', '12345', '346')      # 第4.202版：7 の 効果は セットの 前
+        pg.evaluate("() => CBApp._t.speed(1)"); pg.locator('#cbOv [data-cb=p7yes]').click()
         pg.wait_for_function("() => document.querySelector('#cbOv .cbuse.on')", timeout=10000); pg.wait_for_timeout(450); g = pg.evaluate(UG)
         check(g['cls'] == 'cbuse me on' and g['who'] == 'あなたが 使った！' and g['t'] == '7 の 効果' and g['n'] == '3枚 交換' and g['d'] == '7 を 3枚 山札に 戻して、新しく 3枚 引くよ' and g['img'] == 'cb_s7.webp' and g['gold'] and g['msg'] == '',
               f'効果の 札：誰が（あなたが 使った！）・どの 効果（7 の カードの 絵・「7 の 効果」・金の 字）・何を する（3枚 交換：…）。下の 行の 前の 文は 消える（{g["who"]}｜{g["t"]}｜{g["n"]}）')
@@ -925,10 +990,11 @@ try:
         shot(pg, 'cb_use_x7')
         pg.locator('#cbOv .cbuse').click(); pg.wait_for_timeout(300); off = pg.evaluate("() => !document.querySelector('#cbOv .cbuse.on')")
         idle(pg); pg.evaluate("() => CBApp._t.speed(0.03)")
-        check(off and pg.evaluate(HAND) == '2346' and pg.evaluate(V)['turn'] == 2, '札を タップ → すぐ 消えて 次へ（7 を 3枚 交換 → オープン → 2ターン目）')
+        h1_ = pg.evaluate(HAND); v1_ = pg.evaluate(V); play(pg, '1'); opp(pg, {'t': 'set', 'k': 2})
+        check(off and h1_ == '12346' and v1_['turn'] == 1 and v1_['phase'] == 'set' and pg.evaluate(HAND) == '2346' and pg.evaluate(V)['turn'] == 2, f'札を タップ → すぐ 消えて 次へ（7 を 3枚 交換：手札 {h1_} → まだ セットの 前 → セット → オープン → 2ターン目）')
         # 相手の 効果・2人とも・5・3・逆転勝利・幻の馬
         pg.evaluate("() => { window.__use.length = 0; }")
-        start(pg, '12345', '77712', '346'); play(pg, '1'); said(pg); opp(pg, {'t': 'set', 'k': 2}); opp(pg, {'t': 'eff', 'use': {'x7': True}}); sd = said(pg)
+        start(pg, '12345', '77712', '346'); said(pg); opp(pg, {'t': 'x7'}); sd = said(pg)      # 第4.202版：相手も セットの 前に 使う
         check(any(x == 'use:コンピュータが 使った！7 の 効果3枚 交換7 を 3枚 山札に 戻して、新しく 3枚 引くよ' for x in sd) and pg.evaluate("() => window.__use") == ['cbuse op on|cb_s7.webp'],
               f'相手の 効果：「コンピュータが 使った！」（あかがねの 印：class op）（{pg.evaluate("() => window.__use")}）')
         pg.evaluate("() => { window.__use.length = 0; }")
@@ -939,17 +1005,17 @@ try:
         pg.locator('#cbOv .cbmod [data-cb=drop5]').click(); idle(pg); sd = said(pg)
         iu = [i for i, x in enumerate(sd) if x == 'use:あなたが 使った！5 の 効果捨てて 山札から セットセットした 5 と 手札 1枚を 捨てて、山札から 1枚 伏せて セットするよ']; it = [i for i, x in enumerate(sd) if '5 と 7 を 捨てて、山札から 1枚 セットしたよ' in x]
         check(iu and it and iu[0] < it[0], f'5 の 効果：札 →「5 と 7 を 捨てて、山札から 1枚 セットしたよ」の 順（{[x[:30] for x in sd]}）')
-        start(pg, '12456', '33312'); play(pg, '1'); said(pg); opp(pg, {'t': 'set', 'k': 2}); opp(pg, {'t': 'eff', 'use': {'x3': True}}); sd = said(pg)
-        check(any(x == 'use:コンピュータが 使った！3 の 効果手札を 交換3 を 3枚 見せて、その 1枚と あなたの 手札の 1枚（ランダム）を 交換するよ' for x in sd), '3 の 効果（相手）：「…その 1枚と あなたの 手札の 1枚（ランダム）を 交換するよ」')
+        start(pg, '12456', '33312'); said(pg); opp(pg, {'t': 'x3', 'pickk': '4'}); sd = said(pg)
+        check(any(x == 'use:コンピュータが 使った！3 の 効果手札を 交換3 を 3枚 見せて、その 1枚と あなたの 手札から 選んだ 1枚（裏の カード）を 交換するよ' for x in sd), '3 の 効果（相手）：「…その 1枚と あなたの 手札から 選んだ 1枚（裏の カード）を 交換するよ」')
         start(pg, '11123', 'm4567'); play(pg, '1'); said(pg); opp(pg, {'t': 'set', 'k': 'm'}); pg.locator('#cbOv .cbmod.cbask [data-cb=revyes]').click(); idle(pg); sd = said(pg)
         check(any(x == 'use:あなたが 使った！1 の 効果逆転勝利1 を 3枚（場の 1枚 ＋ 手札の 2枚）見せて、手札の 1 を 1枚 捨てると、幻の馬に 勝ち！' for x in sd), '逆転勝利（1）：「1 の 効果 逆転勝利 … 幻の馬に 勝ち！」')
         start(pg, 'm6712', '12345', '13'); play(pg, 'm'); opp(pg, {'t': 'set', 'k': 1}); pg.locator('#cbOv [data-cb=mpick]').click(); pg.wait_for_timeout(80); tap(pg, '6'); tap(pg, '7'); said(pg)
         pg.locator('#cbOv .cbact [data-cb=mgo]').click(); idle(pg); sd = said(pg)
         check(any(x == 'use:あなたが 使った！幻の馬の 効果捨てて 引き直す前の ターンに 幻の馬で 勝った ので、手札を 2枚 捨てて、山札から 2枚 引くよ' for x in sd), '幻の馬：「前の ターンに 幻の馬で 勝った ので、手札を 2枚 捨てて、山札から 2枚 引くよ」')
         # 効果を 使わない ときは 出ない・対戦を はなれたら 消える
-        start(pg, '77712', '12345'); play(pg, '1'); opp(pg, {'t': 'set', 'k': 2}); said(pg); pg.locator('#cbOv [data-cb=effno]').click(); idle(pg)
+        start(pg, '77712', '12345'); said(pg); pg.locator('#cbOv [data-cb=p7no]').click(); pg.wait_for_timeout(80); play(pg, '1'); opp(pg, {'t': 'set', 'k': 2})
         check(not any(x.startswith('use:') for x in said(pg)), '「使わない」→ 札は 出ない')
-        start(pg, '77712', '12345', '346'); play(pg, '1'); opp(pg, {'t': 'set', 'k': 2}); pg.evaluate("() => CBApp._t.speed(1)"); pg.locator('#cbOv [data-cb=effyes]').click()
+        start(pg, '77712', '12345', '346'); pg.evaluate("() => CBApp._t.speed(1)"); pg.locator('#cbOv [data-cb=p7yes]').click()
         pg.wait_for_function("() => document.querySelector('#cbOv .cbuse.on')", timeout=10000); pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(300)
         check(pg.evaluate("() => [CBApp._t.screen, !!document.querySelector('#cbOv .cbuse.on')]") == ['menu', False], '札が 出て いる 時に 対戦を やめて メニューへ → 札は 消える')
         pg.evaluate("() => CBApp._t.speed(0.03)")
@@ -1174,9 +1240,9 @@ try:
         for step in range(160):
             idle(pg, 60000)
             if first is None: first = pg.evaluate("() => { const v = CBApp._t.view; return v ? [v.turns, v.my.hand.length + (v.my.set ? 1 : 0), v.op.hand.length + (v.op.set ? 1 : 0), v.deckN] : null; }")
-            stt = pg.evaluate("() => { const v = CBApp._t.view; return CBApp._t.ended ? 'end' : !v ? 'none' : v.pend && v.pend.mine ? v.pend.type : v.can.six ? 'six' : v.can.eff ? 'eff' : v.can.set ? (v.can.x7r && CBApp._t.ask ? 'x7' : 'set') : 'wait'; }")
+            stt = pg.evaluate("() => { const v = CBApp._t.view; return CBApp._t.ended ? 'end' : !v ? 'none' : v.pend && v.pend.mine ? v.pend.type : v.can.six ? 'six' : v.can.eff ? 'eff' : v.can.set ? ((v.can.x7r || v.can.x7 || v.can.x3) && CBApp._t.ask ? 'x7' : 'set') : 'wait'; }")
             if stt == 'end': done = True; break
-            if stt == 'x7': pg.locator('#cbOv .cbask [data-cb=x7no]').click()      # 第4.187版：7 が 4まい（セットの 前）→ 使わない
+            if stt == 'x7': pg.locator('#cbOv .cbask [data-cb=x7no], #cbOv .cbask [data-cb=p7no], #cbOv .cbask [data-cb=p3no]').first.click()      # 第4.187版：7 が 4まい・第4.202版：7 が 3まい・3 が 3まい（セットの 前）→ 使わない
             elif stt in ('k', 'm'): pg.locator(f'#cbOv [data-cb={stt}skip]').click()
             elif stt == 'rev': pg.locator('#cbOv [data-cb=revyes]').first.click()
             elif stt == 'u5': pg.locator('#cbOv [data-cb=u5no]').first.click()      # 第4.183版
@@ -1186,8 +1252,10 @@ try:
             elif stt == 'set': pg.locator('#cbOv .cbhand .cbc').first.click(); pg.wait_for_timeout(60); pg.locator('#cbOv .cbmod [data-cb=set]').click()
             else: pg.wait_for_timeout(120)
         v = pg.evaluate(V)
-        check(done and first == [5, 7, 7, 16] and v['phase'] == 'end' and v['turns'] == 5 and v['res'] in ('win', 'lose', 'draw') and len(v['discard']) >= 10 and len([d for d in v['discard'] if d['why'] == 't']) == 10,
-              f'コンピュータと 最後まで 対戦できる（普通の 形：5ターン・手札 7枚 ずつ・山札 16 {first}。{v["res"]} {v["my"]["wins"]}－{v["op"]["wins"]}・捨て札 {len(v["discard"])}枚）')
+        nt = v['early'] or 5; dw = abs(v['my']['wins'] - v['op']['wins'])      # 第4.202版：決着したら その ターンで おわる（early＝おわった ターン）
+        check(done and first == [5, 7, 7, 16] and v['phase'] == 'end' and v['turns'] == 5 and v['res'] in ('win', 'lose', 'draw') and len([d for d in v['discard'] if d['why'] == 't']) == 2 * nt and len(v['discard']) >= 2 * nt
+              and (v['early'] == 0 or (3 <= v['early'] <= 4 and dw > 5 - v['early'] and v['res'] != 'draw')),
+              f'コンピュータと 最後まで 対戦できる（普通の 形：5ターン・手札 7枚 ずつ・山札 16 {first}。{v["res"]} {v["my"]["wins"]}－{v["op"]["wins"]}・{nt}ターンで おわり{"（決着）" if v["early"] else ""}・捨て札 {len(v["discard"])}枚）')
         pg.wait_for_function("() => { const g = document.querySelector('#cbOv .cbend .gift'); return g && g.textContent.length > 3; }", timeout=30000)
         pg.locator('#cbOv .cbend [data-cb=menu]').click(); pg.wait_for_timeout(120)
 
@@ -1265,8 +1333,8 @@ try:
         gp.locator('#cbOv .cbmod [data-cb=modx]').click(); gp.wait_for_timeout(60)
         def step(q):
             idle(q)
-            stt = q.evaluate("() => { const v = CBApp._t.view; return CBApp._t.ended ? 'end' : !v ? 'none' : v.pend && v.pend.mine ? v.pend.type : v.can.six ? 'six' : v.can.eff ? 'eff' : v.can.set ? (v.can.x7r && CBApp._t.ask ? 'x7' : 'set') : 'wait'; }")
-            if stt == 'x7': q.locator('#cbOv .cbask [data-cb=x7no]').click()      # 第4.187版
+            stt = q.evaluate("() => { const v = CBApp._t.view; return CBApp._t.ended ? 'end' : !v ? 'none' : v.pend && v.pend.mine ? v.pend.type : v.can.six ? 'six' : v.can.eff ? 'eff' : v.can.set ? ((v.can.x7r || v.can.x7 || v.can.x3) && CBApp._t.ask ? 'x7' : 'set') : 'wait'; }")
+            if stt == 'x7': q.locator('#cbOv .cbask [data-cb=x7no], #cbOv .cbask [data-cb=p7no], #cbOv .cbask [data-cb=p3no]').first.click()      # 第4.187版・第4.202版
             elif stt in ('k', 'm'): q.locator(f'#cbOv [data-cb={stt}skip]').click()
             elif stt == 'rev': q.locator('#cbOv [data-cb=revno]').first.click()
             elif stt == 'u5': q.locator('#cbOv [data-cb=u5no]').first.click()      # 第4.183版
@@ -1362,13 +1430,15 @@ try:
         pg.locator('#cbOv .cbtop [data-cb=quit]').click(); pg.wait_for_timeout(80)
         check('参加コイン 3枚も 戻らないよ' in pg.locator('#cbOv .cbmod').inner_text(), '「やめる」の 窓：参加コインも 戻らない ことを 出す')
         pg.locator('#cbOv .cbmod [data-cb=modx]').click(); pg.wait_for_timeout(60)
-        for mine, his in (('1', '2'), ('2', '3'), ('3', '6')):
+        for mine, his in (('1', '2'), ('2', '3')):      # 第4.202版：2勝 0敗・のこり 1ターン → 2ターン目で 決着（部屋でも）
             idle(pg); idle(gp); play(pg, mine); idle(gp); play(gp, his); idle(pg); idle(gp)
         for q in (pg, gp): q.wait_for_function("() => { const g = document.querySelector('#cbOv .cbend .gift'); return CBApp._t.ended && g && g.textContent.length > 3; }", timeout=30000)
+        check([q.evaluate("() => [CBApp._t.view.early, CBApp._t.view.turn, document.querySelector('#cbOv .cbend .sc').textContent.indexOf('2ターン目で 決着！') >= 0]") for q in (pg, gp)] == [[2, 2, True], [2, 2, True]],
+              '部屋でも 決着したら 試合終了：2勝 0敗（のこり 1ターン）→ 2人の 画面とも 2ターン目で 決着（結果の 窓に「2ターン目で 決着！」）')
         eh = pg.evaluate("() => ({ g: document.querySelector('#cbOv .cbend .gift').textContent, again: document.querySelector('#cbOv .cbend [data-cb=again]').disabled })")
         eg = gp.evaluate("() => ({ g: document.querySelector('#cbOv .cbend .gift').textContent, g2: document.querySelector('#cbOv .cbend .gift2').textContent, again: document.querySelector('#cbOv .cbend [data-cb=again]').disabled, h: document.querySelector('#cbOv .cbend h3').textContent })")
         check(pg.evaluate(V)['res'] == 'win' and 'バトルコイン ＋6枚（今 13枚）' in eh['g'] and pg.evaluate(COINS) == [13, None] and not eh['again'],
-              f'作った 人の 勝ち（3 － 0）：勝者の 獲得コイン 6枚（7 → 13枚）（{eh["g"]}）')
+              f'作った 人の 勝ち（2 － 0）：勝者の 獲得コイン 6枚（7 → 13枚）（{eh["g"]}）')
         check(eg['h'] == 'あなたの 負け…' and '参加コイン 3枚は 戻らないよ（今 2枚）' in eg['g'] and gp.evaluate(COINS) == [2, None] and eg['again'] and eg['g2'] == 'バトルコインが 足りない ので、もう 1回は できないよ' and gp.evaluate("() => { const g = document.querySelector('#cbOv .cbend .gift2'); return Math.round(g.getBoundingClientRect().height) <= 20; }"),
               f'入った 人の 負け：参加コインは 戻らない（今 2枚）・バトルコインが 足りない ので「もう 1回」は 押せない（{eg["g2"]}）')
         shot(gp, 'cb_room_coin_lose')
@@ -1729,10 +1799,16 @@ try:
         peek(pg); m7 = pg.evaluate(MSG); b7 = acts(pg)
         check(m7 == 'セットする カードを 選んでね（カードを タップ）\n7 が 4枚！ セットの 前なら 逆転を 使えるよ' and b7 == ['使わない', '4枚 見せて 逆転'], f'「手札と ボードを 見る」→ 下の 行でも 答えられる（{m7}・{b7}）')
         pg.locator('#cbOv .cbact [data-cb=x7no]').click(); pg.wait_for_timeout(120)
-        check(asked(pg) is None and acts(pg) == ['7 を 4枚 見せて 逆転'] and pg.evaluate(V)['can']['x7r'] is True and pg.evaluate(V)['rv'] is False, f'「使わない」→ 窓は もう 出ない・セットする まで 下の ボタン「7 を 4枚 見せて 逆転」で 使える（{acts(pg)}）')
+        a73 = pg.evaluate(ASKQ)
+        check(a73 and a73['head'] == '7 が 3枚！' and a73['q'] == '7 の 効果を 使う？' and pg.evaluate(V)['can']['x7r'] is True and pg.evaluate(V)['can']['x7'] is True and pg.evaluate(V)['rv'] is False,
+              '「使わない」→ 次は 7 の 3枚 交換を 聞く（第4.202版：セットの 前の 効果は 1つずつ 順に 聞く）')
+        pg.locator('#cbOv .cbmod.cbask [data-cb=p7no]').click(); pg.wait_for_timeout(120)
+        check(asked(pg) is None and acts(pg) == ['セットの 前の 効果'] and pg.evaluate(V)['can']['x7r'] is True and pg.evaluate(V)['rv'] is False, f'どちらも「使わない」→ 窓は もう 出ない・セットする まで 下の ボタン「セットの 前の 効果」で もう 一度 聞ける（{acts(pg)}）')
         tap(pg, '1'); pg.locator('#cbOv .cbmod [data-cb=modx]').click(); pg.wait_for_timeout(100)
-        check(asked(pg) is None and acts(pg) == ['7 を 4枚 見せて 逆転'], 'カードを 見て 戻っても 窓は 出ない（下の ボタンは 残る）')
-        pg.locator('#cbOv .cbact [data-cb=x7yes]').click(); idle(pg)
+        check(asked(pg) is None and acts(pg) == ['セットの 前の 効果'], 'カードを 見て 戻っても 窓は 出ない（下の ボタンは 残る）')
+        pg.locator('#cbOv .cbact [data-cb=prere]').click(); pg.wait_for_function("() => document.querySelector('#cbOv .cbmod.on.cbask')", timeout=5000); pg.wait_for_timeout(300)
+        check(pg.evaluate(ASKQ)['head'] == '7 が 4枚！', '「セットの 前の 効果」→ もう 一度 聞く（4枚の 逆転 から）')
+        pg.locator('#cbOv .cbmod.cbask [data-cb=x7yes]').click(); idle(pg)
         seen = pg.evaluate("() => window.__seen"); sd = said(pg); v7 = pg.evaluate(V); tb = pg.evaluate("() => document.querySelector('#cbOv .cbturn').textContent")
         check(any(x.startswith('7 の 効果！ 強さ 逆転|') for x in seen) and any(x.startswith('ban:強さ 逆転！') for x in sd) and v7['rv'] is True and v7['phase'] == 'set' and v7['turn'] == 1 and v7['my']['set'] is None and v7['can']['set'] is True and v7['can']['x7r'] is False
               and any(x == 'use:あなたが 使った！7 の 効果強さ 逆転7 を 4枚 見せて 1枚 捨てるよ。この 対戦が 終わる まで、数字の 強さが 逆に なる！' for x in sd)
@@ -1743,11 +1819,14 @@ try:
         seen = pg.evaluate("() => window.__seen"); sd = said(pg); v7 = pg.evaluate(V)
         check(any('負け…' in x and '2 の ほうが 強いよ（強さ 逆転中）' in x for x in seen) and v7['op']['wins'] == 1 and v7['my']['wins'] == 0 and v7['turn'] == 2 and not any('効果タイム' in x for x in sd) and not any('3枚 戻して' in x for x in sd),
               'セット → オープン：1 は 2 に 負ける（もう 逆：「（強さ 逆転中）」）・7 が 3枚 残って いても、この ターンは 3枚 交換を 聞かない（どちらか 1つ）')
+        a8 = pg.evaluate(ASKQ)
+        check(a8 and a8['head'] == '7 が 3枚！' and pg.evaluate(V)['can']['x7r'] is False and pg.evaluate(V)['can']['x7'] is True, '2ターン目：もう 逆転ちゅう なので 4枚の 逆転は 聞かない（7 が 3枚 なので 3枚 交換 だけ 聞く）')
+        pg.locator('#cbOv .cbmod.cbask [data-cb=p7no]').click(); pg.wait_for_timeout(100)
         pg.locator('#cbOv [data-cb=discard]').click(); pg.wait_for_timeout(100)
         dl = pg.evaluate("() => [...document.querySelectorAll('#cbOv .cbmod .cbdl .row[data-de]')].map(r => r.dataset.de + '|' + r.textContent.replace(/\\s+/g, ' ').trim())")
         pg.locator('#cbOv .cbmod [data-cb=modx]').click(); pg.wait_for_timeout(60)
         check(any(x.startswith('7|') and 'あなたの 7 の 効果' in x for x in dl), f'捨て札の 窓：「あなたの 7 の 効果」に 捨てた 7（{dl}）')
-        check(asked(pg) is None and acts(pg) == [], '2ターン目：もう 逆転ちゅう なので 聞かない')
+        check(asked(pg) is None and acts(pg) == ['7 を 3枚 交換'], f'「使わない」→ 下の ボタンは「7 を 3枚 交換」（{acts(pg)}）')
         pg.evaluate("() => { window.__seen = []; }"); play(pg, '7'); opp(pg, {'t': 'set', 'k': 3}); v8 = pg.evaluate(V); s8 = pg.evaluate("() => window.__seen")
         play(pg, '7'); opp(pg, {'t': 'set', 'k': 6}); v9 = pg.evaluate(V)
         check(v8['my']['wins'] == 1 and v8['turn'] == 3 and v8['rv'] is True and any('7 が 3 に 勝ったよ（強さ 逆転中）' in x for x in s8) and v9['phase'] == 'end' and v9['res'] == 'win' and v9['my']['wins'] == 2,
@@ -2063,7 +2142,7 @@ try:
 
         print('■ 決戦宝石：使える とき・トークン（第4.197版・まさちゃん「１ターンにどれか1回しか使えない」「トークンを使用するとそのターンのみ」「1枚で2枚分として使用できるが、フィールドへセットや、手札効果で捨てる場合は1枚分」・19:03「手札が6枚以下の場合」）')
         def startG(h0, h1, turns=3, deck='', g0='mk137', g1=''):
-            pg.evaluate("""([h0, h1, dk, tn, g0, g1]) => { CBApp._think = () => 1e9; CBApp._opt = { hands: [h0.split(''), h1.split('')], deck: dk ? dk.split('') : undefined, turns: tn, gems: [g0.split(''), g1.split('')] }; }""", [h0, h1, deck, turns, g0, g1])
+            pg.evaluate("""([h0, h1, dk, tn, g0, g1]) => { CBApp._think = () => 1e9; CBApp._opt = { hands: [h0.split(''), h1.split('')], deck: dk ? dk.split('') : undefined, turns: tn, gems: [g0.split(''), g1.split('')], full: true }; }""", [h0, h1, deck, turns, g0, g1])
             if pg.evaluate("() => CBApp._t.screen") != 'menu': pg.evaluate("() => CBApp._t.menu()")
             pg.locator('#cbOv .cbmenu [data-cb=cpu]').click(); idle(pg); said(pg)
         # A：本番の 形（5ターン・手札 7枚）：1ターン目は 手札 7枚 → 使えない。セットして 6枚 → 2ターン目から 使える
@@ -2137,24 +2216,26 @@ try:
         pg.wait_for_function("() => CBApp._t.ended", timeout=30000); idle(pg); s7 = said(pg); v3 = pg.evaluate(V)
         check(v3['res'] == 'win' and pg.evaluate(TOKV) == '' and any('トークンは この ターン だけ' in x and '消えたよ' in x for x in s7),
               f'使わなかった トークンは ターンの 終わりに 消える（「トークンは この ターン だけ… 消えたよ」）（{[x for x in s7 if "消えた" in x]}）')
-        # C：7トークン（3頭分）で 7 の 効果（第4.199版・まさちゃん 22:01：7トークンを 見せて 捨てる → 山札から 3枚 引く）→ 手札 7枚（使えない）・3トークン（2頭分）＋ 3 で 3 の 交換
+        # C：7トークン（3頭分）で 7 の 効果（第4.199版・まさちゃん 22:01：7トークンを 見せて 捨てる → 山札から 3枚 引く）→ 手札 7枚（使えない）・3トークン（2頭分）＋ 3 で 3 の 交換（第4.202版：どちらも セットの 前）
         startG('12345', '2356m', deck='124')
-        guse(pg, '7'); cset(pg, '1'); opp(pg, {'t': 'set', 'k': 2})
+        guse(pg, '7')
         aq = pg.evaluate(ASKQ)
-        check(aq and aq['q'] == '7 の 効果を 使う？' and aq['text'] == '7トークン（3頭分）を 見せて 捨てて、山札から 3枚 引けるよ（トークンは 山札に 戻せないので 捨てる）' and aq['img'] == 'cb_ct7.webp',
-              f'7トークン（3頭分）＝ 7 が 3枚 → 効果タイムで 7 の 効果（{aq and aq["text"]}）')
+        check(aq and aq['head'] == '7 が 3枚 ぶん！' and aq['q'] == '7 の 効果を 使う？' and aq['text'] == 'セットの 前に 使えるよ。7トークン（3頭分）を 見せて 捨てて、山札から 3枚 引けるよ（トークンは 山札に 戻せないので 捨てる）' and aq['img'] == 'cb_ct7.webp' and pg.evaluate(V)['phase'] == 'set',
+              f'7トークン（3頭分）＝ 7 が 3枚 → すぐ（セットの 前に）7 の 効果を 聞く（{aq and [aq["head"], aq["text"]]}）')
         peek(pg); mb = pg.evaluate(MSG)
-        check(mb == '効果タイム！ 7 の 効果を 使う？\n7トークン（3頭分）を 見せて 捨てると、山札から 3枚 引けるよ', f'窓を 下げた ときの 下の 字も トークン（{mb!r}）')
+        check(mb == 'セットする カードを 選んでね（カードを タップ）\n7トークン！ セットの 前なら 山札から 3枚 引けるよ' and acts(pg) == ['使わない', '7 の 効果を 使う'], f'窓を 下げた ときの 下の 字と ボタンも トークン（{mb!r}・{acts(pg)}）')
         pg.evaluate("""() => { window.__t7 = []; const o = new MutationObserver(() => { const m = document.querySelector('#cbOv .cbmod.on.cbopen'); if (m && !window.__t7.some(x => x.t === m.innerText)) window.__t7.push({ t: m.innerText, img: [...m.querySelectorAll('.three img')].map(i => i.getAttribute('src')) }); });
           o.observe(document.querySelector('#cbOv'), { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] }); window.__t7o = o; }""")
-        pg.locator('#cbOv [data-cb=effyes]').click(); idle(pg)
-        s8 = said(pg); c1 = pg.evaluate(GEMQ); v4 = pg.evaluate(V); t7m = pg.evaluate("() => { window.__t7o.disconnect(); return window.__t7; }")
-        check(pg.evaluate(TOKV) == '' and pg.evaluate(HAND) == '1223445' and any(x.startswith('use:') and '3枚 引く' in x and '7トークン（3頭分）を 見せて 捨てて、山札から 3枚 引くよ' in x for x in s8) and any('7トークン（3頭分）を 捨てて、山札から 3枚 引いたよ' in x for x in s8)
-              and v4['turn'] == 2 and c1['gs'] == 'm:off k:off 1:off 3:off 7:used',
-              f'使う → 7トークンを 捨てて 山札から 3枚 引いた（手札 {pg.evaluate(HAND)}：7枚 → 2ターン目は 宝石を 使えない）（{c1["gs"]}）')
+        pg.locator('#cbOv .cbact [data-cb=p7yes]').click(); idle(pg)
+        s8 = said(pg); c1 = pg.evaluate(GEMQ); v4 = pg.evaluate(V); t7m = pg.evaluate("() => { window.__t7o.disconnect(); return window.__t7; }"); h8 = pg.evaluate(HAND)
+        check(pg.evaluate(TOKV) == '' and h8 == '11223445' and any(x.startswith('use:') and '3枚 引く' in x and '7トークン（3頭分）を 見せて 捨てて、山札から 3枚 引くよ' in x for x in s8) and any('7トークン（3頭分）を 捨てて、山札から 3枚 引いたよ' in x for x in s8)
+              and v4['turn'] == 1 and v4['phase'] == 'set' and v4['can']['set'] and c1['gs'] == 'm:off k:off 1:off 3:off 7:used' and asked(pg) is None,
+              f'使う → 7トークンを 捨てて 山札から 3枚 引いた（まだ セットの 前：手札 {h8} の 8枚から セット）（{c1["gs"]}）')
         t7m = [x for x in t7m if x['t'].startswith('7 の 効果！')]      # オープンの 窓（同じ cbopen）は 数えない
         check(len(t7m) == 1 and t7m[0]['img'] == ['cb_st7.webp'] and '7トークン（3頭分）を 見せて 捨てたよ' in t7m[0]['t'] and '山札から 3枚 引くよ' in t7m[0]['t'],
               f'7トークン 1枚を 見せる 窓（「7 の 効果！」・7トークンの 絵 1枚・「7トークン（3頭分）を 見せて 捨てたよ／山札から 3枚 引くよ」）（{t7m}）')
+        cset(pg, '1'); opp(pg, {'t': 'set', 'k': 2}); v4 = pg.evaluate(V)
+        check(v4['turn'] == 2 and pg.evaluate(HAND) == '1223445', f'その あと 1 を セット → 2ターン目（手札 7枚：{pg.evaluate(HAND)}）')
         pg.locator('#cbOv [data-cb=discard]').click(); pg.wait_for_timeout(100)
         dt7 = pg.evaluate(DM); pg.locator('#cbOv .cbmod [data-cb=modx]').click(); pg.wait_for_timeout(60)
         check(dt7['h'] == '捨て札（3枚）' and 'ターン 1|あなたの 7 の 効果=t7' in dt7['effs'] and v4['my']['hand'] and not any(c.get('tok') for c in v4['my']['hand']),
@@ -2164,17 +2245,21 @@ try:
         cset(pg, '2'); opp(pg, {'t': 'set', 'k': 3})
         c2 = pg.evaluate(GEMQ)
         check(pg.evaluate(V)['turn'] == 3 and c2['gs'] == 'm:can k:can 1:can 3:can 7:used', f'3ターン目：手札 6枚 → また 使える（{c2["gs"]}）')
-        guse(pg, '3'); cset(pg, '1'); opp(pg, {'t': 'set', 'k': 6})
+        opp(pg, {'t': 'set', 'k': 6}); guse(pg, '3')
         aq = pg.evaluate(ASKQ)
-        check(aq and aq['q'] == '3 の 効果を 使う？' and aq['text'] == '3トークン（2頭分）と 3 で 3枚 ぶん 見せて、本物の 3 と 相手の 手札の 1枚（ランダム）を 交換できるよ' and aq['img'] == 'cb_ct3.webp',
-              f'3トークン（2頭分）＋ 3 ＝ 3 が 3枚 → 3 の 効果（{aq and aq["text"]}）')
+        check(aq and aq['head'] == '3 が 3枚 ぶん！' and aq['q'] == '3 の 効果を 使う？' and aq['text'] == 'セットの 前に 使えるよ。3トークン（2頭分）と 3 で 3枚 ぶん 見せて、本物の 3 と 相手の 手札の 1枚（裏の カードから 選ぶ）を 交換できるよ' and aq['img'] == 'cb_ct3.webp',
+              f'3トークン（2頭分）＋ 3 ＝ 3 が 3枚 → すぐ（セットの 前に）3 の 効果を 聞く（{aq and [aq["head"], aq["text"]]}）')
         h3 = pg.evaluate(HAND)
         pg.evaluate("() => { window.__three = null; if (window.__mo3x) window.__mo3x.disconnect(); const mo = new MutationObserver(() => { const m = document.querySelector('#cbOv .cbmod.cbopen .three'); if (m && !window.__three) window.__three = { im: [...m.querySelectorAll('img')].map(i => i.getAttribute('src')), t: m.parentNode.querySelector('p').textContent }; }); mo.observe(document.getElementById('cbOv'), { childList: true, subtree: true }); window.__mo3x = mo; }")
-        pg.locator('#cbOv .cbmod.cbask [data-cb=effyes]').click()
+        pg.locator('#cbOv .cbmod.cbask [data-cb=p3yes]').click(); pg.wait_for_timeout(150)
+        p3t = pg.evaluate("() => { const m = document.querySelector('#cbOv .cbmod.on.cbx3'); return m ? m.querySelector('p').innerText : ''; }")
+        check('3トークン（2頭分）と 3 を 見せて、本物の 3 を 1枚 わたすよ' in p3t and pg.locator('#cbOv .cbmod.cbx3 .pick .cbc[data-cb=pick]').count() >= 1, f'3トークンの ときも 裏の カードを 選ぶ 窓（{p3t[:40]!r}）')
+        pg.locator('#cbOv .cbmod.cbx3 .pick .cbc[data-cb=pick]').first.click(); idle(pg); h3b = pg.evaluate(HAND)
+        cset(pg, '1')
         pg.wait_for_function("() => CBApp._t.ended", timeout=30000); idle(pg); s10 = said(pg)
         th = pg.evaluate("() => { if (window.__mo3x) window.__mo3x.disconnect(); return window.__three || { im: [], t: '' }; }")
         check(sorted(th['im']) == ['cb_s3.webp', 'cb_st3.webp'] and '3トークン（2頭分）と 3 で 3枚 ぶん 見せたよ' in th['t'] and '3' not in pg.evaluate(HAND) and pg.evaluate(TOKV) == '' and any('消えたよ' in x for x in s10),
-              f'使う → 見せるのは 3トークンと 3（{th["im"]}）・わたすのは 本物の 3（手札 {h3} → {pg.evaluate(HAND)}）・トークンは ターンの 終わりに 消える')
+              f'使う → 見せるのは 3トークンと 3（{th["im"]}）・わたすのは 本物の 3（手札 {h3} → {h3b} → セット → {pg.evaluate(HAND)}）・トークンは ターンの 終わりに 消える')
         pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(150)
         # E：神様馬トークン・幻の馬トークンで 勝った → 次の ターンの 効果も トークン（第4.201版・まさちゃん 11/18 23:23「トークンで勝ったならトークンにして！」）
         print('■ 決戦宝石：神様馬トークン・幻の馬トークンで 勝った ときの 効果は トークンの 絵と 名前（第4.201版）')

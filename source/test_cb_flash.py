@@ -18,6 +18,9 @@
 #     前の efft・eff6_open（効果タイムの 6）は なくなった
 #   第4.197版：6つ目＝決戦宝石（gem_deal：ケースの 宝石が ゆっくり 光る・gem_ask：宝石の 窓・gem_use：宝石が はねる・トークンが 手札へ・帯・gem_tokgone：使わなかった トークンが 消える）
 #   第4.199版：7つ目＝7トークンで 7 の 効果（gem7_x7：効果の 札 → 7トークン 1枚を 見せる 窓 → 捨て札へ → 山札から 3枚：まさちゃん 22:01）
+#   第4.202版（まさちゃん 11/18 23:42・23:55）：手札の 効果（7 の 3まい・3）は セットの 前：2つ目の 対戦は 配った すぐ あとに 聞く 窓（ask3）→ 交換（eff3）→ セット → オープン（eff3_open）・
+#     2勝 0敗で のこり 1ターン → 帯「決着！」→ 結果（end_win：2ターン目で おわり）。7つ目は 7トークンが 来たら すぐ 聞く（gem7_x7）
+#     00:38「CPUが勝手に選ぶ形にならないようにして！」：3 の 交換は 裏の カードを 自分で 選ぶ 窓（pick3）→ 選ぶ（eff3）
 #   python3 test_cb_flash.py [場面の 名前,…]   （時間が かかる ので ふだんの テストとは 別に 動かす。コマは t5/cb_frames/<場面>/ に 残す）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -143,19 +146,19 @@ try:
                 # ---- 2つ目の 対戦（第4.177版）：3 の 効果（聞く 窓 → 3まい 見せる → 交換）・勝ち → GET の 札 ----
                 settle(pg, 1.0)
                 pg.evaluate("() => { CBApp._t.menu(); CBApp._rng = () => 0.1; CBApp._opt = { hands: [['3', '3', '3', '1', '2'], ['4', '5', '6', '7', '7']], turns: 3 }; }"); pg.wait_for_timeout(100)
-                pg.locator('#cbOv .cbmenu [data-cb=cpu]').click(); settle(pg, 3.4)
-                tap_play(pg, '1'); settle(pg, 0.8)
-                seg('ask3', 2.6, lambda: pg.evaluate(OPP, {'t': 'set', 'k': 7}))      # 「効果タイム」の 帯 → 聞く 窓（3 の カードの 絵・「3 の 効果を 使う？」）
+                seg('ask3', 4.6, lambda: pg.locator('#cbOv .cbmenu [data-cb=cpu]').click())      # 第4.202版：配る → すぐ（セットの 前に）聞く 窓（3 の カードの 絵・「3 の 効果を 使う？」）
                 a3 = pg.evaluate("() => { const m = document.querySelector('#cbOv .cbmod.cbask'); return m ? m.querySelector('.askq b').textContent : null; }")
-                seg('eff3_open', 12.6, lambda: pg.locator('#cbOv [data-cb=effyes]').click())      # 3 を 3まい 見せる 窓 → もらった カードを 大きく → 交換 → オープン（勝ち！）→「ターン 2」
+                seg('pick3', 1.6, lambda: pg.locator('#cbOv [data-cb=p3yes]').click())      # 第4.202版（まさちゃん 11/19 00:38）：交換する カードを 選ぶ 窓（相手の 手札の 裏の カード）
+                seg('eff3', 7.6, lambda: pg.locator('#cbOv .cbmod.cbx3 .pick .cbc[data-cb=pick]').first.click())      # 裏の カードを 選ぶ → 3 を 3まい 見せる 窓 → もらった カードを 大きく → 交換（まだ セットの 前）
                 h2 = pg.evaluate("() => CBApp._t.view.my.hand.map(c => c.k).sort().join('')")
-                tap_play(pg, '2'); settle(pg, 0.8); pg.evaluate(OPP, {'t': 'set', 'k': 6}); settle(pg, 5.6)      # 2ターン目：2 と 6 → 勝ち
-                pg.evaluate(OPP, {'t': 'set', 'k': 7}); settle(pg, 0.8)
-                if want('end_win'): run(pg, 'end_win' + tag, 7.0, pre=lambda: tap_play(pg, '3'))      # 3ターン目：3 と 7 → 勝ち → 結果「あなたの 勝ち！」→ GET の 札が ぽんと 出る
-                else: tap_play(pg, '3'); settle(pg, 7.0)
-                v2 = pg.evaluate("() => { const v = CBApp._t.view, b = document.querySelector('#cbOv .cbend .cbget'); return v ? [v.phase, v.res, v.my.wins, v.op.wins, b ? b.querySelector('.n').textContent : null] : null; }")
-                # 第4.193版：GET の 札は 第4.192版の 漢字（＋1こ → ＋1個）に そろえた 文（test_cb.py と 同じ）
-                check(a3 == '3 の 効果を 使う？' and h2 == '2334' and v2 == ['end', 'win', 3, 0, '＋1個 GET！'], f'2つ目の 対戦も 場面の とおり（聞く 窓「{a3}」・交換の あとの 手札 {h2}・3勝 0勝・GET の 札）{v2}')
+                tap_play(pg, '1'); settle(pg, 0.8)
+                seg('eff3_open', 6.0, lambda: pg.evaluate(OPP, {'t': 'set', 'k': 7}))      # オープン（勝ち！）→ 片付け →「ターン 2」
+                tap_play(pg, '2'); settle(pg, 0.8)
+                if want('end_win'): run(pg, 'end_win' + tag, 9.0, pre=lambda: pg.evaluate(OPP, {'t': 'set', 'k': 6}))      # 2ターン目：2 と 6 → 勝ち → 2勝 0敗・のこり 1ターン → 帯「決着！」→ 結果「あなたの 勝ち！」→ GET の 札が ぽんと 出る
+                else: pg.evaluate(OPP, {'t': 'set', 'k': 6}); settle(pg, 9.0)
+                v2 = pg.evaluate("() => { const v = CBApp._t.view, b = document.querySelector('#cbOv .cbend .cbget'); return v ? [v.phase, v.res, v.my.wins, v.op.wins, v.early, b ? b.querySelector('.n').textContent : null] : null; }")
+                # 第4.193版：GET の 札は 第4.192版の 漢字（＋1こ → ＋1個）に そろえた 文（test_cb.py と 同じ）・第4.202版：2勝 0敗で のこり 1ターン → 決着（2ターン目で おわり）
+                check(a3 == '3 の 効果を 使う？' and h2 == '12334' and v2 == ['end', 'win', 2, 0, 2, '＋1個 GET！'], f'2つ目の 対戦も 場面の とおり（聞く 窓「{a3}」・交換の あとの 手札 {h2}・2勝 0勝で 2ターン目に 決着・GET の 札）{v2}')
             # ---- 3つ目の 対戦（第4.178版）：本番の 形（5ターン・手札 7まい）・夜の フィールド（火の あかりの ゆれ）・逆転勝利（自分 → 相手）----
             settle(pg, 1.0)
             pg.evaluate("() => { if (CBApp._t.screen !== 'menu') CBApp._t.menu(); CBApp._rng = () => 0.1; CBApp._opt = { hands: [['1', '1', '1', '2', '3', '6', '7'], ['m', '2', '2', '2', '4', '5', '6']] }; }"); pg.wait_for_timeout(100)
@@ -197,10 +200,8 @@ try:
             pg.evaluate("() => { const T = CBApp._t; if (T.screen !== 'menu') T.menu(); CBApp._rng = () => 0.1; CBApp._opt = { hands: [['1', '2', '3', '4', '5'], ['2', '3', '4', '5', '6']], turns: 3, gems: [['7'], []] }; }"); pg.wait_for_timeout(100)
             pg.locator('#cbOv .cbmenu [data-cb=cpu]').click(); settle(pg, 4.6)
             pg.locator('#cbOv .cbgem .g[data-g="7"]').click(); settle(pg, 0.6)
-            pg.locator('#cbOv .cbmod.cbgemm [data-cb=gemgo]').click(); settle(pg, 3.0)
-            tap_play(pg, '1'); settle(pg, 0.8)
-            pg.evaluate(OPP, {'t': 'set', 'k': 2}); settle(pg, 2.2)                          # 2人とも セット →「効果タイム」→ 7 の 効果を 使う？
-            seg('gem7_x7', 6.0, lambda: pg.locator('#cbOv [data-cb=effyes]').click())      # 使う → 効果の 札 → 7トークン 1枚を 見せる 窓 → 捨て札へ とぶ → 山札から 3枚
+            pg.locator('#cbOv .cbmod.cbgemm [data-cb=gemgo]').click(); settle(pg, 3.0)      # 第4.202版：7トークンが 来たら すぐ（セットの 前に）7 の 効果を 使う？
+            seg('gem7_x7', 6.0, lambda: pg.locator('#cbOv [data-cb=p7yes]').click())      # 使う → 効果の 札 → 7トークン 1枚を 見せる 窓 → 捨て札へ とぶ → 山札から 3枚
             for _ in range(40):                                                              # 動きが 終わって 画面の 形（view）が 新しく なる まで（オープンの 窓 まで 進む）
                 if pg.evaluate("() => CBApp._t.idle"): break
                 settle(pg, 0.5)
