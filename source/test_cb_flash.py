@@ -201,6 +201,9 @@ try:
             tap_play(pg, '1'); settle(pg, 0.8)
             pg.evaluate(OPP, {'t': 'set', 'k': 2}); settle(pg, 2.2)                          # 2人とも セット →「効果タイム」→ 7 の 効果を 使う？
             seg('gem7_x7', 6.0, lambda: pg.locator('#cbOv [data-cb=effyes]').click())      # 使う → 効果の 札 → 7トークン 1枚を 見せる 窓 → 捨て札へ とぶ → 山札から 3枚
+            for _ in range(40):                                                              # 動きが 終わって 画面の 形（view）が 新しく なる まで（オープンの 窓 まで 進む）
+                if pg.evaluate("() => CBApp._t.idle"): break
+                settle(pg, 0.5)
             g7 = pg.evaluate("() => { const v = CBApp._t.view; return v ? [v.my.hand.filter(c => c.tok).length, v.discard.filter(d => d.tok && d.k === '7' && d.why === '7').length, v.my.gem.used.join('')] : null; }")
             check(g7 == [0, 1, '7'], f'7つ目の 対戦（7トークンで 7 の 効果）も 場面の とおり（トークンは 捨て札へ・使った 宝石 7）{g7}')
             if calm < 2:
