@@ -13,6 +13,8 @@
 #   ・3D（まさちゃんの Meshy の GLB）と コマは リポジトリに 入って いない
 #   第4.171版（まさちゃん 2026/11/14 16:18「①的中演出の画質上げる！」）：アプリに 入れるのは 同じ 絵を 3倍（1170×2532）で 描き直した …4（sd_film4.mp4・sd_last4.webp・nd_film4.mp4・nd_last4.webp：
 #     test_film_hq.py）。ここで 見る …3（780×1688）は もとの フォルダに のこる 前の もの（絵・字・動きは …4 と 同じ：その 中身を ここで 確かめる）
+#   第4.195版（まさちゃん 2026/11/18 12:02「極ど的中の演出、このファイルの3Dと入れ替えて！」）：アプリの 極ど的中の 動画は 顔の 場面だけ 新しい 馬の sd_film5.mp4
+#     （さいごの 1まいは sd_last4.webp の まま：test_sd_thunder.py）
 import hashlib, json, os, re, subprocess, sys
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 K = os.path.join(W, 'kisekae'); FLAT = os.path.join(K, 'flat')
@@ -36,7 +38,7 @@ OLD2 = {'sd_film2.mp4': 'ce2f4c65558790472e1d566c803fba8d', 'sd_last2.webp': 'db
         'nd_film2.mp4': 'ceb61a833ba3310368bcd9543c1ece50', 'nd_last2.webp': '8fea28702a0dbf43720c868be879b204'}
 OLD = dict(OLD1, **OLD2)
 NEW = ['sd_film3.mp4', 'sd_last3.webp', 'nd_film3.mp4', 'nd_last3.webp']
-NOW = ['sd_film4.mp4', 'sd_last4.webp', 'nd_film4.mp4', 'nd_last4.webp']      # 第4.171版：アプリに 入る もの（3倍）
+NOW = ['sd_film5.mp4', 'sd_last4.webp', 'nd_film4.mp4', 'nd_last4.webp']      # 第4.171版：アプリに 入る もの（3倍）。第4.195版：極ど的中の 動画は 顔の 場面だけ 新しい 馬の …5（test_sd_thunder.py）
 
 
 def py(code, env=None, timeout=900):
@@ -136,10 +138,10 @@ print('■ アプリ（新しい 動画の 名前）')
 import build_fx as BF
 check([BF.FILMS['sd_film'], BF.STILL['sd_last'], BF.FILMS['nd_film'], BF.STILL['nd_last']] == NOW and BF.SFX['sd'] == 'sfx_sd.m4a' and BF.SFX['nd'] == 'sfx_nd.m4a' and BF.SFX['sdp'] == 'sfx_sdp.m4a' and BF.SFX['ndt'] == 'sfx_ndt.m4a'
       and BF.ART['sd'] == ['sd_last4.webp'] and BF.ART['nd'] == [] and len(BF.ASSET_FILES) == 23 and all(f in BF.ASSET_FILES for f in NOW if f != 'nd_last4.webp') and 'nd_last4.webp' not in BF.ASSET_FILES and not [f for f in BF.ASSET_FILES if f in OLD or f in NEW],
-      f'アプリに 入れる ファイル（{len(BF.ASSET_FILES)}こ）：極ど的中と ノーマルど的中は 新しい 動画と さいごの 1まい（第4.171版：3倍の {"・".join(NOW)}）・音は 前と 同じ・前の 12こ（はじめの もの・…2・…3）は 入れない'
+      f'アプリに 入れる ファイル（{len(BF.ASSET_FILES)}こ）：極ど的中と ノーマルど的中は 新しい 動画と さいごの 1まい（第4.171版：3倍の …4・第4.195版：極ど的中の 動画は …5 ＝ {"・".join(NOW)}）・音は 前と 同じ・前の 12こ（はじめの もの・…2・…3）は 入れない'
       '・第4.175版：ノーマルど的中の さいごの 1まい（nd_last4.webp）は アプリに 入れない（もう 出ない 絵：もとの フォルダには 残す）')
 B = BF.bundle()
-check(B['films']['sd_film'] == 'sd_film4.mp4' and B['films']['nd_film'] == 'nd_film4.mp4' and B['art']['sd'] == ['sd_last4.webp'] and B['art']['nd'] == []
+check(B['films']['sd_film'] == 'sd_film5.mp4' and B['films']['nd_film'] == 'nd_film4.mp4' and B['art']['sd'] == ['sd_last4.webp'] and B['art']['nd'] == []
       and 'sd_last4.webp' in B['reveal']['sd'] and not any(x in B['reveal']['sd'] for x in ('sd_last.webp', 'sd_last2.webp', 'sd_last3.webp'))
       and 'nd_last' not in B['reveal']['nd'] and 'class="nds"' not in B['reveal']['nd'] and 'class="ndt"' in B['reveal']['nd']
       and B['t']['SD'] == 9.9 and B['t']['ND'] == 9.9 and B['t']['SDS'] == {'FROM': 9.8, 'WAIT': 1.0} and B['t']['SDUP']['AT'] == 5.34,
@@ -152,7 +154,7 @@ allf = set(OLD) | set(NEW) | {'sfx_sd.m4a', 'sfx_nd.m4a', 'gk_film.mp4', 'gk_las
 sd1, nd1 = {'sd_film.mp4', 'sd_last.webp'}, {'nd_film.mp4', 'nd_last.webp'}
 sd2, nd2 = {'sd_film2.mp4', 'sd_last2.webp'}, {'nd_film2.mp4', 'nd_last2.webp'}
 check(S('fx_assets', allf) == set(OLD) and S('fx_assets', allf - {'sd_last3.webp'}) == sd1 | nd1 | nd2 and S('fx_assets', allf - {'nd_film3.mp4'}) == sd1 | sd2 | nd1
-      and S('fx_assets', allf - set(NEW)) == sd1 | nd1 and S('fx_assets', set(OLD1) | {'sfx_sd.m4a'}) == set() and len(assets_dir.FX_NEW) == 8
+      and S('fx_assets', allf - set(NEW)) == sd1 | nd1 and S('fx_assets', set(OLD1) | {'sfx_sd.m4a'}) == set() and len(assets_dir.FX_NEW) == 9
       and S('fx_assets', allf | set(NOW)) == set(OLD) | set(NEW) and S('fx_assets', allf | {'sd_film4.mp4', 'sd_last4.webp'}) == set(OLD) | {'sd_film3.mp4', 'sd_last3.webp'},
       'アプリに 入れない もの（assets_dir.superseded）：前の 動画と さいごの 1まいは、新しい 2つが そろって いる 組 だけ（極ど的中・ノーマルど的中 べつべつ。…3 が そろえば …2 と はじめの もの・'
       '…3 が なければ …2 を 使って はじめの もの だけ 外す）')
@@ -235,13 +237,13 @@ if os.path.isdir(fxd) and all(os.path.isfile(os.path.join(fxd, f)) for f in NEW)
     print('■ 軽い 版（アプリに 入る もの）')
     if assets_dir.is_lite('fx_assets'):
         man = assets_dir.manifest('fx_assets'); lt = assets_dir.lite('fx_assets'); fl = man['files']
-        want4 = (1, 'h264', 'High', 1170, 2532, 'yuv420p', '30/1', 315, True)      # 第4.171版：アプリに 入るのは 3倍の …4（くわしくは test_film_hq.py）
-        check(all(f in fl and os.path.isfile(os.path.join(lt, f)) for f in NOW) and not any(f in fl or os.path.exists(os.path.join(lt, f)) for f in list(OLD) + NEW) and assets_dir.stale('fx_assets') == ''
-              and fl['sd_film4.mp4']['p'] == 'crf24-slow-tail30:23/20:22/10:21' and fl['nd_film4.mp4']['p'] == 'crf24-slow-cut180' and all(fl[f]['how'] == 'film' for f in ('sd_film4.mp4', 'nd_film4.mp4'))
-              and probe(os.path.join(lt, 'sd_film4.mp4')) == want4 and probe(os.path.join(lt, 'nd_film4.mp4')) == want4[:7] + (180, True)      # 第4.175版：ノーマルど的中は 極ど的中の 入りに 使う はじめの 180コマ だけ（test_film_hq.py）
-              and all(os.path.getsize(os.path.join(lt, f)) < os.path.getsize(os.path.join(fxd, f)) * .85 for f in ('sd_film4.mp4', 'nd_film4.mp4'))
+        want4 = (1, 'h264', 'High', 1170, 2532, 'yuv420p', '30/1', 315, True)      # 第4.171版：アプリに 入るのは 3倍の …4（くわしくは test_film_hq.py）・第4.195版：極ど的中の 動画は …5（test_sd_thunder.py）
+        check(all(f in fl and os.path.isfile(os.path.join(lt, f)) for f in NOW) and not any(f in fl or os.path.exists(os.path.join(lt, f)) for f in list(OLD) + NEW + ['sd_film4.mp4']) and assets_dir.stale('fx_assets') == ''
+              and fl['sd_film5.mp4']['p'] == 'crf24-slow-tail30:23/20:22/10:21' and fl['nd_film4.mp4']['p'] == 'crf24-slow-cut180' and all(fl[f]['how'] == 'film' for f in ('sd_film5.mp4', 'nd_film4.mp4'))
+              and probe(os.path.join(lt, 'sd_film5.mp4')) == want4 and probe(os.path.join(lt, 'nd_film4.mp4')) == want4[:7] + (180, True)      # 第4.175版：ノーマルど的中は 極ど的中の 入りに 使う はじめの 180コマ だけ（test_film_hq.py）
+              and all(os.path.getsize(os.path.join(lt, f)) < os.path.getsize(os.path.join(fxd, f)) * .85 for f in ('sd_film5.mp4', 'nd_film4.mp4'))
               and all(md5(os.path.join(lt, f)) == md5(os.path.join(fxd, f)) for f in ('sd_last4.webp', 'nd_last4.webp')),
-              f'軽い 版：第4.171版の 3倍の 4つ だけ（前の 12こは ない）・動画は CRF 24（さいごの 30コマは 少しずつ きれいに）・形は もとと 同じ（極ど的中 {os.path.getsize(os.path.join(lt, "sd_film4.mp4")) / 1e6:.2f}MB・'
+              f'軽い 版：第4.171版の 3倍の 4つ（第4.195版：極ど的中の 動画は …5）だけ（前の 12こと …4 の 極ど的中の 動画は ない）・動画は CRF 24（さいごの 30コマは 少しずつ きれいに）・形は もとと 同じ（極ど的中 {os.path.getsize(os.path.join(lt, "sd_film5.mp4")) / 1e6:.2f}MB・'
               f'ノーマルど的中 {os.path.getsize(os.path.join(lt, "nd_film4.mp4")) / 1e6:.2f}MB・さいごの 1まい {os.path.getsize(os.path.join(lt, "sd_last4.webp")) / 1e3:.0f}KB・{os.path.getsize(os.path.join(lt, "nd_last4.webp")) / 1e3:.0f}KB）')
     else:
         print('  ※ 軽い 版（ios/lite/fx_assets）が ない ので、その 確かめは しない')

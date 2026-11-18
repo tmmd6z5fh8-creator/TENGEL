@@ -20,7 +20,8 @@ FX_NEW = ((('sgd_film2.mp4', 'sgd_last2.webp', 'sfx_sgd2.m4a'), ('sgd_film.mp4',
           (('nd_film3.mp4', 'nd_last3.webp'), ('nd_film.mp4', 'nd_last.webp', 'nd_film2.mp4', 'nd_last2.webp')),
           (('sd_film4.mp4', 'sd_last4.webp'), ('sd_film.mp4', 'sd_last.webp', 'sd_film2.mp4', 'sd_last2.webp', 'sd_film3.mp4', 'sd_last3.webp')),
           (('nd_film4.mp4', 'nd_last4.webp'), ('nd_film.mp4', 'nd_last.webp', 'nd_film2.mp4', 'nd_last2.webp', 'nd_film3.mp4', 'nd_last3.webp')),
-          (('gk_film2.mp4', 'gk_last2.webp'), ('gk_film.mp4', 'gk_last.webp')))
+          (('gk_film2.mp4', 'gk_last2.webp'), ('gk_film.mp4', 'gk_last.webp')),
+          (('sd_film5.mp4', 'sd_last4.webp'), ('sd_film.mp4', 'sd_last.webp', 'sd_film2.mp4', 'sd_last2.webp', 'sd_film3.mp4', 'sd_last3.webp', 'sd_film4.mp4')))
 #   第4.162版（22:32「一枚目の球体のシーン消して！…鳥居とか文字関係はこのファイルのデータを使って！」）：超神様の 動画・さいごの 1まい・音は 新しい もの（…2）を 使う。
 #   新しい ものが 3つ そろって いる ときは 前の もの（球体の 場面 あり）は 入れない（もとの フォルダには 残す）
 #   第4.163版（11/13 00:15「極ど的中の演出の馬、文字をこのファイルと入れ替えて！」・02:35「ノーマルど的中演出の文字このファイルと入れ替えて！」）：極ど的中（紫電）と
@@ -29,6 +30,9 @@ FX_NEW = ((('sgd_film2.mp4', 'sgd_last2.webp', 'sfx_sgd2.m4a'), ('sgd_film.mp4',
 #   組は（新しい もの, その ときに 入れない 前の もの）。…3 が そろって いる ときは …2 と はじめの ものを 入れない（どれも もとの フォルダには 残す）
 #   第4.171版（まさちゃん 2026/11/14 16:18「①的中演出の画質上げる！」）：極ど的中・ノーマルど的中は 3倍（1170×2532）で 描き直した 動画と さいごの 1まい（…4）・
 #   神様極的中は 3倍に のばした もの（gk_film2.mp4・gk_last2.webp）。そろって いる 組は 前の もの（…3・はじめの もの）を 入れない
+#   第4.195版（まさちゃん 2026/11/18 12:02「極ど的中の演出、このファイルの3Dと入れ替えて！」）：極ど的中の 動画は 顔の 場面だけ 新しい 馬に した sd_film5.mp4。
+#   さいごの 1まいは 前の まま（sd_last4.webp：動画の うしろは …4 と 1画素も 同じ）→ sd_film5.mp4 と sd_last4.webp が ある ときは 前の 動画（…4・…3・…2・はじめの もの）と
+#   前の さいごの 1まい（…3・…2・はじめの もの）を 入れない
 FIG_GONE = re.compile(r'fg[267](\.json|\.bin|_[a-z]+\.webp)')      # 第4.176版：なくした フィギュアの デザイン（番号 2・6・7）の 形と 絵
 RT_OLD = re.compile(r'rt_(normal|maboroshi|kamisama)_(plate|knob|stick|ptr)\.webp')      # ルーレットの 前の 絵（第4.157版まで）
 INFO = 'lite.info'          # 台帳（JSON）。名前の おわりが json・webp・bin・m4a で ない ので、フォルダごと 入れる ビルドの 所でも アプリには 入らない

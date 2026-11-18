@@ -8,6 +8,7 @@
 #   ・さいごの 1まいも 3倍・動画の さいごの コマと 同じ 絵
 #   ・もとの ファイル（前の 動画・さいごの 1まい）は 消して いない・1バイトも かわって いない
 #   ・軽い 版（アプリに 入る もの）：新しい もの だけ・CRF 24（さいごの 30コマは 少しずつ きれいに）・形は もとと 同じ
+#   第4.195版：アプリの 極ど的中の 動画は 顔の 場面だけ 新しい 馬の sd_film5.mp4（test_sd_thunder.py）。ここで 見る sd_film4.mp4 は もとの フォルダに のこる もの（sd_film5.mp4 の もと）
 #   python3 test_film_hq.py   （ios/fx_assets/ が ある とき だけ ファイルの 確かめ。ない とき（CI）は コードの 確かめ だけ）
 import hashlib, json, os, shutil, subprocess, sys, tempfile
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
@@ -34,10 +35,10 @@ OLD = {'sd_film3.mp4': 'b3a39134056574606fb399a5d195183b', 'sd_last3.webp': 'f98
        'gk_film.mp4': 'e0cbfa4408ca4092dd53550e50821c4a', 'gk_last.webp': '922c113414d599bfdc354a1fe1286e45', 'sgd_film2.mp4': '561c2d853e363119cd713e693d50b6f1', 'sgd_last2.webp': '657236f8c21d03874b2946d4291e8425'}
 
 print('■ アプリ（動画の 名前）')
-check(BF.FILMS == {'sgd_film': 'sgd_film2.mp4', 'sd_film': 'sd_film4.mp4', 'nd_film': 'nd_film4.mp4', 'gk_film': 'gk_film2.mp4'}
+check(BF.FILMS == {'sgd_film': 'sgd_film2.mp4', 'sd_film': 'sd_film5.mp4', 'nd_film': 'nd_film4.mp4', 'gk_film': 'gk_film2.mp4'}      # 第4.195版：極ど的中の 動画は 顔の 場面だけ 新しい 馬の …5（test_sd_thunder.py）
       and BF.STILL == {'sgd_last': 'sgd_last2.webp', 'sd_last': 'sd_last4.webp', 'nd_last': 'nd_last4.webp', 'gk_last': 'gk_last2.webp'}
       and BF.ART == {'sd': ['sd_last4.webp'], 'nd': [], 'sgd': ['sgd_last2.webp'], 'gk': ['gk_last2.webp']} and len(BF.ASSET_FILES) == 23 and 'nd_last4.webp' not in BF.ASSET_FILES,
-      f'アプリに 入れる 動画と さいごの 1まい：極ど的中・ノーマルど的中は …4・神様極的中は …2（3倍の もの）・超神様は いままで どおり（ぜんぶで {len(BF.ASSET_FILES)}こ：第4.175版から ノーマルど的中の さいごの 1まいは 入れない）')
+      f'アプリに 入れる 動画と さいごの 1まい：極ど的中・ノーマルど的中は …4（第4.195版：極ど的中の 動画は 顔の 場面だけ 新しい 馬の …5）・神様極的中は …2（3倍の もの）・超神様は いままで どおり（ぜんぶで {len(BF.ASSET_FILES)}こ：第4.175版から ノーマルど的中の さいごの 1まいは 入れない）')
 B = BF.bundle()
 import lite_assets as LA
 import normal_do as NDM
@@ -47,11 +48,11 @@ check(B['films'] == BF.FILMS and all(BF.STILL[k + '_last'] in B['reveal'][k] for
       and B['t']['SD'] == 9.9 and B['t']['ND'] == 9.9 and B['t']['GKB'] == 12.0 and B['t']['SDS'] == {'FROM': 9.8, 'WAIT': 1.0},
       '演出の 束（window.__FX）：動画と さいごの 1まいは 新しい 名前・ボードが 出る 時刻は 前と 同じ（音と ずれない）')
 fx = rd('fx.js')
-check("video('sd_film')" in fx and "video('nd_film')" in fx and "video('gk_film')" in fx and 'film4' not in fx and 'gk_film2' not in fx, 'fx.js は 動画を 名前の 表（A.films）で 引く（ファイルの 名前は 書いて いない ＝ かえて いない）')
+check("video('sd_film')" in fx and "video('nd_film')" in fx and "video('gk_film')" in fx and 'film4' not in fx and 'film5' not in fx and 'gk_film2' not in fx, 'fx.js は 動画を 名前の 表（A.films）で 引く（ファイルの 名前は 書いて いない ＝ かえて いない）')
 S = assets_dir.superseded
 allf = set(OLD) | {f for _n, a, b, _o, _p, _c, _r in FILMS for f in (a, b)} | {'sfx_sd.m4a', 'sfx_gk.m4a'}
 check(S('fx_assets', allf) == {'sd_film3.mp4', 'sd_last3.webp', 'nd_film3.mp4', 'nd_last3.webp', 'gk_film.mp4', 'gk_last.webp'} and S('fx_assets', allf - {'sd_last4.webp'}) == {'nd_film3.mp4', 'nd_last3.webp', 'gk_film.mp4', 'gk_last.webp'}
-      and S('fx_assets', allf - {'gk_film2.mp4'}) == {'sd_film3.mp4', 'sd_last3.webp', 'nd_film3.mp4', 'nd_last3.webp'} and S('fx_assets', set(OLD)) == set() and len(assets_dir.FX_NEW) == 8,
+      and S('fx_assets', allf - {'gk_film2.mp4'}) == {'sd_film3.mp4', 'sd_last3.webp', 'nd_film3.mp4', 'nd_last3.webp'} and S('fx_assets', set(OLD)) == set() and len(assets_dir.FX_NEW) == 9,
       'アプリに 入れない もの（assets_dir.superseded）：3倍の 動画と さいごの 1まいが そろって いる 組 だけ、前の もの（…3・神様極的中の はじめの もの）を 入れない（そろって いない 組は 前の ものを 使う）')
 bf = rd('kisekae', 'build_fx_films.py'); nf = rd('kisekae', 'flat', 'normal_film.py'); sf = rd('kisekae', 'flat', 'shiden_film.py')
 check("GK_UP = 'scale=1170:2532:flags=lanczos+accurate_rnd+full_chroma_int,cas=0.5'" in bf and 'def gk_film_up():' in bf and "if float(os.environ.get('SCALE', '1')) != 1:\n        splice = False" in bf
@@ -138,15 +139,17 @@ if os.path.isdir(fxd) and all(os.path.isfile(os.path.join(fxd, f)) for f in NEWF
     print('■ 軽い 版（アプリに 入る もの）')
     if assets_dir.is_lite('fx_assets'):
         man = assets_dir.manifest('fx_assets'); lt = assets_dir.lite('fx_assets'); fl = man['files']; lsz = osz = 0
-        ok = assets_dir.stale('fx_assets') == '' and all(f in fl and os.path.isfile(os.path.join(lt, f)) for f in NEWF) and not any(f in fl or os.path.exists(os.path.join(lt, f)) for f in OLD if not f.startswith('sgd'))
+        APP = {'sd_film4.mp4': BF.FILMS['sd_film']}      # 第4.195版：アプリ（軽い 版）の 極ど的中の 動画は 顔の 場面だけ 新しい 馬の sd_film5.mp4（うしろは …4 と 同じ：test_sd_thunder.py）。…4 は もとの フォルダ だけ
+        ok = assets_dir.stale('fx_assets') == '' and all(f in fl and os.path.isfile(os.path.join(lt, f)) for f in (APP.get(x, x) for x in NEWF)) and not any(f in fl or os.path.exists(os.path.join(lt, f)) for f in list(OLD) + list(APP) if not f.startswith('sgd'))
         for nm, film, last, ofilm, olast, n, redraw in FILMS:
+            film = APP.get(film, film)
             cutn = LA.CUT.get(film)                      # 第4.175版：はじめの 所 だけ 入れる 動画（ノーマルど的中：180コマ）
             ok = ok and fl[film]['how'] == 'film' and fl[film]['p'] == (f'crf24-slow-cut{cutn}' if cutn else 'crf24-slow-tail30:23/20:22/10:21' if redraw else 'crf27-slow-tail30:25/20:23/10:21') and probe(os.path.join(lt, film)) == (1, 'h264', 'High', 1170, 2532, 'yuv420p', '30/1', cutn or n, True)
             ok = ok and os.path.getsize(os.path.join(lt, film)) < os.path.getsize(os.path.join(fxd, film)) * 0.85 and md5(os.path.join(lt, last)) == md5(os.path.join(fxd, last))
             lsz += os.path.getsize(os.path.join(lt, film)) + os.path.getsize(os.path.join(lt, last))
-        check(ok, f'軽い 版：新しい 6つ（動画 3本・さいごの 1まい 3まい）だけ（前の ものは ない）・描き直した 2本は CRF 24・のばして 作った 神様極的中は CRF 27（極ど的中・神様極的中は さいごの 30コマを 少しずつ きれいに）・形は もとと 同じ'
+        check(ok, f'軽い 版：新しい 6つ（動画 3本・さいごの 1まい 3まい：第4.195版から 極ど的中の 動画は {APP["sd_film4.mp4"]}）だけ（前の ものは ない）・描き直した 2本は CRF 24・のばして 作った 神様極的中は CRF 27（極ど的中・神様極的中は さいごの 30コマを 少しずつ きれいに）・形は もとと 同じ'
                   f'（第4.175版：ノーマルど的中は はじめの {LA.CUT["nd_film4.mp4"]}コマ だけ）・さいごの 1まいは もとの まま（6つで {lsz / 1e6:.1f}MB）')
-        print('  軽い 版の 大きさ：' + '・'.join(f'{JP[nm]} {os.path.getsize(os.path.join(lt, film)) / 1e6:.2f}MB' for nm, film, *_ in FILMS))
+        print('  軽い 版の 大きさ：' + '・'.join(f'{JP[nm]} {os.path.getsize(os.path.join(lt, APP.get(film, film))) / 1e6:.2f}MB' for nm, film, *_ in FILMS))
         # 第4.175版（まさちゃん 2026/11/15 17:45「アプリ内のいらないデータも消して！」）：ノーマルど的中の 動画・音は 極ど的中の 入り（はじめの 5.34秒）に しか 使わない → 軽い 版（アプリ）には はじめの 所 だけ
         fxj = rd('fx.js'); cut = LA.CUT.get('nd_film4.mp4', 0); acut = LA.ACUT.get('sfx_nd.m4a', 0); need = NDM.SD_UP['AT'] + 0.6
         check(LA.CUT == {'nd_film4.mp4': 180} and LA.ACUT == {'sfx_nd.m4a': 6.5} and cut / 30 >= need and acut >= need + 0.3

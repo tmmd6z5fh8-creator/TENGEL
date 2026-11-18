@@ -177,8 +177,15 @@ def probe(p):
     return {'n': len(st), 'v': v[0] if v else None, 'fast': 0 <= b.find(b'moov') < (b.find(b'mdat') if b.find(b'mdat') >= 0 else 1 << 30)}
 
 
+TAIL_LAST = {'sd_film5.mp4': 'sd_last4.webp'}
+#   第4.195版：極ど的中の 動画は 顔の 場面だけ 入れ替えた sd_film5.mp4（うしろは sd_film4.mp4 と 1画素も 同じ）→ さいごの 1まいは 前の まま sd_last4.webp
+
+
 def has_tail(src):
-    """さいごの 1まい（<名前>_last.webp）に つながる 動画か（gk_film.mp4 → gk_last.webp。作り直した 版は 数字つき：sgd_film2.mp4 → sgd_last2.webp〈第4.162版〉）"""
+    """さいごの 1まい（<名前>_last.webp）に つながる 動画か（gk_film.mp4 → gk_last.webp。作り直した 版は 数字つき：sgd_film2.mp4 → sgd_last2.webp〈第4.162版〉・
+       さいごの 1まいが 前の まま の 動画は TAIL_LAST〈第4.195版〉）"""
+    if os.path.basename(src) in TAIL_LAST:
+        return os.path.isfile(os.path.join(os.path.dirname(src), TAIL_LAST[os.path.basename(src)]))
     m = re.fullmatch(r'(.+)_film(\d*)\.mp4', os.path.basename(src))
     return bool(m) and os.path.isfile(os.path.join(os.path.dirname(src), m.group(1) + '_last' + m.group(2) + '.webp'))
 

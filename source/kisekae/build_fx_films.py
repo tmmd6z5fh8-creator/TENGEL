@@ -22,6 +22,9 @@
                      第4.164版（11/13 08:28「全体的に文字が読みづらい！色合い明るくして！」）：字の 色合いを 明るく（flat/shiden_gtext.py の LOOK）＝ 名前は …3。
                      ※ 前の 動画＝ sd_film.mp4・sd_film2.mp4 と さいごの 1まいは もとの フォルダに のこす（上書きしない・アプリには 入れない）
      sd_last3.webp … 紫電の 動画の さいごの 1まい（視差効果を減らす 時・動画が 動かない 時）
+     sd_film5.mp4 … 第4.195版（まさちゃん 2026/11/18 12:02「極ど的中の演出、このファイルの3Dと入れ替えて！かなり顔をアップにして作成して！…生きてる馬のように演出して！」）：
+                     顔の 場面（54〜113コマ）だけ 新しい 馬（Violet_Thunder：flat/shiden_thunder.py・GLB の 場所は SD_THUNDER_GLB）を 3倍で 描いて sd_film4.mp4 に つなぐ
+                     （顔の あとの キーフレームから うしろは 圧縮し直さない）。さいごの 1まいは sd_last4.webp の まま。FILMS=sd・2コアで 約40分
      nd_film3.mp4 … ノーマルど的中の 動画（第4.77版：flat/normal_film.py：真っ暗 30 → 光の 玉 → シルバーの 競走馬と 騎手（flat/nd_horse.py の 走り）が 芝の 上を ギャロップ
                      → 光に つつまれる → 低い 目線（芝・大きな 玉）に 3D の ど！的中（flat/shiden_logo.py）が 落ちて くる ＝ 315コマ・10.5秒（さいごの 場面を 2.3秒 のばした）・780×1688・CRF 20。2コアで 約1時間）。FILMS=nd で これだけ 作る
                      第4.163版（02:35「ノーマルど的中演出の文字このファイルと入れ替えて！」）：ど！／的中は まさちゃんの 3D（flat/shiden_gtext.py の nd）。字が 出る 前（170コマ目まで）は
@@ -165,6 +168,18 @@ def sd_film():
     n = int(round(SDM.FILM['END'] * SDM.FILM['FPS']))
     film, last = BF.FILMS['sd_film'], BF.STILL['sd_last']
     f0, f1 = int(round(SDM.FILM['BLACK'] * SDM.FILM['FPS'])), int(round(SDM.FILM['FACE'] * SDM.FILM['FPS']))
+    if film == 'sd_film5.mp4':
+        # 第4.195版（まさちゃん 2026/11/18 12:02「極ど的中の演出、このファイルの3Dと入れ替えて！」）：顔の 場面（54〜113コマ）だけ 新しい 馬（flat/shiden_thunder.py：
+        #   GLB の 場所は SD_THUNDER_GLB）を 3倍（SCALE=1.5）で 描いて、前の 動画（sd_film4.mp4）に つなぐ（顔の あとの キーフレームから うしろは 圧縮し直さない）。
+        #   さいごの 1まいは 前の まま（sd_last4.webp）。できた コマ・バッファは とばす（作りかけから つづける）
+        T = os.path.join(FLAT, 'shiden_thunder.py'); buf = os.path.join(work, 'sdt_buf'); sdt = os.path.join(work, 'sdt'); old = os.path.join(out, 'sd_film4.mp4')
+        assert os.path.exists(old) and os.path.exists(os.path.join(out, last)), '前の 動画（sd_film4.mp4）と さいごの 1まい（sd_last4.webp）が いる'
+        env = dict(os.environ, SCALE=os.environ.get('SCALE', '1.5'), SD_COMP_SKIP='1')
+        run([sys.executable, T, '--buf', buf], env=env, cwd=FLAT)
+        run([sys.executable, T, '--comp', buf, sdt], env=env, cwd=FLAT)
+        run([sys.executable, T, '--splice', old, sdt, os.path.join(out, film)], env=env, cwd=FLAT)
+        print(film, f'{os.path.getsize(os.path.join(out, film)) / 1e6:.2f}MB', f'{n}コマ（さいごの 1まいは {last} の まま）', flush=True)
+        return
     if os.environ.get('SD_HORSE', 'new') != 'old' and not all(os.path.exists(os.path.join(sd, f'f{i:03d}.png')) for i in range(f0, f1)):
         buf = os.path.join(work, 'sd_buf')
         run([sys.executable, os.path.join(FLAT, 'shiden_film.py'), '--facebuf', buf])
