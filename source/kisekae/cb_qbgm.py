@@ -1,18 +1,19 @@
 # 決戦調査の BGM（第4.196版・まさちゃん 2026/11/18 15:09「BGMは、決戦調査用の闘いに合うBGMを作成して！」）
+#   第4.198版（まさちゃん 21:37「BGMは、イントロだけでいいや！ ただイントロももう少し音暗くしてほしい！ 未来の崩壊した都市に合いそうな音楽がいい！」→ 聞く 用の ファイル → 21:45「いいね！これ入れて！」）：
+#     前の 曲（32小節：A イントロ → B 金管の テーマ → C 声の 和音 → D）の イントロ だけを もとに、暗い 音で 作り直した 16小節（イントロの 形を 2回：2回目は 少し 厚く）
 #   ぜんぶ 計算で 作る（録音・よその 曲・よその 音は 使わない）
 #   python3 kisekae/cb_qbgm.py                 … ios/cb_assets/cb_qbgm.m4a（アプリに 入れる 形：ステレオ 44.1kHz・AAC）
 #   python3 kisekae/cb_qbgm.py wav <出す wav>   … 聞いて・測って 確かめる 用（くり返す 1回り だけ）
 #
-#   曲：d moll（レ の 短調）・132 BPM・4/4・32小節（1回り 約58.2秒＝LOOP：cb/cb_app.js の BGMS.quest.len と 同じ）
-#     A（1〜8小節）  ：太鼓 ＋ 低い 弦の きざみ（8分）＋ 弦の 速い 分散（16分）… 戦いの 前の 高まり
-#     B（9〜16小節） ：金管の テーマ（勇ましい 旋律）＋ 小太鼓 ＋ シャカシャカ
-#     C（17〜24小節）：テーマを 1オクターブ 上で（金管 ＋ 声の 和音）・シンバル … いちばん 盛り上がる
-#     D（25〜32小節）：太鼓 と 声の 和音 だけに 落として → 小太鼓の ロールと 吸いこむ 音で 盛り上げて A へ もどる
-#     和音：Dm｜B♭｜C｜A｜Dm｜B♭｜Gm｜A（A〜C）・B♭｜C｜Dm｜Dm｜B♭｜C｜A｜A（D）
-#   楽器：太鼓（低い ドン：音が 下がる 正弦波 ＋ 皮の 雑音）・中太鼓・小太鼓（雑音 ＋ 胴の 音）・シャカシャカ（高い 雑音）・シンバル・
-#         低い 弦／弦の 分散（のこぎり波を 3本 少し ずらして 重ねる・短く 切る）・金管（のこぎり波：立ち上がりで 明るく・ビブラート）・声の 和音（のこぎり波を 母音「あ」の ひびきに）
-#   くり返し：1回りより 長い 音の しっぽ（シンバル・ひびき）は 頭へ 回す（つなぎ目で 音が とばない）。アプリ用の ファイルは 1回りの 前と うしろに PRE 秒（0.5秒）ずつ 同じ 音の つづき
+#   曲：d moll（レ の 短調）・132 BPM（前の イントロと 同じ 速さ）・4/4・16小節（1回り 約29.1秒＝LOOP：cb/cb_app.js の BGMS.quest.len と 同じ）
+#     イントロの 形（前の 曲の 1〜8小節）：太鼓の きざみ（1・2の裏・3・4拍）＋ 低い 音の 8分の きざみ（根・根・オクターブ上・根・根・根・5度・オクターブ上）＋ 16分の 分散
+#     → 暗い 音に：太鼓は こわれた 工場の 鉄の 音（低い ドン ＋ 鉄の ひびき）・低い 弦 → 暗い シンセの ベース（フィルターが ゆっくり 開いて 閉じる）・
+#        明るい 弦の 分散 → こもった ガラスの 音（1オクターブ 下・遠くで はねかえる こだま）・明るい シンバル → 吸いこむ 暗い 風の 音・
+#        うしろに 低い うなり（こわれた 都市の 空気）・遠くの 鉄の きしみ・遠くの サイレン（1回り に 1回・小さく）
+#     和音（もっと 暗く：明るい C を やめて、♭II の E♭ で「こわれた」感じ）：Dm｜B♭｜Gm｜A｜Dm｜B♭｜E♭｜A（2回）
+#   くり返し：1回りより 長い 音の しっぽ（ひびき・こだま）は 頭へ 回す（つなぎ目で 音が とばない）。アプリ用の ファイルは 1回りの 前と うしろに PRE 秒（0.5秒）ずつ 同じ 音の つづき
 #     → アプリは まん中の 1回り だけを くり返す（いつもの BGM と 同じ 形）
+#   iPhone の スピーカーでも 聞こえる ように、低い 音は 倍音（100〜400Hz）を 残す・高い 音（6kHz〜）は へらして 暗く
 import os, subprocess, sys, tempfile
 import numpy as np
 from scipy import signal
@@ -24,13 +25,14 @@ SR = 44100
 TAU = 2 * np.pi
 BPM = 132
 BEAT = 60.0 / BPM
-BARS = 32
-LOOP = BARS * 4 * BEAT          # 1回り（秒）＝ 32 * 4 * 60 / 132
+BARS = 16
+LOOP = BARS * 4 * BEAT          # 1回り（秒）＝ 16 * 4 * 60 / 132
 PRE = 0.5
 PEAK = 0.50
-RMS = 0.060                     # ふつうの 大きさ（いつもの BGM は 0.024 ぐらい：たたかいの 曲なので 少し 大きく・効果音が 聞こえる ぐらい）
+PHONE = 0.030                   # iPhone の スピーカーで 聞こえる 所（280Hz〜7kHz）の ふつうの 大きさ：前の 曲の イントロ 0.023・曲 ぜんたい 0.042 の あいだ（低い 音は スピーカーから 出ない ので こちらで そろえる）
+RMS_MAX = 0.075                 # ぜんぶの 音の ふつうの 大きさの 上限（イヤホンで 大きく なりすぎない）
 NL = int(round(LOOP * SR))
-TAIL = int(4.0 * SR)            # 1回りの うしろに はみ出して よい 長さ（あとで 頭へ 回す）
+TAIL = int(5.0 * SR)            # 1回りの うしろに はみ出して よい 長さ（あとで 頭へ 回す）
 
 NOTE = {'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3, 'E': 4, 'F': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11}
 
@@ -41,13 +43,8 @@ def hz(n):
     return 440.0 * 2 ** ((NOTE[nm] + 12 * (oc + 1) - 69) / 12)
 
 
-CH = {'Dm': ['D', 'F', 'A'], 'Bb': ['Bb', 'D', 'F'], 'C': ['C', 'E', 'G'], 'A': ['A', 'C#', 'E'], 'Gm': ['G', 'Bb', 'D']}
-PROG_ABC = ['Dm', 'Bb', 'C', 'A', 'Dm', 'Bb', 'Gm', 'A']
-PROG_D = ['Bb', 'C', 'Dm', 'Dm', 'Bb', 'C', 'A', 'A']
-
-
-def chord_of(bar):
-    return (PROG_D if bar >= 24 else PROG_ABC)[bar % 8]
+CH = {'Dm': ['D', 'F', 'A'], 'Bb': ['Bb', 'D', 'F'], 'Gm': ['G', 'Bb', 'D'], 'A': ['A', 'C#', 'E'], 'Eb': ['Eb', 'G', 'Bb']}
+PROG = ['Dm', 'Bb', 'Gm', 'A', 'Dm', 'Bb', 'Eb', 'A']
 
 
 def tb(bar, beat=0.0):
@@ -75,8 +72,16 @@ def saw(f, sec, cut=6000, ph=0.0):
     return y * (2 / np.pi)
 
 
+def sq(f, sec, cut=3000, ph=0.0):
+    """四角い 波（奇数の 倍音 だけ）"""
+    t = t_(sec); y = np.zeros(len(t)); nh = max(1, min(40, int(cut / f)))
+    for k in range(1, nh + 1, 2):
+        y += np.sin(TAU * f * k * t + ph * k) / k
+    return y * (4 / np.pi)
+
+
 def lp(x, fc, order=2):
-    return signal.lfilter(*signal.butter(order, fc / (SR / 2), 'low'), x)
+    return signal.lfilter(*signal.butter(order, min(0.99, fc / (SR / 2)), 'low'), x)
 
 
 def bp(x, lo, hi, order=2):
@@ -90,171 +95,212 @@ def adsr(n, a, d, s, r, sec):
     return e * rel
 
 
-# ---------------- 打楽器 ----------------
-def taiko(rng, big=1.0):
-    """太鼓：iPhone の スピーカーでも 聞こえる ように、低すぎる 音（〜60Hz）より 胴の ひびき（100〜300Hz）と 皮の 音を 大きく"""
-    sec = 0.9; t = t_(sec)
-    f = 64 + 80 * np.exp(-t * 20)
+def svf(x, fc, q=0.7, band=False):
+    """時間で かわる フィルター（fc＝Hz：数 か 配列）。band＝False：低い 音だけ 通す／True：fc の まわり だけ 通す。q＝山の 高さ（少し 鳴る）"""
+    y = np.zeros_like(x); lo = bd = 0.0; damp = 1.0 / q
+    f = 2 * np.sin(np.pi * np.clip(np.broadcast_to(fc, x.shape), 20, SR / 6) / SR)
+    for i in range(len(x)):
+        hi = x[i] - lo - damp * bd; bd += f[i] * hi; lo += f[i] * bd; y[i] = bd if band else lo
+    return y
+
+
+def svf_lp(x, fc, q=0.7):
+    return svf(x, fc, q, False)
+
+
+# ---------------- 打楽器（こわれた 工場の 音）----------------
+def kick(rng, big=1.0):
+    """低い ドン：音が 下がる 正弦波（倍音を 少し にごらせて iPhone でも 聞こえる 胴の 音）＋ 鉄の 皮の 雑音"""
+    sec = 0.95; t = t_(sec)
+    f = 52 + 95 * np.exp(-t * 24)
     ph = TAU * np.cumsum(f) / SR
-    body = (0.7 * np.sin(ph) + 0.55 * np.sin(2.32 * ph) * np.exp(-t * 7) + 0.3 * np.sin(3.6 * ph) * np.exp(-t * 12)) * np.exp(-t * (4.6 / big))
-    skin = bp(rng.standard_normal(len(t)), 150, 1600) * np.exp(-t * 30) * 0.9
-    return (body + skin) * np.minimum(1, t / 0.002)
+    body = np.tanh(1.8 * (np.sin(ph) + 0.35 * np.sin(2.0 * ph) * np.exp(-t * 6))) * np.exp(-t * (4.2 / big))
+    skin = bp(rng.standard_normal(len(t)), 120, 900) * np.exp(-t * 26) * 0.9
+    return (body + skin) * np.minimum(1, t / 0.003)
 
 
-def tom(rng, f0=120):
-    sec = 0.5; t = t_(sec)
-    f = f0 * (1 + 0.5 * np.exp(-t * 30))
-    body = np.sin(TAU * np.cumsum(f) / SR) * np.exp(-t * 9)
-    skin = bp(rng.standard_normal(len(t)), 300, 2500) * np.exp(-t * 45) * 0.4
-    return body + skin
+def clank(rng, f0=210.0, g=1.0):
+    """鉄の ひびき（倍音が そろわない 鉄の 板：こわれた ビルの 鉄骨）"""
+    sec = 1.6; t = t_(sec); y = np.zeros(len(t))
+    for k, (r, d, a) in enumerate(((1.0, 3.2, 1.0), (2.31, 4.5, 0.7), (3.87, 6.0, 0.45), (5.62, 8.0, 0.30), (7.15, 10.0, 0.18))):
+        y += a * np.sin(TAU * f0 * r * t + rng.uniform(0, TAU)) * np.exp(-t * d)
+    hit = bp(rng.standard_normal(len(t)), 400, 3000) * np.exp(-t * 60) * 0.5
+    return lp((y + hit) * np.minimum(1, t / 0.002), 3500) * g
 
 
-def snare(rng, g=1.0):
-    sec = 0.35; t = t_(sec)
-    nz = bp(rng.standard_normal(len(t)), 1500, 7500) * np.exp(-t * 18)
-    body = np.sin(TAU * 196 * t) * np.exp(-t * 30) * 0.5
-    return (nz + body) * g
+def low_tom(rng, f0=95):
+    """低い 鉄の 太鼓（4小節ごとの おかず）"""
+    sec = 0.6; t = t_(sec)
+    f = f0 * (1 + 0.6 * np.exp(-t * 28))
+    body = np.tanh(1.5 * np.sin(TAU * np.cumsum(f) / SR)) * np.exp(-t * 7.5)
+    ring = np.sin(TAU * f0 * 2.7 * t) * np.exp(-t * 14) * 0.25
+    skin = bp(rng.standard_normal(len(t)), 200, 1500) * np.exp(-t * 40) * 0.35
+    return body + ring + skin
 
 
-def shaker(rng):
-    sec = 0.08; t = t_(sec)
-    return bp(rng.standard_normal(len(t)), 5000, 12000) * np.exp(-t * 60) * np.minimum(1, t / 0.006)
+def snap(rng, g=1.0):
+    """乾いた 打つ 音（2回目の 8小節の 2・4拍：こもった 手拍子）"""
+    sec = 0.3; t = t_(sec); x = rng.standard_normal(len(t))
+    e = np.exp(-t * 34) + 0.5 * np.exp(-np.maximum(0, t - 0.011) * 34) * (t > 0.011) + 0.3 * np.exp(-np.maximum(0, t - 0.022) * 30) * (t > 0.022)
+    return bp(x, 700, 2600) * e * g
 
 
-def crash(rng, sec=3.2):
-    t = t_(sec); x = rng.standard_normal(len(t))
-    y = bp(x, 3500, 12000) + 0.5 * bp(x, 7000, 15000)
-    return y * np.exp(-t * 1.25) * np.minimum(1, t / 0.004)
+def tick(rng):
+    """16分の 小さな 金属の きざみ（2回目の 8小節：遠くの 機械）"""
+    sec = 0.05; t = t_(sec)
+    return bp(rng.standard_normal(len(t)), 2500, 5500) * np.exp(-t * 90) * np.minimum(1, t / 0.002)
 
 
-def riser(rng, sec):
-    """吸いこむ 音（雑音が だんだん 大きく 明るく）"""
-    t = t_(sec); x = rng.standard_normal(len(t)); r = (t / sec) ** 2.4
-    return lp(x, 900) * r * 0.6 + bp(x, 2000, 9000) * r ** 1.8 * 0.35
+def swell(rng, sec):
+    """吸いこむ 暗い 風（区切りの 前：明るい シンバルの かわり）"""
+    t = t_(sec); x = rng.standard_normal(len(t)); r = (t / sec) ** 2.2
+    fc = 300 + 1700 * r
+    return svf_lp(x, fc, 1.4) * r * 0.9
+
+
+def boom(rng):
+    """区切りの 頭：低い ドーン（遠くの くずれる 音）"""
+    sec = 3.0; t = t_(sec)
+    f = 38 + 30 * np.exp(-t * 3)
+    y = np.tanh(2.2 * np.sin(TAU * np.cumsum(f) / SR)) * np.exp(-t * 1.6)
+    rum = lp(rng.standard_normal(len(t)), 260) * np.exp(-t * 1.2) * 0.8
+    return (y + rum) * np.minimum(1, t / 0.01)
 
 
 # ---------------- 音の ある 楽器 ----------------
-def string_note(f, sec, rng, bright=3200):
-    """弦（3本 少し ずらして 重ねた のこぎり波・短く）"""
-    y = sum(saw(f * (1 + d), sec + 0.05, cut=bright * 1.6, ph=rng.uniform(0, TAU)) for d in (-0.0035, 0.0, 0.004)) / 3
-    y = lp(y, bright)
-    return y[:int(sec * SR)] * adsr(int(sec * SR), 0.008, 0.06, 0.35, 0.05, sec)
+def bass_note(f, sec, rng, cut):
+    """暗い シンセの ベース：のこぎり波 2本（少し ずらす）＋ 1オクターブ 下の 四角 → 低い 音だけ 通す（cut：その 時の 開き）"""
+    n = int(sec * SR)
+    y = 0.6 * saw(f * 0.997, sec + 0.05, cut=2400, ph=rng.uniform(0, TAU)) + 0.6 * saw(f * 1.003, sec + 0.05, cut=2400, ph=rng.uniform(0, TAU)) + 0.45 * sq(f * 0.5, sec + 0.05, cut=900)
+    y = y[:n]
+    env = adsr(n, 0.004, 0.10, 0.55, 0.05, sec)
+    fc = cut * (0.55 + 0.9 * np.exp(-np.arange(n) / SR * 18))          # 打った すぐ あとだけ 少し 開く
+    return np.tanh(1.4 * svf_lp(y, fc, 1.6)) * env
 
 
-def bass_note(f, sec, rng):
-    y = saw(f, sec + 0.05, cut=900, ph=rng.uniform(0, TAU)) + 0.4 * saw(f * 0.5, sec + 0.05, cut=500)
-    y = lp(y, 520, 3)
-    return y[:int(sec * SR)] * adsr(int(sec * SR), 0.006, 0.12, 0.6, 0.06, sec)
-
-
-def brass_note(f, sec, rng, bright=1.0):
+def glass(f, sec, rng):
+    """こもった ガラスの 音（16分の 分散：FM で 少し 金属っぽく・高い 音は けずる）"""
     n = int(sec * SR); t = np.arange(n) / SR
-    vib = 1 + 0.005 * np.sin(TAU * 5.2 * t) * np.clip((t - 0.25) / 0.3, 0, 1)
-    ph = TAU * np.cumsum(f * vib) / SR; y = np.zeros(n); nh = max(1, min(30, int(7000 / f)))
-    env_b = 0.35 + 0.65 * np.exp(-t * 6)                     # 立ち上がりで 明るい
-    for k in range(1, nh + 1):
-        y += np.sin(k * ph + 0.2 * k) / k * np.exp(-k * (0.30 / bright) / (0.6 + env_b))
-    return y * adsr(n, 0.035, 0.25, 0.75, 0.12, sec)
+    mod = np.sin(TAU * f * 2.0 * t) * (1.6 * np.exp(-t * 22))
+    y = np.sin(TAU * f * t + mod + rng.uniform(0, TAU)) * np.exp(-t * 9) * np.minimum(1, t / 0.003)
+    return lp(y, 2200)
 
 
-def choir(fs, sec, rng):
-    """声の 和音（母音「あ」：のこぎり波 → 3つの ひびき）"""
-    n = int(sec * SR); y = np.zeros(n)
+def drone(fs, sec, rng):
+    """低い うなり（こわれた 都市の 空気）：少しずつ ずらした のこぎり波を ゆっくり 開く フィルターで"""
+    n = int(sec * SR); t = np.arange(n) / SR; y = np.zeros(n)
     for f in fs:
-        for d in (-0.004, 0.003):
-            y += saw(f * (1 + d), sec, cut=5000, ph=rng.uniform(0, TAU))[:n]
-    v = 0.0
-    for fc, g in ((730, 1.0), (1090, 0.55), (2440, 0.25)):
-        v = v + bp(y, fc * 0.82, fc * 1.18) * g
-    return v * adsr(n, 0.45, 0.6, 0.85, 0.5, sec)
+        for d in (-0.006, -0.002, 0.003, 0.007):
+            y += saw(f * (1 + d), sec, cut=1800, ph=rng.uniform(0, TAU))[:n]
+    fc = 260 + 260 * (0.5 - 0.5 * np.cos(TAU * t / sec))
+    return svf_lp(y / (4 * len(fs)), fc, 0.9) * adsr(n, 1.2, 1.0, 1.0, 1.2, sec)
+
+
+def siren(sec):
+    """遠くの サイレン（ゆっくり 上がって 下がる：小さく・遠く）"""
+    t = t_(sec)
+    f = 520 + 160 * (0.5 - 0.5 * np.cos(TAU * t / (sec / 2)))
+    y = np.sin(TAU * np.cumsum(f) / SR) + 0.25 * np.sin(2 * TAU * np.cumsum(f) / SR)
+    return lp(y, 1800) * np.sin(np.pi * t / sec) ** 2
+
+
+def creak(rng, sec=1.4):
+    """遠くの 鉄の きしみ（こすれる 音：細い 山が ゆれる）"""
+    t = t_(sec); x = rng.standard_normal(len(t))
+    f0 = 340 + 90 * np.sin(TAU * 0.7 * t + rng.uniform(0, TAU))
+    y = svf(x, f0, 18.0, True)                                     # 細い 山が ゆれる（こすれて きしむ）
+    return lp(y, 1500) * np.sin(np.pi * t / sec) ** 1.5 * 1.6
+
+
+def wind(rng, sec):
+    """こわれた 都市の 風（低い 雑音が ゆっくり ゆれる）"""
+    t = t_(sec); x = rng.standard_normal(len(t))
+    fc = 380 + 220 * np.sin(TAU * t / sec * 2 + 1.0) + 120 * np.sin(TAU * t / sec * 5)
+    return svf_lp(x, fc, 1.1) * (0.6 + 0.4 * np.sin(TAU * t / sec * 3) ** 2)
 
 
 # ---------------- 曲 ----------------
-MELODY = [  # B・C の テーマ（[(音, 拍の 長さ)] × 8小節）
-    [('D4', 1.5), ('A4', 0.5), ('A4', 2.0)],
-    [('Bb4', 1.0), ('A4', 1.0), ('G4', 1.0), ('F4', 1.0)],
-    [('E4', 1.5), ('F4', 0.5), ('G4', 2.0)],
-    [('A4', 3.0), ('E4', 0.5), ('C#5', 0.5)],
-    [('D5', 1.5), ('C5', 0.5), ('A4', 2.0)],
-    [('Bb4', 1.0), ('C5', 1.0), ('D5', 1.0), ('F5', 1.0)],
-    [('G5', 1.5), ('F5', 0.5), ('E5', 1.0), ('D5', 1.0)],
-    [('C#5', 2.0), ('E5', 1.0), ('A4', 1.0)]]
-
-
-def up(n, k=1):
-    return n[:-1] + str(int(n[-1]) + k)
-
-
 def render(parts=False):
-    rng = np.random.default_rng(41196)
+    rng = np.random.default_rng(41198)
     L = NL + TAIL
-    drums = np.zeros((2, L)); low_s = np.zeros((2, L)); hi_s = np.zeros((2, L)); br = np.zeros((2, L)); vo = np.zeros((2, L)); fx = np.zeros((2, L))
+    drums = np.zeros((2, L)); bass = np.zeros((2, L)); arp = np.zeros((2, L)); pad = np.zeros((2, L)); amb = np.zeros((2, L)); fx = np.zeros((2, L))
     for bar in range(BARS):
-        sec = bar // 8                                             # 0:A 1:B 2:C 3:D
-        ch = chord_of(bar); r, th, fi = CH[ch]
-        root2, fifth2 = hz(r + '2'), hz(fi + '2') if NOTE[fi] > NOTE[r] else hz(fi + '3')
-        # 太鼓：1・(2の裏)・3・4 … D の さいごの 2小節は 連打
+        ph2 = bar >= 8                                             # 2回目の 8小節（少し 厚く）
+        ch = PROG[bar % 8]; r, th, fi = CH[ch]
+        root2 = hz(r + '2')                                        # 前の イントロと 同じ 高さ（D2・B♭2・G2・A2・E♭2）
+        fifth2 = root2 * 1.5
+        # 太鼓：1・(2の裏)・3・4（前の イントロと 同じ きざみ）・3拍に 鉄の ひびき
         for b, g in ((0, 1.0), (1.5, 0.55), (2, 0.85), (3, 0.6)):
-            if sec == 3 and bar % 8 >= 6: continue
-            put(drums, taiko(rng, 1.0 if b in (0, 2) else 0.8), tb(bar, b), rng.uniform(-0.1, 0.1), g * (0.9 if sec == 0 else 1.0))
-        if sec == 3 and bar % 8 >= 6:
-            k = bar % 8 - 6
-            for i in range(8): put(drums, taiko(rng, 0.7), tb(bar, i * 0.5), rng.uniform(-0.2, 0.2), 0.45 + 0.07 * (i + 8 * k))
-        if bar % 4 == 3 and sec != 3:                             # 4小節ごとの おかず（中太鼓）
-            for i, f0 in enumerate((180, 150, 125, 105)): put(drums, tom(rng, f0), tb(bar, 2 + i * 0.5), -0.4 + 0.27 * i, 0.55)
-        if sec in (1, 2):                                          # 小太鼓（2・4拍）・シャカシャカ（16分）
-            for b in (1, 3): put(drums, snare(rng), tb(bar, b), 0.15, 0.42)
-            for i in range(16): put(drums, shaker(rng), tb(bar, i * 0.25), 0.45, 0.10 if i % 2 else 0.16)
-        if sec == 3 and bar % 8 >= 6:                              # 小太鼓の ロール（だんだん 大きく）
-            k = bar % 8 - 6
-            for i in range(16): put(drums, snare(rng, 0.6), tb(bar, i * 0.25), 0.1, 0.12 + 0.02 * (i + 16 * k))
-        if bar % 8 == 0 and bar > 0 or bar == 0:                   # シンバル（区切りの 頭：A の 頭は 小さく）
-            put(drums, crash(rng), tb(bar), -0.3, 0.30 if bar == 0 else 0.42)
-            put(drums, crash(rng), tb(bar), 0.3, 0.30 if bar == 0 else 0.42)
-        # 低い 弦（8分の きざみ）：D では 長く のばす
-        if sec != 3:
-            pat = [root2, root2, root2 * 2, root2, root2, root2, fifth2, root2 * 2]
-            for i, f in enumerate(pat): put(low_s, bass_note(f, BEAT * 0.48, rng), tb(bar, i * 0.5), 0.0, 0.95 if i % 2 == 0 else 0.75)
-        else:
-            put(low_s, bass_note(root2, BEAT * 3.9, rng), tb(bar), 0.0, 0.5)
-        # 弦の 分散（16分）：A・B・C（D は さいごの 2小節 だけ）
-        if sec != 3 or bar % 8 >= 6:
-            tones = [hz(r + '4'), hz(fi + '3'), hz(th + '4'), hz(fi + '3')]
-            if sec == 2: tones = [up(r + '4'), r + '4', up(th + '4'), fi + '4']; tones = [hz(x) for x in tones]
-            for i in range(16):
-                f = tones[i % 4]; acc = 1.0 if i % 4 == 0 else 0.7
-                put(hi_s, string_note(f, BEAT * 0.22, rng), tb(bar, i * 0.25), -0.35 if i % 2 else 0.35, acc * (0.55 if sec == 0 else 0.5))
-        # 金管の テーマ（B：そのまま・C：1オクターブ 上 ＋ そのまま を うすく）
-        if sec in (1, 2):
-            at = 0.0
-            for nn, d in MELODY[bar % 8]:
-                f = hz(nn)
-                put(br, brass_note(f, d * BEAT * 0.96, rng, 1.0), tb(bar, at), -0.1, 0.62 if sec == 1 else 0.40)
-                if sec == 2: put(br, brass_note(f * 2, d * BEAT * 0.96, rng, 1.2), tb(bar, at), 0.12, 0.46)
-                at += d
-            if sec == 1: put(br, 0.5 * brass_note(hz(r + '3'), BEAT * 3.8, rng, 0.8), tb(bar), 0.3, 0.30)      # 下の 金管（和音の 根）
-        # 声の 和音（C・D）
-        if sec in (2, 3):
-            fs = [hz(r + '3'), hz(th + ('4' if NOTE[th] < NOTE[r] else '3')), hz(fi + '3' if NOTE[fi] > NOTE[r] else fi + '4')]
-            put(vo, choir(fs, BEAT * 4.3, rng), tb(bar), 0.0, 0.55 if sec == 3 else 0.42)
-    # D の さいごに 吸いこむ 音（A の 頭へ）
-    put(fx, riser(rng, BEAT * 8), tb(BARS - 2), 0.0, 0.35)
+            put(drums, kick(rng, 1.0 if b in (0, 2) else 0.8), tb(bar, b), rng.uniform(-0.08, 0.08), g)
+        put(drums, clank(rng, 196.0 if bar % 2 else 233.0, 0.30 if ph2 else 0.24), tb(bar, 2), 0.35 if bar % 2 else -0.35)
+        if bar % 4 == 3:                                           # 4小節ごとの おかず（低い 鉄の 太鼓）
+            for i, f0 in enumerate((128, 110, 96, 84)): put(drums, low_tom(rng, f0), tb(bar, 2 + i * 0.5), -0.35 + 0.23 * i, 0.55)
+        if ph2:                                                    # 2回目：こもった 手拍子（2・4拍）・16分の 金属の きざみ
+            for b in (1, 3): put(drums, snap(rng), tb(bar, b), 0.12, 0.30)
+            for i in range(16): put(drums, tick(rng), tb(bar, i * 0.25), 0.4 if i % 2 else -0.4, 0.05 if i % 2 else 0.08)
+        # 低い 8分の きざみ（前の イントロと 同じ 形）：フィルターは 8小節で ゆっくり 開いて 閉じる
+        pat = [root2, root2, root2 * 2, root2, root2, root2, fifth2, root2 * 2]
+        open_ = 0.5 - 0.5 * np.cos(TAU * ((bar % 8) + 0.5) / 8)
+        for i, f in enumerate(pat):
+            cut = 420 + 520 * open_ + (90 if ph2 else 0)
+            put(bass, bass_note(f, BEAT * 0.46, rng, cut), tb(bar, i * 0.5), 0.0, 0.95 if i % 2 == 0 else 0.72)
+        # 16分の 分散（前の イントロの 形を 1オクターブ 下・こもった ガラスの 音・こだま）
+        tones = [hz(r + '4') / 2, hz(fi + '3') / 2, hz(th + '4') / 2, hz(fi + '3') / 2]      # 前の イントロの 分散を 1オクターブ 下
+        tones = [f * 2 if f < 130 else f for f in tones]            # 低すぎる 音（〜130Hz）は もとの 高さ
+        for i in range(16):
+            f = tones[i % 4]; acc = 1.0 if i % 4 == 0 else 0.62
+            put(arp, glass(f, BEAT * 0.5, rng), tb(bar, i * 0.25), -0.3 if i % 2 else 0.3, acc * (0.42 if ph2 else 0.36))
+        # 低い うなり（2小節ごと：和音の 根と 5度）
+        if bar % 2 == 0:
+            rd = root2 / 2 if root2 >= 110 else root2               # 55〜110Hz
+            put(pad, drone([rd, rd * 1.5, rd * 2], BEAT * 8.6, rng), tb(bar), 0.0, 1.0)
+    # 区切り：頭に 低い ドーン・前に 吸いこむ 暗い 風
+    put(fx, boom(rng), tb(0), 0.0, 0.55); put(fx, boom(rng), tb(8), 0.0, 0.40)
+    put(fx, swell(rng, BEAT * 4), tb(7), 0.0, 0.30); put(fx, swell(rng, BEAT * 4), tb(15), 0.0, 0.36)
+    # まわりの 音：風（ずっと）・遠くの きしみ・遠くの サイレン（1回りに 1回）
+    w = wind(rng, LOOP + 1.0); put(amb, w, 0.0, -0.2, 0.22); put(amb, wind(rng, LOOP + 1.0), 0.0, 0.25, 0.18)
+    for at, pn in ((tb(2, 1.0), -0.6), (tb(6, 2.5), 0.55), (tb(11, 0.5), -0.45), (tb(13, 3.0), 0.6)):
+        put(amb, creak(rng, 1.2 + rng.uniform(0, 0.6)), at, pn, 0.16)
+    put(amb, siren(BEAT * 16), tb(4), 0.5, 0.050)
     hp = lambda x, fc: np.stack([signal.lfilter(*signal.butter(2, fc / (SR / 2), 'high'), np.tile(x[c], 3))[L:2 * L] for c in range(2)])      # 低すぎる 音を へらす（くり返せる 形）
-    # ひびき（くり返せる 形：しっぽを 頭に 回してから、3回 ならべて ひびかせ まん中を 取る）
     fold = lambda x: x[:, :NL] + np.pad(x[:, NL:], ((0, 0), (0, NL - (L - NL))))
-    ir = reverb_ir(196, rt=1.9, pre=0.025, dark=6000)
+    ir = reverb_ir(198, rt=2.6, pre=0.03, dark=3800)
+    dl = int(round(BEAT * 0.75 * SR))                              # こだま（付点 8分・左右 交互）
+
+    def echo(x, fb=0.42, n=6):
+        out = x.copy()
+        for k in range(1, n + 1):
+            sh = np.roll(x[::-1] if k % 2 else x, k * dl, axis=1) * (fb ** k)
+            out += lp_st(sh, 1800)
+        return out
+
     def wet(x, mix):
         out = np.zeros_like(x)
         for c in range(2):
             y = signal.fftconvolve(np.tile(x[c], 3), ir[c])[:3 * NL]
             out[c] = x[c] + mix * y[NL:2 * NL]
         return out
-    pt = {'drums': wet(fold(hp(drums, 75)), 0.16), 'low': wet(fold(hp(low_s, 55)), 0.12), 'hi': wet(fold(hi_s), 0.30), 'brass': wet(fold(br), 0.34), 'choir': wet(fold(vo), 0.45), 'fx': wet(fold(fx), 0.2)}
-    gain = {'drums': 0.50, 'low': 0.40, 'hi': 0.90, 'brass': 0.62, 'choir': 0.36, 'fx': 0.5}
+    pt = {'drums': wet(fold(hp(drums, 55)), 0.22), 'bass': wet(fold(hp(bass, 62)), 0.10), 'arp': wet(echo(fold(arp)), 0.40), 'pad': wet(fold(hp(pad, 60)), 0.30),
+          'amb': wet(fold(amb), 0.55), 'fx': wet(fold(hp(fx, 30)), 0.35)}
+    gain = {'drums': 0.62, 'bass': 0.46, 'arp': 0.55, 'pad': 0.42, 'amb': 0.45, 'fx': 0.45}
     mix = sum(pt[k] * gain[k] for k in pt); mix = mix - mix.mean(axis=1, keepdims=True)
-    mix = np.tanh(mix * 1.2) / 1.2                                 # 山を やわらかく そろえる
-    g = min(PEAK / np.abs(mix).max(), RMS / np.sqrt(np.mean(mix ** 2)))      # ふつうの 大きさ RMS（山は PEAK を こえない）
+    mix = lp_st(mix, 6500)                                          # 全体を 少し 暗く（高い 音を へらす：くり返せる 形で）
+    mix = np.tanh(mix * 1.2) / 1.2                                  # 山を やわらかく そろえる
+    g = min(PEAK / np.abs(mix).max(), PHONE / phone_rms(mix), RMS_MAX / np.sqrt(np.mean(mix ** 2)))      # スピーカーで 聞こえる 大きさを そろえる（山は PEAK・ぜんぶの 大きさは RMS_MAX を こえない）
     return (mix * g, {k: pt[k] * gain[k] * g for k in pt}) if parts else mix * g
+
+
+def phone_rms(x):
+    """iPhone の スピーカーで 聞こえる 所（280Hz〜7kHz）の ふつうの 大きさ"""
+    b, a = signal.butter(4, [280 / (SR / 2), 7000 / (SR / 2)], 'band')
+    y = signal.lfilter(b, a, np.tile(x.mean(axis=0), 2))[x.shape[1]:]
+    return float(np.sqrt(np.mean(y ** 2)))
+
+
+def lp_st(x, fc):
+    """2ch に 低い 音だけ 通す フィルター（くり返せる 形：3回 ならべて まん中）"""
+    n = x.shape[1]
+    return np.stack([signal.lfilter(*signal.butter(2, fc / (SR / 2), 'low'), np.tile(x[c], 3))[n:2 * n] for c in range(2)])
 
 
 def reverb_ir(seed, rt=1.7, pre=0.022, dark=5200):
@@ -289,4 +335,4 @@ if __name__ == '__main__':
         os.makedirs(OUT, exist_ok=True); tmp = tempfile.mkdtemp(); w = os.path.join(tmp, 'cb_qbgm.wav'); o = os.path.join(OUT, FILE)
         save_wav(with_margins(x), w)
         subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', w, '-ac', '2', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', o], check=True)
-        print(f'できた：{FILE} {os.path.getsize(o)} B・1回り {LOOP:.3f}秒（前後に {PRE}秒ずつ）・山 {np.abs(x).max():.2f}・ふつうの 大きさ（RMS）{np.sqrt(np.mean(x ** 2)):.4f} → {OUT}')
+        print(f'できた：{FILE} {os.path.getsize(o)} B・1回り {LOOP:.3f}秒（前後に {PRE}秒ずつ）・山 {np.abs(x).max():.2f}・ふつうの 大きさ（RMS）{np.sqrt(np.mean(x ** 2)):.4f}・スピーカーで 聞こえる 所 {phone_rms(x):.4f} → {OUT}')
