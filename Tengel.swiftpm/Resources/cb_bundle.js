@@ -130,6 +130,9 @@
 
 
 
+
+
+
 const CBRules = (() => {
   'use strict';
   const NUMS = ['1', '2', '3', '4', '5', '6', '7'], KINDS = NUMS.concat(['k', 'm']);
@@ -428,9 +431,10 @@ const CBRules = (() => {
       P.hand = P.hand.filter(c => back.indexOf(c) < 0);
       const drew = [S.deck.pop(), S.deck.pop(), S.deck.pop()];
       drew.forEach(c => P.hand.push(c));
-      back.forEach(c => { forget(S, c.u); if (!c.tok) S.deck.push({ u: ++S.uid, k: c.k }); });      
+      const tk = back.find(c => c.tok);                 
+      back.forEach(c => { if (c.tok) toss(S, c, i, '7'); else { forget(S, c.u); S.deck.push({ u: ++S.uid, k: c.k }); } });      
       shuffle(S.deck, rng);
-      ev.push(Object.assign({ e: 'x7', who: i, n: 3, drew: drew.map(c => ({ u: c.u, k: c.k })) }, back.some(c => c.tok) ? { tok: back.find(c => c.tok).u, pub: !!S.gpub } : {}));      
+      ev.push(Object.assign({ e: 'x7', who: i, n: 3, drew: drew.map(c => ({ u: c.u, k: c.k })) }, tk ? { tok: tk.u, drop: cardEv(tk) } : {}));      
     });
     else if (st === 'x3') [0, 1].forEach(i => {         
       const P = S.p[i], Q = S.p[1 - i]; if (!U[i]) return;
@@ -572,7 +576,7 @@ const CBRules = (() => {
     return ev.filter(x => !((x.e === 'ask5' || x.e === 'u5skip' || (x.e === 'gem' && !x.pub)) && x.who !== i)).map(x => {      
       const o = { e: x.e };
       if (x.who != null) o.me = x.who === i;
-      if (x.e === 'x7') { o.n = x.n; if (x.who === i) o.drew = x.drew; if (x.tok && (x.who === i || x.pub)) o.tok = x.tok; }      
+      if (x.e === 'x7') { o.n = x.n; if (x.who === i) o.drew = x.drew; if (x.tok) { o.tok = x.tok; o.drop = x.drop; } }      
       else if (x.e === 'gem') { o.g = x.g; o.c = x.c; }      
       else if (x.e === 'tokgone') { o.u = x.u; if (x.who === i || x.pub) o.k = x.k; }      
       else if (x.e === 'x7r') { o.show = x.show; o.drop = x.drop; }      
@@ -732,9 +736,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBCpu;
 
 
 
+
 const CBNet = (() => {
   'use strict';
-  const R = CBRules, PROTO = 11, MAXLEN = 20000;      
+  const R = CBRules, PROTO = 12, MAXLEN = 20000;      
   
   const STAKE_MAX = 999;
   function stakeOf(k) {
@@ -1268,7 +1273,7 @@ const CBApp = (() => {
   
   
   const BGMS = { main: { file: 'cb_bgm.m4a', pre: 0.5, len: 34 * 3 * 60 / 76, vol: 0.42, fin: 1.4, fout: 0.45 },      
-    quest: { file: 'cb_qbgm.m4a', pre: 0.5, len: 32 * 4 * 60 / 132, vol: 0.40, fin: 0.9, fout: 0.6 } };      
+    quest: { file: 'cb_qbgm.m4a', pre: 0.5, len: 16 * 4 * 60 / 132, vol: 0.40, fin: 0.9, fout: 0.6 } };      
   
   let BGM = BGMS.main;
   const bg = { raw: null, buf: null, dec: null, cur: null, tau: 0, gone: false, want: false, trk: 'main', taus: {} };      
@@ -1991,7 +1996,7 @@ const CBApp = (() => {
     const W = WHO(), yours = x.me ? `${W}の` : 'あなたの';
     if (x.e === 'p6') return { k: '6', t: '6 の 効果', n: '手札を 1枚 見る', d: `6 を 2枚 見せて、${yours} 手札を 1枚 見るよ` };
     if (x.e === 'u5') return { k: '5', t: '5 の 効果', n: '捨てて 山札から セット', d: 'セットした 5 と 手札 1枚を 捨てて、山札から 1枚 伏せて セットするよ' };
-    if (x.e === 'x7') return x.tok ? { k: 't7', t: '7 の 効果', n: '3枚 交換', d: '7トークン（3頭分）を 戻して、新しく 3枚 引くよ（トークンは 山札に 入らない）' } : { k: '7', t: '7 の 効果', n: '3枚 交換', d: '7 を 3枚 山札に 戻して、新しく 3枚 引くよ' };      
+    if (x.e === 'x7') return x.tok ? { k: 't7', t: '7 の 効果', n: '3枚 引く', d: '7トークン（3頭分）を 見せて 捨てて、山札から 3枚 引くよ' } : { k: '7', t: '7 の 効果', n: '3枚 交換', d: '7 を 3枚 山札に 戻して、新しく 3枚 引くよ' };      
     if (x.e === 'x7r') return x.drop && x.drop.tok ? { k: 't7', t: '7 の 効果', n: '強さ 逆転', d: '7 を 4枚 ぶん 見せて（7トークンは 3頭分）、トークンを 捨てるよ。この 対戦が 終わる まで、数字の 強さが 逆に なる！' } : { k: '7', t: '7 の 効果', n: '強さ 逆転', d: '7 を 4枚 見せて 1枚 捨てるよ。この 対戦が 終わる まで、数字の 強さが 逆に なる！' };
     if (x.e === 'x3') return { k: '3', t: '3 の 効果', n: '手札を 交換', d: x.three && x.three.length < 3 ? `3トークン（2頭分）と 3 で 3枚 ぶん 見せて、本物の 3 と ${yours} 手札の 1枚（ランダム）を 交換するよ` : `3 を 3枚 見せて、その 1枚と ${yours} 手札の 1枚（ランダム）を 交換するよ` };
     if (x.e === 'first') return { k: '4', t: '4 の 効果', n: '強制 交換', d: x.me ? `4 を 先に 見せたよ。${W}は セットした カードを 交換するよ` : '4 を 先に 見せたよ。あなたは セットした カードを、手札の 別の カードと 交換してね' };
@@ -2091,7 +2096,7 @@ const CBApp = (() => {
       + `<li>宝石は 5つ：${R.GEMS.map(g => `${GEMS[g].n}＝<b>${GEMS[g].t}</b>${headOf(R.GEM_W[g])}`).join('・')}</li>`
       + `<li>手札の 下の ケースの 宝石を タップ →「使う」で、<b>トークンの カードが 手札に 1枚</b>。使えるのは <b>手札が ${R.GEM_HAND}枚 以下</b>・<b>セットの 前</b>・<b>1ターンに 1つ</b></li>`
       + '<li>トークンは <b>その ターン だけ</b>（使わないと ターンの 終わりに 消えるよ）。セットすると その カードと 同じ 強さ（神様馬トークンと 神様馬は かぶり）</li>'
-      + '<li>「2頭分・3頭分」は 手札の 効果の 数え方：1トークンで 1 の 逆転勝利・3トークン ＋ 3 で 3 の 交換・7トークンで 7 の 3枚 交換（トークンを 戻して 3枚 引く）・7トークン ＋ 7 で 4枚 公開。セット・捨てる ときは 1枚</li>'
+      + '<li>「2頭分・3頭分」は 手札の 効果の 数え方：1トークンで 1 の 逆転勝利・3トークン ＋ 3 で 3 の 交換・7トークンで 7 の 効果（7トークンを 見せて 捨てて、山札から 3枚 引く：トークンは 山札に 戻せない）・7トークン ＋ 7 で 4枚 公開。セット・捨てる ときは 1枚</li>'
       + '<li>決戦調査の 敵は 宝石を 使わないよ（あなたが 使った ことも 敵には わからない）</li></ul>'
       + `<h4>ミッション</h4><ul><li>メニューの「<b>ミッション</b>」：<b>コンピュータに 連続勝利</b>・<b>友達バトルで 連続勝利</b>で バトルコインが もらえるよ</li>`
       + `<li>コンピュータ：${MS.cpu.map(t => `${t[0]}連勝 <b>${t[1]}枚</b>`).join('・')}</li><li>友達バトル：${MS.fr.map(t => `${t[0]}連勝 <b>${t[1]}枚</b>`).join('・')}</li>`
@@ -2786,8 +2791,8 @@ const CBApp = (() => {
   let askAt = 0;
   const tokIn = k => (V && V.my.hand.find(c => c.tok && c.k === k)) || null;      
   const effKey = q => ((q === '7' || q === '3') && tokIn(q) ? tokP(q) : effK(q));
-  const effBar = q => (q === '7' && tokIn('7') ? '7トークン（3頭分）を 戻して、新しく 3枚 引けるよ' : q === '3' && tokIn('3') ? '3トークン（2頭分）と 3 を 見せて、本物の 3 を 交換できるよ' : EFFBAR[q] || EFFTXT[q]);      
-  const effText = q => (q === '7' && tokIn('7') ? '7トークン（3頭分）を 戻して、新しく 3枚 引けるよ（トークンは 山札に 入らない）' : q === '3' && tokIn('3') ? '3トークン（2頭分）と 3 で 3枚 ぶん 見せて、本物の 3 と 相手の 手札の 1枚（ランダム）を 交換できるよ' : EFFTXT[q]);
+  const effBar = q => (q === '7' && tokIn('7') ? '7トークン（3頭分）を 見せて 捨てると、山札から 3枚 引けるよ' : q === '3' && tokIn('3') ? '3トークン（2頭分）と 3 を 見せて、本物の 3 を 交換できるよ' : EFFBAR[q] || EFFTXT[q]);      
+  const effText = q => (q === '7' && tokIn('7') ? '7トークン（3頭分）を 見せて 捨てて、山札から 3枚 引けるよ（トークンは 山札に 戻せないので 捨てる）' : q === '3' && tokIn('3') ? '3トークン（2頭分）と 3 で 3枚 ぶん 見せて、本物の 3 と 相手の 手札の 1枚（ランダム）を 交換できるよ' : EFFTXT[q]);
   function askInfo() {
     const v = V; if (!v || ended || !match) return null;
     if (mode.k === 'idle' && v.can.six) return { id: `s${gameNo}.${v.turn}`, k: '6', head: SIX.head, q: SIX.q, text: SIX.text, yes: 'sixyes', no: 'sixno' };      
@@ -3147,12 +3152,22 @@ const CBApp = (() => {
         await T(250);
       } else if (x.e === 'x7') {
         await useShow(x);
-        const t7 = x.tok ? tokOf(x.tok) || { u: x.tok, k: '7', tok: 3 } : null;      
-        toast(t7 ? (x.me ? '7 の 効果！\n7トークン（3頭分）を 戻して、新しく 3枚 引いたよ' : `${WHO()}が 7 の 効果を 使ったよ\n7トークン（3頭分）を 戻して 3枚 引いた`) : x.me ? '7 の 効果！\n7 を 3枚 戻して、新しく 3枚 引いたよ' : `${WHO()}が 7 の 効果を 使ったよ\n7 を 3枚 戻して 3枚 引いた`, 3);
         const s7 = x.me ? 'my' : 'op', hb = handBox(s7), d = deckBox(), w = x.me ? 56 : 36;
-        if (t7) await fly('t7', x.me ? (cardBox('my', t7.u) || mid(hb, w)) : mid(hb, w), mid(d, 36), 380, true, s7);
-        else await Promise.all([0, 1, 2].map(i => T(i * 70).then(() => fly('7', mid(hb, w), mid(d, 36), 320, true, s7))));
-        if (x.me) { let n = 0; hand = t7 ? hand.filter(q => q.u !== t7.u) : hand.filter(q => !(q.k === '7' && n++ < 3)); rehand(); }
+        if (x.tok) {      
+          const t7 = x.drop || tokOf(x.tok) || { u: x.tok, k: '7', tok: 3 };
+          modal(`<h3 class="gold">7 の 効果！</h3><div class="three"><span class="cbc"><img src="${pic('t7', false, s7)}" alt="${esc(nameOf('t7'))} の カード" draggable="false"></span></div>`
+            + `<p>${x.me ? '7トークン（3頭分）を 見せて 捨てたよ' : `${esc(WHO())}が 7トークン（3頭分）を 見せて 捨てたよ`}<br>山札から 3枚 引くよ</p>`, 'cbopen');
+          await T(1500); closeMod();
+          const oc = x.me ? null : $('.cbohand').querySelector(`[data-u="${t7.u}"]`) || $('.cbohand').lastElementChild;
+          await fly('t7', x.me ? (cardBox('my', t7.u) || mid(hb, w)) : (oc ? box(oc) : mid(hb, w)), mid(disBox(), 20), 380, true, s7);
+          if (x.me) { hand = hand.filter(q => q.u !== t7.u); rehand(); } else if (oc) oc.remove();
+          toDis([{ k: 't7', mine: x.me }]);
+          toast(x.me ? '7 の 効果！\n7トークン（3頭分）を 捨てて、山札から 3枚 引いたよ' : `${WHO()}が 7 の 効果を 使ったよ\n7トークン（3頭分）を 捨てて 3枚 引いた`, 3);
+        } else {
+          toast(x.me ? '7 の 効果！\n7 を 3枚 戻して、新しく 3枚 引いたよ' : `${WHO()}が 7 の 効果を 使ったよ\n7 を 3枚 戻して 3枚 引いた`, 3);
+          await Promise.all([0, 1, 2].map(i => T(i * 70).then(() => fly('7', mid(hb, w), mid(d, 36), 320, true, s7))));
+          if (x.me) { let n = 0; hand = hand.filter(q => !(q.k === '7' && n++ < 3)); rehand(); }
+        }
         await Promise.all([0, 1, 2].map(i => T(i * 70).then(() => fly(null, mid(d, 36), mid(hb, w), 320, false, s7))));
         if (x.me && x.drew) { hand = hand.concat(x.drew.map(c => ({ u: c.u, k: c.k }))); rehand(x.drew.map(c => c.u)); await T(420); }
       } else if (x.e === 'x7r') {                      
