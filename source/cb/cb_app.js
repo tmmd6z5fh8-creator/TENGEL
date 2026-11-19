@@ -133,6 +133,8 @@
 //   第4.205版（まさちゃん 2026/11/19 10:21「決戦宝石の説明分の赤丸のダイヤ全体的に消して！」・10:25「逆に一枚目の青丸の切符は、ちゃんと2枚目の調査隊切符に統一して！」）：
 //     決戦宝石の ことばの 💎 を ぜんぶ 消す（遊び方・部屋の 決まり・宝石の 知らせ・あいだの 窓・負けの 窓）。
 //     調査隊切符の 🎫 は 切符の 絵（cb_q_tk.webp）に そろえる：TKI（字の 横の 小さな 絵 .tki）・知らせ（toast の 3つ目 ＝ 絵）
+//   第4.206版（まさちゃん 2026/11/19 19:07「決戦調査で、抜け穴やバクなどないか確認して！」）：月末の 夜中に 窓を 開いた まま 月が 進んだ とき、
+//     切符を 使う 前（バトル開始・もう 一度 挑戦）と 次の 戦の 前（第○戦へ）に 止める（qGone：この 調査は なし・切符は 使わない）。前は 切符を 使って 戦った あとで「月が 変わったよ」だった
 const CBApp = (() => {
   'use strict';
   const R = CBRules, SK = 'tengel.cb';
@@ -2691,6 +2693,7 @@ const CBApp = (() => {
 
   // ---- フィールド：セリフ → 敵 出現 ----
   function qGo(lv) {
+    if (qRoll()) { showQMap(); toast('月が 変わったので、決戦調査を リセットしたよ', 2.6); return; }      // 第4.206版：ふきだしを 開いた まま 月が 進んだ
     const q = QUEST[lv - 1]; if (!q || lv !== qOpen() || lv <= st.q.clr) return;
     if (qtNow().n < 1) { se('tap', 0.5); return qtModal(true); }      // 第4.203版：切符が 0枚 ＝ 行けない（ボタンも 押せない）
     closeMod(); qPopClose(); se('tap');
@@ -2765,6 +2768,7 @@ const CBApp = (() => {
   // バトルへ：いつもの 対戦（コンピュータ）を 決戦調査の 形で
   function qBattle() {
     if (!qs || qs.step !== 'en') return;
+    if (qGone()) { qs = null; return; }      // 第4.206版：フィールドに いる 間に 月が 進んだ ＝ 切符は 使わない
     if (!qtUse()) { qs = null; showQMap(); qtModal(true); return; }      // 挑戦の はじめ（1戦目）で 切符 1枚（行く 前に 0枚では ない ことを たしかめて いる ので ふつうは ない）
     const lv = qs.lv; qs.step = 'go'; se('tap');
     qRun = { lv: lv, won: 0, m: st.q.m, gu: [] };
@@ -2839,6 +2843,14 @@ const CBApp = (() => {
       + `<div class="gift"><div>同点は 負けじゃ ないよ。<br>第${r.won + 1}戦を やり直そう！（HP は そのまま）</div>${qGemLeft()}${qtLine()}${msh}</div>`
       + `<div class="col"><button type="button" class="cbb" data-cb="qnext">第${r.won + 1}戦を やり直す</button><button type="button" class="cbb dk" data-cb="qmapgo">マップへ 戻る<small>この 調査は ここまで</small></button></div>`, 'cbend qend');
   }
+  // 第4.206版：月が 進んで いた（月末の 夜中に 窓を 開いた まま など）→ この 調査は なし（切符は 使わない）。「マップへ」で 新しい 月の マップ
+  function qGone() {
+    if (!qRoll()) return false;
+    if (qRun) qRun.dead = true;
+    se('even');
+    modal('<h3 class="gold">月が 変わったよ</h3><p>決戦調査は 毎月 1日に リセット。<br>この 調査は ここまで（最初から 挑戦してね）<br>調査隊切符は 使って いないよ</p><div class="col"><button type="button" class="cbb" data-cb="qmapgo">マップへ</button></div>', 'cbend qend');
+    return true;
+  }
   // 第4.197版：この 調査で のこって いる 決戦宝石（あいだの 窓に 出す：連勝が 続く 間は 5つ 1回ずつ）
   function qGemLeft() {
     const gu = qRun && qRun.gu ? qRun.gu : [], left = R.GEMS.filter(g => gu.indexOf(g) < 0);
@@ -2847,6 +2859,7 @@ const CBApp = (() => {
   // 次の 戦へ（同点の やり直しも）：敵の 確定カードを その 戦の ものに して 配り直す。第4.204版：連勝中 なので 調査隊切符は 使わない（0枚でも 進める）
   function qNext(paid) {
     if (!qRun || qRun.dead || !match || !ended) return;
+    if (!paid && qGone()) return;      // 第4.206版：あいだの 窓を 開いた まま 月が 進んだ（この 調査は ここまで）
     se('tap'); closeMod();
     if (paid) toast(`調査隊切符を 1枚 使ったよ\n（のこり ${qtNow().n}枚）`, 1.8, TKP);
     match.setOpt(qOpt(qRun.lv, qRun.won + 1));
@@ -2855,6 +2868,7 @@ const CBApp = (() => {
   // もう 一度 挑戦（負けた あと：1戦目から）：新しい 挑戦 なので 調査隊切符 1枚（まさちゃん 09:35「負けたら1枚使う！」）
   function qRetry() {
     if (!qRun || qRun.dead || !match || !ended) return;
+    if (qGone()) return;      // 第4.206版：負けの 窓を 開いた まま 月が 進んだ ＝ 切符は 使わない
     if (!qtUse()) { se('tap', 0.5); toast(qtWait(), 1.8, TKP); return qtPaint(); }      // 切符が 0枚 ＝ まだ 挑戦 できない（この 戦の 結果は そのまま）
     qRun.won = 0; qRun.m = st.q.m; qRun.gu = []; qHP(QUEST[qRun.lv - 1].w, false);      // 第4.197版：1戦目から ＝ 決戦宝石も 5つに 戻る
     qNext(true);

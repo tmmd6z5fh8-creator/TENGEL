@@ -5,7 +5,7 @@
 #   ・勝ち → HP が へる（あいだの 窓「第2戦へ」）→ 討伐（勝利の 演出 3段階・バトルコイン GET）→ マップ（次の エリアが 開く・討伐の はんこ）
 #   ・同点 → 同じ 戦を やり直し（HP は そのまま）／負け → 調査 失敗（もう 一度 → HP は 満タン）／とちゅうで やめる → マップ（ミッションの 連勝 0・いつもの 負けには 数えない）
 #   ・確定カード（レベル 5〜12：決まった 戦で 敵の 手札に かならず）・ミッション（コンピュータに 連続勝利）は 数える・いつもの 勝ち負け・連勝・お世話トークン・いつもの コインは かわらない
-#   ・毎月 1日に リセット・戦の とちゅうで 月が かわった・戦の とちゅうで アプリを 閉じた（つぎに 開いた とき 調査 失敗）・テスト版の 道具（1ターンで 勝てる 手札 など）
+#   ・毎月 1日に リセット・戦の とちゅうで 月が かわった・窓を 開いた まま 月が 進んだ（第4.206版：バトル開始・第○戦へ・もう 一度 挑戦 の 前に 止める・切符は 使わない）・戦の とちゅうで アプリを 閉じた（つぎに 開いた とき 調査 失敗）・テスト版の 道具（1ターンで 勝てる 手札 など）
 #   python3 test_cb_quest.py   （SHOT=<フォルダ> で 画面を 写す。ios/cb_assets/ が ない とき（CI）は 絵の 確かめを とばす）
 import json, os, re, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -444,6 +444,37 @@ try:
         pg.wait_for_function("() => document.querySelector('#cbOv .cbmod.on.qend')", timeout=30000)
         t = mod_text(pg)
         check('月が 変わったよ' in t and st(pg)['q'] == {'m': '2027-01', 'clr': 0} and st(pg)['coin'] == c0, '戦の とちゅうで 月が かわった：「月が 変わったよ」・その 調査は なし（コインも なし）')
+        pg.locator('#cbOv .cbmod [data-cb=qmapgo]').click(); pg.wait_for_timeout(200)
+        # 第4.206版（まさちゃん 11/19 19:07「決戦調査で、抜け穴やバクなどないか確認して！」）：窓を 開いた まま 月が 進んだ（月末の 夜中）→
+        #   バトル開始・第○戦へ・もう 一度 挑戦 の 前に 止める（この 調査は なし・調査隊切符は 使わない）。前は 切符を 使って 戦った あとで「月が 変わったよ」
+        TKN = lambda: pg.evaluate("() => CBApp._t.qt.n")
+        pg.evaluate("() => { window.__now = '2027-01-31T23:58:00'; }")
+        go_field(pg, 1); use(pg, WIN)
+        pg.evaluate("() => { window.__now = '2027-02-01T00:02:00'; }")
+        n0 = TKN(); pg.locator('#cbOv .qfw').click(); pg.wait_for_timeout(250)
+        t = mod_text(pg)
+        check('月が 変わったよ' in t and '調査隊切符は 使って いないよ' in t and TKN() == n0 and scr(pg) == 'qf' and st(pg)['q'] == {'m': '2027-02', 'clr': 0},
+              f'フィールドで 月が 進んだ：バトルに 入らない・切符は 使わない（{n0} → {TKN()}）')
+        pg.locator('#cbOv .cbmod [data-cb=qmapgo]').click(); pg.wait_for_timeout(200)
+        check(scr(pg) == 'qmap' and '2月の 討伐 0／12' in pg.locator('#cbOv .qmst').inner_text(), '「マップへ」→ 新しい 月の マップ')
+        pg.evaluate("() => CBApp._t.qApi.clr()"); pg.wait_for_timeout(150)      # レベル1 を 討伐済みに（レベル2 ＝ 2連勝）
+        pg.evaluate("() => { window.__now = '2027-02-28T23:50:00'; }")
+        go_field(pg, 2); use(pg, WIN); pg.locator('#cbOv .qfw').click(); battle(pg, WIN, '7')
+        check('第2戦へ' in mod_text(pg), 'レベル2 の 1戦目に 勝った（あいだの 窓）')
+        pg.evaluate("() => { window.__now = '2027-03-01T00:01:00'; }")
+        n0 = TKN(); pg.locator('#cbOv .cbmod [data-cb=qnext]').click(); pg.wait_for_timeout(250)
+        t = mod_text(pg)
+        check('月が 変わったよ' in t and TKN() == n0 and pg.evaluate("() => CBApp._t.ended") and st(pg)['q'] == {'m': '2027-03', 'clr': 0},
+              f'あいだの 窓で 月が 進んだ：「第2戦へ」で 止める（次の 戦は 配らない・切符 {n0} → {TKN()}）')
+        pg.locator('#cbOv .cbmod [data-cb=qmapgo]').click(); pg.wait_for_timeout(200)
+        pg.evaluate("() => { window.__now = '2027-03-31T23:50:00'; }")
+        go_field(pg, 1); use(pg, LOSE); pg.locator('#cbOv .qfw').click(); battle(pg, LOSE, 'k')
+        check('調査 失敗…' in mod_text(pg), 'レベル1 に 負けた（負けの 窓）')
+        pg.evaluate("() => { window.__now = '2027-04-01T00:01:00'; }")
+        n0 = TKN(); pg.locator('#cbOv .cbmod [data-cb=qretry]').click(); pg.wait_for_timeout(250)
+        t = mod_text(pg)
+        check('月が 変わったよ' in t and TKN() == n0 and pg.evaluate("() => CBApp._t.ended") and st(pg)['q'] == {'m': '2027-04', 'clr': 0},
+              f'負けの 窓で 月が 進んだ：「もう 一度 挑戦」で 止める（切符は 使わない {n0} → {TKN()}）')
         pg.locator('#cbOv .cbmod [data-cb=qmapgo]').click(); pg.wait_for_timeout(200)
         # 戦の とちゅうで アプリを 閉じた（live 'qc'）→ つぎに 開いた とき：調査 失敗・ミッションの 連勝 0・いつもの 負けには 数えない
         go_field(pg, 1); pg.locator('#cbOv .qfw').click()
