@@ -2102,15 +2102,15 @@ try:
         shot(pg, 'cb_room_gem')
         pg.locator('#cbOv .cbroom [data-cb=stkgo]').click(); pg.wait_for_timeout(300)
         rr = pg.evaluate("() => ({ num: document.querySelector('#cbOv .cbroom .num').textContent, l: [...document.querySelectorAll('#cbOv .cbroom .cbstkl')].map(e => e.textContent) })")
-        check(rr['l'] == ['💎 決戦宝石 あり（2人とも 5つ）'], f'部屋番号の 下に「💎 決戦宝石 あり（2人とも 5つ）」（{rr["l"]}）')
+        check(rr['l'] == ['決戦宝石 あり（2人とも 5つ）'], f'部屋番号の 下に「決戦宝石 あり（2人とも 5つ）」（{rr["l"]}）')
         gp.locator('#cbOv .cbmenu [data-cb=join]').click(); gp.wait_for_timeout(150)
         for d in rr['num']: gp.locator(f'#cbOv .cbkeys [data-key="{d}"]').click()
         gp.locator('#cbOv .cbkeys [data-key=go]').click()
         gp.wait_for_function("() => CBApp._t.screen === 'game' && document.querySelector('#cbOv .cbmod.cbjoin')", timeout=30000); gp.wait_for_timeout(150)
         JG = "() => { const m = document.querySelector('#cbOv .cbmod.cbjoin'); return m ? { t: m.textContent, coin: !!m.querySelector('.cbstkv'), gl5: m.querySelectorAll('.gl5 img').length, pick: m.querySelectorAll('.gp, [data-cb=jgem]').length, btns: [...m.querySelectorAll('.cbb')].map(b => b.textContent.trim()) } : null; }"
         j1 = gp.evaluate(JG)
-        check(j1 and not j1['coin'] and '💎 決戦宝石 あり' in j1['t'] and '2人とも 5つの 宝石を 使えるよ（1試合で 1つ 1回ずつ・おたがいに 見える）' in j1['t'] and j1['gl5'] == 5 and j1['pick'] == 0 and j1['btns'] == ['やめる', '参加する'] and 'バトルコイン' not in j1['t'],
-              f'入る 人：「この 部屋の 決まり」に「💎 決戦宝石 あり」（2人とも 5つ・えらぶ 所は ない）・「やめる」「参加する」（{j1 and j1["btns"]}）')
+        check(j1 and not j1['coin'] and '決戦宝石 あり' in j1['t'] and '💎' not in j1['t'] and '2人とも 5つの 宝石を 使えるよ（1試合で 1つ 1回ずつ・おたがいに 見える）' in j1['t'] and j1['gl5'] == 5 and j1['pick'] == 0 and j1['btns'] == ['やめる', '参加する'] and 'バトルコイン' not in j1['t'],
+              f'入る 人：「この 部屋の 決まり」に「決戦宝石 あり」（2人とも 5つ・えらぶ 所は ない）・「やめる」「参加する」（{j1 and j1["btns"]}）')
         shot(gp, 'cb_join_gem')
         gp.locator('#cbOv .cbmod.cbjoin [data-cb=joinyes]').click()
         for q in (pg, gp): q.wait_for_function("() => CBApp._t.screen === 'game' && CBApp._t.view && CBApp._t.idle", timeout=30000)
@@ -2163,8 +2163,8 @@ try:
         pg.set_viewport_size({'width': 390, 'height': 844}); pg.wait_for_timeout(300)
         cset(pg, '2'); opp(pg, {'t': 'set', 'k': 1})
         a1 = pg.evaluate(GEMQ); m1 = pg.evaluate(MSG); v1 = pg.evaluate(V)
-        check(v1['turn'] == 2 and len(v1['my']['hand']) == 6 and a1['gs'] == 'm:can k:can 1:can 3:can 7:can' and '💎 セットの 前なら 決戦宝石を 使えるよ（下の ケース）' in m1,
-              f'セットして 手札 6枚 → 2ターン目は 5つとも 使える（光る）・下の 字「💎 セットの 前なら 決戦宝石を 使えるよ」（{a1["gs"]}）')
+        check(v1['turn'] == 2 and len(v1['my']['hand']) == 6 and a1['gs'] == 'm:can k:can 1:can 3:can 7:can' and 'セットの 前なら 決戦宝石を 使えるよ（下の ケース）' in m1 and '💎' not in m1,
+              f'セットして 手札 6枚 → 2ターン目は 5つとも 使える（光る）・下の 字「セットの 前なら 決戦宝石を 使えるよ」（{a1["gs"]}）')
         shot(pg, 'cb_gem_t2')
         cset(pg, '1'); gtap(pg, 'k'); s1 = said(pg)
         check(any('セットする 前に 使えるよ' in x for x in s1) and pg.evaluate(GEMQ)['gs'] == 'm:off k:off 1:off 3:off 7:off', f'セットした あとは 使えない（「セットする 前に 使えるよ」）（{s1}）')

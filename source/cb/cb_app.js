@@ -130,6 +130,9 @@
 //   第4.204版（まさちゃん 2026/11/19 09:35「結果調査の調査隊切符は、1試合1枚だけど、連続勝利中は使わないになってる？ クエストが変わったら1枚使うし、負けたら1枚使う！
 //     クエスト変わったらは、例えばLv3からLv4に移動したらってことね！」）：調査隊切符は 挑戦 1回に 1枚（1戦目の はじめ：qBattle）・負けて「もう 一度 挑戦」で 1枚（qRetry）。
 //     連勝中（「第○戦へ」・同点の やり直し：qNext）は 使わない（0枚でも 押せる）。第4.203版は 1戦ごとに 1枚 だった
+//   第4.205版（まさちゃん 2026/11/19 10:21「決戦宝石の説明分の赤丸のダイヤ全体的に消して！」・10:25「逆に一枚目の青丸の切符は、ちゃんと2枚目の調査隊切符に統一して！」）：
+//     決戦宝石の ことばの 💎 を ぜんぶ 消す（遊び方・部屋の 決まり・宝石の 知らせ・あいだの 窓・負けの 窓）。
+//     調査隊切符の 🎫 は 切符の 絵（cb_q_tk.webp）に そろえる：TKI（字の 横の 小さな 絵 .tki）・知らせ（toast の 3つ目 ＝ 絵）
 const CBApp = (() => {
   'use strict';
   const R = CBRules, SK = 'tengel.cb';
@@ -849,6 +852,7 @@ const CBApp = (() => {
 #cbOv .qtg:active{filter:brightness(1.08)}
 #cbOv .qpo .qpotk{margin-top:6px;font-size:13px;line-height:1.4;color:#f3dfae}
 #cbOv .qpo .qpotk small{display:block;font-size:11.5px;color:#d9c08c}
+#cbOv .tki{display:inline-block;height:1.45em;width:auto;vertical-align:-0.42em;margin:0 5px 0 0;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.6))}
 #cbOv .qpo .qpotk b{color:#ffe07a;font-size:16px}
 #cbOv .qpo .qpob .cbb small:empty{display:none}
 #cbOv .qpo .qpob .cbb small{display:block;font-size:11px;font-weight:700;color:#5a3a10}
@@ -1084,8 +1088,10 @@ const CBApp = (() => {
     if (was !== name && toastEl && toastEl.classList.contains('on')) toastPos();      // 第4.189版：出て いる ふきだしは 新しい 画面の 場所へ（パックの 画面の 上の ふきだしが デザインカスタムの タブに かからない）
   }
   let toastT = 0;
-  function toast(t, sec) {
-    toastEl.textContent = t; toastPos();
+  function toast(t, sec, ic) {
+    toastEl.textContent = t;
+    if (ic) { const i = document.createElement('img'); i.className = 'tki'; i.src = ic; i.alt = ''; toastEl.prepend(i); }      // 第4.205版：知らせの 頭に 小さな 絵（調査隊切符）
+    toastPos();
     toastEl.classList.add('on');
     unlater(toastT); toastT = later(() => toastEl.classList.remove('on'), (sec || 2.4) * 1000 * Math.max(SPEED, 0.2));
   }
@@ -1207,8 +1213,8 @@ const CBApp = (() => {
       + '<li>強い 敵は、決まった 戦で <b>手札に 必ず 強い カード</b>を 持って いるよ（その 戦の 始めに 知らせるよ）</li>'
       + '<li>もらえるのは 決戦調査の バトルコインと、<b>ミッション</b>（コンピュータに 連続勝利）の 連勝。いつもの 勝ち負け・連勝・お世話トークンには 数えないよ</li>'
       + '<li>戦の 途中で やめる・アプリを 閉じると 調査 失敗（ミッションの 連勝も 0）。<b>毎月 1日に リセット</b>（討伐した エリアも 最初から）</li>'
-      + `<li>🎫 <b>調査隊切符</b>：エリアに <b>挑戦する とき 1枚</b>（1戦目の はじめ）。<b>連勝中は 使わない</b>（「第○戦へ」・同点の やり直し）。負けて「もう 一度 挑戦」する とき・次の エリアに 行く とき（例：レベル3 → レベル4）は また 1枚。<b>3分で 1枚</b> たまって、<b>${QT.max}枚 まで</b>。0枚の ときは 挑戦 できないよ（マップの 上の ゲージで 枚数と 次の 1枚 までの 時間が わかるよ）</li></ul>`
-      + `<h4>💎 決戦宝石</h4><ul><li><b>決戦調査では いつも 使えるよ</b>：1つの 調査（連勝が 続く 間）で <b>5つ 1回ずつ（合計 5個）</b>。負けて 1戦目から やり直すと また 5つ</li>`
+      + `<li>${TKI}<b>調査隊切符</b>：エリアに <b>挑戦する とき 1枚</b>（1戦目の はじめ）。<b>連勝中は 使わない</b>（「第○戦へ」・同点の やり直し）。負けて「もう 一度 挑戦」する とき・次の エリアに 行く とき（例：レベル3 → レベル4）は また 1枚。<b>3分で 1枚</b> たまって、<b>${QT.max}枚 まで</b>。0枚の ときは 挑戦 できないよ（マップの 上の ゲージで 枚数と 次の 1枚 までの 時間が わかるよ）</li></ul>`
+      + `<h4>決戦宝石</h4><ul><li><b>決戦調査では いつも 使えるよ</b>：1つの 調査（連勝が 続く 間）で <b>5つ 1回ずつ（合計 5個）</b>。負けて 1戦目から やり直すと また 5つ</li>`
       + `<li>友達との 対戦は、部屋を 作る 人が「<b>決戦宝石 あり</b>」に した とき：2人とも <b>1試合で 5つ 1回ずつ</b>（おたがいの 宝石が 見える）</li>`
       + `<li>宝石は 5つ：${R.GEMS.map(g => `${GEMS[g].n}＝<b>${GEMS[g].t}</b>${headOf(R.GEM_W[g])}`).join('・')}</li>`
       + `<li>手札の 下の ケースの 宝石を タップ →「使う」で、<b>トークンの カードが 手札に 1枚</b>。使えるのは <b>手札が ${R.GEM_HAND}枚 以下</b>・<b>セットの 前</b>・<b>1ターンに 1つ</b></li>`
@@ -1593,7 +1599,7 @@ const CBApp = (() => {
     if (r.mode === 'host' && r.step === 'stake') {      // 第4.179版：参加コイン・勝者の 獲得コインを 決める
       const k = r.stake, maxE = Math.min(st.coin, CBNet.STAKE_MAX), chips = STAKE_CHIPS.filter(q => q <= maxE), gm = st.rg, has = st.coin > 0;
       // 第4.197版：決戦宝石（まさちゃん 18:58：お友達バトルの 設定で あり／なし・おたがいに 見える。20:21「お友達バトルは1試合で5個使える！」＝ 2人とも 5つ）
-      const gemBlk = '<div class="blk"><b>💎 決戦宝石</b><small>あり に すると、2人とも 5つの 宝石を 使えるよ（1試合で 1つ 1回ずつ・おたがいに 見える）</small>'
+      const gemBlk = '<div class="blk"><b>決戦宝石</b><small>あり に すると、2人とも 5つの 宝石を 使えるよ（1試合で 1つ 1回ずつ・おたがいに 見える）</small>'
         + `<div class="cbseg" role="group" aria-label="決戦宝石"><button type="button" class="${gm.on ? '' : 'on'}" data-cb="rgon" data-v="0" aria-pressed="${!gm.on}">なし</button><button type="button" class="${gm.on ? 'on' : ''}" data-cb="rgon" data-v="1" aria-pressed="${gm.on}">あり</button></div>`
         + (gm.on ? `<div class="gl5" aria-hidden="true">${R.GEMS.map(g => `<img src="${gemPic(g)}" alt="">`).join('')}</div>` : '') + '</div>';
       h += `<h2 class="gold">部屋を 作る</h2><p>${has ? '参加コインと、勝った 人が もらう コインを 決めてね' : '部屋の 決まりを 決めてね'}</p>`
@@ -1610,7 +1616,7 @@ const CBApp = (() => {
     if (r.mode === 'host') {
       h += '<h2 class="gold">部屋を 作ったよ</h2><p>この 番号を 友達に 教えてね</p>' + `<div class="num" aria-label="部屋番号 ${r.code}">${r.code}</div>`
         + (r.stake && r.stake.e > 0 ? `<p class="cbstkl">${COINI}参加コイン <b>${r.stake.e}枚</b>・勝者 <b>${r.stake.w}枚</b></p>` : '')
-        + (r.gm && r.gm.on ? '<p class="cbstkl">💎 決戦宝石 あり（2人とも 5つ）</p>' : '')      // 第4.197版
+        + (r.gm && r.gm.on ? '<p class="cbstkl">決戦宝石 あり（2人とも 5つ）</p>' : '')      // 第4.197版（第4.205版：💎 は 消した）
         + `<div class="stt">${r.step === 'found' ? '<i class="cbspin"></i>友達が 来たよ！ つないで いるよ…' : r.step === 'fail' ? '部屋を 作れなかったよ' : '<i class="cbspin"></i>友達を 待って いるよ…'}</div>`
         + '<p class="hint">友達は「部屋に 入る」で この 番号を 入れるよ。<br>近くに いる 友達と 直接 つながるよ（2人とも Wi‑Fi か Bluetooth を オンに）</p>';
       if (r.step === 'fail') h += '<button type="button" class="cbb" data-cb="roomre">もう一度 作る</button>';
@@ -1683,7 +1689,7 @@ const CBApp = (() => {
     const need = k.e - st.coin;
     modal(`<h3 class="gold">この 部屋の 決まり</h3>` + (k.e > 0 ? `<div class="cbstkv">${COINI}参加コイン <b>${k.e}枚</b><i>→</i>勝者 <b>${k.w}枚</b></div>`
       + `<p>2人とも 初めに ${k.e}枚 出すよ。勝った 人は ${k.w}枚 もらえる。<br>同点は 戻る・途中で やめると 戻らないよ</p>` : '')
-      + (gm ? `<div class="cbjg"><b>💎 決戦宝石 あり</b><small>2人とも 5つの 宝石を 使えるよ（1試合で 1つ 1回ずつ・おたがいに 見える）</small><div class="gl5" aria-hidden="true">${R.GEMS.map(g => `<img src="${gemPic(g)}" alt="">`).join('')}</div></div>` : '')
+      + (gm ? `<div class="cbjg"><b>決戦宝石 あり</b><small>2人とも 5つの 宝石を 使えるよ（1試合で 1つ 1回ずつ・おたがいに 見える）</small><div class="gl5" aria-hidden="true">${R.GEMS.map(g => `<img src="${gemPic(g)}" alt="">`).join('')}</div></div>` : '')
       + (k.e > 0 ? `<p class="cbhave">${COINI}あなたの バトルコイン <b>${st.coin}</b>枚${need > 0 ? `<br><strong>あと ${need}枚 足りない ので、この 部屋には 入れないよ</strong>` : ''}</p>` : '')
       + (need > 0 ? '<div class="col"><button type="button" class="cbb" data-cb="joinno">メニューへ</button></div>'
         : '<div class="rowb"><button type="button" class="cbb dk" data-cb="joinno">やめる</button><button type="button" class="cbb" data-cb="joinyes">参加する</button></div>'), 'cbjoin');
@@ -1804,7 +1810,7 @@ const CBApp = (() => {
     if (v.phase === 'six') return v.can.six ? `${SIX.head} ${SIX.q}\n${SIX.bar}` : `${w}が 6 の 効果を 使うか 選んで いるよ…`;      // 第4.190版：ターンの はじめ
     if (v.phase === 'eff') return `${w}が 効果を 使うか 選んで いるよ…`;      // 第4.190版：どの 効果かは 出さない（相手が セットした カードが わからない ように）
     if (v.can.set && preList(v).length) { const p = preAsk(v) || preList(v)[0]; return (v.op.set ? `${w}は もう セットしたよ。カードを 選んでね` : 'セットする カードを 選んでね（カードを タップ）') + '\n' + preLine(p.c); }      // 第4.187版・第4.202版：セットの 前の 手札の 効果
-    if (v.can.set && v.can.gem && v.can.gem.length) return (v.op.set ? `${w}は もう セットしたよ。カードを 選んでね` : 'セットする カードを 選んでね（カードを タップ）') + '\n💎 セットの 前なら 決戦宝石を 使えるよ（下の ケース）';      // 第4.197版
+    if (v.can.set && v.can.gem && v.can.gem.length) return (v.op.set ? `${w}は もう セットしたよ。カードを 選んでね` : 'セットする カードを 選んでね（カードを タップ）') + '\nセットの 前なら 決戦宝石を 使えるよ（下の ケース）';      // 第4.197版
     if (v.can.set) return v.op.set ? `${w}は もう セットしたよ。セットする カードを 選んでね` : 'セットする カードを 選んでね（カードを タップ）';
     return `${w}が 選んで いるよ…`;
   }
@@ -1860,7 +1866,7 @@ const CBApp = (() => {
     se('tap', 0.6);
     const why = my.used.indexOf(g) >= 0 ? (qRun ? 'この 調査では もう 使ったよ（5つの 宝石は 1つの 調査で 1回ずつ）' : 'この 試合では もう 使ったよ') : my.now ? '決戦宝石は 1ターンに 1つ までだよ' : v.phase !== 'set' || !v.can.set ? 'セットする 前に 使えるよ'
       : v.my.hand.length > R.GEM_HAND ? `手札が ${R.GEM_HAND}枚 以下の ときに 使えるよ` : my.can.indexOf(g) < 0 ? '今は 使えないよ' : '';
-    if (why || mode.k !== 'idle' || busy || lock) { toast(`💎 ${GEMS[g].n}\n${why || '今は 使えないよ'}`, 2.4); return; }
+    if (why || mode.k !== 'idle' || busy || lock) { toast(`${GEMS[g].n}\n${why || '今は 使えないよ'}`, 2.4); return; }
     modal(`<h3 class="gold">${esc(GEMS[g].n)}</h3><div class="cbgemq"><img class="gm" src="${gemPic(g)}" alt=""><i aria-hidden="true">▶</i><span class="cbc"><img src="${pic(tokP(g), true)}" alt="${esc(GEMS[g].t)}"></span></div>`
       + `<p><b>${esc(GEMS[g].t)}</b>${headOf(R.GEM_W[g])}が 手札に 1枚 来るよ<small>この ターン だけ（使わないと ターンの 終わりに 消えるよ）・この 宝石は ${qRun ? 'この 調査で 1回（連勝が 続く 間）' : 'この 試合で 1回'}</small></p>`
       + `<div class="rowb"><button type="button" class="cbb dk" data-cb="modx">使わない</button><button type="button" class="cbb" data-cb="gemgo" data-g="${g}">使う</button></div>`, 'cbgemm');
@@ -2548,6 +2554,7 @@ const CBApp = (() => {
   //   0枚の ときは 挑戦 できない（マップの「決戦調査に 行く」・負けの 窓の「もう 一度 挑戦」は 押せない ＝ たまるまでの 時間を 出す）。
   //   時刻は 時計の 番人（nowD：iPhone の 日付を 進めても たまらない）。おぼえる：tengel.cb の qt＝{ n：枚数, at：次の 1枚を 数える もとの 時刻（ミリ秒）}
   const QT = { max: 15, ms: 180000 };
+  const TKP = 'cb_q_tk.webp', TKI = `<img class="tki" src="${TKP}" alt="">`;      // 第4.205版：字の 横の 切符は まさちゃんの 切符の 絵（🎫 の かわり）
   let qtTick = 0;                                      // 1秒 ごとに 書く タイマー（開いて いる 間 だけ）
   // ゲージ（cb_q_tg.webp：絵の 中の 数字「0」を 消した 絵）に のせる もの（kisekae/cb_ticket_art.py css）：cut[n]＝左から n こ 見せる 切れ目（%）・枚数の 字の 右の はし・たての まん中（%）・幅 ÷ 高さ
   const QTG = { cut: [0, 24.616, 29.18, 33.768, 38.379, 44.364, 50.419, 55.17, 59.851, 64.718, 70.89, 77.038, 81.858, 86.656, 91.476, 100], right: 20.121, mid: 30.903, ar: 7.4549 };
@@ -2585,7 +2592,7 @@ const CBApp = (() => {
       if (modEl.classList.contains('cbqtk')) { $('.qtkn b', modEl).textContent = String(n); $('.qtkr', modEl).textContent = n < QT.max ? `次の 1枚 まで あと ${mmss(qtLeft())}` : '満タン！（15枚）'; }
     }
   }
-  const qtLine = lose => `<p class="qtl">🎫 調査隊切符 のこり <b>${qtNow().n}</b>枚<small>${lose ? '（もう 一度 挑戦は 1枚・3分で 1枚 たまる）' : '（連勝中は 使わないよ・3分で 1枚 たまる）'}</small></p>`;      // あいだの 窓の 1行（第4.204版：連勝中は 使わない）
+  const qtLine = lose => `<p class="qtl">${TKI}調査隊切符 のこり <b>${qtNow().n}</b>枚<small>${lose ? '（もう 一度 挑戦は 1枚・3分で 1枚 たまる）' : '（連勝中は 使わないよ・3分で 1枚 たまる）'}</small></p>`;      // あいだの 窓の 1行（第4.204版：連勝中は 使わない）
   const qtBtn = (cb, label, cls) => `<button type="button" class="cbb${cls || ''}" data-cb="${cb}" data-qt="1"${qtNow().n < 1 ? ' disabled' : ''}>${label}<small class="qtw">${qtNow().n < 1 ? qtWait() : ''}</small></button>`;      // 1枚 使う ボタン（第4.204版：「もう 一度 挑戦」 だけ）
   function qtModal(lack) {                              // 切符の 窓（ゲージを タップ・足りない とき）
     const s = qtNow();
@@ -2653,7 +2660,7 @@ const CBApp = (() => {
     const body = done ? '<p class="qpoi"><b>討伐済み！</b><small>来月の リセットまで 待ってね</small></p>'
       : !open ? `<p class="qpoi">🔒 レベル${lv - 1}「${esc(QUEST[lv - 2].a)}」を<br>討伐すると 行けるよ</p>`
         : `<p class="qpoi"><b>${q.w}連勝</b>で 討伐！　${COINI}<b>${q.c}</b>枚</p>` + (rig ? `<p class="qpor">⚠ ${ns.join('・')}戦目は 敵の 手札に 必ず ${esc(qRigText(rig))}</p>` : '')
-          + `<p class="qpotk">🎫 挑戦に 調査隊切符 1枚（今 <b>${qtNow().n}</b>枚）<small>連勝中は 使わないよ</small></p>`;      // 第4.204版：挑戦 1回に 1枚
+          + `<p class="qpotk">${TKI}挑戦に 調査隊切符 1枚（今 <b>${qtNow().n}</b>枚）<small>連勝中は 使わないよ</small></p>`;      // 第4.204版：挑戦 1回に 1枚
     const bt = '<button type="button" class="cbb dk" data-cb="qpx">もどる</button>' + (open ? `<button type="button" class="cbb" data-cb="qgo" data-lv="${lv}"${qtNow().n < 1 ? ' disabled' : ''}>決戦調査に 行く<small>${qtNow().n < 1 ? qtWait() : ''}</small></button>` : '');
     qPopClose();
     const el = document.createElement('div');
@@ -2763,7 +2770,7 @@ const CBApp = (() => {
     qRun = { lv: lv, won: 0, m: st.q.m, gu: [] };
     startMatch(CBNet.cpu(CBApp._rng || undefined, CBApp._think || undefined, qOpt(lv, 1)));
     bgmTrack('quest');
-    toast(`🎫 調査隊切符を 1枚 使ったよ（のこり ${qtNow().n}枚）`, 1.8);      // バトルの 画面に して から（ことばの 行に 重ねる：上の HP ゲージを かくさない）
+    toast(`調査隊切符を 1枚 使ったよ\n（のこり ${qtNow().n}枚）`, 1.8, TKP);      // バトルの 画面に して から（ことばの 行に 重ねる：上の HP ゲージを かくさない）
   }
   // 敵HP ゲージ：left＝のこりの 連勝（＝HP の こま）。hit＝へる 動き（光って ゆれて、うしろの 黄色い 所が おくれて へる）
   function qHP(left, hit) {
@@ -2823,7 +2830,7 @@ const CBApp = (() => {
     if (x.res === 'lose') {
       se('over');
       modal(`<h3 class="gold">調査 失敗…</h3><div class="sc">${x.wins[0]} － ${x.wins[1]}<small>あなた － ${esc(q.s)}（勝った 数）${x.early ? `<br>${x.early}ターン目で 決着！` : ''}</small></div>`
-        + `<div class="gift"><div>${esc(q.s)}に 負けた…。${r.won ? `${r.won}連勝で 止まったよ` : ''}</div><div>もう 一度 1戦目から 挑戦できるよ（💎 決戦宝石も 5つに 戻るよ）</div>${qtLine(true)}${msh}</div>`
+        + `<div class="gift"><div>${esc(q.s)}に 負けた…。${r.won ? `${r.won}連勝で 止まったよ` : ''}</div><div>もう 一度 1戦目から 挑戦できるよ（決戦宝石も 5つに 戻るよ）</div>${qtLine(true)}${msh}</div>`
         + `<div class="col">${qtBtn('qretry', 'もう 一度 挑戦')}<button type="button" class="cbb dk" data-cb="qmapgo">マップへ</button></div>`, 'cbend qend');
       return;
     }
@@ -2835,20 +2842,20 @@ const CBApp = (() => {
   // 第4.197版：この 調査で のこって いる 決戦宝石（あいだの 窓に 出す：連勝が 続く 間は 5つ 1回ずつ）
   function qGemLeft() {
     const gu = qRun && qRun.gu ? qRun.gu : [], left = R.GEMS.filter(g => gu.indexOf(g) < 0);
-    return `<div class="qgl">💎 決戦宝石 のこり <b>${left.length}</b>／${R.GEMS.length}<span aria-hidden="true">${R.GEMS.map(g => `<img class="${gu.indexOf(g) >= 0 ? 'u' : ''}" src="${gemPic(g)}" alt="">`).join('')}</span></div>`;
+    return `<div class="qgl">決戦宝石 のこり <b>${left.length}</b>／${R.GEMS.length}<span aria-hidden="true">${R.GEMS.map(g => `<img class="${gu.indexOf(g) >= 0 ? 'u' : ''}" src="${gemPic(g)}" alt="">`).join('')}</span></div>`;
   }
   // 次の 戦へ（同点の やり直しも）：敵の 確定カードを その 戦の ものに して 配り直す。第4.204版：連勝中 なので 調査隊切符は 使わない（0枚でも 進める）
   function qNext(paid) {
     if (!qRun || qRun.dead || !match || !ended) return;
     se('tap'); closeMod();
-    if (paid) toast(`🎫 調査隊切符を 1枚 使ったよ（のこり ${qtNow().n}枚）`, 1.8);
+    if (paid) toast(`調査隊切符を 1枚 使ったよ\n（のこり ${qtNow().n}枚）`, 1.8, TKP);
     match.setOpt(qOpt(qRun.lv, qRun.won + 1));
     match.again();
   }
   // もう 一度 挑戦（負けた あと：1戦目から）：新しい 挑戦 なので 調査隊切符 1枚（まさちゃん 09:35「負けたら1枚使う！」）
   function qRetry() {
     if (!qRun || qRun.dead || !match || !ended) return;
-    if (!qtUse()) { se('tap', 0.5); toast(`🎫 ${qtWait()}`, 1.8); return qtPaint(); }      // 切符が 0枚 ＝ まだ 挑戦 できない（この 戦の 結果は そのまま）
+    if (!qtUse()) { se('tap', 0.5); toast(qtWait(), 1.8, TKP); return qtPaint(); }      // 切符が 0枚 ＝ まだ 挑戦 できない（この 戦の 結果は そのまま）
     qRun.won = 0; qRun.m = st.q.m; qRun.gu = []; qHP(QUEST[qRun.lv - 1].w, false);      // 第4.197版：1戦目から ＝ 決戦宝石も 5つに 戻る
     qNext(true);
   }
