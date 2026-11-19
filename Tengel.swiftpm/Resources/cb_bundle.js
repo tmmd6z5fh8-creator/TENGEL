@@ -1086,6 +1086,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBNet;
 
 
 
+
+
+
 const CBApp = (() => {
   'use strict';
   const R = CBRules, SK = 'tengel.cb';
@@ -1804,6 +1807,7 @@ const CBApp = (() => {
 #cbOv .qtg .rc{position:absolute;right:31.5%;top:30.9%;transform:translateY(-50%);font:700 2.35cqw/1 "BIZ UDPGothic","Hiragino Sans",sans-serif;color:#e8cf98;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.8);pointer-events:none}
 #cbOv .qtg:active{filter:brightness(1.08)}
 #cbOv .qpo .qpotk{margin-top:6px;font-size:13px;line-height:1.4;color:#f3dfae}
+#cbOv .qpo .qpotk small{display:block;font-size:11.5px;color:#d9c08c}
 #cbOv .qpo .qpotk b{color:#ffe07a;font-size:16px}
 #cbOv .qpo .qpob .cbb small:empty{display:none}
 #cbOv .qpo .qpob .cbb small{display:block;font-size:11px;font-weight:700;color:#5a3a10}
@@ -2162,7 +2166,7 @@ const CBApp = (() => {
       + '<li>強い 敵は、決まった 戦で <b>手札に 必ず 強い カード</b>を 持って いるよ（その 戦の 始めに 知らせるよ）</li>'
       + '<li>もらえるのは 決戦調査の バトルコインと、<b>ミッション</b>（コンピュータに 連続勝利）の 連勝。いつもの 勝ち負け・連勝・お世話トークンには 数えないよ</li>'
       + '<li>戦の 途中で やめる・アプリを 閉じると 調査 失敗（ミッションの 連勝も 0）。<b>毎月 1日に リセット</b>（討伐した エリアも 最初から）</li>'
-      + `<li>🎫 <b>調査隊切符</b>：<b>1戦ごとに 1枚</b> 使うよ（次の 戦・同点の やり直し・もう 一度 挑戦も 1枚）。<b>3分で 1枚</b> たまって、<b>${QT.max}枚 まで</b>。0枚の ときは 戦えないよ（マップの 上の ゲージで 枚数と 次の 1枚 までの 時間が わかるよ）</li></ul>`
+      + `<li>🎫 <b>調査隊切符</b>：エリアに <b>挑戦する とき 1枚</b>（1戦目の はじめ）。<b>連勝中は 使わない</b>（「第○戦へ」・同点の やり直し）。負けて「もう 一度 挑戦」する とき・次の エリアに 行く とき（例：レベル3 → レベル4）は また 1枚。<b>3分で 1枚</b> たまって、<b>${QT.max}枚 まで</b>。0枚の ときは 挑戦 できないよ（マップの 上の ゲージで 枚数と 次の 1枚 までの 時間が わかるよ）</li></ul>`
       + `<h4>💎 決戦宝石</h4><ul><li><b>決戦調査では いつも 使えるよ</b>：1つの 調査（連勝が 続く 間）で <b>5つ 1回ずつ（合計 5個）</b>。負けて 1戦目から やり直すと また 5つ</li>`
       + `<li>友達との 対戦は、部屋を 作る 人が「<b>決戦宝石 あり</b>」に した とき：2人とも <b>1試合で 5つ 1回ずつ</b>（おたがいの 宝石が 見える）</li>`
       + `<li>宝石は 5つ：${R.GEMS.map(g => `${GEMS[g].n}＝<b>${GEMS[g].t}</b>${headOf(R.GEM_W[g])}`).join('・')}</li>`
@@ -3499,6 +3503,9 @@ const CBApp = (() => {
   
   
   
+  
+  
+  
   const QT = { max: 15, ms: 180000 };
   let qtTick = 0;                                      
   
@@ -3537,12 +3544,12 @@ const CBApp = (() => {
       if (modEl.classList.contains('cbqtk')) { $('.qtkn b', modEl).textContent = String(n); $('.qtkr', modEl).textContent = n < QT.max ? `次の 1枚 まで あと ${mmss(qtLeft())}` : '満タン！（15枚）'; }
     }
   }
-  const qtLine = () => `<p class="qtl">🎫 調査隊切符 のこり <b>${qtNow().n}</b>枚<small>（1戦ごとに 1枚・3分で 1枚 たまる）</small></p>`;      
+  const qtLine = lose => `<p class="qtl">🎫 調査隊切符 のこり <b>${qtNow().n}</b>枚<small>${lose ? '（もう 一度 挑戦は 1枚・3分で 1枚 たまる）' : '（連勝中は 使わないよ・3分で 1枚 たまる）'}</small></p>`;      
   const qtBtn = (cb, label, cls) => `<button type="button" class="cbb${cls || ''}" data-cb="${cb}" data-qt="1"${qtNow().n < 1 ? ' disabled' : ''}>${label}<small class="qtw">${qtNow().n < 1 ? qtWait() : ''}</small></button>`;      
   function qtModal(lack) {                              
     const s = qtNow();
     modal(`<div class="qtkm"><img class="tk" src="cb_q_tk.webp" alt="調査隊切符">${lack ? '<h3 class="gold">切符が 足りないよ…</h3>' : ''}<p class="qtkn">調査隊切符 <b>${s.n}</b>／${QT.max}枚</p>`
-      + `<p>決戦調査の <b>1戦ごとに 1枚</b> 使うよ<br><b>3分で 1枚</b> たまるよ（${QT.max}枚 まで）</p><p class="qtkr">${s.n < QT.max ? `次の 1枚 まで あと ${mmss(qtLeft())}` : `満タン！（${QT.max}枚）`}</p>`
+      + `<p>エリアに <b>挑戦する とき 1枚</b> 使うよ<br><b>連勝中は 使わない</b>（負けて もう 一度 挑戦する ときは また 1枚）<br><b>3分で 1枚</b> たまるよ（${QT.max}枚 まで）</p><p class="qtkr">${s.n < QT.max ? `次の 1枚 まで あと ${mmss(qtLeft())}` : `満タン！（${QT.max}枚）`}</p>`
       + '<div class="col"><button type="button" class="cbb dk" data-cb="modx">閉じる</button></div></div>', 'cbqtk');
   }
   
@@ -3605,7 +3612,7 @@ const CBApp = (() => {
     const body = done ? '<p class="qpoi"><b>討伐済み！</b><small>来月の リセットまで 待ってね</small></p>'
       : !open ? `<p class="qpoi">🔒 レベル${lv - 1}「${esc(QUEST[lv - 2].a)}」を<br>討伐すると 行けるよ</p>`
         : `<p class="qpoi"><b>${q.w}連勝</b>で 討伐！　${COINI}<b>${q.c}</b>枚</p>` + (rig ? `<p class="qpor">⚠ ${ns.join('・')}戦目は 敵の 手札に 必ず ${esc(qRigText(rig))}</p>` : '')
-          + `<p class="qpotk">🎫 1戦ごとに 調査隊切符 1枚（今 <b>${qtNow().n}</b>枚）</p>`;      
+          + `<p class="qpotk">🎫 挑戦に 調査隊切符 1枚（今 <b>${qtNow().n}</b>枚）<small>連勝中は 使わないよ</small></p>`;      
     const bt = '<button type="button" class="cbb dk" data-cb="qpx">もどる</button>' + (open ? `<button type="button" class="cbb" data-cb="qgo" data-lv="${lv}"${qtNow().n < 1 ? ' disabled' : ''}>決戦調査に 行く<small>${qtNow().n < 1 ? qtWait() : ''}</small></button>` : '');
     qPopClose();
     const el = document.createElement('div');
@@ -3769,20 +3776,20 @@ const CBApp = (() => {
       se('magic', 0.6);
       modal(`<h3 class="gold">勝利！</h3><div class="sc">${r.won}連勝<small>あと ${q.w - r.won}連勝で 討伐！</small></div><div class="gift">${qGemLeft()}${qtLine()}${msh}`
         + (r.ms.length ? `<div class="cbcl">${COINI}バトルコイン（今 ${r.coins}枚）</div>` : '') + '</div>'
-        + `<div class="col">${qtBtn('qnext', `第${r.won + 1}戦へ`)}<button type="button" class="cbb dk" data-cb="qmapgo">マップへ 戻る<small>この 調査は ここまで</small></button></div>`, 'cbend qend');
+        + `<div class="col"><button type="button" class="cbb" data-cb="qnext">第${r.won + 1}戦へ</button><button type="button" class="cbb dk" data-cb="qmapgo">マップへ 戻る<small>この 調査は ここまで</small></button></div>`, 'cbend qend');
       return;
     }
     if (x.res === 'lose') {
       se('over');
       modal(`<h3 class="gold">調査 失敗…</h3><div class="sc">${x.wins[0]} － ${x.wins[1]}<small>あなた － ${esc(q.s)}（勝った 数）${x.early ? `<br>${x.early}ターン目で 決着！` : ''}</small></div>`
-        + `<div class="gift"><div>${esc(q.s)}に 負けた…。${r.won ? `${r.won}連勝で 止まったよ` : ''}</div><div>もう 一度 1戦目から 挑戦できるよ（💎 決戦宝石も 5つに 戻るよ）</div>${qtLine()}${msh}</div>`
+        + `<div class="gift"><div>${esc(q.s)}に 負けた…。${r.won ? `${r.won}連勝で 止まったよ` : ''}</div><div>もう 一度 1戦目から 挑戦できるよ（💎 決戦宝石も 5つに 戻るよ）</div>${qtLine(true)}${msh}</div>`
         + `<div class="col">${qtBtn('qretry', 'もう 一度 挑戦')}<button type="button" class="cbb dk" data-cb="qmapgo">マップへ</button></div>`, 'cbend qend');
       return;
     }
     se('even');
     modal(`<h3 class="gold">同点！</h3><div class="sc">${x.wins[0]} － ${x.wins[1]}<small>あなた － ${esc(q.s)}（勝った 数）</small></div>`
       + `<div class="gift"><div>同点は 負けじゃ ないよ。<br>第${r.won + 1}戦を やり直そう！（HP は そのまま）</div>${qGemLeft()}${qtLine()}${msh}</div>`
-      + `<div class="col">${qtBtn('qnext', `第${r.won + 1}戦を やり直す`)}<button type="button" class="cbb dk" data-cb="qmapgo">マップへ 戻る<small>この 調査は ここまで</small></button></div>`, 'cbend qend');
+      + `<div class="col"><button type="button" class="cbb" data-cb="qnext">第${r.won + 1}戦を やり直す</button><button type="button" class="cbb dk" data-cb="qmapgo">マップへ 戻る<small>この 調査は ここまで</small></button></div>`, 'cbend qend');
   }
   
   function qGemLeft() {
@@ -3790,18 +3797,19 @@ const CBApp = (() => {
     return `<div class="qgl">💎 決戦宝石 のこり <b>${left.length}</b>／${R.GEMS.length}<span aria-hidden="true">${R.GEMS.map(g => `<img class="${gu.indexOf(g) >= 0 ? 'u' : ''}" src="${gemPic(g)}" alt="">`).join('')}</span></div>`;
   }
   
-  function qNext() {
+  function qNext(paid) {
     if (!qRun || qRun.dead || !match || !ended) return;
-    if (!qtUse()) { se('tap', 0.5); toast(`🎫 ${qtWait()}`, 1.8); return qtPaint(); }      
-    se('tap'); closeMod(); toast(`🎫 調査隊切符を 1枚 使ったよ（のこり ${qtNow().n}枚）`, 1.8);
+    se('tap'); closeMod();
+    if (paid) toast(`🎫 調査隊切符を 1枚 使ったよ（のこり ${qtNow().n}枚）`, 1.8);
     match.setOpt(qOpt(qRun.lv, qRun.won + 1));
     match.again();
   }
+  
   function qRetry() {
     if (!qRun || qRun.dead || !match || !ended) return;
-    if (qtNow().n < 1) { se('tap', 0.5); toast(`🎫 ${qtWait()}`, 1.8); return qtPaint(); }      
+    if (!qtUse()) { se('tap', 0.5); toast(`🎫 ${qtWait()}`, 1.8); return qtPaint(); }      
     qRun.won = 0; qRun.m = st.q.m; qRun.gu = []; qHP(QUEST[qRun.lv - 1].w, false);      
-    qNext();
+    qNext(true);
   }
   
   
