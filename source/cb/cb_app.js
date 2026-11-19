@@ -136,6 +136,10 @@
 //   第4.206版（まさちゃん 2026/11/19 19:07「決戦調査で、抜け穴やバクなどないか確認して！」）：月末の 夜中に 窓を 開いた まま 月が 進んだ とき、
 //     切符を 使う 前（バトル開始・もう 一度 挑戦）と 次の 戦の 前（第○戦へ）に 止める（qGone：この 調査は なし・切符は 使わない）。前は 切符を 使って 戦った あとで「月が 変わったよ」だった
 //   第4.207版（まさちゃん 2026/11/20 00:44「調査隊切符の回復時間は、3分から8分に1枚回復にして！」）：調査隊切符は 8分で 1枚 たまる（QT.ms 180000 → 480000・ことばの「○分で 1枚」は QT.ms から 書く）
+//   第4.208版（まさちゃん 2026/11/20 01:23「やっぱり調査隊切符15分で1枚回復にして！」→ 01:42「ごめん！ やっぱり調査隊切符を1枚30分に1枚回復にして！ 決戦調査のセリフが、文字の段が変わる時に、文字がガタガタ段が変わってるから！おかしくならないように改善して！」）：
+//     調査隊切符は 30分で 1枚 たまる（QT.ms 480000 → 1800000：15分の 版は 出して いない）。
+//     決戦調査の セリフ（qLine）：前は 1字 ふえる たびに 文を 書き直して いた → 字の かたまり（word-break:keep-all：全角の あき・句読点 まで）が 行の はしで 次の 行へ とんで、字が ガタガタ 動いた。
+//     → はじめに 行 ぜんぶを 置いて（まだの 字は 見えない .hd）、見える 所（.sh）を 1字ずつ のばす ＝ 字の 場所も 窓の 高さも はじめから かわらない
 const CBApp = (() => {
   'use strict';
   const R = CBRules, SK = 'tengel.cb';
@@ -937,6 +941,7 @@ const CBApp = (() => {
 #cbOv .qsay{position:absolute;left:12px;right:12px;bottom:calc(var(--sab,env(safe-area-inset-bottom)) + 16px);z-index:3;min-height:112px;box-sizing:border-box;padding:18px 18px 24px;border-radius:16px;background:linear-gradient(180deg,rgba(30,19,9,.9),rgba(12,8,4,.94));border:2px solid #c9a35a;box-shadow:0 0 0 1px rgba(0,0,0,.6) inset,0 8px 20px rgba(0,0,0,.55);opacity:0;transform:translateY(14px);transition:opacity .3s,transform .3s;pointer-events:none}
 #cbOv .qsay.on{opacity:1;transform:none}
 #cbOv .qsay p{margin:0;font-size:18px;line-height:1.7;font-weight:700;color:#fff6e0;word-break:keep-all;overflow-wrap:anywhere}
+#cbOv .qsay p .hd{visibility:hidden}
 #cbOv .qsay .nx{position:absolute;right:16px;bottom:7px;font-style:normal;color:#ffd27a;font-size:13px;animation:qnx 1s ease-in-out infinite}
 @keyframes qnx{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
 #cbOv .qtap{position:absolute;left:50%;bottom:calc(var(--sab,env(safe-area-inset-bottom)) + 18px);z-index:3;transform:translateX(-50%);opacity:0;transition:opacity .4s;padding:8px 22px;border-radius:999px;background:linear-gradient(180deg,#ffe9a8,#e2a83e);color:#3a2206;font-size:16px;font-weight:800;white-space:nowrap;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.5)}
@@ -2553,10 +2558,10 @@ const CBApp = (() => {
   //   第4.204版（まさちゃん 11/19 09:35「連続勝利中は使わない」「クエストが変わったら1枚使うし、負けたら1枚使う！」）：挑戦 1回に 1枚
   //   （1戦目の はじめ ＝ qBattle・負けて「もう 一度 挑戦」＝ qRetry）。連勝中は 使わない（「第○戦へ」・同点の やり直し ＝ qNext：0枚でも 押せる）。
   //   とちゅうで「マップへ 戻る」・負け・やめる で 調査が おわったら、次の 挑戦は また 1枚。第4.203版は 1戦ごとに 1枚 だった。
-  //   3分で 1枚 たまる（第4.207版：8分で 1枚）（15枚 まで・満タンの 間は 時計は 止まる）。はじめは 15枚。
+  //   3分で 1枚 たまる（第4.207版：8分・第4.208版：30分で 1枚）（15枚 まで・満タンの 間は 時計は 止まる）。はじめは 15枚。
   //   0枚の ときは 挑戦 できない（マップの「決戦調査に 行く」・負けの 窓の「もう 一度 挑戦」は 押せない ＝ たまるまでの 時間を 出す）。
   //   時刻は 時計の 番人（nowD：iPhone の 日付を 進めても たまらない）。おぼえる：tengel.cb の qt＝{ n：枚数, at：次の 1枚を 数える もとの 時刻（ミリ秒）}
-  const QT = { max: 15, ms: 480000 };      // 第4.207版：8分で 1枚（前は 3分 ＝ 180000）
+  const QT = { max: 15, ms: 1800000 };      // 第4.208版：30分で 1枚（第4.207版は 8分 ＝ 480000・その前は 3分 ＝ 180000）
   const QTM = () => Math.round(QT.ms / 60000);      // 「○分で 1枚」の ○
   const TKP = 'cb_q_tk.webp', TKI = `<img class="tki" src="${TKP}" alt="">`;      // 第4.205版：字の 横の 切符は まさちゃんの 切符の 絵（🎫 の かわり）
   let qtTick = 0;                                      // 1秒 ごとに 書く タイマー（開いて いる 間 だけ）
@@ -2573,7 +2578,7 @@ const CBApp = (() => {
     return s;
   }
   const qtLeft = () => { const s = qtNow(); return s.n >= QT.max ? 0 : Math.max(0, QT.ms - (qtT() - s.at)); };      // 次の 1枚 まで（ミリ秒）
-  function qtUse() { const s = qtNow(); if (s.n < 1) return false; if (s.n >= QT.max) s.at = qtT(); s.n -= 1; save(); return true; }      // 1枚 使う（満タンから 使ったら そこから 8分 数える）
+  function qtUse() { const s = qtNow(); if (s.n < 1) return false; if (s.n >= QT.max) s.at = qtT(); s.n -= 1; save(); return true; }      // 1枚 使う（満タンから 使ったら そこから 30分 数える）
   const mmss = ms => { const x = Math.ceil(ms / 1000); return `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}`; };
   const qtWait = () => `切符が たまるまで あと ${mmss(qtLeft())}`;
   function qtPaint() {                                  // マップの ゲージ・ふきだし・あいだの 窓の ボタン・切符の 窓を いまの 枚数に（1秒 ごと・使った とき）
@@ -2726,8 +2731,9 @@ const CBApp = (() => {
     qs.i = i; $('.qsay', scr.qf).classList.add('on');
     if (qs.tw) unlater(qs.tw);
     p.style.fontSize = t.length > 54 ? '15px' : t.length > 36 ? '16px' : '';      // 第4.200版：長い 行は 字を 少し 小さく（窓が 3〜4行 まで：敵に かかりすぎない）
-    let n = 0; p.textContent = '';
-    const step = () => { if (!qs || qs.i !== i) return; n += 1; p.textContent = t.slice(0, n); if (n < t.length) qs.tw = later(step, 34 * SPEED); else qs.tw = null; };
+    let n = 0; p.innerHTML = '<span class="sh"></span><span class="hd"></span>';      // 第4.208版：行 ぜんぶを はじめに 置く（.hd＝まだの 字：場所は とるが 見えない）→ 字が 行の はしで とばない・窓の 高さも かわらない
+    const sh = p.firstChild, hd = p.lastChild; hd.textContent = t;
+    const step = () => { if (!qs || qs.i !== i) return; n += 1; sh.textContent = t.slice(0, n); hd.textContent = t.slice(n); if (n < t.length) qs.tw = later(step, 34 * SPEED); else qs.tw = null; };
     step();
     if (i === q.en - 1) qReveal();      // 第4.200版：この 行で 敵が 出る（セリフの 窓は その まま）
   }

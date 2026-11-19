@@ -224,7 +224,7 @@ try:
         check(not pg.locator('#cbOv .qsay .who').count(), 'セリフの 窓に「あなた」の 札は 出さない（セリフに 話す 人が 入って いる）')
         pg.evaluate("() => CBApp._t.speed(1)")      # 字が 1つずつ 出る ところを 見る
         pg.wait_for_timeout(120)
-        tw = pg.evaluate("() => [document.querySelector('#cbOv .qsay p').textContent.length, CBApp._t.quest.scene.typing]")
+        tw = pg.evaluate("() => { const p = document.querySelector('#cbOv .qsay p'); return [(p.querySelector('.sh') || p).textContent.length, CBApp._t.quest.scene.typing]; }")
         check(0 < tw[0] < len(say[0]) and tw[1], f'セリフは 字が 1つずつ 出る（{tw[0]}字 ／ {len(say[0])}字）')
         pg.locator('#cbOv .qfw').click(); pg.wait_for_timeout(60)
         check(pg.locator('#cbOv .qsay p').inner_text() == say[0] and q(pg)['scene']['i'] == 0, 'とちゅうで タップ → その 行が すぐ ぜんぶ 出る（次へは まだ）')
@@ -595,6 +595,42 @@ try:
         if scr(pg) == 'qmap': pg.locator('#cbOv [data-cb=qx]').click(); pg.wait_for_timeout(100)
         pg.evaluate("() => { const T = CBApp._t; if (T.screen !== 'menu') T.menu(); }"); pg.wait_for_timeout(100)
 
+        print('■ セリフの 字は 行の はしで とばない（第4.208版・まさちゃん 11/20 01:42「決戦調査のセリフが、文字の段が変わる時に、文字がガタガタ段が変わってるから！おかしくならないように改善して！」）')
+        WATCH = """() => new Promise(res => {
+          const p = document.querySelector('#cbOv .qsay p'), box = document.querySelector('#cbOv .qsay'), rec = {}; let h0 = null, b0 = null;
+          const at = k => { const w = document.createTreeWalker(p, NodeFilter.SHOW_TEXT); let n, o = k;
+            while ((n = w.nextNode())) { if (o < n.length) { const r = document.createRange(); r.setStart(n, o); r.setEnd(n, o + 1); const b = r.getBoundingClientRect(), q = p.getBoundingClientRect(); return [b.left - q.left, b.top - q.top]; } o -= n.length; }
+            return null; };
+          const tick = () => {
+            const sh = p.querySelector('.sh'), shown = sh ? sh.textContent.length : p.textContent.length;
+            if (shown > 0 && h0 === null) { h0 = p.getBoundingClientRect().height; b0 = box.getBoundingClientRect().top; }
+            for (let k = 0; k < shown; k++) if (!(k in rec)) rec[k] = at(k);
+            if (CBApp._t.quest.scene.typing) return setTimeout(tick, 6);
+            const moved = []; for (const k in rec) { const f = at(+k); if (!f || !rec[k] || Math.abs(f[0] - rec[k][0]) > 0.5 || Math.abs(f[1] - rec[k][1]) > 0.5) moved.push(+k); }
+            res({ n: Object.keys(rec).length, len: p.textContent.length, moved, h0, h1: p.getBoundingClientRect().height, b0, b1: box.getBoundingClientRect().top,
+                  lines: Math.round(p.getBoundingClientRect().height / parseFloat(getComputedStyle(p).lineHeight)), hd: !!p.querySelector('.hd') && getComputedStyle(p.querySelector('.hd')).visibility });
+          };
+          tick();
+        })"""
+        bad_w = []; seen_w = []
+        for lv, li in ((12, 2), (5, 2), (7, 1), (6, 2), (11, 2), (9, 1)):
+            pg.evaluate(f"() => {{ CBApp._t.state.q.clr = {lv - 1}; CBApp._t.save(); }}")
+            if scr(pg) == 'qmap': pg.locator('#cbOv [data-cb=qx]').click(); pg.wait_for_timeout(100)
+            elif scr(pg) != 'menu': pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(100)
+            pg.locator('#cbOv .cbmenu [data-cb=quest]').click(); pg.wait_for_timeout(200)
+            pg.locator(f'#cbOv .qnd[data-lv="{lv}"]').click(); pg.wait_for_timeout(120); pg.locator('#cbOv .qpo [data-cb=qgo]').click()
+            for i in range(li):
+                pg.wait_for_function(f"() => CBApp._t.quest.scene.i === {i} && !CBApp._t.quest.scene.typing", timeout=10000)
+                if i == li - 1: pg.evaluate("() => CBApp._t.speed(1)"); pg.wait_for_timeout(700)      # この 行は 字を ふつうの 速さで（1字 34ミリ秒）・窓が 出る 動きが おわって から
+                pg.locator('#cbOv .qfw').click()
+            w = pg.evaluate(WATCH); pg.evaluate("() => CBApp._t.speed(0.03)")
+            seen_w.append(f'Lv{lv} {li + 1}行目 {w["lines"]}段')
+            if w['moved'] or w['n'] != w['len'] or abs(w['h0'] - w['h1']) > 0.5 or abs(w['b0'] - w['b1']) > 0.5 or w['lines'] < 2 or w['hd'] != 'hidden':
+                bad_w.append(f"Lv{lv} {li + 1}行目：動いた 字 {w['moved'][:6]}・{w['n']}/{w['len']}字・高さ {w['h0']:.1f}→{w['h1']:.1f}・窓 {w['b0']:.1f}→{w['b1']:.1f}・{w['lines']}段・{w['hd']}")
+            pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(150)
+        check(not bad_w, f'セリフの 字は 出た 場所から 動かない（行の はしで 次の 段へ とばない）・窓の 高さは はじめから さいごまで 同じ・まだの 字は 見えない（{"・".join(seen_w)}）{bad_w[:3]}')
+        pg.evaluate("() => { CBApp._t.state.q.clr = 0; CBApp._t.save(); }")
+
         print('■ あそび方・エラー')
         pg.locator('#cbOv .cbmenu [data-cb=help]').click(); pg.wait_for_timeout(200)
         hl = pg.locator('#cbOv .cbhelp').inner_text()
@@ -605,7 +641,7 @@ try:
         check(not errs, f'画面の エラー なし {errs[:3]}')
         ctx.close()
 
-        print('■ 調査隊切符（第4.203版・まさちゃん 01:42「調査隊切符」〜 01:53「調査隊切符ゲージの配置」：3分で 1枚 たまる・はじめ 15枚・0枚は 行けない／第4.204版 09:35：挑戦 1回に 1枚・連勝中は 使わない・負けたら 1枚／第4.207版 11/20 00:44：8分で 1枚 たまる）')
+        print('■ 調査隊切符（第4.203版・まさちゃん 01:42「調査隊切符」〜 01:53「調査隊切符ゲージの配置」：3分で 1枚 たまる・はじめ 15枚・0枚は 行けない／第4.204版 09:35：挑戦 1回に 1枚・連勝中は 使わない・負けたら 1枚／第4.207版 11/20 00:44：8分で 1枚／第4.208版 01:42：30分で 1枚 たまる）')
         src = open(os.path.join(W, 'cb', 'cb_app.js'), encoding='utf8').read()
         mq = re.search(r'const QTG = \{ cut: \[([^\]]+)\], right: ([\d.]+), mid: ([\d.]+), ar: ([\d.]+) \}', src)
         CUT = [float(x) for x in mq.group(1).split(',')]; QR, QM, QAR = (float(mq.group(i)) for i in (2, 3, 4))
@@ -659,25 +695,25 @@ try:
         check(tq and tq['src'] == 'cb_q_tk.webp' and tq['first'] and '調査隊切符を 1枚 使ったよ' in pg.locator('#cbOv .cbtoast').inner_text(), f'第4.205版：知らせ「調査隊切符を 1枚 使ったよ」の 頭も 切符の 絵 {tq}')
         battle(pg, WIN, '7')
         t1 = TK()
-        check(t1['n'] == 14 and t1['at'] == MSOF(T0) and t1['left'] == 480000 and any('調査隊切符を 1枚 使ったよ\n（のこり 14枚）' in x for x in said(pg)),
-              f'バトル 開始で 1枚 使う：14枚・満タンから 使った ので そこから 8分 数える・「調査隊切符を 1枚 使ったよ（のこり 14枚）」 {t1}')
+        check(t1['n'] == 14 and t1['at'] == MSOF(T0) and t1['left'] == 1800000 and any('調査隊切符を 1枚 使ったよ\n（のこり 14枚）' in x for x in said(pg)),
+              f'バトル 開始で 1枚 使う：14枚・満タンから 使った ので そこから 30分 数える・「調査隊切符を 1枚 使ったよ（のこり 14枚）」 {t1}')
         pg.wait_for_function("() => document.querySelector('#cbOv .qget.on') && document.querySelector('#cbOv .qget .n').textContent === '10'", timeout=10000); pg.wait_for_timeout(300)
         check(TK()['n'] == 14, '討伐（勝利の 演出）では 使わない')
         pg.locator('#cbOv .cbmod [data-cb=qmapgo]').click(); pg.wait_for_timeout(400)
         g = tkg(pg)
-        check(g['n'] == '14' and abs(g['hide'] - (100 - CUT[14])) < 0.01 and g['rc'] == '次の 1枚 まで 8:00' and '14／15枚・次の 1枚 まで 8:00' in g['aria'], f'マップ：ゲージ「14」・こま 14こ 金（右の 1こは 空き）・「次の 1枚 まで 8:00」 {[g["n"], g["hide"], g["rc"]]}')
+        check(g['n'] == '14' and abs(g['hide'] - (100 - CUT[14])) < 0.01 and g['rc'] == '次の 1枚 まで 30:00' and '14／15枚・次の 1枚 まで 30:00' in g['aria'], f'マップ：ゲージ「14」・こま 14こ 金（右の 1こは 空き）・「次の 1枚 まで 30:00」 {[g["n"], g["hide"], g["rc"]]}')
         shot(pg, 'tk03_map14')
-        TM('2026-11-18T12:07:59'); g = tkg(pg)
-        check(g['n'] == '14' and g['rc'] == '次の 1枚 まで 0:01', f'7分59秒 あと：まだ 14枚・「次の 1枚 まで 0:01」 {g["rc"]!r}')
-        TM('2026-11-18T12:08:00'); g = tkg(pg)
-        check(g['n'] == '15' and g['hide'] == 0 and g['rc'] == '' and TK()['n'] == 15, '8分で 1枚 たまる → 15枚（満タン：「次の 1枚 まで」は 消える）')
+        TM('2026-11-18T12:29:59'); g = tkg(pg)
+        check(g['n'] == '14' and g['rc'] == '次の 1枚 まで 0:01', f'29分59秒 あと：まだ 14枚・「次の 1枚 まで 0:01」 {g["rc"]!r}')
+        TM('2026-11-18T12:30:00'); g = tkg(pg)
+        check(g['n'] == '15' and g['hide'] == 0 and g['rc'] == '' and TK()['n'] == 15, '30分で 1枚 たまる → 15枚（満タン：「次の 1枚 まで」は 消える）')
         # 第4.204版（まさちゃん 09:35「1試合1枚だけど、連続勝利中は使わないになってる？ クエストが変わったら1枚使うし、負けたら1枚使う！ クエスト変わったらは、例えばLv3からLv4に移動したらってことね！」）
         pg.evaluate("() => { CBApp._t.state.q.clr = 2; CBApp._t.save(); }"); pg.locator('#cbOv [data-cb=qx]').click(); pg.wait_for_timeout(100)
         pg.locator('#cbOv .cbmenu [data-cb=quest]').click(); pg.wait_for_timeout(250)
         go_field(pg, 3, fill=False); use(pg, WIN, fill=False); said(pg); pg.locator('#cbOv .qfw').click()
         battle(pg, WIN, '7')
         t = mod_text(pg); t1 = TK()
-        check(t1['n'] == 14 and t1['at'] == MSOF('2026-11-18T12:08:00') and any('調査隊切符を 1枚 使ったよ\n（のこり 14枚）' in x for x in said(pg)) and '調査隊切符 のこり 14枚' in t and '連勝中は 使わないよ' in t,
+        check(t1['n'] == 14 and t1['at'] == MSOF('2026-11-18T12:30:00') and any('調査隊切符を 1枚 使ったよ\n（のこり 14枚）' in x for x in said(pg)) and '調査隊切符 のこり 14枚' in t and '連勝中は 使わないよ' in t,
               f'レベル3 に 挑戦：1戦目の はじめに 1枚（14枚）・1勝の 窓に「調査隊切符 のこり 14枚（連勝中は 使わないよ）」')
         nb = pg.locator('#cbOv .cbmod [data-cb=qnext]')
         check(nb.is_enabled() and nb.get_attribute('data-qt') is None and nb.inner_text().strip() == '第2戦へ', f'「第2戦へ」は 切符の いらない ボタン {nb.inner_text()!r}')
@@ -713,7 +749,7 @@ try:
         pg.wait_for_function("() => CBApp._t.view && CBApp._t.view.phase !== 'end'", timeout=20000); idle(pg)
         check(TK()['n'] == 12 and any('調査隊切符を 1枚 使ったよ\n（のこり 12枚）' in x for x in said(pg)) and q(pg)['run']['won'] == 0, '負けて「もう 一度 挑戦」：1枚（12枚）・1戦目から')
         battle(pg, WIN, '7')
-        pg.evaluate("t => { const T = CBApp._t; T.state.qt = { n: 0, at: t }; T.save(); T.qtPaint(); }", MSOF('2026-11-18T12:08:00'))
+        pg.evaluate("t => { const T = CBApp._t; T.state.qt = { n: 0, at: t }; T.save(); T.qtPaint(); }", MSOF('2026-11-18T12:30:00'))
         nb = pg.locator('#cbOv .cbmod [data-cb=qnext]')
         check(nb.is_enabled() and nb.inner_text().strip() == '第2戦へ' and '調査隊切符 のこり 0枚' in mod_text(pg), f'0枚でも 連勝中は「第2戦へ」を 押せる {nb.inner_text()!r}')
         shot(pg, 'tk06_between0')
@@ -721,58 +757,58 @@ try:
         check(TK()['n'] == 0 and q(pg)['run']['won'] == 1 and not any('調査隊切符' in x for x in said(pg)), '0枚で「第2戦へ」：切符 なしで 進む（0枚の まま）')
         battle(pg, LOSE, 'k')
         rb = pg.locator('#cbOv .cbmod [data-cb=qretry]')
-        check(rb.is_disabled() and '切符が たまるまで あと 8:00' in rb.inner_text() and '調査隊切符 のこり 0枚' in mod_text(pg), f'0枚で 負け：「もう 一度 挑戦」は 押せない・「切符が たまるまで あと 8:00」 {rb.inner_text()!r}')
+        check(rb.is_disabled() and '切符が たまるまで あと 30:00' in rb.inner_text() and '調査隊切符 のこり 0枚' in mod_text(pg), f'0枚で 負け：「もう 一度 挑戦」は 押せない・「切符が たまるまで あと 30:00」 {rb.inner_text()!r}')
         shot(pg, 'tk07_lose0')
         pg.evaluate("() => { document.querySelector('#cbOv .cbmod [data-cb=qretry]').disabled = false; }"); said(pg); rb.click(); pg.wait_for_timeout(150)
-        check(TK()['n'] == 0 and q(pg)['run']['won'] == 1 and rb.is_disabled() and '調査 失敗…' in mod_text(pg) and any('切符が たまるまで あと 8:00' in x for x in said(pg)), '（もし 押せても）0枚 なら やり直さない（結果の 窓の まま）・「切符が たまるまで あと 8:00」')
-        TM('2026-11-18T12:15:59')
-        check(rb.is_disabled() and 'あと 0:01' in rb.inner_text(), '7分59秒 あと：まだ 押せない（あと 0:01）')
-        TM('2026-11-18T12:16:00')
-        check(rb.is_enabled() and rb.inner_text().strip() == 'もう 一度 挑戦' and '調査隊切符 のこり 1枚' in mod_text(pg), f'8分 たって 1枚 → 押せる（「あと」は 消える・のこり 1枚）{rb.inner_text()!r}')
+        check(TK()['n'] == 0 and q(pg)['run']['won'] == 1 and rb.is_disabled() and '調査 失敗…' in mod_text(pg) and any('切符が たまるまで あと 30:00' in x for x in said(pg)), '（もし 押せても）0枚 なら やり直さない（結果の 窓の まま）・「切符が たまるまで あと 30:00」')
+        TM('2026-11-18T12:59:59')
+        check(rb.is_disabled() and 'あと 0:01' in rb.inner_text(), '29分59秒 あと：まだ 押せない（あと 0:01）')
+        TM('2026-11-18T13:00:00')
+        check(rb.is_enabled() and rb.inner_text().strip() == 'もう 一度 挑戦' and '調査隊切符 のこり 1枚' in mod_text(pg), f'30分 たって 1枚 → 押せる（「あと」は 消える・のこり 1枚）{rb.inner_text()!r}')
         use(pg, WIN, fill=False); said(pg); rb.click()
         pg.wait_for_function("() => CBApp._t.view && CBApp._t.view.phase !== 'end'", timeout=20000); idle(pg)
         t1 = TK()
-        check(t1['n'] == 0 and t1['at'] == MSOF('2026-11-18T12:16:00') and hp(pg)['w'] > 99 and any('のこり 0枚' in x for x in said(pg)), f'「もう 一度 挑戦」で 1枚（0枚）・HP 満タン {t1}')
+        check(t1['n'] == 0 and t1['at'] == MSOF('2026-11-18T13:00:00') and hp(pg)['w'] > 99 and any('のこり 0枚' in x for x in said(pg)), f'「もう 一度 挑戦」で 1枚（0枚）・HP 満タン {t1}')
         battle(pg, WIN, '7')
         pg.locator('#cbOv .cbmod [data-cb=qmapgo]').click(); pg.wait_for_timeout(400)
         g = tkg(pg)
-        check(scr(pg) == 'qmap' and g['n'] == '0' and abs(g['hide'] - 100) < 0.01 and g['rc'] == '次の 1枚 まで 8:00', f'マップ：ゲージ「0」・こまは ぜんぶ 空き・「次の 1枚 まで 8:00」 {[g["n"], g["hide"], g["rc"]]}')
+        check(scr(pg) == 'qmap' and g['n'] == '0' and abs(g['hide'] - 100) < 0.01 and g['rc'] == '次の 1枚 まで 30:00', f'マップ：ゲージ「0」・こまは ぜんぶ 空き・「次の 1枚 まで 30:00」 {[g["n"], g["hide"], g["rc"]]}')
         shot(pg, 'tk08_map0')
         pg.locator('#cbOv .qnd[data-lv="4"]').click(); pg.wait_for_timeout(250)
         o = pop(pg); gb = pg.locator('#cbOv .qpo [data-cb=qgo]')
-        check(o and '（今 0枚）' in o['t'] and o['inside'] and gb.is_disabled() and '切符が たまるまで あと 8:00' in gb.inner_text(), f'0枚：ふきだしの「決戦調査に 行く」は 押せない（切符が たまるまで あと 8:00）{o and o["t"]!r}')
+        check(o and '（今 0枚）' in o['t'] and o['inside'] and gb.is_disabled() and '切符が たまるまで あと 30:00' in gb.inner_text(), f'0枚：ふきだしの「決戦調査に 行く」は 押せない（切符が たまるまで あと 30:00）{o and o["t"]!r}')
         shot(pg, 'tk08b_pop0')
         pg.evaluate("() => { document.querySelector('#cbOv .qpo [data-cb=qgo]').disabled = false; }"); gb.click(); pg.wait_for_timeout(250)
         t = mod_text(pg)
-        check(scr(pg) == 'qmap' and '切符が 足りないよ…' in t and '調査隊切符 0／15枚' in t and '次の 1枚 まで あと 8:00' in t, f'（もし 押せても）0枚 なら 行けない：切符の 窓「切符が 足りないよ…」 {t!r}')
+        check(scr(pg) == 'qmap' and '切符が 足りないよ…' in t and '調査隊切符 0／15枚' in t and '次の 1枚 まで あと 30:00' in t, f'（もし 押せても）0枚 なら 行けない：切符の 窓「切符が 足りないよ…」 {t!r}')
         if HAVE: check(pg.evaluate("() => { const i = document.querySelector('#cbOv .cbmod.cbqtk .tk'); return !!i && i.complete && i.naturalWidth > 0; }"), '切符の 窓に 切符の 絵（cb_q_tk.webp）')
         shot(pg, 'tk09_lack')
         pg.locator('#cbOv .cbmod [data-cb=modx]').click(); pg.wait_for_timeout(150)
         if pg.locator('#cbOv .qpo [data-cb=qpx]').count(): pg.locator('#cbOv .qpo [data-cb=qpx]').click(); pg.wait_for_timeout(80)
         pg.locator('#cbOv .qtg').click(); pg.wait_for_timeout(200)
         t = mod_text(pg)
-        check('切符が 足りないよ' not in t and '調査隊切符 0／15枚' in t and '挑戦する とき 1枚' in t and '連勝中は 使わない' in t and '8分で 1枚' in t and '15枚 まで' in t and '次の 1枚 まで あと 8:00' in t, f'ゲージを タップ → 切符の 窓（枚数・挑戦する とき 1枚・連勝中は 使わない・8分で 1枚・15枚 まで・次の 1枚 まで）{t!r}')
-        TM('2026-11-18T12:23:30')
+        check('切符が 足りないよ' not in t and '調査隊切符 0／15枚' in t and '挑戦する とき 1枚' in t and '連勝中は 使わない' in t and '30分で 1枚' in t and '15枚 まで' in t and '次の 1枚 まで あと 30:00' in t, f'ゲージを タップ → 切符の 窓（枚数・挑戦する とき 1枚・連勝中は 使わない・30分で 1枚・15枚 まで・次の 1枚 まで）{t!r}')
+        TM('2026-11-18T13:29:30')
         check('次の 1枚 まで あと 0:30' in mod_text(pg), '窓を 開いた まま 時間が たつと 書きかわる（あと 0:30）')
         shot(pg, 'tk10_modal')
         pg.locator('#cbOv .cbmod [data-cb=modx]').click(); pg.wait_for_timeout(150)
-        TM('2026-11-18T12:40:00'); g = tkg(pg); t1 = TK()
-        check(g['n'] == '3' and abs(g['hide'] - (100 - CUT[3])) < 0.01 and g['rc'] == '次の 1枚 まで 8:00' and t1['at'] == MSOF('2026-11-18T12:40:00'), f'24分 たつと 3枚（こま 3こ 金）・次の 1枚 まで 8:00 {[g["n"], g["hide"], g["rc"]]}')
+        TM('2026-11-18T14:30:00'); g = tkg(pg); t1 = TK()
+        check(g['n'] == '3' and abs(g['hide'] - (100 - CUT[3])) < 0.01 and g['rc'] == '次の 1枚 まで 30:00' and t1['at'] == MSOF('2026-11-18T14:30:00'), f'90分 たつと 3枚（こま 3こ 金）・次の 1枚 まで 30:00 {[g["n"], g["hide"], g["rc"]]}')
         shot(pg, 'tk11_map3')
-        TM('2026-11-18T15:00:00'); g = tkg(pg); t1 = TK()
+        TM('2026-11-18T21:00:00'); g = tkg(pg); t1 = TK()
         check(g['n'] == '15' and g['rc'] == '' and t1['n'] == 15 and t1['left'] == 0, '長く たっても 15枚 まで（満タン）')
         pg.locator('#cbOv .qtg').click(); pg.wait_for_timeout(200)
         check('満タン！（15枚）' in mod_text(pg) and '調査隊切符 15／15枚' in mod_text(pg), '満タンの ときの 窓：「満タン！（15枚）」')
         pg.locator('#cbOv .cbmod [data-cb=modx]').click(); pg.wait_for_timeout(150)
-        pg.evaluate("t => { const T = CBApp._t; T.state.qt = { n: 7, at: t }; T.save(); T.load(); }", MSOF('2026-11-18T15:00:00'))
-        check(st(pg)['qt'] == {'n': 7, 'at': MSOF('2026-11-18T15:00:00')}, '枚数と 時刻は おぼえる（読み直しても 7枚）')
+        pg.evaluate("t => { const T = CBApp._t; T.state.qt = { n: 7, at: t }; T.save(); T.load(); }", MSOF('2026-11-18T21:00:00'))
+        check(st(pg)['qt'] == {'n': 7, 'at': MSOF('2026-11-18T21:00:00')}, '枚数と 時刻は おぼえる（読み直しても 7枚）')
         pg.evaluate("() => { const s = JSON.parse(localStorage.getItem('tengel.cb')); s.qt = { n: 99.7, at: 5 }; localStorage.setItem('tengel.cb', JSON.stringify(s)); CBApp._t.load(); }")
         check(st(pg)['qt'] == {'n': 15, 'at': 5}, 'おかしな 枚数は なおす（99.7 → 15）')
         q0 = pg.evaluate("() => { const s = JSON.parse(localStorage.getItem('tengel.cb')); s.qt = { n: 'x', at: 1 }; localStorage.setItem('tengel.cb', JSON.stringify(s)); CBApp._t.load(); return CBApp._t.state.qt; }")      # 読み直した すぐ あと（1秒 ごとの 書き直しより 前）
         check(q0 is None and TK()['n'] == 15, f'読めない 記録は すてる → 15枚から {q0}')
-        pg.evaluate("t => { const T = CBApp._t; T.state.qt = { n: 5, at: t }; T.save(); }", MSOF('2026-11-18T16:00:00'))
+        pg.evaluate("t => { const T = CBApp._t; T.state.qt = { n: 5, at: t }; T.save(); }", MSOF('2026-11-18T22:00:00'))
         t1 = TK()
-        check(t1['n'] == 5 and t1['at'] == MSOF('2026-11-18T15:00:00') and t1['left'] == 480000, f'時刻が もどって いたら（ふつうは ない：時計の 番人）その 時から 数え直す・枚数は そのまま {t1}')
+        check(t1['n'] == 5 and t1['at'] == MSOF('2026-11-18T21:00:00') and t1['left'] == 1800000, f'時刻が もどって いたら（ふつうは ない：時計の 番人）その 時から 数え直す・枚数は そのまま {t1}')
         check(not errs, f'画面の エラー なし {errs[:3]}')
         ctx.close()
 
