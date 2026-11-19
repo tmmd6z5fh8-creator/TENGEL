@@ -1094,6 +1094,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBNet;
 
 
 
+
 const CBApp = (() => {
   'use strict';
   const R = CBRules, SK = 'tengel.cb';
@@ -2174,7 +2175,7 @@ const CBApp = (() => {
       + '<li>強い 敵は、決まった 戦で <b>手札に 必ず 強い カード</b>を 持って いるよ（その 戦の 始めに 知らせるよ）</li>'
       + '<li>もらえるのは 決戦調査の バトルコインと、<b>ミッション</b>（コンピュータに 連続勝利）の 連勝。いつもの 勝ち負け・連勝・お世話トークンには 数えないよ</li>'
       + '<li>戦の 途中で やめる・アプリを 閉じると 調査 失敗（ミッションの 連勝も 0）。<b>毎月 1日に リセット</b>（討伐した エリアも 最初から）</li>'
-      + `<li>${TKI}<b>調査隊切符</b>：エリアに <b>挑戦する とき 1枚</b>（1戦目の はじめ）。<b>連勝中は 使わない</b>（「第○戦へ」・同点の やり直し）。負けて「もう 一度 挑戦」する とき・次の エリアに 行く とき（例：レベル3 → レベル4）は また 1枚。<b>3分で 1枚</b> たまって、<b>${QT.max}枚 まで</b>。0枚の ときは 挑戦 できないよ（マップの 上の ゲージで 枚数と 次の 1枚 までの 時間が わかるよ）</li></ul>`
+      + `<li>${TKI}<b>調査隊切符</b>：エリアに <b>挑戦する とき 1枚</b>（1戦目の はじめ）。<b>連勝中は 使わない</b>（「第○戦へ」・同点の やり直し）。負けて「もう 一度 挑戦」する とき・次の エリアに 行く とき（例：レベル3 → レベル4）は また 1枚。<b>${QTM()}分で 1枚</b> たまって、<b>${QT.max}枚 まで</b>。0枚の ときは 挑戦 できないよ（マップの 上の ゲージで 枚数と 次の 1枚 までの 時間が わかるよ）</li></ul>`
       + `<h4>決戦宝石</h4><ul><li><b>決戦調査では いつも 使えるよ</b>：1つの 調査（連勝が 続く 間）で <b>5つ 1回ずつ（合計 5個）</b>。負けて 1戦目から やり直すと また 5つ</li>`
       + `<li>友達との 対戦は、部屋を 作る 人が「<b>決戦宝石 あり</b>」に した とき：2人とも <b>1試合で 5つ 1回ずつ</b>（おたがいの 宝石が 見える）</li>`
       + `<li>宝石は 5つ：${R.GEMS.map(g => `${GEMS[g].n}＝<b>${GEMS[g].t}</b>${headOf(R.GEM_W[g])}`).join('・')}</li>`
@@ -3514,7 +3515,8 @@ const CBApp = (() => {
   
   
   
-  const QT = { max: 15, ms: 180000 };
+  const QT = { max: 15, ms: 480000 };      
+  const QTM = () => Math.round(QT.ms / 60000);      
   const TKP = 'cb_q_tk.webp', TKI = `<img class="tki" src="${TKP}" alt="">`;      
   let qtTick = 0;                                      
   
@@ -3553,12 +3555,12 @@ const CBApp = (() => {
       if (modEl.classList.contains('cbqtk')) { $('.qtkn b', modEl).textContent = String(n); $('.qtkr', modEl).textContent = n < QT.max ? `次の 1枚 まで あと ${mmss(qtLeft())}` : '満タン！（15枚）'; }
     }
   }
-  const qtLine = lose => `<p class="qtl">${TKI}調査隊切符 のこり <b>${qtNow().n}</b>枚<small>${lose ? '（もう 一度 挑戦は 1枚・3分で 1枚 たまる）' : '（連勝中は 使わないよ・3分で 1枚 たまる）'}</small></p>`;      
+  const qtLine = lose => `<p class="qtl">${TKI}調査隊切符 のこり <b>${qtNow().n}</b>枚<small>${lose ? `（もう 一度 挑戦は 1枚・${QTM()}分で 1枚 たまる）` : `（連勝中は 使わないよ・${QTM()}分で 1枚 たまる）`}</small></p>`;      
   const qtBtn = (cb, label, cls) => `<button type="button" class="cbb${cls || ''}" data-cb="${cb}" data-qt="1"${qtNow().n < 1 ? ' disabled' : ''}>${label}<small class="qtw">${qtNow().n < 1 ? qtWait() : ''}</small></button>`;      
   function qtModal(lack) {                              
     const s = qtNow();
     modal(`<div class="qtkm"><img class="tk" src="cb_q_tk.webp" alt="調査隊切符">${lack ? '<h3 class="gold">切符が 足りないよ…</h3>' : ''}<p class="qtkn">調査隊切符 <b>${s.n}</b>／${QT.max}枚</p>`
-      + `<p>エリアに <b>挑戦する とき 1枚</b> 使うよ<br><b>連勝中は 使わない</b>（負けて もう 一度 挑戦する ときは また 1枚）<br><b>3分で 1枚</b> たまるよ（${QT.max}枚 まで）</p><p class="qtkr">${s.n < QT.max ? `次の 1枚 まで あと ${mmss(qtLeft())}` : `満タン！（${QT.max}枚）`}</p>`
+      + `<p>エリアに <b>挑戦する とき 1枚</b> 使うよ<br><b>連勝中は 使わない</b>（負けて もう 一度 挑戦する ときは また 1枚）<br><b>${QTM()}分で 1枚</b> たまるよ（${QT.max}枚 まで）</p><p class="qtkr">${s.n < QT.max ? `次の 1枚 まで あと ${mmss(qtLeft())}` : `満タン！（${QT.max}枚）`}</p>`
       + '<div class="col"><button type="button" class="cbb dk" data-cb="modx">閉じる</button></div></div>', 'cbqtk');
   }
   
@@ -3867,7 +3869,7 @@ const CBApp = (() => {
     zero: () => { qRoll(); st.q.clr = 0; save(); closeMod(); showQMap(); toast('🧪 討伐を 0 に 戻したよ', 2); },
     next: () => { st.q.m = '2000-01'; qRoll(); closeMod(); showQMap(); toast('🧪 月が 変わった ことに したよ（決戦調査を リセット）', 2.4); },
     easy: () => { qEasy = !qEasy; closeMod(); showQMap(); toast(qEasy ? '🧪 戦を「1ターンで 勝てる 手札」に したよ' : '🧪 戦を いつもの 手札に 戻したよ', 2.4); },
-    tk0: () => { st.qt = { n: 0, at: qtT() }; save(); closeMod(); showQMap(); toast('🧪 調査隊切符を 0枚に したよ（3分で 1枚 たまる）', 2.4); },      
+    tk0: () => { st.qt = { n: 0, at: qtT() }; save(); closeMod(); showQMap(); toast(`🧪 調査隊切符を 0枚に したよ（${QTM()}分で 1枚 たまる）`, 2.4); },      
     tkf: () => { st.qt = { n: QT.max, at: qtT() }; save(); closeMod(); showQMap(); toast(`🧪 調査隊切符を ${QT.max}枚に したよ`, 2); }
   };
 
