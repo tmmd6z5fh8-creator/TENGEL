@@ -1095,6 +1095,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBNet;
 
 
 
+
+
+
+
 const CBApp = (() => {
   'use strict';
   const R = CBRules, SK = 'tengel.cb';
@@ -1896,6 +1900,7 @@ const CBApp = (() => {
 #cbOv .qsay{position:absolute;left:12px;right:12px;bottom:calc(var(--sab,env(safe-area-inset-bottom)) + 16px);z-index:3;min-height:112px;box-sizing:border-box;padding:18px 18px 24px;border-radius:16px;background:linear-gradient(180deg,rgba(30,19,9,.9),rgba(12,8,4,.94));border:2px solid #c9a35a;box-shadow:0 0 0 1px rgba(0,0,0,.6) inset,0 8px 20px rgba(0,0,0,.55);opacity:0;transform:translateY(14px);transition:opacity .3s,transform .3s;pointer-events:none}
 #cbOv .qsay.on{opacity:1;transform:none}
 #cbOv .qsay p{margin:0;font-size:18px;line-height:1.7;font-weight:700;color:#fff6e0;word-break:keep-all;overflow-wrap:anywhere}
+#cbOv .qsay p .hd{visibility:hidden}
 #cbOv .qsay .nx{position:absolute;right:16px;bottom:7px;font-style:normal;color:#ffd27a;font-size:13px;animation:qnx 1s ease-in-out infinite}
 @keyframes qnx{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
 #cbOv .qtap{position:absolute;left:50%;bottom:calc(var(--sab,env(safe-area-inset-bottom)) + 18px);z-index:3;transform:translateX(-50%);opacity:0;transition:opacity .4s;padding:8px 22px;border-radius:999px;background:linear-gradient(180deg,#ffe9a8,#e2a83e);color:#3a2206;font-size:16px;font-weight:800;white-space:nowrap;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.5)}
@@ -3515,7 +3520,7 @@ const CBApp = (() => {
   
   
   
-  const QT = { max: 15, ms: 480000 };      
+  const QT = { max: 15, ms: 1800000 };      
   const QTM = () => Math.round(QT.ms / 60000);      
   const TKP = 'cb_q_tk.webp', TKI = `<img class="tki" src="${TKP}" alt="">`;      
   let qtTick = 0;                                      
@@ -3685,8 +3690,9 @@ const CBApp = (() => {
     qs.i = i; $('.qsay', scr.qf).classList.add('on');
     if (qs.tw) unlater(qs.tw);
     p.style.fontSize = t.length > 54 ? '15px' : t.length > 36 ? '16px' : '';      
-    let n = 0; p.textContent = '';
-    const step = () => { if (!qs || qs.i !== i) return; n += 1; p.textContent = t.slice(0, n); if (n < t.length) qs.tw = later(step, 34 * SPEED); else qs.tw = null; };
+    let n = 0; p.innerHTML = '<span class="sh"></span><span class="hd"></span>';      
+    const sh = p.firstChild, hd = p.lastChild; hd.textContent = t;
+    const step = () => { if (!qs || qs.i !== i) return; n += 1; sh.textContent = t.slice(0, n); hd.textContent = t.slice(n); if (n < t.length) qs.tw = later(step, 34 * SPEED); else qs.tw = null; };
     step();
     if (i === q.en - 1) qReveal();      
   }
