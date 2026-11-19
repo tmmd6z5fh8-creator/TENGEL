@@ -1092,6 +1092,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBNet;
 
 
 
+
+
 const CBApp = (() => {
   'use strict';
   const R = CBRules, SK = 'tengel.cb';
@@ -3650,6 +3652,7 @@ const CBApp = (() => {
 
   
   function qGo(lv) {
+    if (qRoll()) { showQMap(); toast('月が 変わったので、決戦調査を リセットしたよ', 2.6); return; }      
     const q = QUEST[lv - 1]; if (!q || lv !== qOpen() || lv <= st.q.clr) return;
     if (qtNow().n < 1) { se('tap', 0.5); return qtModal(true); }      
     closeMod(); qPopClose(); se('tap');
@@ -3724,6 +3727,7 @@ const CBApp = (() => {
   
   function qBattle() {
     if (!qs || qs.step !== 'en') return;
+    if (qGone()) { qs = null; return; }      
     if (!qtUse()) { qs = null; showQMap(); qtModal(true); return; }      
     const lv = qs.lv; qs.step = 'go'; se('tap');
     qRun = { lv: lv, won: 0, m: st.q.m, gu: [] };
@@ -3799,6 +3803,14 @@ const CBApp = (() => {
       + `<div class="col"><button type="button" class="cbb" data-cb="qnext">第${r.won + 1}戦を やり直す</button><button type="button" class="cbb dk" data-cb="qmapgo">マップへ 戻る<small>この 調査は ここまで</small></button></div>`, 'cbend qend');
   }
   
+  function qGone() {
+    if (!qRoll()) return false;
+    if (qRun) qRun.dead = true;
+    se('even');
+    modal('<h3 class="gold">月が 変わったよ</h3><p>決戦調査は 毎月 1日に リセット。<br>この 調査は ここまで（最初から 挑戦してね）<br>調査隊切符は 使って いないよ</p><div class="col"><button type="button" class="cbb" data-cb="qmapgo">マップへ</button></div>', 'cbend qend');
+    return true;
+  }
+  
   function qGemLeft() {
     const gu = qRun && qRun.gu ? qRun.gu : [], left = R.GEMS.filter(g => gu.indexOf(g) < 0);
     return `<div class="qgl">決戦宝石 のこり <b>${left.length}</b>／${R.GEMS.length}<span aria-hidden="true">${R.GEMS.map(g => `<img class="${gu.indexOf(g) >= 0 ? 'u' : ''}" src="${gemPic(g)}" alt="">`).join('')}</span></div>`;
@@ -3806,6 +3818,7 @@ const CBApp = (() => {
   
   function qNext(paid) {
     if (!qRun || qRun.dead || !match || !ended) return;
+    if (!paid && qGone()) return;      
     se('tap'); closeMod();
     if (paid) toast(`調査隊切符を 1枚 使ったよ\n（のこり ${qtNow().n}枚）`, 1.8, TKP);
     match.setOpt(qOpt(qRun.lv, qRun.won + 1));
@@ -3814,6 +3827,7 @@ const CBApp = (() => {
   
   function qRetry() {
     if (!qRun || qRun.dead || !match || !ended) return;
+    if (qGone()) return;      
     if (!qtUse()) { se('tap', 0.5); toast(qtWait(), 1.8, TKP); return qtPaint(); }      
     qRun.won = 0; qRun.m = st.q.m; qRun.gu = []; qHP(QUEST[qRun.lv - 1].w, false);      
     qNext(true);
