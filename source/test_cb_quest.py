@@ -222,8 +222,8 @@ try:
         check(data == SAY, f'セリフ 12 エリア ぶん：まさちゃんの 表（11/18 22:54）の まま・何行目で 敵が 出るか（{[len(x[0]) for x in data]} 行・敵 {[x[1] for x in data]} 行目）')
         say = data[0][0]
         check(not pg.locator('#cbOv .qsay .who').count(), 'セリフの 窓に「あなた」の 札は 出さない（セリフに 話す 人が 入って いる）')
-        pg.evaluate("() => CBApp._t.speed(1)")      # 字が 1つずつ 出る ところを 見る
-        pg.wait_for_timeout(120)
+        pg.evaluate("() => CBApp._t.speed(3)")      # 字が 1つずつ 出る ところを 見る（第4.209版：ゆっくり＝1字 102ミリ秒：とちゅうで タップ するまでに 行が 出おわらない ように）
+        pg.wait_for_timeout(300)
         tw = pg.evaluate("() => { const p = document.querySelector('#cbOv .qsay p'); return [(p.querySelector('.sh') || p).textContent.length, CBApp._t.quest.scene.typing]; }")
         check(0 < tw[0] < len(say[0]) and tw[1], f'セリフは 字が 1つずつ 出る（{tw[0]}字 ／ {len(say[0])}字）')
         pg.locator('#cbOv .qfw').click(); pg.wait_for_timeout(60)
@@ -306,7 +306,7 @@ try:
         check('討伐成功！' in t and '若草の鈴駒を 倒した！' in t and 'バトルコインを GETした！' in t and '＋10枚' in t, f'勝利の 演出：討伐成功！・バトルコインを GETした！ ＋10枚')
         check(pg.evaluate("() => [document.querySelector('#cbOv .qv').className, document.querySelectorAll('#cbOv .qpt .cf').length, document.querySelectorAll('#cbOv .qpt .cn').length]") == ['qv t1', 0, 0], 'レベル1〜5：1段階目（光の 筋・紙吹雪 なし）')
         s1 = st(pg)
-        check(s1['coin'] == s0['coin'] + 10 and s1['q']['clr'] == 1 and s1['ms']['cpu'] == s0['ms']['cpu'] + 1, f'コイン ＋10（{s0["coin"]} → {s1["coin"]}）・討伐 1・ミッションの 連勝 ＋1')
+        check(s1['coin'] == s0['coin'] + 10 and s1['q']['clr'] == 1 and s1['ms']['cpu'] == s0['ms']['cpu'], f'コイン ＋10（{s0["coin"]} → {s1["coin"]}）・討伐 1・いつもの ミッションの 連勝は そのまま（第4.209版：決戦調査は 数えない）')
         check([s1[x] for x in ('win', 'lose', 'draw', 'streak', 'owe')] == [s0[x] for x in ('win', 'lose', 'draw', 'streak', 'owe')], 'いつもの 勝ち負け・連勝・お世話トークンは かわらない')
         shot(pg, 'q06_victory1')
         said(pg)
@@ -317,7 +317,7 @@ try:
         shot(pg, 'q07_map_unlock')
         pg.locator('#cbOv .qnd[data-lv="1"]').click(); pg.wait_for_timeout(250)
         o = pop(pg)
-        check(o and '討伐済み' in o['t'] and '来月の リセットまで' in o['t'] and not o['go'] and o['back'] == 'もどる' and not o['mod'], f'討伐した エリア：その 場に ふきだし「討伐済み！」（今月は もう 行けない）{o and o["t"]!r}')
+        check(o and '討伐済み！' in o['t'] and '1連勝で もう 一度 討伐' in o['t'] and '討伐の バトルコインは 毎月 1回目 だけ' in o['t'] and '来月の リセットまで' not in o['t'] and o['go'] and o['back'] == 'もどる' and not o['mod'], f'討伐した エリア：その 場に ふきだし「討伐済み！ 1連勝で もう 一度 討伐」・「決戦調査に 行く」も 押せる（第4.209版）{o and o["t"]!r}')
         pg.locator('#cbOv .qpo [data-cb=qpx]').click(); pg.wait_for_timeout(80)
 
         print('■ レベル2（2連勝）：HP が 半分 → 第2戦')
@@ -336,8 +336,8 @@ try:
         battle(pg, WIN, '7')
         pg.wait_for_function("() => document.querySelector('#cbOv .qget .n') && document.querySelector('#cbOv .qget .n').textContent === '20'", timeout=10000); pg.wait_for_timeout(400)
         t = mod_text(pg)
-        check(st(pg)['q']['clr'] == 2 and st(pg)['ms']['cpu'] == 3 and 'ミッション達成！' in t and '3連勝' in t and '＋30枚' in t, 'レベル2 討伐：コイン ＋20・ミッション（コンピュータに 3連勝）も 数える →「🎯 ミッション達成！ 3連勝 ＋30枚」')
-        check(st(pg)['coin'] == s0['coin'] + 60, f'コインは 10 ＋ 20 ＋ ミッション 30（{s0["coin"]} → {st(pg)["coin"]}）')
+        check(st(pg)['q']['clr'] == 2 and st(pg)['ms']['cpu'] == s0['ms']['cpu'] and 'ミッション達成！' not in t, 'レベル2 討伐：コイン ＋20・いつもの ミッション（コンピュータに 連続勝利）には 数えない（第4.209版）')
+        check(st(pg)['coin'] == s0['coin'] + 30, f'コインは 10 ＋ 20（{s0["coin"]} → {st(pg)["coin"]}）')
         pg.locator('#cbOv .cbmod [data-cb=qmapgo]').click(); pg.wait_for_timeout(300)
 
         print('■ レベル3（3連勝）：同点 → やり直し・負け → 1戦目から・やめる')
@@ -345,7 +345,7 @@ try:
         go_field(pg, 3); use(pg, WIN); pg.locator('#cbOv .qfw').click()
         battle(pg, WIN, '7')
         h = hp(pg)
-        check(st(pg)['ms']['cpu'] == ms0 + 1 and 65 < h['w'] < 68 and h['n'] == 2, f'1勝：ミッションの 連勝 ＋1・HP 3分の2（区切り 2本）')
+        check(st(pg)['ms']['cpu'] == ms0 and 65 < h['w'] < 68 and h['n'] == 2, f'1勝：いつもの ミッションの 連勝は そのまま・HP 3分の2（区切り 2本）')
         use(pg, DRAW); next_fight(pg)
         battle(pg, DRAW, 'm')
         h = hp(pg); t = mod_text(pg)
@@ -355,7 +355,7 @@ try:
         check(any('第2戦 スタート' in x for x in said(pg)), '同じ 戦（第2戦）を やり直す')
         battle(pg, LOSE, 'k')
         t = mod_text(pg)
-        check('調査 失敗…' in t and 'もう 一度 挑戦' in t and st(pg)['ms']['cpu'] == 0, '負け：「調査 失敗…」「もう 一度 挑戦」・ミッションの 連勝は 0')
+        check('調査 失敗…' in t and 'もう 一度 挑戦' in t and st(pg)['ms']['cpu'] == ms0, '負け：「調査 失敗…」「もう 一度 挑戦」・いつもの ミッションの 連勝は そのまま（第4.209版）')
         shot(pg, 'q10_lose')
         said(pg); use(pg, WIN); pg.locator('#cbOv .cbmod [data-cb=qretry]').click()
         pg.wait_for_function("() => CBApp._t.view && CBApp._t.view.phase !== 'end'", timeout=20000); idle(pg)
@@ -364,11 +364,11 @@ try:
         s2 = st(pg)
         pg.locator('#cbOv .cbtop [data-cb=quit]').click(); pg.wait_for_timeout(100)
         t = mod_text(pg)
-        check('調査を やめる？' in t and '調査 失敗' in t, f'やめる：「調査を やめる？」')
+        check('調査を やめる？' in t and '調査 失敗' in t and 'ミッション' not in t, f'やめる：「調査を やめる？」（ミッションの ことは 書かない：第4.209版）')
         pg.evaluate("() => { CBApp._t.state.ms.cpu = 2; CBApp._t.save(); }")
         pg.locator('#cbOv .cbmod [data-cb=quitgo]').click(); pg.wait_for_timeout(300)
         s3 = st(pg)
-        check(scr(pg) == 'qmap' and s3['ms']['cpu'] == 0 and s3['lose'] == s2['lose'] and s3['streak'] == s2['streak'] and s3['q']['clr'] == 2, 'やめた → マップ・ミッションの 連勝 0・いつもの 負けには 数えない')
+        check(scr(pg) == 'qmap' and s3['ms']['cpu'] == 2 and s3['lose'] == s2['lose'] and s3['streak'] == s2['streak'] and s3['q']['clr'] == 2, 'やめた → マップ・いつもの ミッションの 連勝（2）も 負けも そのまま（第4.209版）')
         check([s3[x] for x in ('win', 'lose', 'draw', 'streak', 'owe')] == [s0[x] for x in ('win', 'lose', 'draw', 'streak', 'owe')], 'ここまで いつもの 勝ち負け・連勝・お世話トークンは かわらない')
 
         print('■ 確定カード（レベル 5〜12）')
@@ -485,8 +485,103 @@ try:
         s4 = st(pg); said(pg)
         pg.evaluate("() => { CBApp._t.load(); CBApp._t.menu(); }"); pg.wait_for_timeout(300)
         s5 = st(pg); tw = said(pg)
-        check(s5['ms']['cpu'] == 0 and s5['ms']['live'] == '' and s5['lose'] == s4['lose'] and s5['streak'] == s4['streak'], 'つぎに 開いた とき：ミッションの 連勝 0・いつもの 負けには 数えない')
-        check(any('決戦調査は 失敗に なったよ' in x and 'ミッションの 連勝（コンピュータ）は 0 に 戻ったよ' in x for x in tw), f'メニューで 知らせる：{tw[:1]}')
+        check(s5['ms']['cpu'] == 4 and s5['ms']['live'] == '' and s5['lose'] == s4['lose'] and s5['streak'] == s4['streak'], 'つぎに 開いた とき：いつもの ミッションの 連勝（4）は そのまま・いつもの 負けには 数えない（第4.209版）')
+        check(any('決戦調査は 失敗に なったよ' in x and 'ミッション' not in x for x in tw), f'メニューで 知らせる（決戦調査の 失敗 だけ）：{tw[:1]}')
+
+        print('■ 決戦調査ミッション・討伐した エリアに もう 一度（第4.209版・まさちゃん 11/21 01:11「通常連勝ミッションと決戦調査の連勝ミッション分けてほしい！ … 決戦調査は、クリアしたエリアも調査に行けるようにして！ ただクリア報酬は、最初の1回しか貰えないようにして！」・01:12・01:15）')
+        pg.evaluate("() => { const T = CBApp._t; T.state.ms = { m: T.state.q.m, cpu: 5, fr: 0, got: { cpu: [], fr: [], q: [] }, live: '' }; T.state.coin = 0; T.state.q.clr = 2; T.save(); T.menu(); }"); pg.wait_for_timeout(150)
+        s0 = st(pg); MSQ = lambda: st(pg)['ms']['got']['q']
+        pg.locator('#cbOv .cbmenu [data-cb=quest]').click(); pg.wait_for_timeout(200)
+        # (a) レベル3（3連勝）を 宝石 なしで：はじめての 討伐 ＋30枚・決戦調査ミッション 3つ（宝石 3・4・5個 残して 3連勝：30＋50＋90）
+        go_field(pg, 3); use(pg, WIN); pg.locator('#cbOv .qfw').click()
+        for n in range(1, 4):
+            battle(pg, WIN, '7')
+            if n < 3: next_fight(pg)
+        pg.wait_for_function("() => document.querySelector('#cbOv .qget.on') && document.querySelector('#cbOv .qget .n') && document.querySelector('#cbOv .qget .n').textContent === '30'", timeout=10000); pg.wait_for_timeout(500)
+        t = mod_text(pg); cards = pg.evaluate("() => [...document.querySelectorAll('#cbOv .qvic .cbmsn')].map(e => e.textContent.replace(/\\s+/g, ''))")
+        check(MSQ() == ['g3w3', 'g4w3', 'g5w3'] and st(pg)['coin'] == 30 + 30 + 50 + 90 and cards == ['🎯ミッション達成！宝石3個残して3連勝＋30枚', '🎯ミッション達成！宝石4個残して3連勝＋50枚', '🎯ミッション達成！宝石5個残して3連勝＋90枚'] and st(pg)['q']['clr'] == 3,
+              f'レベル3を 宝石 なしで 3連勝：はじめての 討伐 ＋30枚 ＋ 決戦調査ミッション 3つ（宝石 3・4・5個 残して 3連勝 ＝ 30＋50＋90枚）・討伐 3（{MSQ()}・{st(pg)["coin"]}枚・{cards}）')
+        check(st(pg)['ms']['cpu'] == 5 and [st(pg)[x] for x in ('win', 'lose', 'streak')] == [s0[x] for x in ('win', 'lose', 'streak')], 'いつもの ミッションの 連勝（5）・いつもの 勝ち負けは そのまま')
+        shot(pg, 'q20_qms_first')
+        pg.locator('#cbOv .cbmod [data-cb=qmapgo]').click(); pg.wait_for_timeout(300)
+        # (b) 討伐した レベル3 に もう 一度：ふきだしに「討伐済み！」と「決戦調査に 行く」→ 3連勝 → コインは なし（今月は もう もらったよ）・ミッションも もう 達成ずみ
+        pg.evaluate(TKFULL); pg.locator('#cbOv .qnd[data-lv="3"]').click(); pg.wait_for_timeout(150); bb = pop(pg)
+        check(bb and bb['go'] and '討伐済み！' in bb['t'] and '3連勝で もう 一度 討伐' in bb['t'] and '討伐の バトルコインは 毎月 1回目 だけ' in bb['t'] and '調査隊切符 1枚' in bb['t'] and bb['inside'],
+              f'討伐した エリアの ふきだし：「討伐済み！ 3連勝で もう 一度 討伐」・「決戦調査に 行く」が 押せる・切符 1枚（{bb and bb["t"]!r}）')
+        shot(pg, 'q21_again_pop')
+        coin1 = st(pg)['coin']; tk1 = pg.evaluate("() => CBApp._t.qt.n")
+        pg.locator('#cbOv .qpo [data-cb=qgo]').click()
+        pg.wait_for_function("() => CBApp._t.quest.scene && CBApp._t.quest.scene.i >= 0", timeout=10000)
+        for i in range(3):
+            pg.wait_for_function(f"() => CBApp._t.quest.scene.i === {i} && !CBApp._t.quest.scene.typing", timeout=10000)
+            pg.locator('#cbOv .qfw').click(); pg.wait_for_timeout(40)
+        pg.wait_for_function("() => document.querySelector('#cbOv .qtap.on')", timeout=10000)
+        tel = pg.evaluate("() => document.querySelector('#cbOv .qtel').textContent")
+        check('3連勝して もう 一度 討伐しよう！' in tel and 'バトルコインを' not in tel, f'テロップ「3連勝して もう 一度 討伐しよう！」（{tel}）')
+        use(pg, WIN, fill=False); pg.locator('#cbOv .qfw').click()
+        for n in range(1, 4):
+            battle(pg, WIN, '7')
+            if n < 3: next_fight(pg)
+        pg.wait_for_function("() => document.querySelector('#cbOv .qget.on')", timeout=10000); pg.wait_for_timeout(500)
+        t = mod_text(pg); v = pg.evaluate("() => [document.querySelector('#cbOv .qget').className, !!document.querySelector('#cbOv .qget .n'), document.querySelectorAll('#cbOv .qvic .cbmsn').length]")
+        check('討伐成功！' in t and '今月は もう もらったよ' in t and '討伐の バトルコインは 毎月 1回目 だけ' in t and 'GETした' not in t and v == ['qget re on', False, 0] and st(pg)['coin'] == coin1 and pg.evaluate("() => CBApp._t.qt.n") == tk1 - 1 and st(pg)['q']['clr'] == 3,
+              f'もう 一度 討伐：「討伐成功！」・バトルコインは なし（今月は もう もらったよ）・ミッションも もう 達成ずみ・切符は 1枚（{tk1} → {pg.evaluate("() => CBApp._t.qt.n")}）・討伐の 数は そのまま（{v}）')
+        shot(pg, 'q22_again_victory')
+        pg.locator('#cbOv .cbmod [data-cb=qmapgo]').click(); pg.wait_for_timeout(300)
+        check(pg.evaluate("() => document.querySelectorAll('#cbOv .qnd.nw').length") == 0, 'もう 一度 討伐した あとは 新しく 開く エリアは ない')
+        # (c) レベル9（6連勝）：2戦目から 宝石を 2つ 使った（のこり 3）→ 5連勝・6連勝は「3個 残して」だけ
+        pg.evaluate("() => { const T = CBApp._t; T.state.q.clr = 8; T.save(); }"); pg.locator('#cbOv [data-cb=qx]').click(); pg.wait_for_timeout(100)
+        pg.locator('#cbOv .cbmenu [data-cb=quest]').click(); pg.wait_for_timeout(200)
+        c9 = st(pg)['coin']
+        go_field(pg, 9); use(pg, WIN); pg.locator('#cbOv .qfw').click()
+        for n in range(1, 7):
+            battle(pg, WIN, '7')
+            if n == 1: pg.evaluate("() => CBApp._t.qGu(['m', 'k'])")      # 1戦目の あと：宝石 2つ 使った ことに（次の 戦から のこり 3）
+            if n < 6: next_fight(pg)
+        pg.wait_for_function("() => document.querySelector('#cbOv .qget.on') && document.querySelector('#cbOv .qget .n') && document.querySelector('#cbOv .qget .n').textContent === '160'", timeout=10000); pg.wait_for_timeout(500)
+        check(MSQ() == ['g3w3', 'g4w3', 'g5w3', 'g3w5', 'g3w6'] and st(pg)['coin'] == c9 + 160 + 60 + 90,
+              f'レベル9：宝石 のこり 3 で 5連勝・6連勝 →「3個 残して」の 5連勝 60枚・6連勝 90枚 だけ（4個・5個 残しは まだ）＋ はじめての 討伐 160枚（{MSQ()}・{c9} → {st(pg)["coin"]}）')
+        pg.locator('#cbOv .cbmod [data-cb=qmapgo]').click(); pg.wait_for_timeout(300)
+        # (d) 討伐した レベル9 に もう 一度・宝石 なし → 4個・5個 残しの 5連勝・6連勝（100＋180＋150＋270）・討伐の コインは なし
+        c9b = st(pg)['coin']
+        go_field(pg, 9); use(pg, WIN); pg.locator('#cbOv .qfw').click()
+        for n in range(1, 7):
+            battle(pg, WIN, '7')
+            if n < 6: next_fight(pg)
+        pg.wait_for_function("() => document.querySelector('#cbOv .qget.on')", timeout=10000); pg.wait_for_timeout(500)
+        cards = pg.evaluate("() => [...document.querySelectorAll('#cbOv .qvic .cbmsn')].map(e => e.textContent.replace(/\\s+/g, ''))")
+        check(sorted(MSQ()) == sorted(['g3w3', 'g4w3', 'g5w3', 'g3w5', 'g3w6', 'g4w5', 'g5w5', 'g4w6', 'g5w6']) and st(pg)['coin'] == c9b + 100 + 180 + 150 + 270 and '今月は もう もらったよ' in mod_text(pg) and cards == ['🎯ミッション達成！宝石4個残して6連勝＋150枚', '🎯ミッション達成！宝石5個残して6連勝＋270枚'],
+              f'もう 一度 レベル9（宝石 なし）：5連勝で 4個・5個 残しの 5連勝（＋100・＋180：あいだの 窓）・6連勝で 4個・5個 残しの 6連勝（＋150・＋270）→ 9つ ぜんぶ 達成・討伐の コインは なし（{c9b} → {st(pg)["coin"]}・{cards}）')
+        check(st(pg)['ms']['cpu'] == 5, 'いつもの ミッションの 連勝（5）は ずっと そのまま')
+        pg.locator('#cbOv .cbmod [data-cb=qmapgo]').click(); pg.wait_for_timeout(300)
+        # (e) 数え方（宝石の 数 × 連勝）：のこり 2 → なし・のこり 4 → 3個・4個 残し
+        r = pg.evaluate("""() => { const T = CBApp._t, s = T.state.ms, keep = s.got.q.slice(), out = [];
+          s.got.q = []; out.push(T.qmsWin({ won: 3, gu: ['m', 'k', '1'] }).map(x => `g${x.g}w${x.n}`));
+          out.push(T.qmsWin({ won: 3, gu: ['m'] }).map(x => `g${x.g}w${x.n}`)); out.push(T.qmsWin({ won: 2, gu: [] }).map(x => `g${x.g}w${x.n}`));
+          out.push(T.qmsWin({ won: 6, gu: [] }).map(x => `g${x.g}w${x.n}`)); out.push(T.qmsWin({ won: 6, gu: [] }).map(x => `g${x.g}w${x.n}`)); s.got.q = keep; return out; }""")
+        check(r == [[], ['g3w3', 'g4w3'], [], ['g3w5', 'g3w6', 'g4w5', 'g4w6', 'g5w3', 'g5w5', 'g5w6'], []],
+              f'数え方：宝石 のこり 2 → なし・のこり 4 で 3連勝 → 3個・4個 残し・2連勝 → なし・のこり 5 で 6連勝 → のこり ぜんぶ・同じ 月に 2回目は なし（{r}）')
+        # (f) ミッションの 画面：タブ「決戦調査 9／9 達成」・宝石の 数ごとに 3つずつ・メニューは 今月 9／23
+        pg.locator('#cbOv [data-cb=qx]').click(); pg.wait_for_timeout(150)
+        mb = pg.evaluate("() => document.querySelector('#cbOv .cbmenu [data-cb=ms]').textContent")
+        pg.locator('#cbOv .cbmenu [data-cb=ms]').click(); pg.wait_for_timeout(200)
+        pg.locator('#cbOv .cbms [data-cb=mstab][data-t=q]').click(); pg.wait_for_timeout(200)
+        m = pg.evaluate("""() => { const s = document.querySelector('#cbOv .cbms'), t = e => e.textContent.replace(/\\s+/g, ' ').trim();
+          return { tab: [...s.querySelectorAll('.tabs button')].map(b => t(b) + (b.classList.contains('on') ? '*' : '')), h4: t(s.querySelector('h4')), g: [...s.querySelectorAll('.qmsg')].map(t),
+            imgs: [...s.querySelectorAll('.qmsg')].map(h => h.querySelectorAll('img:not(.u)').length), rows: [...s.querySelectorAll('.msr')].map(r => t(r) + (r.classList.contains('done') ? '*' : '')), note: t(s.querySelector('.note')),
+            over: s.scrollWidth > s.clientWidth + 1 }; }""")
+        check(mb == '🎯ミッション今月 9／23 達成' and m['tab'] == ['コンピュータ0／7 達成', '友達バトル0／7 達成', '決戦調査9／9 達成*'] and m['h4'] == '決戦調査で 連続勝利'
+              and m['g'] == ['決戦宝石を 3個 残して 連続勝利', '決戦宝石を 4個 残して 連続勝利', '決戦宝石を 5個 残して 連続勝利'] and m['imgs'] == [3, 4, 5]
+              and m['rows'] == ['3連勝30枚✓ 達成*', '5連勝60枚✓ 達成*', '6連勝90枚✓ 達成*', '3連勝50枚✓ 達成*', '5連勝100枚✓ 達成*', '6連勝150枚✓ 達成*', '3連勝90枚✓ 達成*', '5連勝180枚✓ 達成*', '6連勝270枚✓ 達成*']
+              and '決戦調査の 勝ち負けは、いつもの ミッション' in m['note'] and '毎月 1日に リセット' in m['note'] and not m['over'],
+              f'ミッションの 画面：タブ「決戦調査 9／9 達成」・宝石 3・4・5個 残しで 3つずつ（30・60・90／50・100・150／90・180・270枚）・メニュー「今月 9／23 達成」（{mb}・{m["rows"][:3]}）')
+        shot(pg, 'q23_ms_quest')
+        # (g) 月が 変わった → 決戦調査ミッションも リセット（ほかの ミッションと いっしょ）
+        pg.evaluate("() => { const T = CBApp._t; T.state.ms.m = '2000-01'; T.save(); }"); pg.locator('#cbOv .cbms [data-cb=mstab][data-t=q]').click(); pg.wait_for_timeout(200)
+        m = pg.evaluate("() => [...document.querySelectorAll('#cbOv .cbms .tabs button')].map(b => b.textContent.replace(/\\s+/g, ' ').trim())")
+        check(MSQ() == [] and m[2] == '決戦調査0／9 達成', f'月が 変わったら 決戦調査ミッションも リセット（1か月に 1回ずつ：{m}）')
+        pg.locator('#cbOv .cbms [data-cb=msx]').click(); pg.wait_for_timeout(150)
+        pg.evaluate("() => { const T = CBApp._t; T.state.q.clr = 0; T.state.ms.m = T.state.q.m; T.save(); }")
 
         print('■ 決戦宝石（第4.197版・まさちゃん 18:58「呼び寄せの決戦宝石」・19:46「決戦調査は、決戦宝石あり、なしの選択はいらないよ！ 無条件であり！」・20:20「1クエスト連勝継続中に合計5個しか使えない！」・「決戦調査の時は、自分だけが見える」・19:03「手札が6枚以下の場合ね！」）')
         pg.evaluate("() => { const T = CBApp._t; T.state.gq = false; T.save(); T.load(); }")      # 前の テスト版で 覚えた「なし」が のこって いても いつも あり

@@ -140,6 +140,10 @@
 //     調査隊切符は 30分で 1枚 たまる（QT.ms 480000 → 1800000：15分の 版は 出して いない）。
 //     決戦調査の セリフ（qLine）：前は 1字 ふえる たびに 文を 書き直して いた → 字の かたまり（word-break:keep-all：全角の あき・句読点 まで）が 行の はしで 次の 行へ とんで、字が ガタガタ 動いた。
 //     → はじめに 行 ぜんぶを 置いて（まだの 字は 見えない .hd）、見える 所（.sh）を 1字ずつ のばす ＝ 字の 場所も 窓の 高さも はじめから かわらない
+//   第4.209版（まさちゃん 2026/11/21 01:11「テンゲルカードバトルのミッションについて 通常連勝ミッションと決戦調査の連勝ミッション分けてほしい！ … 決戦調査は、クリアしたエリアも調査に行けるようにして！ ただクリア報酬は、最初の1回しか貰えないようにして！ 決戦調査ミッションも一ヶ月に1回リセットして！」・01:12「決戦調査には、通常ミッション適用されないようにしてね！」・01:15「決戦調査ミッションもクリアした報酬は一ヶ月に1回しかもらえないようにしてね！」）：
+//     決戦調査ミッション（QMS：決戦宝石を 3・4・5個 残して 1つの 調査で 3・5・6連勝 → バトルコイン。○個 以上 のこって いれば 達成＝5個 のこせば 3つとも・1か月に 1回ずつ・毎月 1日に リセット：st.ms.got.q）。
+//     決戦調査の 勝ち負けは いつもの ミッション（コンピュータ・友達バトル）に 数えない（勝っても 負けても やめても 閉じても そのまま）。
+//     討伐した エリアも もう 一度 調査 できる（調査隊切符 1枚）。討伐の バトルコインは 毎月 1回目 だけ（2回目からは なし・次の エリアは 開かない）
 const CBApp = (() => {
   'use strict';
   const R = CBRules, SK = 'tengel.cb';
@@ -153,7 +157,10 @@ const CBApp = (() => {
   const GK = 'tengel.cbgift';                         // 第4.188版：ログインボーナスの バトルコイン（login_bonus.js が ためる）
   // ミッション（第4.183版・まさちゃん 20:51）：[連勝, バトルコイン]。毎月 1日に リセット（達成も 連勝も 0）
   const MS = { cpu: [[3, 30], [5, 60], [6, 90], [7, 120], [8, 150], [9, 200], [10, 300]], fr: [[3, 20], [5, 40], [6, 60], [7, 80], [8, 100], [9, 120], [10, 140]] };
-  const MS_WHO = { cpu: 'コンピュータ', fr: '友達バトル' }, MS_ALL = MS.cpu.length + MS.fr.length;
+  // 第4.209版：決戦調査ミッション [のこす 決戦宝石の 数, [[1つの 調査で ○連勝, バトルコイン]…]]（○個 以上 のこって いれば 達成）
+  const QMS = [[3, [[3, 30], [5, 60], [6, 90]]], [4, [[3, 50], [5, 100], [6, 150]]], [5, [[3, 90], [5, 180], [6, 270]]]];
+  const QMS_K = QMS.reduce((a, t) => a.concat(t[1].map(w => `g${t[0]}w${w[0]}`)), []);
+  const MS_WHO = { cpu: 'コンピュータ', fr: '友達バトル', q: '決戦調査' }, MS_ALL = MS.cpu.length + MS.fr.length + QMS_K.length;
   const nowD = () => (typeof CBApp._now === 'function' ? CBApp._now() : new Date(window.TengelClock ? window.TengelClock.now() : Date.now()));      // いまの 日時（CBApp._now：テスト 用に 日づけを かえる。第4.191版：時計の 番人の 本当の 時刻）
   const monthKey = d => { const x = d || nowD(); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0'); };
   const COINI = '<img class="cbci" src="cb_coin.webp" alt="">';      // 字の 中に 入れる コインの しるし
@@ -237,12 +244,12 @@ const CBApp = (() => {
     const m0 = st.ms && typeof st.ms === 'object' ? st.ms : {}, g0 = m0.got && typeof m0.got === 'object' ? m0.got : {};
     const gotOf = kd => (Array.isArray(g0[kd]) ? g0[kd] : []).map(x => Math.floor(+x)).filter((x, i, a) => MS[kd].some(t => t[0] === x) && a.indexOf(x) === i).sort((a, b) => a - b);
     const cnt = x => Math.max(0, Math.min(9999, Math.floor(+x || 0)));
-    st.ms = { m: typeof m0.m === 'string' && /^\d{4}-\d{2}$/.test(m0.m) ? m0.m : monthKey(), cpu: cnt(m0.cpu), fr: cnt(m0.fr), got: { cpu: gotOf('cpu'), fr: gotOf('fr') }, live: m0.live === 'cpu' || m0.live === 'fr' || m0.live === 'qc' ? m0.live : '' };
+    st.ms = { m: typeof m0.m === 'string' && /^\d{4}-\d{2}$/.test(m0.m) ? m0.m : monthKey(), cpu: cnt(m0.cpu), fr: cnt(m0.fr), got: { cpu: gotOf('cpu'), fr: gotOf('fr'), q: (Array.isArray(g0.q) ? g0.q : []).filter((x, i, a) => QMS_K.indexOf(x) >= 0 && a.indexOf(x) === i) }, live: m0.live === 'cpu' || m0.live === 'fr' || m0.live === 'qc' ? m0.live : '' };
     // 第4.196版：決戦調査（月・討伐した エリアの 数）。決戦調査の 戦の とちゅうで 閉じた（live 'qc'）＝ 調査は 失敗・ミッションの 連勝は 0（いつもの 勝ち負けには 数えない）
     const q0 = st.q && typeof st.q === 'object' ? st.q : {};
     st.q = { m: typeof q0.m === 'string' && /^\d{4}-\d{2}$/.test(q0.m) ? q0.m : monthKey(), clr: Math.max(0, Math.min(QN, Math.floor(+q0.clr || 0))) };
     { const t0 = st.qt && typeof st.qt === 'object' ? st.qt : null; st.qt = t0 && isFinite(+t0.n) && isFinite(+t0.at) ? { n: Math.max(0, Math.min(QT.max, Math.floor(+t0.n))), at: +t0.at } : null; }      // 第4.203版：調査隊切符（ない とき：はじめて 数える ときに 15枚）
-    if (st.ms.live === 'qc') { if (st.ms.cpu > 0) lostMs = 'cpu'; st.ms.cpu = 0; st.ms.live = ''; lostQ = true; save(); }
+    if (st.ms.live === 'qc') { st.ms.live = ''; lostQ = true; save(); }      // 第4.209版：いつもの ミッションの 連勝は そのまま（決戦調査は 数えない）
     // 第4.197版：決戦宝石の 設定（rg＝部屋を 作る ときの あり／なし）。決戦調査は いつも あり（まさちゃん 19:46「決戦調査は、決戦宝石あり、なしの選択はいらないよ！ 無条件であり！ お友達バトルの時だけ選べる！」）
     delete st.gq;
     { const r0 = st.rg && typeof st.rg === 'object' ? st.rg : {}; st.rg = { on: r0.on === true }; }      // 第4.197版（20:21）：あり の 部屋は 2人とも 5つ（持ち込む 宝石を えらぶ のは なくした）
@@ -296,7 +303,7 @@ const CBApp = (() => {
   //   第4.191版：月が 前へ 進んだ ときだけ（いまの 月が おぼえた 月より あと）。もどった ときは リセットしない（'YYYY-MM' は 字の ならびで くらべられる）
   function msRoll() {
     const k = monthKey(); if (k <= st.ms.m) return false;
-    st.ms = { m: k, cpu: 0, fr: 0, got: { cpu: [], fr: [] }, live: st.ms.live }; save(); return true;
+    st.ms = { m: k, cpu: 0, fr: 0, got: { cpu: [], fr: [], q: [] }, live: st.ms.live }; save(); return true;
   }
   // 勝った：その 種類の 連勝 ＋1 → 新しく 達成した ミッション [{ k, n, c }]（コインは よぶ 方で まとめて わたす）
   function msWin(kind) {
@@ -305,7 +312,14 @@ const CBApp = (() => {
     return out;
   }
   const msKind = m => (m && m.kind === 'cpu' ? 'cpu' : 'fr');      // 対戦の 種類 → ミッションの 種類（コンピュータ／友だちバトル）
-  const msDone = () => st.ms.got.cpu.length + st.ms.got.fr.length;
+  const msQ = () => (Array.isArray(st.ms.got.q) ? st.ms.got.q : (st.ms.got.q = []));      // 第4.209版：決戦調査ミッション（達成した もの：'g○w○'）
+  const msDone = () => st.ms.got.cpu.length + st.ms.got.fr.length + msQ().length;
+  // 第4.209版：決戦調査で 勝った → 新しく 達成した 決戦調査ミッション [{ k:'q', g, n, c }]（1つの 調査の 連勝 r.won と のこりの 宝石。コインは よぶ 方で わたす）
+  function qmsWin(r) {
+    const left = R.GEMS.length - (r.gu ? r.gu.length : 0), got = msQ(), out = [];
+    QMS.forEach(t => t[1].forEach(w => { const k = `g${t[0]}w${w[0]}`; if (r.won >= w[0] && left >= t[0] && got.indexOf(k) < 0) { got.push(k); out.push({ k: 'q', g: t[0], n: w[0], c: w[1] }); } }));
+    return out;
+  }
   const rewardFor = streak => (streak > 0 && streak % REWARD.every === 0 ? REWARD.bonus : REWARD.win);
   // まだ わたして いない ごほうびを わたす → { want, add, stock, max }（わたす ものが ない・読みこめない ときは null）
   async function pay() {
@@ -823,6 +837,13 @@ const CBApp = (() => {
 #cbOv .cbms .cur small{flex:0 0 100%;text-align:center;font-size:12px;color:#d9c08c}
 #cbOv .cbms .cur .cbci{width:1.2em;height:1.2em;vertical-align:-.25em;margin-right:.1em}
 #cbOv .cbms .msl{display:flex;flex-direction:column;gap:6px}
+#cbOv .cbms .qmsi{margin:0 2px 4px;font-size:12.5px;line-height:1.6;color:#f0dfb6}
+#cbOv .cbms .qmsi b{color:#ffe07a}
+#cbOv .cbms .qmsg{display:flex;align-items:center;gap:6px;margin:12px 2px 6px;font-size:14px;color:#ffe2a0}
+#cbOv .cbms .qmsg b{color:#ffe07a;font-size:16px}
+#cbOv .cbms .qmsg span{display:inline-flex;gap:2px;margin-left:auto}
+#cbOv .cbms .qmsg img{width:20px;height:20px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
+#cbOv .cbms .qmsg img.u{opacity:.25;filter:grayscale(1) brightness(.7)}
 #cbOv .msr{display:grid;grid-template-columns:5.4em 1fr auto;align-items:center;gap:6px;min-height:42px;box-sizing:border-box;padding:4px 12px;border-radius:12px;border:1.5px solid rgba(255,226,160,.2);background:rgba(255,236,190,.05);color:#d9c08c;font-size:14px}
 #cbOv .msr .n{font-size:16px;color:#f0dfb6}
 #cbOv .msr .c{font-weight:700;color:#f0dfb6}
@@ -1001,6 +1022,7 @@ const CBApp = (() => {
 @keyframes qci{0%{transform:rotateY(0)}100%{transform:rotateY(720deg)}}
 #cbOv .qget small{display:block;font-size:14px;font-weight:700;color:#ffe9b0;line-height:1.3}
 #cbOv .qget b{display:block;font-size:32px;line-height:1.15}
+#cbOv .qget.re b{font-size:21px;line-height:1.3}
 #cbOv .qv .qg2{min-height:0;opacity:0;transition:opacity .3s;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:14px;color:#fff1cf}
 #cbOv .qv .qg2 .cbcl .cbci{width:1.3em;height:1.3em;vertical-align:-.3em}
 #cbOv .qv .qg2.on{opacity:1}
@@ -1219,8 +1241,9 @@ const CBApp = (() => {
       + `<li>敵ごとに 決まった <b>連勝</b>で 討伐！ バトルコインが もらえるよ：${QUEST.map(q => `Lv${q.lv} ${q.w}連勝 <b>${q.c}枚</b>`).join('・')}</li>`
       + '<li>討伐すると <b>次の エリアが 開く</b>よ。負けたら その エリアを <b>1戦目から やり直し</b>。同点は <b>同じ 戦を やり直し</b>（HP は そのまま）</li>'
       + '<li>強い 敵は、決まった 戦で <b>手札に 必ず 強い カード</b>を 持って いるよ（その 戦の 始めに 知らせるよ）</li>'
-      + '<li>もらえるのは 決戦調査の バトルコインと、<b>ミッション</b>（コンピュータに 連続勝利）の 連勝。いつもの 勝ち負け・連勝・お世話トークンには 数えないよ</li>'
-      + '<li>戦の 途中で やめる・アプリを 閉じると 調査 失敗（ミッションの 連勝も 0）。<b>毎月 1日に リセット</b>（討伐した エリアも 最初から）</li>'
+      + '<li>討伐した エリアにも <b>もう 一度 調査に 行ける</b>よ。<b>討伐の バトルコインは 毎月 1回目 だけ</b>（2回目からは なし）</li>'
+      + '<li>もらえるのは 討伐の バトルコインと、<b>決戦調査ミッション</b>（決戦宝石を 残して 連続勝利）の バトルコイン。いつもの 勝ち負け・連勝・お世話トークン・いつもの ミッションには 数えないよ</li>'
+      + '<li>戦の 途中で やめる・アプリを 閉じると 調査 失敗。<b>毎月 1日に リセット</b>（討伐した エリアも 最初から）</li>'
       + `<li>${TKI}<b>調査隊切符</b>：エリアに <b>挑戦する とき 1枚</b>（1戦目の はじめ）。<b>連勝中は 使わない</b>（「第○戦へ」・同点の やり直し）。負けて「もう 一度 挑戦」する とき・次の エリアに 行く とき（例：レベル3 → レベル4）は また 1枚。<b>${QTM()}分で 1枚</b> たまって、<b>${QT.max}枚 まで</b>。0枚の ときは 挑戦 できないよ（マップの 上の ゲージで 枚数と 次の 1枚 までの 時間が わかるよ）</li></ul>`
       + `<h4>決戦宝石</h4><ul><li><b>決戦調査では いつも 使えるよ</b>：1つの 調査（連勝が 続く 間）で <b>5つ 1回ずつ（合計 5個）</b>。負けて 1戦目から やり直すと また 5つ</li>`
       + `<li>友達との 対戦は、部屋を 作る 人が「<b>決戦宝石 あり</b>」に した とき：2人とも <b>1試合で 5つ 1回ずつ</b>（おたがいの 宝石が 見える）</li>`
@@ -1229,10 +1252,11 @@ const CBApp = (() => {
       + '<li>トークンは <b>その ターン だけ</b>（使わないと ターンの 終わりに 消えるよ）。セットすると その カードと 同じ 強さ（神様馬トークンと 神様馬は かぶり）</li>'
       + '<li>「2頭分・3頭分」は 手札の 効果の 数え方：1トークンで 1 の 逆転勝利・3トークン ＋ 3 で 3 の 交換・7トークンで 7 の 効果（7トークンを 見せて 捨てて、山札から 3枚 引く：トークンは 山札に 戻せない）・7トークン ＋ 7 で 4枚 公開。セット・捨てる ときは 1枚</li>'
       + '<li>決戦調査の 敵は 宝石を 使わないよ（あなたが 使った ことも 敵には わからない）</li></ul>'
-      + `<h4>ミッション</h4><ul><li>メニューの「<b>ミッション</b>」：<b>コンピュータに 連続勝利</b>・<b>友達バトルで 連続勝利</b>で バトルコインが もらえるよ</li>`
+      + `<h4>ミッション</h4><ul><li>メニューの「<b>ミッション</b>」：<b>コンピュータに 連続勝利</b>・<b>友達バトルで 連続勝利</b>・<b>決戦調査</b>（決戦宝石を 残して 連続勝利）で バトルコインが もらえるよ</li>`
       + `<li>コンピュータ：${MS.cpu.map(t => `${t[0]}連勝 <b>${t[1]}枚</b>`).join('・')}</li><li>友達バトル：${MS.fr.map(t => `${t[0]}連勝 <b>${t[1]}枚</b>`).join('・')}</li>`
+      + `<li>決戦調査（1つの 調査で 数える・宝石を ○個 以上 残せば 達成）：${QMS.map(t => `宝石 ${t[0]}個 残し ${t[1].map(w => `${w[0]}連勝 <b>${w[1]}枚</b>`).join('・')}`).join('／')}</li>`
       + '<li>達成した ときに、その場で もらえるよ（受け取りは いらない）。<b>毎月 1日に リセット</b>（達成も 連勝も 0 に 戻る）</li>'
-      + '<li>負けると その 連勝は 0 に 戻るよ（途中で やめた・対戦の 途中で アプリを 閉じた ときも 同じ）。同点は そのまま。友達が 途中で 部屋を 出た・つながりが 切れた ときは 数えないよ</li><li>コンピュータと 友達バトルの 連勝は 別に 数えるよ</li></ul>'
+      + '<li>負けると その 連勝は 0 に 戻るよ（途中で やめた・対戦の 途中で アプリを 閉じた ときも 同じ）。同点は そのまま。友達が 途中で 部屋を 出た・つながりが 切れた ときは 数えないよ</li><li>コンピュータ・友達バトル・決戦調査は 別に 数えるよ（決戦調査の 勝ち負けは いつもの ミッションに 数えない）</li></ul>'
       + '<h4>音（設定）</h4><ul><li>ボードの 右下の <b>歯車</b>（メニューでは「設定」）を 押すと、<b>BGM</b>・<b>効果音</b>を オン／オフ できるよ</li></ul>'
       + '<h4>友達と 対戦（部屋）</h4><ul><li>1人が「部屋を 作る」→ 出て きた <b>部屋番号（4桁）</b>を 友達に 教える</li><li>友達は「部屋に 入る」で その 番号を 入れる</li><li><b>近くに いる 友達</b>と、iPhone 同士で 直接 つながるよ（インターネットは 使わない）。2人とも Wi‑Fi か Bluetooth を オンに してね</li><li>初めて 使う とき「ローカルネットワーク」の 確認が 出たら「許可」を 押してね</li></ul>'
       + '</div>';
@@ -1548,29 +1572,43 @@ const CBApp = (() => {
   // ---------- ミッション（第4.183版）----------
   //   画面（scr.ms）：今月の ミッション・リセットの 日・タブ（コンピュータ／友だちバトル：達成した 数）・いまの 連勝・7つの ミッション（達成／あと ○勝）・決まりの 説明
   let msTab = 'cpu';
+  const MS_TABS = ['cpu', 'fr', 'q'];      // 第4.209版：決戦調査の タブ
   function showMs(tab) {
-    if (tab) msTab = tab === 'fr' ? 'fr' : 'cpu';
+    if (tab) msTab = MS_TABS.indexOf(tab) >= 0 ? tab : 'cpu';
     closeMod(); msRoll();
     const d = nowD(), mm = /^(\d{4})-(\d{2})$/.exec(st.ms.m), mY = mm ? +mm[1] : d.getFullYear(), mM = mm ? +mm[2] : d.getMonth() + 1;      // 第4.191版：おぼえた 月（ふつうは いまの 月）
-    const nx = new Date(mY, mM, 1), left = Math.max(1, Math.ceil((nx - d) / 86400000)), s = st.ms, kd = msTab, cur = s[kd];
-    const nt = MS[kd].find(t => s.got[kd].indexOf(t[0]) < 0);      // つぎの ミッション（ぜんぶ 達成 なら なし）
-    const rows = MS[kd].map(t => {
+    const nx = new Date(mY, mM, 1), left = Math.max(1, Math.ceil((nx - d) / 86400000)), s = st.ms, kd = msTab, cur = kd === 'q' ? 0 : s[kd];
+    const nt = kd === 'q' ? null : MS[kd].find(t => s.got[kd].indexOf(t[0]) < 0);      // つぎの ミッション（ぜんぶ 達成 なら なし）
+    const rows = kd === 'q' ? '' : MS[kd].map(t => {
       const done = s.got[kd].indexOf(t[0]) >= 0, nxt = !!nt && nt[0] === t[0];
       return `<div class="msr${done ? ' done' : nxt ? ' next' : ''}" data-n="${t[0]}"><b class="n">${t[0]}連勝</b><span class="c">${COINI}${t[1]}枚</span><em>${done ? '✓ 達成' : nxt ? `あと ${Math.max(1, t[0] - cur)}勝` : ''}</em></div>`;
     }).join('');
     scr.ms.innerHTML = '<div class="hd"><button type="button" class="cbb dk sm" data-cb="msx">← 戻る</button><b>ミッション</b></div>'
       + `<p class="cbcoinl">${COINI}<span>バトルコイン <b>${st.coin}</b>枚</span></p>`
       + `<p class="msm">${mM}月の ミッション<small>${nx.getMonth() + 1}月1日に リセット（あと ${left}日）</small></p>`
-      + `<div class="tabs" role="tablist">${['cpu', 'fr'].map(k => `<button type="button" role="tab" data-cb="mstab" data-t="${k}" class="${kd === k ? 'on' : ''}" aria-selected="${kd === k}">${MS_WHO[k]}<small>${s.got[k].length}／${MS[k].length} 達成</small></button>`).join('')}</div>`
-      + `<div class="bd"><h4>${kd === 'cpu' ? 'コンピュータに 連続勝利' : '友達バトルで 連続勝利'}</h4>`
+      + `<div class="tabs" role="tablist">${MS_TABS.map(k => `<button type="button" role="tab" data-cb="mstab" data-t="${k}" class="${kd === k ? 'on' : ''}" aria-selected="${kd === k}">${MS_WHO[k]}<small>${k === 'q' ? msQ().length : s.got[k].length}／${k === 'q' ? QMS_K.length : MS[k].length} 達成</small></button>`).join('')}</div>`
+      + (kd === 'q' ? qmsBody() : `<div class="bd"><h4>${kd === 'cpu' ? 'コンピュータに 連続勝利' : '友達バトルで 連続勝利'}</h4>`
       + `<p class="cur"><span>今</span><b>${cur}</b><span>連勝</span><small>${nt ? `次は ${nt[0]}連勝で ${COINI}${nt[1]}枚（あと ${Math.max(1, nt[0] - cur)}勝）` : '今月の ミッションは 全部 達成！ 🎉'}</small></p>`
       + `<div class="msl">${rows}</div>`
       + '<ul class="note"><li>達成すると、その場で バトルコインが もらえるよ（受け取りは いらない）</li>'
       + '<li>負けると 連勝は 0 に 戻るよ（途中で やめた・対戦の 途中で アプリを 閉じた ときも）。同点は そのまま</li>'
       + (kd === 'fr' ? '<li>友達が 途中で 部屋を 出た・つながりが 切れた ときは 数えないよ</li>' : '')
-      + '<li>コンピュータと 友達バトルの 連勝は 別に 数えるよ</li><li><b>毎月 1日に リセット</b>（達成も 連勝も 0 に 戻るよ）</li></ul>'
-      + `${testOn() && window.CBTest.msHtml ? window.CBTest.msHtml() : ''}</div>`;
+      + '<li>コンピュータと 友達バトルの 連勝は 別に 数えるよ。決戦調査の 勝ち負けは 数えないよ（「決戦調査」の タブの ミッション）</li><li><b>毎月 1日に リセット</b>（達成も 連勝も 0 に 戻るよ）</li></ul>'
+      + `${testOn() && window.CBTest.msHtml ? window.CBTest.msHtml() : ''}</div>`);
     show('ms');
+  }
+  // 第4.209版：ミッションの 画面の「決戦調査」：決戦宝石を 3・4・5個 残して 3・5・6連勝（9つ）
+  function qmsBody() {
+    const got = msQ();
+    const grp = QMS.map(t => `<h5 class="qmsg">決戦宝石を <b>${t[0]}個</b> 残して 連続勝利<span aria-hidden="true">${R.GEMS.map((x, i) => `<img class="${i < t[0] ? '' : 'u'}" src="${gemPic(x)}" alt="">`).join('')}</span></h5><div class="msl">`
+      + t[1].map(w => { const k = `g${t[0]}w${w[0]}`, done = got.indexOf(k) >= 0; return `<div class="msr${done ? ' done' : ''}" data-k="${k}"><b class="n">${w[0]}連勝</b><span class="c">${COINI}${w[1]}枚</span><em>${done ? '✓ 達成' : ''}</em></div>`; }).join('') + '</div>').join('');
+    return '<div class="bd"><h4>決戦調査で 連続勝利</h4><p class="qmsi">1つの 調査（エリアに 挑戦して 連勝が 続く 間）で、<b>決戦宝石を 残して</b> 連続勝利 すると もらえるよ</p>' + grp
+      + '<ul class="note"><li>決戦宝石を 多く 残すほど たくさん もらえるよ。5個 残して 3連勝 → 3個・4個・5個 残しの 3連勝が ぜんぶ 達成（30＋50＋90枚）</li>'
+      + '<li>達成すると、その場で バトルコインが もらえるよ（受け取りは いらない）</li>'
+      + '<li>負けると 1戦目から（決戦宝石も 5つに 戻るよ）。同点は そのまま。途中で やめる・アプリを 閉じると その 調査は ここまで</li>'
+      + '<li>討伐した エリアに もう 一度 調査に 行っても 数えるよ（討伐の バトルコインは 毎月 1回目 だけ）</li>'
+      + '<li>決戦調査の 勝ち負けは、いつもの ミッション（コンピュータ・友達バトル）には 数えないよ</li><li><b>毎月 1日に リセット</b>（どの ミッションも 1か月に 1回）</li></ul>'
+      + `${testOn() && window.CBTest.msHtml ? window.CBTest.msHtml() : ''}</div>`;
   }
   // テスト版の 道具（cb_test.js）に わたす もの：App Store版では 使われない
   const msApi = {
@@ -2035,7 +2073,7 @@ const CBApp = (() => {
   function applySets() { bgmSync(); }
   function quitModal() {
     const mid = !ended && !!V;
-    if (qRun) { modal(`<h3 class="gold">調査を やめる？</h3><p>${mid ? '途中で やめると 調査 失敗に なるよ<br>（ミッションの 連勝も 0 に 戻るよ）' : 'マップに 戻るよ（この 調査は ここまで）'}</p><div class="rowb"><button type="button" class="cbb dk" data-cb="modx">続ける</button><button type="button" class="cbb" data-cb="quitgo">やめる</button></div>`); return; }      // 第4.196版
+    if (qRun) { modal(`<h3 class="gold">調査を やめる？</h3><p>${mid ? '途中で やめると 調査 失敗に なるよ' : 'マップに 戻るよ（この 調査は ここまで）'}</p><div class="rowb"><button type="button" class="cbb dk" data-cb="modx">続ける</button><button type="button" class="cbb" data-cb="quitgo">やめる</button></div>`); return; }      // 第4.196版
     modal(`<h3 class="gold">対戦を やめる？</h3><p>${mid ? '途中で やめると 負けに なるよ（連勝は 0 に 戻るよ）' + (st.stake ? `<br>${COINI}参加コイン ${st.stake.e}枚も 戻らないよ` : '') : 'メニューに 戻るよ'}</p><div class="rowb"><button type="button" class="cbb dk" data-cb="modx">続ける</button><button type="button" class="cbb" data-cb="quitgo">やめる</button></div>`);
   }
 
@@ -2102,7 +2140,7 @@ const CBApp = (() => {
     if (a === 'qtst') { if (testOn() && window.CBTest.qHtml) modal(`<h3 class="gold">決戦調査の テスト</h3>${window.CBTest.qHtml(qEasy)}<div class="col"><button type="button" class="cbb dk" data-cb="modx">閉じる</button></div>`, 'cbqa'); return; }
     if (a === 'tstq') { if (testOn() && window.CBTest.qAct) window.CBTest.qAct(b.dataset.t, qApi); return; }
     if (a === 'msx') return showMenu();
-    if (a === 'mstab') { se('tap', 0.6); return showMs(b.dataset.t === 'fr' ? 'fr' : 'cpu'); }
+    if (a === 'mstab') { se('tap', 0.6); return showMs(b.dataset.t); }
     if (a === 'tstm') { if (testOn() && window.CBTest.msAct) window.CBTest.msAct(b.dataset.t, msApi); return; }
     if (a === 'help') return showHelp(screen === 'game' ? 'game' : 'menu');
     if (a === 'helpx') { show(helpBack); if (helpBack === 'game') render(); return; }
@@ -2495,7 +2533,7 @@ const CBApp = (() => {
   // 対戦を はなれる（count＝とちゅうで やめた → 負けに 数える）
   function leave(count) {
     const m = match; match = null; queue = []; GEN += 1;      // 第4.190版：世代を かえる（この 対戦の 動きの つづきは 止まる）
-    if (m) { if (count && !ended && !fin && V) { if (qRun) { msRoll(); st.ms.cpu = 0; save(); } else { st.lose += 1; st.streak = 0; msRoll(); st.ms[msKind(m)] = 0; save(); } } try { m.leave(); } catch (e) { /* なし */ } }      // 第4.196版：決戦調査は ミッションの 連勝 だけ 0      // 第4.183版：ミッションの 連勝も 0（第4.191版：結果を もう 数えた〈fin〉 ときは 足さない）
+    if (m) { if (count && !ended && !fin && V && !qRun) { st.lose += 1; st.streak = 0; msRoll(); st.ms[msKind(m)] = 0; save(); } try { m.leave(); } catch (e) { /* なし */ } }      // 第4.209版：決戦調査は 数えない（いつもの 負けにも ミッションにも）      // 第4.183版：ミッションの 連勝も 0（第4.191版：結果を もう 数えた〈fin〉 ときは 足さない）
     fin = false; ends = [];
     if (st && st.stake) { st.stake = null; save(); }      // 第4.179版：とちゅうで やめた → 出した 参加コインは もどらない
     if (st && st.ms && st.ms.live) { st.ms.live = ''; save(); }      // 第4.183版：対戦 ちゅうの しるしを 消す
@@ -2663,17 +2701,18 @@ const CBApp = (() => {
     if (qRoll()) showQMap();      // マップを 開いた まま 月が 変わった：はじめから かき直す
     const m = $('.qmap', scr.qmap);
     if (qPop === lv && $('.qpo', m)) { se('tap', 0.5); return qPopClose(); }      // 同じ エリアを もう 一度 → とじる
-    const done = lv <= st.q.clr, open = lv === qOpen() && !done;
-    se('tap', open ? 1 : 0.6);
+    const done = lv <= st.q.clr, open = lv === qOpen() && !done, go = done || open;      // 第4.209版：討伐した エリアも 行ける
+    se('tap', go ? 1 : 0.6);
     const ns = Object.keys(q.rig), rig = ns.length ? q.rig[ns[0]] : null;      // 確定カード（どの 戦も 同じ カード）
-    const body = done ? '<p class="qpoi"><b>討伐済み！</b><small>来月の リセットまで 待ってね</small></p>'
+    const body = (done ? `<p class="qpoi"><b>討伐済み！</b>　<b>${q.w}連勝</b>で もう 一度 討伐<small>討伐の バトルコインは 毎月 1回目 だけ（決戦調査ミッションは 数えるよ）</small></p>`
       : !open ? `<p class="qpoi">🔒 レベル${lv - 1}「${esc(QUEST[lv - 2].a)}」を<br>討伐すると 行けるよ</p>`
-        : `<p class="qpoi"><b>${q.w}連勝</b>で 討伐！　${COINI}<b>${q.c}</b>枚</p>` + (rig ? `<p class="qpor">⚠ ${ns.join('・')}戦目は 敵の 手札に 必ず ${esc(qRigText(rig))}</p>` : '')
-          + `<p class="qpotk">${TKI}挑戦に 調査隊切符 1枚（今 <b>${qtNow().n}</b>枚）<small>連勝中は 使わないよ</small></p>`;      // 第4.204版：挑戦 1回に 1枚
-    const bt = '<button type="button" class="cbb dk" data-cb="qpx">もどる</button>' + (open ? `<button type="button" class="cbb" data-cb="qgo" data-lv="${lv}"${qtNow().n < 1 ? ' disabled' : ''}>決戦調査に 行く<small>${qtNow().n < 1 ? qtWait() : ''}</small></button>` : '');
+        : `<p class="qpoi"><b>${q.w}連勝</b>で 討伐！　${COINI}<b>${q.c}</b>枚</p>`)
+      + (go ? (rig ? `<p class="qpor">⚠ ${ns.join('・')}戦目は 敵の 手札に 必ず ${esc(qRigText(rig))}</p>` : '')
+          + `<p class="qpotk">${TKI}挑戦に 調査隊切符 1枚（今 <b>${qtNow().n}</b>枚）<small>連勝中は 使わないよ</small></p>` : '');      // 第4.204版：挑戦 1回に 1枚
+    const bt = '<button type="button" class="cbb dk" data-cb="qpx">もどる</button>' + (go ? `<button type="button" class="cbb" data-cb="qgo" data-lv="${lv}"${qtNow().n < 1 ? ' disabled' : ''}>決戦調査に 行く<small>${qtNow().n < 1 ? qtWait() : ''}</small></button>` : '');
     qPopClose();
     const el = document.createElement('div');
-    el.className = 'qpo' + (open ? ' op' : '');
+    el.className = 'qpo' + (go ? ' op' : '');
     el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', `レベル${lv} ${q.a}`);
     el.innerHTML = `<p class="qpoh"><small>レベル${lv}</small><b class="gold">${esc(q.a)}</b></p>${body}<div class="qpob">${bt}</div><i class="qpot" aria-hidden="true"></i>`;
     m.appendChild(el); qPop = lv;
@@ -2701,14 +2740,14 @@ const CBApp = (() => {
   // ---- フィールド：セリフ → 敵 出現 ----
   function qGo(lv) {
     if (qRoll()) { showQMap(); toast('月が 変わったので、決戦調査を リセットしたよ', 2.6); return; }      // 第4.206版：ふきだしを 開いた まま 月が 進んだ
-    const q = QUEST[lv - 1]; if (!q || lv !== qOpen() || lv <= st.q.clr) return;
+    const q = QUEST[lv - 1]; if (!q || lv > qOpen()) return;      // 第4.209版：討伐した エリアも 行ける
     if (qtNow().n < 1) { se('tap', 0.5); return qtModal(true); }      // 第4.203版：切符が 0枚 ＝ 行けない（ボタンも 押せない）
     closeMod(); qPopClose(); se('tap');
     qs = { lv: lv, step: 'say', i: -1, tw: null, g: GEN, rv: 0, snd: false };
     const f = scr.qf;
     $('.qfld', f).innerHTML = `<img class="bg" src="${qF(lv)}" alt=""><i class="qsh"></i><img class="qe" src="${qE(lv)}" alt="" style="left:${q.g[0] * 100}%;top:${q.g[1] * 100}%;width:${q.g[2] * 100}%"><i class="qdu" style="left:${q.g[0] * 100}%;top:${q.g[1] * 100}%;width:${q.g[2] * 100}%"></i>`;
     $('.qfld', f).classList.remove('en');
-    $('.qtel', f).classList.remove('on'); $('.qtel', f).innerHTML = `<div class="bd"><b class="gold">レベル${lv}の 敵 出現！</b><small>${q.w}連勝して バトルコインを ${q.c}枚 手に入れよう！</small></div>`;
+    $('.qtel', f).classList.remove('on'); $('.qtel', f).innerHTML = `<div class="bd"><b class="gold">レベル${lv}の 敵 出現！</b><small>${lv <= st.q.clr ? `${q.w}連勝して もう 一度 討伐しよう！` : `${q.w}連勝して バトルコインを ${q.c}枚 手に入れよう！`}</small></div>`;
     $('.qnm', f).classList.remove('on'); $('.qnm', f).textContent = q.n;
     $('.qtap', f).classList.remove('on'); $('.qsay', f).classList.remove('on'); $('.qsay p', f).textContent = '';
     f.classList.remove('in'); show('qf'); qFieldLayout(); bgmTrack('');      // フィールドでは BGM を 止める（敵が 出る 音を 聞かせる）。バトルで 決戦調査の BGM
@@ -2804,25 +2843,24 @@ const CBApp = (() => {
   function qSettle(res) {
     const r = qRun, q = QUEST[r.lv - 1];
     st.ms.live = '';
-    let ms = [], coin = 0, cleared = false, reset = false;
-    msRoll();
-    if (res === 'win') ms = msWin('cpu');                    // ミッション（コンピュータに 連続勝利）は 数える
-    else if (res === 'lose') st.ms.cpu = 0;
+    let ms = [], coin = 0, cleared = false, first = false, reset = false;
+    msRoll();                                                 // 第4.209版：いつもの ミッション（コンピュータ）には 数えない
     if (qRoll() || r.m !== st.q.m) { reset = true; r.dead = true; }      // 戦の とちゅうで 月が かわった：この 調査は なし（qRun は のこす：結果の 窓まで 決戦調査の 形。マップへ で 終わり）
     else if (res === 'win') {
       r.won += 1;
-      if (r.won >= q.w) { cleared = true; coin = q.c; st.q.clr = Math.max(st.q.clr, q.lv); }
+      ms = qmsWin(r);                                         // 第4.209版：決戦調査ミッション（宝石を 残して ○連勝）
+      if (r.won >= q.w) { cleared = true; first = q.lv > st.q.clr; coin = first ? q.c : 0; st.q.clr = Math.max(st.q.clr, q.lv); }      // 第4.209版：討伐の コインは 毎月 1回目 だけ
     }
     const msc = ms.reduce((a, x) => a + x.c, 0), want = coin + msc, c0 = st.coin; addCoin(want);
     save();
-    return Promise.resolve({ res: res, q: q, won: r.won, ms: ms, msc: msc, coin: coin, cleared: cleared, reset: reset, coins: st.coin, full: st.coin - c0 < want });
+    return Promise.resolve({ res: res, q: q, won: r.won, ms: ms, msc: msc, coin: coin, cleared: cleared, first: first, reset: reset, coins: st.coin, full: st.coin - c0 < want });
   }
   // 戦の 結果：勝ち → HP が へる（倒したら 勝利の 演出）／負け → 調査 失敗（やり直し）／同点 → 同じ 戦を やり直し
   async function qEndShow(x) {
     ended = true;
     const no = gameNo, r = await (ends.shift() || qSettle(x.res)), q = r.q;
     if (no !== gameNo || !match) return;
-    const msh = r.ms.map(m => `<div class="cbmsn" role="status" aria-label="ミッション達成 ${m.n}連勝 バトルコイン ${m.c}枚"><i aria-hidden="true">🎯</i><span>ミッション達成！</span><b>${m.n}連勝</b>${COINI}<b>＋${m.c}枚</b></div>`).join('');
+    const msh = r.ms.map(m => `<div class="cbmsn" role="status" aria-label="決戦調査ミッション達成 決戦宝石を ${m.g}個 残して ${m.n}連勝 バトルコイン ${m.c}枚"><i aria-hidden="true">🎯</i><span>ミッション達成！</span><b>宝石 ${m.g}個 残して ${m.n}連勝</b>${COINI}<b>＋${m.c}枚</b></div>`).join('');      // 第4.209版：決戦調査ミッション
     if (r.reset) {
       se('even');
       modal(`<h3 class="gold">月が 変わったよ</h3><p>決戦調査は 毎月 1日に リセット。<br>この 調査は ここまで（最初から 挑戦してね）</p><div class="gift">${msh}</div><div class="col"><button type="button" class="cbb" data-cb="qmapgo">マップへ</button></div>`, 'cbend qend');
@@ -2885,7 +2923,7 @@ const CBApp = (() => {
   //   点めつ なし（光は ふわっと 1回・筋は ゆっくり 回る・紙吹雪と コインは 小さい：アプリの 決まり〈1秒に 3回 まで〉より ずっと 少ない）
   async function qVictory(r, msh) {
     const q = r.q, t = qTier(q.lv), g = GEN;
-    qNew = q.lv < QN ? q.lv + 1 : 0;
+    qNew = r.first && q.lv < QN ? q.lv + 1 : 0;      // 第4.209版：もう 一度 討伐した ときは 開く エリアは ない
     const rnd = (a, b) => a + Math.random() * (b - a);
     let parts = '';
     if (t >= 2) for (let i = 0; i < 26; i++) parts += `<i class="cf" style="left:${rnd(2, 98).toFixed(1)}%;--d:${rnd(0, 1.4).toFixed(2)}s;--r:${rnd(-540, 540).toFixed(0)}deg;--x:${rnd(-40, 40).toFixed(0)}px;--h:${rnd(0, 360).toFixed(0)}"></i>`;
@@ -2893,16 +2931,17 @@ const CBApp = (() => {
     modal(`<div class="qv t${t}"><i class="rays"></i>${t >= 3 ? '<i class="wave"></i><i class="wave w2"></i>' : ''}<i class="glow"></i>`
       + `<div class="en"><img src="${qE(q.lv)}" alt=""><b class="stamp">討伐</b></div>`
       + `<h3 class="gold">討伐成功！</h3><p class="sub">${esc(q.n)}を 倒した！${t >= 3 ? '<br><small>伝説の 敵に 勝ったよ！</small>' : ''}</p>`
-      + `<div class="qget" role="status" aria-label="バトルコイン ${r.coin}枚 GET"><img class="ci" src="cb_coin.webp" alt=""><span><small>バトルコインを GETした！</small><b class="gold">＋<span class="n">0</span>枚</b></span></div>`
+      + (r.first ? `<div class="qget" role="status" aria-label="バトルコイン ${r.coin}枚 GET"><img class="ci" src="cb_coin.webp" alt=""><span><small>バトルコインを GETした！</small><b class="gold">＋<span class="n">0</span>枚</b></span></div>`
+        : '<div class="qget re" role="status"><img class="ci" src="cb_coin.webp" alt=""><span><small>討伐の バトルコインは 毎月 1回目 だけ</small><b class="gold">今月は もう もらったよ</b></span></div>')
       + `<div class="gift qg2"><div class="cbcl">${COINI}今 ${r.coins}枚${r.full ? `（${COIN.max}枚 まで）` : ''}</div>${msh}</div>`
       + '<div class="col"><button type="button" class="cbb" data-cb="qmapgo">マップへ</button></div></div>'
       + (parts ? `<div class="qpt">${parts}</div>` : ''), 'qvic');
     se('qwin' + t);
     await T(1100); if (g !== GEN) return;
     const box = $('.qget', modEl); if (!box) return;
-    box.classList.add('on'); se('coin');
+    box.classList.add('on'); if (r.first) se('coin');
     const n = $('.qget .n', modEl), steps = 12;
-    for (let i = 1; i <= steps; i++) { await T(55); if (g !== GEN || !n.isConnected) return; n.textContent = String(Math.round(r.coin * i / steps)); }
+    if (n) for (let i = 1; i <= steps; i++) { await T(55); if (g !== GEN || !n.isConnected) return; n.textContent = String(Math.round(r.coin * i / steps)); }
     await T(250); if (g !== GEN) return;
     const g2 = $('.qg2', modEl); if (g2) g2.classList.add('on');
     if (r.ms.length) se('magic', 0.7);
@@ -2949,7 +2988,7 @@ const CBApp = (() => {
     _t: {      // テスト・見本の 写真 用
       get view() { return V; }, get screen() { return screen; }, get match() { return match; }, get mode() { return mode; }, get state() { return st; }, get ended() { return ended; },
       get idle() { return !pumping && !queue.length && !busy && !lock; }, get ask() { return askOn(); }, say, get sets() { return { bgm: bgmOn(), se: seOn(), raw: { bgm: st.bgm, se: st.se }, as: AS }; },
-      qopt: (lv, n) => qOpt(lv, n), qApi, qtPaint: () => qtPaint(), get qt() { return st ? Object.assign({ left: qtLeft() }, qtNow()) : null; }, get quest() { return { run: qRun ? Object.assign({}, qRun) : null, st: st ? Object.assign({}, st.q) : null, scene: qs ? { lv: qs.lv, step: qs.step, i: qs.i, typing: !!qs.tw, rv: qs.rv || 0 } : null, data: QUEST, open: st ? qOpen() : 0, track: bg.trk }; },      // 第4.196版：決戦調査
+      qopt: (lv, n) => qOpt(lv, n), qApi, qtPaint: () => qtPaint(), qGu: a => { if (qRun) qRun.gu = a.slice(); }, qmsWin: r => qmsWin(r), get qt() { return st ? Object.assign({ left: qtLeft() }, qtNow()) : null; }, get quest() { return { run: qRun ? Object.assign({}, qRun) : null, st: st ? Object.assign({}, st.q) : null, scene: qs ? { lv: qs.lv, step: qs.step, i: qs.i, typing: !!qs.tw, rv: qs.rv || 0 } : null, data: QUEST, open: st ? qOpen() : 0, track: bg.trk }; },      // 第4.196版：決戦調査
       get bgm() { return { on: !!bg.cur, want: bg.want, have: !!bg.buf, gone: bg.gone, pos: bgmPos(), len: BGM.len, pre: BGM.pre, vol: BGM.vol, file: BGM.file, loop: bg.cur ? [bg.cur.s.loopStart, bg.cur.s.loopEnd] : null, ctx: snd.ac ? snd.ac.state : null }; }, setSet, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, pay, load, save, takeGift, modOn, pkDraw, pkPool, pkGroup, randInt, get pk() { return pk; }, dz: t => showDz(t), dzApi, msKey: () => monthKey(), msRoll, ms: tab => showMs(tab), pic
     }
   };

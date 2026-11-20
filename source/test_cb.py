@@ -273,7 +273,7 @@ try:
         print('■ メニュー・遊び方')
         open_cb(pg)
         m = pg.evaluate("() => ({ scr: CBApp._t.screen, h1: document.querySelector('#cbOv .cbmenu h1').textContent, rec: document.querySelector('#cbOv .cbmenu .rec').textContent, btn: [...document.querySelectorAll('#cbOv .cbmenu .cbb')].map(b => b.textContent.replace(/\\s+/g, ' ').trim()), dis: [...document.querySelectorAll('#cbOv .cbmenu .cbb')].map(b => b.disabled), lg: document.querySelector('#cbOv .cbmenu .lg').naturalWidth })")
-        check(m['scr'] == 'menu' and m['h1'].replace('\n', '').replace(' ', '') == 'TENGERカードバトル' and m['btn'] == ['← 戻る', 'コンピュータと 対戦', '⚔️ 決戦調査今月 0／12 討伐・次は レベル1', '部屋を 作る友達と 対戦', '部屋に 入る友達と 対戦', '遊び方', '設定BGM・効果音', '🎯ミッション今月 0／14 達成', 'デザインカスタムカードパック・裏・ボード'] and not any(m['dis']),
+        check(m['scr'] == 'menu' and m['h1'].replace('\n', '').replace(' ', '') == 'TENGERカードバトル' and m['btn'] == ['← 戻る', 'コンピュータと 対戦', '⚔️ 決戦調査今月 0／12 討伐・次は レベル1', '部屋を 作る友達と 対戦', '部屋に 入る友達と 対戦', '遊び方', '設定BGM・効果音', '🎯ミッション今月 0／23 達成', 'デザインカスタムカードパック・裏・ボード'] and not any(m['dis']),
               f'メニュー：コンピュータと 対戦・⚔️ 決戦調査（第4.196版）・部屋を 作る・部屋に 入る・遊び方・設定（第4.178版）・ミッション（第4.183版）・デザインカスタム（第4.182版）（{m["btn"]}）')
         check(m['rec'] == '勝つと お世話トークン 1個・5連勝 ごとに 3個' and (not HAVE or m['lg'] == 720), f'ご褒美の 説明（{m["rec"]}）')
         cl = pg.evaluate("() => { const e = document.querySelector('#cbOv .cbmenu .cbcoinl'); return e ? [e.textContent, e.querySelectorAll('img[src=\"cb_coin.webp\"]').length] : null; }")
@@ -296,8 +296,8 @@ try:
                 '3：3枚 見せて 手札を 交換', '裏の カードから 自分で 選んだ 1枚（何が 来るかは わからない）を 交換できるよ。もう 見た カード（表）は 選べないよ', '5・4 の 効果は、2人とも セットした 後の「効果タイム」で、1つずつ 使うか 選ぶよ', '手札に 3 が 3枚 あれば、セットの 前に その 3枚を 相手に 見せて', '神様馬：勝ったら 手札を 見る', '幻の馬：勝ったら 手札を 交換', 'お世話トークン 1個', '5連勝 ごとに 3個', '部屋番号（4桁）', '近くに いる 友達',
                 'もう 見た カード だけの ときは 使えないよ', 'まだ 見て いない カードが ある とき', 'メニューの「デザインカスタム」で、カードの 表・裏と プレイボードの デザインを 変えられるよ', 'コンピュータと 対戦する ときは、コンピュータの カード（裏・表）も あなたが 選んだ デザインに なるよ',
                 '友達と 対戦する ときは、あなたの カードは あなたの デザイン・友達の カードは 友達が 選んだ デザインで 出るよ（山札は あなたの 裏）',
-                'メニューの「ミッション」：コンピュータに 連続勝利・友達バトルで 連続勝利で バトルコインが もらえるよ', 'コンピュータ：3連勝 30枚・5連勝 60枚・6連勝 90枚・7連勝 120枚・8連勝 150枚・9連勝 200枚・10連勝 300枚',
-                '友達バトル：3連勝 20枚・5連勝 40枚・6連勝 60枚・7連勝 80枚・8連勝 100枚・9連勝 120枚・10連勝 140枚', '毎月 1日に リセット（達成も 連勝も 0 に 戻る）', 'コンピュータと 友達バトルの 連勝は 別に 数えるよ',
+                'メニューの「ミッション」：コンピュータに 連続勝利・友達バトルで 連続勝利・決戦調査（決戦宝石を 残して 連続勝利）で バトルコインが もらえるよ', '決戦調査（1つの 調査で 数える・宝石を ○個 以上 残せば 達成）：宝石 3個 残し 3連勝 30枚・5連勝 60枚・6連勝 90枚／宝石 4個 残し 3連勝 50枚・5連勝 100枚・6連勝 150枚／宝石 5個 残し 3連勝 90枚・5連勝 180枚・6連勝 270枚', 'コンピュータ：3連勝 30枚・5連勝 60枚・6連勝 90枚・7連勝 120枚・8連勝 150枚・9連勝 200枚・10連勝 300枚',
+                '友達バトル：3連勝 20枚・5連勝 40枚・6連勝 60枚・7連勝 80枚・8連勝 100枚・9連勝 120枚・10連勝 140枚', '毎月 1日に リセット（達成も 連勝も 0 に 戻る）', 'コンピュータ・友達バトル・決戦調査は 別に 数えるよ（決戦調査の 勝ち負けは いつもの ミッションに 数えない）',
                 'カードの 表は カードパックで 集めるよ：1パック バトルコイン 112枚・5枚入り（ノーマル 4枚 ＋ くじの 1枚）', 'くじの 1枚：レア 2パックに 1枚・超レア 5パックに 1枚（どちらも 神様馬・幻の馬を 含む）・神様馬／幻の馬の レア 10パックに 1枚・神様馬／幻の馬の 超レア 23パックに 1枚（どれも 平均。詳しい 確率は カードパックの「出る 確率」）', '新しい カードは 持って いる カードに 入るよ（同じ カードが 出ても、数は 増えないよ）。開けた パックは「パックの 記録」で もう 1回 見られるよ', 'カードの 裏 300枚・プレイボード 300枚は バトルコインで 1つずつ 解放できるよ。いつもの デザインは 初めから 使えるよ', '音（設定）', 'BGM・効果音を オン／オフ',
                 'プレイボードは、あなたの 画面に 出るよ（友達と 対戦する ときも、あなたの 画面は あなたが 選んだ ボード）',
                 '1：3枚 見せて 逆転勝利', '2：3枚 見せて 逆転勝利', '神様馬・幻の馬に 負けた とき、手札に 1 が 2枚 あれば', '1 に 負けた とき、手札に 2 が 2枚 あれば', '勝ちに できるよ', '1・2 の 効果（逆転勝利）は、オープンした 後、負けた 人が 使うか 選ぶよ',
@@ -1891,15 +1891,15 @@ try:
         MSB = "() => document.querySelector('#cbOv .cbmenu [data-cb=ms]').textContent"
         MST = "() => JSON.parse(JSON.stringify(CBApp._t.state.ms))"
         pg.evaluate("() => { CBApp._now = () => new Date(2026, 10, 16, 20, 51); const T = CBApp._t; T.state.coin = 0; T.state.ms = { m: '2026-11', cpu: 0, fr: 0, got: { cpu: [], fr: [] }, live: '' }; T.save(); T.menu(); }"); pg.wait_for_timeout(150)
-        check(pg.evaluate(MSB) == '🎯ミッション今月 0／14 達成', f'メニューの「ミッション」：今月 0／14 達成（{pg.evaluate(MSB)}）')
+        check(pg.evaluate(MSB) == '🎯ミッション今月 0／23 達成', f'メニューの「ミッション」：今月 0／23 達成（第4.209版：決戦調査ミッション 9つ を 足した）（{pg.evaluate(MSB)}）')
         pg.locator('#cbOv .cbmenu [data-cb=ms]').click(); pg.wait_for_timeout(200); m0 = pg.evaluate(MSS)
-        check(m0 and pg.evaluate("() => CBApp._t.screen") == 'ms' and m0['coin'] == 'バトルコイン 0枚' and m0['m'] == '11月の ミッション12月1日に リセット（あと 15日）' and m0['tab'] == ['コンピュータ0／7 達成*', '友達バトル0／7 達成'] and m0['h4'] == 'コンピュータに 連続勝利'
+        check(m0 and pg.evaluate("() => CBApp._t.screen") == 'ms' and m0['coin'] == 'バトルコイン 0枚' and m0['m'] == '11月の ミッション12月1日に リセット（あと 15日）' and m0['tab'] == ['コンピュータ0／7 達成*', '友達バトル0／7 達成', '決戦調査0／9 達成'] and m0['h4'] == 'コンピュータに 連続勝利'
               and m0['cur'] == '今0連勝次は 3連勝で 30枚（あと 3勝）' and m0['rows'] == ['3連勝30枚あと 3勝>', '5連勝60枚', '6連勝90枚', '7連勝120枚', '8連勝150枚', '9連勝200枚', '10連勝300枚'] and not m0['tool']
               and '毎月 1日に リセット' in m0['note'] and '同点は そのまま' in m0['note'] and '部屋を 出た' not in m0['note'],
               f'ミッションの 画面：11月の ミッション（12月1日に リセット・あと 15日）・コンピュータに 連続勝利 7つ（3・5・6・7・8・9・10連勝 → 30〜300枚）・今 0連勝（{m0 and m0["rows"]}）')
         shot(pg, 'cb_ms_cpu')
         pg.locator('#cbOv .cbms [data-cb=mstab][data-t=fr]').click(); pg.wait_for_timeout(150); m1 = pg.evaluate(MSS)
-        check(m1['tab'] == ['コンピュータ0／7 達成', '友達バトル0／7 達成*'] and m1['h4'] == '友達バトルで 連続勝利' and m1['rows'] == ['3連勝20枚あと 3勝>', '5連勝40枚', '6連勝60枚', '7連勝80枚', '8連勝100枚', '9連勝120枚', '10連勝140枚'] and '部屋を 出た・つながりが 切れた ときは 数えないよ' in m1['note'],
+        check(m1['tab'] == ['コンピュータ0／7 達成', '友達バトル0／7 達成*', '決戦調査0／9 達成'] and m1['h4'] == '友達バトルで 連続勝利' and m1['rows'] == ['3連勝20枚あと 3勝>', '5連勝40枚', '6連勝60枚', '7連勝80枚', '8連勝100枚', '9連勝120枚', '10連勝140枚'] and '部屋を 出た・つながりが 切れた ときは 数えないよ' in m1['note'],
               f'「友達バトル」：3・5・6・7・8・9・10連勝 → 20〜140枚・友達が 部屋を 出た／切れた ときは 数えない（{m1["rows"]}）')
         shot(pg, 'cb_ms_fr')
         pg.locator('#cbOv .cbms [data-cb=mstab][data-t=cpu]').click(); pg.locator('#cbOv .cbms [data-cb=msx]').click(); pg.wait_for_timeout(150)
@@ -1924,7 +1924,7 @@ try:
         check(m2['coin'] == 'バトルコイン 32枚' and m2['tab'][0] == 'コンピュータ1／7 達成*' and m2['cur'] == '今3連勝次は 5連勝で 60枚（あと 2勝）' and m2['rows'][:2] == ['3連勝30枚✓ 達成*', '5連勝60枚あと 2勝>'],
               f'ミッションの 画面：3連勝 ✓ 達成・次は 5連勝（あと 2勝）（{m2["rows"][:2]}）')
         pg.locator('#cbOv .cbms [data-cb=msx]').click(); pg.wait_for_timeout(100)
-        check(pg.evaluate(MSB) == '🎯ミッション今月 1／14 達成', 'メニュー：今月 1／14 達成')
+        check(pg.evaluate(MSB) == '🎯ミッション今月 1／23 達成', 'メニュー：今月 1／23 達成')
         # 同点 → そのまま／負け → 0
         start(pg, 'k1234', 'm1234'); ckey(pg, 'k'); opp(pg, {'t': 'set', 'k': 'm'}); ckey(pg, '1'); opp(pg, {'t': 'set', 'k': 1}); ckey(pg, '2'); opp(pg, {'t': 'set', 'k': 2})
         pg.wait_for_function("() => CBApp._t.ended", timeout=30000); pg.wait_for_timeout(300)
@@ -1964,7 +1964,7 @@ try:
         pg.evaluate("() => { const T = CBApp._t; T.state.ms.cpu = 3; T.state.ms.fr = 2; T.state.ms.got = { cpu: [3], fr: [] }; T.save(); CBApp._now = () => new Date(2026, 11, 1, 0, 0, 5); T.menu(); }"); pg.wait_for_timeout(150)
         r0 = pg.evaluate(MST); mb = pg.evaluate(MSB)
         pg.locator('#cbOv .cbmenu [data-cb=ms]').click(); pg.wait_for_timeout(150); m3 = pg.evaluate(MSS)
-        check(r0 == {'m': '2026-12', 'cpu': 0, 'fr': 0, 'got': {'cpu': [], 'fr': []}, 'live': ''} and mb == '🎯ミッション今月 0／14 達成' and m3['m'] == '12月の ミッション1月1日に リセット（あと 31日）' and m3['rows'][0] == '3連勝30枚あと 3勝>' and pg.evaluate("() => CBApp._t.state.coin") == 32,
+        check(r0 == {'m': '2026-12', 'cpu': 0, 'fr': 0, 'got': {'cpu': [], 'fr': [], 'q': []}, 'live': ''} and mb == '🎯ミッション今月 0／23 達成' and m3['m'] == '12月の ミッション1月1日に リセット（あと 31日）' and m3['rows'][0] == '3連勝30枚あと 3勝>' and pg.evaluate("() => CBApp._t.state.coin") == 32,
               f'月が 変わった（12月1日）→ ミッションを リセット（達成も 連勝も 0・コインは 残る）・「12月の ミッション（1月1日に リセット）」（{r0}）')
         pg.locator('#cbOv .cbms [data-cb=msx]').click(); pg.wait_for_timeout(100)
         # 第4.191版：月が もどった（日付を もどした）→ リセットしない（もう 1回 達成 は できない）・ミッションの 画面の 月は おぼえた 月
@@ -1982,10 +1982,10 @@ try:
         ckey(pg, '1'); opp(pg, {'t': 'set', 'k': 6}); ckey(pg, '2'); opp(pg, {'t': 'set', 'k': 3})
         pg.wait_for_function("() => { const g = document.querySelector('#cbOv .cbend .gift'); return CBApp._t.ended && g && g.textContent.length > 3; }", timeout=30000)
         r1 = pg.evaluate(MST)
-        check(r1 == {'m': '2026-12', 'cpu': 1, 'fr': 0, 'got': {'cpu': [], 'fr': []}, 'live': ''} and 'ミッション達成' not in pg.locator('#cbOv .cbend .gift').inner_text(), f'11月の 9連勝の まま 12月に 勝つ → 12月の 1連勝（10連勝の 達成には ならない）（{r1}）')
+        check(r1 == {'m': '2026-12', 'cpu': 1, 'fr': 0, 'got': {'cpu': [], 'fr': [], 'q': []}, 'live': ''} and 'ミッション達成' not in pg.locator('#cbOv .cbend .gift').inner_text(), f'11月の 9連勝の まま 12月に 勝つ → 12月の 1連勝（10連勝の 達成には ならない）（{r1}）')
         # おぼえた 中身が おかしい ときは なおす
-        pg.evaluate("() => { const s = JSON.parse(localStorage.getItem('tengel.cb')); s.ms = { m: 'xx', cpu: -5, fr: 'a', got: { cpu: [3, 3, 4, 5, 'x'], fr: null }, live: 'zz' }; localStorage.setItem('tengel.cb', JSON.stringify(s)); CBApp._t.load(); }")
-        check(pg.evaluate(MST) == {'m': '2026-12', 'cpu': 0, 'fr': 0, 'got': {'cpu': [3, 5], 'fr': []}, 'live': ''}, f'覚えた ミッションが おかしい ときは 直す（{pg.evaluate(MST)}）')
+        pg.evaluate("() => { const s = JSON.parse(localStorage.getItem('tengel.cb')); s.ms = { m: 'xx', cpu: -5, fr: 'a', got: { cpu: [3, 3, 4, 5, 'x'], fr: null, q: ['g3w3', 'g3w3', 'x', 5, 'g5w6'] }, live: 'zz' }; localStorage.setItem('tengel.cb', JSON.stringify(s)); CBApp._t.load(); }")
+        check(pg.evaluate(MST) == {'m': '2026-12', 'cpu': 0, 'fr': 0, 'got': {'cpu': [3, 5], 'fr': [], 'q': ['g3w3', 'g5w6']}, 'live': ''}, f'覚えた ミッションが おかしい ときは 直す（第4.209版：決戦調査ミッションも・{pg.evaluate(MST)}）')
 
         print('■ ログインボーナスの バトルコイン（第4.188版・まさちゃん 11:22「毎日ログインにも、バトルコイン1日2枚 7日ログインで10枚貰えるようにして！」）')
         GIFT = "() => JSON.parse(localStorage.getItem('tengel.cbgift') || 'null')"
