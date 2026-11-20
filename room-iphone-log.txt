@@ -1,0 +1,400 @@
+2026-11-20 17:33:01.137 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1260] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:01.137 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1261] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:01.137 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1261 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:01.138 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x110255000, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:01.138 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1261] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:01.138 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1262] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:01.138 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1262 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:01.138 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x110258800, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:01.138 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1262] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:01.152 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1263] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:01.152 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1263 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:01.152 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x11025e800, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:01.152 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1263] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:01.235 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1258] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:01.236 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1258 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:01.236 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1259] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:01.236 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1259 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:01.236 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1260] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:01.236 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1260 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:01.236 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1261] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:01.236 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1261 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:01.236 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1262] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:01.236 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1262 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:01.236 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1263] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:01.236 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1263 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:01.238 Df テンゲル[61308:2b273] [com.apple.multipeerconnectivity:MCSession] Incoming packet from [<MCPeerID: 0x600000006ad0 DisplayName = tengel-b84c75a1>] (41) - done callback pd((null)) d(<„ÉÜ„É≥„Ç≤„É´.RoomLink: 0x600002c23780>) prop(1).
+2026-11-20 17:33:01.238 Df テンゲル[61308:2a6d8] [com.apple.WebKit:ProcessSuspension] 0x10f0580f0 - [PID=61321, throttler=0x10f0b8150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:33:01.239 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Process] WebContent[61321] 0x133008c08 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: frameID=0
+2026-11-20 17:33:01.241 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1264] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:01.241 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1264 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:01.241 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x11025e000, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:01.242 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1264] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:01.244 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Process] WebContent[61321] 0x133008c08 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: Request to run JavaScript succeeded
+2026-11-20 17:33:01.252 Df テンゲル[61308:2b649] [com.apple.multipeerconnectivity:MCSession] Sending 868 bytes of data to participant 1736717446, mode=0.
+2026-11-20 17:33:01.252 Df テンゲル[61308:2a6d8] [com.apple.WebKit:ProcessSuspension] 0x10f058180 - [PID=61321, throttler=0x10f0b8150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:33:01.252 Df テンゲル[61308:2b649] [com.apple.multipeerconnectivity:MCSession] Sending 28 bytes of data to participant 1736717446, mode=0.
+2026-11-20 17:33:01.252 Df テンゲル[61308:2a6d8] [com.apple.WebKit:ProcessSuspension] 0x10f0581e0 - [PID=61321, throttler=0x10f0b8150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:33:01.252 Df テンゲル[61308:2a6d8] [com.apple.WebKit:ProcessSuspension] 0x10f0580f0 - [PID=61321, throttler=0x10f0b8150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:33:01.258 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1264] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:01.258 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1264 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:01.258 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Process] WebContent[61321] 0x133008c08 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: frameID=0
+2026-11-20 17:33:01.259 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Process] WebContent[61321] 0x133008c08 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: Request to run JavaScript succeeded
+2026-11-20 17:33:01.259 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Process] WebContent[61321] 0x133008c08 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: frameID=0
+2026-11-20 17:33:01.259 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Process] WebContent[61321] 0x133008c08 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: Request to run JavaScript succeeded
+2026-11-20 17:33:01.261 Df テンゲル[61308:2a6d8] [com.apple.WebKit:ProcessSuspension] 0x10f058180 - [PID=61321, throttler=0x10f0b8150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:33:01.261 Df テンゲル[61308:2a6d8] [com.apple.WebKit:ProcessSuspension] 0x10f0581e0 - [PID=61321, throttler=0x10f0b8150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:33:01.300 Df テンゲル[61308:2b273] [com.apple.multipeerconnectivity:MCSession] Sending 947 bytes of data to participant 1736717446, mode=0.
+2026-11-20 17:33:01.300 Df テンゲル[61308:2a6d8] [com.apple.WebKit:ProcessSuspension] 0x10f058270 - [PID=61321, throttler=0x10f0b8150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:33:01.329 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Process] WebContent[61321] 0x133008c08 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: frameID=0
+2026-11-20 17:33:01.329 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Process] WebContent[61321] 0x133008c08 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: Request to run JavaScript succeeded
+2026-11-20 17:33:01.332 Df テンゲル[61308:2a6d8] [com.apple.WebKit:ProcessSuspension] 0x10f058270 - [PID=61321, throttler=0x10f0b8150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:33:01.333 Df テンゲル[61308:2b64f] [com.apple.multipeerconnectivity:GCKSession] Send ICE packet from [fe80::1c68:48e1:df16:cc85%en0]:16402 to [fe80::1c68:48e1:df16:cc85]:16401.
+2026-11-20 17:33:01.333 Df テンゲル[61308:2b64f] [com.apple.multipeerconnectivity:GCKSession] Sendmsg failed with error No route to host (65).
+2026-11-20 17:33:01.365 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1268] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:01.365 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1268 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:01.365 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x11025c000, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:01.366 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1268] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:01.366 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1269] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:01.367 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1269 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:01.367 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x11025c800, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:01.367 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1269] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:01.368 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1270] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:01.368 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1270 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:01.368 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x11025e800, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:01.368 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1270] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:01.368 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1271] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:01.368 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1271 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:01.368 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x11025f800, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:01.368 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1271] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:01.368 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1272] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:01.368 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1272 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:01.368 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x110246000, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:01.369 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1272] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:01.434 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1268] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:01.434 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1268 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:01.434 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1269] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:01.434 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1269 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:01.434 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1270] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:01.434 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1270 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:01.434 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1271] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:01.434 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1271 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:01.434 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1272] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:01.434 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1272 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:01.495 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1291] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:01.495 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1291 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:01.495 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x110259000, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:01.495 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1291] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:01.522 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1291] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:01.522 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1291 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:01.727 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1292] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:01.727 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1292 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:01.727 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x110249000, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:01.727 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1292] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:01.727 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1293] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:01.727 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1293 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:01.727 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x11024f000, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:01.727 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1293] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:01.727 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1294] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:01.727 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1294 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:01.727 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x110255000, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:01.727 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1294] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:01.727 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1295] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:01.727 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1295 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:01.728 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x110258800, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:01.728 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1295] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:01.728 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1296] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:01.728 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1296 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:01.728 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x110259000, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:01.728 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1296] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:01.761 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1292] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:01.761 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1292 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:01.762 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1293] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:01.762 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1293 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:01.762 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1294] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:01.762 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1294 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:01.762 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1295] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:01.762 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1295 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:01.762 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1296] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:01.762 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1296 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:02.194 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1332] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:02.194 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1332 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:02.194 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x11025a000, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:02.194 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1332] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:02.194 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1333] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:02.194 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1333 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:02.194 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x11025a800, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:02.194 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1333] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:02.194 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1334] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:02.195 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1334 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:02.195 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x11025b800, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:02.195 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1334] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:02.198 Df テンゲル[61308:2b649] [com.apple.multipeerconnectivity:MCSession] Sending 1032 bytes of data to participant 1736717446, mode=0.
+2026-11-20 17:33:02.198 Df テンゲル[61308:2a6d8] [com.apple.WebKit:ProcessSuspension] 0x10f0580f0 - [PID=61321, throttler=0x10f0b8150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:33:02.201 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1332] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:02.201 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1332 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:02.207 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1333] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:02.207 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1333 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:02.219 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1334] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:02.219 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1334 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:02.220 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Process] WebContent[61321] 0x133008c08 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: frameID=0
+2026-11-20 17:33:02.220 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Process] WebContent[61321] 0x133008c08 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: Request to run JavaScript succeeded
+2026-11-20 17:33:02.221 Df テンゲル[61308:2a6d8] [com.apple.WebKit:ProcessSuspension] 0x10f0580f0 - [PID=61321, throttler=0x10f0b8150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:33:02.429 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1349] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:02.429 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1349 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:02.429 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x110254800, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:02.429 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1349] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:02.429 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1350] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:02.430 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1350 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:02.430 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x110255000, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:02.430 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1350] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:02.437 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1349] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:02.437 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1349 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:02.442 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] ICE timeout expired for participant [67843486] on channel [0] state [Connecting].
+2026-11-20 17:33:02.443 E  テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Not in connected state, so giving up for participant [67843486] on channel [0].
+2026-11-20 17:33:02.443 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Participant 67843486, channel [0]: State Change with event ForceDisconnect: Connecting -> Disconnected.
+2026-11-20 17:33:02.443 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Reconcile Channel Priority for participant [67843486].
+2026-11-20 17:33:02.489 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1350] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:02.489 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1350 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:02.541 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Channel [0] priority [-1].
+2026-11-20 17:33:02.541 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Not in connected state, currently Disconnected. Skipping.
+2026-11-20 17:33:02.541 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Channel [1] priority [-1].
+2026-11-20 17:33:02.541 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Not in connected state, currently Connecting. Skipping.
+2026-11-20 17:33:02.541 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Channel [2] priority [-1].
+2026-11-20 17:33:02.541 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Not in connected state, currently Connecting. Skipping.
+2026-11-20 17:33:02.541 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Channel [3] priority [-1].
+2026-11-20 17:33:02.545 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Not in connected state, currently Connecting. Skipping.
+2026-11-20 17:33:02.545 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Channel [4] priority [0].
+2026-11-20 17:33:02.592 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Checking pCList if[en0] chan[4] cList priority [0] flags[00000008] interface priority [6-Ethernet].
+2026-11-20 17:33:02.593 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Currently active clist priority 6-Ethernet; highest interface priority 6-Ethernet.
+2026-11-20 17:33:02.593 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Connection attempt in progress on channel [1] for participant [67843486].
+2026-11-20 17:33:02.593 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Connection attempt in progress on channel [2] for participant [67843486].
+2026-11-20 17:33:02.593 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Connection attempt in progress on channel [3] for participant [67843486].
+2026-11-20 17:33:02.593 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Channel [4] is active and connected for participant [67843486].
+2026-11-20 17:33:02.593 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] There is a valid route to participant [67843486].
+2026-11-20 17:33:02.600 Df テンゲル[61308:2b64f] [com.apple.multipeerconnectivity:GCKSession] No signal block found for participant [67843486].
+2026-11-20 17:33:02.661 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Scheduling to close CList corresponding to participant (67843486), channel 0.
+2026-11-20 17:33:02.661 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Timed out, enforcing clean up.
+2026-11-20 17:33:02.661 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Closing connection to participant [67843486] on channel [0].
+2026-11-20 17:33:02.661 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Closing clist for participant [67843486] channel [0].
+2026-11-20 17:33:02.661 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] ICE timeout expired for participant [67843486] on channel [1] state [Connecting].
+2026-11-20 17:33:02.662 E  テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Not in connected state, so giving up for participant [67843486] on channel [1].
+2026-11-20 17:33:02.662 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Participant 67843486, channel [1]: State Change with event ForceDisconnect: Connecting -> Disconnected.
+2026-11-20 17:33:02.662 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Reconcile Channel Priority for participant [67843486].
+2026-11-20 17:33:02.666 Df テンゲル[61308:2a6d8] [com.apple.coreanimation:API] <CATransformLayer: 0x600000c43420> - changing property shadowOffset in transform-only layer, will have no effect
+2026-11-20 17:33:02.666 Df テンゲル[61308:2a6d8] [com.apple.coreanimation:API] <CATransformLayer: 0x600000c43420> - changing property shadowColor in transform-only layer, will have no effect
+2026-11-20 17:33:02.667 Df テンゲル[61308:2a6d8] [com.apple.coreanimation:API] <CATransformLayer: 0x600000c43420> - changing property shadowRadius in transform-only layer, will have no effect
+2026-11-20 17:33:02.667 Df テンゲル[61308:2a6d8] [com.apple.coreanimation:API] <CATransformLayer: 0x600000c43420> - changing property inheritsTiming in transform-only layer, will have no effect
+2026-11-20 17:33:02.670 Df テンゲル[61308:2a6d8] [com.apple.coreanimation:API] <CATransformLayer: 0x600000c43660> - changing property shadowOffset in transform-only layer, will have no effect
+2026-11-20 17:33:02.670 Df テンゲル[61308:2a6d8] [com.apple.coreanimation:API] <CATransformLayer: 0x600000c43660> - changing property shadowColor in transform-only layer, will have no effect
+2026-11-20 17:33:02.670 Df テンゲル[61308:2a6d8] [com.apple.coreanimation:API] <CATransformLayer: 0x600000c43660> - changing property shadowRadius in transform-only layer, will have no effect
+2026-11-20 17:33:02.670 Df テンゲル[61308:2a6d8] [com.apple.coreanimation:API] <CATransformLayer: 0x600000c43660> - changing property inheritsTiming in transform-only layer, will have no effect
+2026-11-20 17:33:02.729 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Channel [1] priority [-1].
+2026-11-20 17:33:02.729 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Not in connected state, currently Disconnected. Skipping.
+2026-11-20 17:33:02.729 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Channel [2] priority [-1].
+2026-11-20 17:33:02.729 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Not in connected state, currently Connecting. Skipping.
+2026-11-20 17:33:02.729 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Channel [3] priority [-1].
+2026-11-20 17:33:02.743 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Not in connected state, currently Connecting. Skipping.
+2026-11-20 17:33:02.743 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Channel [4] priority [0].
+2026-11-20 17:33:02.764 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Checking pCList if[en0] chan[4] cList priority [0] flags[00000008] interface priority [6-Ethernet].
+2026-11-20 17:33:02.764 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Currently active clist priority 6-Ethernet; highest interface priority 6-Ethernet.
+2026-11-20 17:33:02.764 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Connection attempt in progress on channel [2] for participant [67843486].
+2026-11-20 17:33:02.764 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Connection attempt in progress on channel [3] for participant [67843486].
+2026-11-20 17:33:02.764 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Channel [4] is active and connected for participant [67843486].
+2026-11-20 17:33:02.764 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] There is a valid route to participant [67843486].
+2026-11-20 17:33:02.776 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Scheduling to close CList corresponding to participant (67843486), channel 1.
+2026-11-20 17:33:02.776 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Timed out, enforcing clean up.
+2026-11-20 17:33:02.776 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Closing connection to participant [67843486] on channel [1].
+2026-11-20 17:33:02.776 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Closing clist for participant [67843486] channel [1].
+2026-11-20 17:33:02.776 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] ICE timeout expired for participant [67843486] on channel [2] state [Connecting].
+2026-11-20 17:33:02.776 E  テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Not in connected state, so giving up for participant [67843486] on channel [2].
+2026-11-20 17:33:02.779 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Participant 67843486, channel [2]: State Change with event ForceDisconnect: Connecting -> Disconnected.
+2026-11-20 17:33:02.779 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Reconcile Channel Priority for participant [67843486].
+2026-11-20 17:33:02.784 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Channel [2] priority [-1].
+2026-11-20 17:33:02.784 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Not in connected state, currently Disconnected. Skipping.
+2026-11-20 17:33:02.784 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Channel [3] priority [-1].
+2026-11-20 17:33:02.784 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Not in connected state, currently Connecting. Skipping.
+2026-11-20 17:33:02.784 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Channel [4] priority [0].
+2026-11-20 17:33:02.801 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Checking pCList if[en0] chan[4] cList priority [0] flags[00000008] interface priority [6-Ethernet].
+2026-11-20 17:33:02.802 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Currently active clist priority 6-Ethernet; highest interface priority 6-Ethernet.
+2026-11-20 17:33:02.802 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Connection attempt in progress on channel [3] for participant [67843486].
+2026-11-20 17:33:02.802 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Channel [4] is active and connected for participant [67843486].
+2026-11-20 17:33:02.802 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] There is a valid route to participant [67843486].
+2026-11-20 17:33:02.802 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Scheduling to close CList corresponding to participant (67843486), channel 2.
+2026-11-20 17:33:02.802 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Timed out, enforcing clean up.
+2026-11-20 17:33:02.806 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Closing connection to participant [67843486] on channel [2].
+2026-11-20 17:33:02.813 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1360] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:02.813 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1360 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:02.813 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x11025f800, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:02.813 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1360] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:02.813 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1361] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:02.813 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1361 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:02.814 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x110246000, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:02.814 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1361] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:02.822 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Closing clist for participant [67843486] channel [2].
+2026-11-20 17:33:02.822 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] ICE timeout expired for participant [67843486] on channel [3] state [Connecting].
+2026-11-20 17:33:02.822 E  テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Not in connected state, so giving up for participant [67843486] on channel [3].
+2026-11-20 17:33:02.860 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Participant 67843486, channel [3]: State Change with event ForceDisconnect: Connecting -> Disconnected.
+2026-11-20 17:33:02.860 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Reconcile Channel Priority for participant [67843486].
+2026-11-20 17:33:02.861 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1360] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:02.861 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1360 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:02.861 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1361] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:02.861 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1361 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:02.866 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Channel [3] priority [-1].
+2026-11-20 17:33:02.952 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1362] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:02.953 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1362 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:02.953 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x110249000, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:02.953 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1362] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:02.953 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1363] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:02.953 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1363 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:02.953 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x11024f000, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:02.953 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1363] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:02.954 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1364] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:02.954 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1364 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:02.954 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x11024f800, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:02.954 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1364] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:02.954 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1365] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:02.954 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1365 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:02.954 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x110254800, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:02.954 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1365] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:02.954 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1366] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:02.954 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1366 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:02.954 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x110255000, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:02.954 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1366] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:02.968 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1362] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:02.968 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1362 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:02.968 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1363] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:02.968 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1363 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:02.969 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1364] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:02.969 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1364 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:02.969 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1365] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:02.969 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1365 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:02.969 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1366] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:02.969 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1366 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:02.971 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Not in connected state, currently Disconnected. Skipping.
+2026-11-20 17:33:02.972 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Channel [4] priority [0].
+2026-11-20 17:33:02.996 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Checking pCList if[en0] chan[4] cList priority [0] flags[00000008] interface priority [6-Ethernet].
+2026-11-20 17:33:02.996 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Currently active clist priority 6-Ethernet; highest interface priority 6-Ethernet.
+2026-11-20 17:33:02.996 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Channel [4] is active and connected for participant [67843486].
+2026-11-20 17:33:02.996 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] There is a valid route to participant [67843486].
+2026-11-20 17:33:02.996 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Scheduling to close CList corresponding to participant (67843486), channel 3.
+2026-11-20 17:33:02.996 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Timed out, enforcing clean up.
+2026-11-20 17:33:02.996 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Closing connection to participant [67843486] on channel [3].
+2026-11-20 17:33:02.996 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Closing clist for participant [67843486] channel [3].
+2026-11-20 17:33:03.297 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1367] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:03.297 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1367 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:03.297 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x11024f800, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:03.297 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1367] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:03.300 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1368] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:03.300 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1368 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:03.300 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x110254800, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:03.300 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1368] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:03.300 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1369] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:03.300 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1369 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:03.300 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x110255000, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:03.300 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1369] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:03.300 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1370] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:03.300 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1370 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:03.300 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x110258800, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:03.300 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1370] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:03.300 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1371] ResourceLoader::willSendRequestInternal: calling completion handler
+2026-11-20 17:33:03.300 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1371 SubResourceLoader::willSendRequestInternal: resource load finished; calling completion handler
+2026-11-20 17:33:03.300 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] 0x10f0680e0 - [resourceLoader=0x110259000, frameLoader=0x10f1ac100, frame=0x10f02b260, webPageID=10, frameID=10, resourceID=10] WebLoaderStrategy::tryLoadingUsingURLSchemeHandler: URL will be handled by a UIProcess URL scheme handler
+2026-11-20 17:33:03.300 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1371] WebURLSchemeTaskProxy::startLoading
+2026-11-20 17:33:03.497 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1367] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:03.497 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1367 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:03.497 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1368] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:03.497 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1368 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:03.497 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1369] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:03.497 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1369 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:03.497 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1370] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:03.497 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1370 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:03.497 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Network] WebContent[61321] [schemeHandler=1, webPageID=10, frameID=4294967297, taskID=1371] WebURLSchemeTaskProxy::didComplete
+2026-11-20 17:33:03.497 Df テンゲル[61308:2a7f7] [com.apple.WebKit:ResourceLoading] WebContent[61321]: [pageID=10, frameID=4294967297, resourceID=1371 SubResourceLoader::didFinishLoading
+2026-11-20 17:33:07.858 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:33:07.858 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Node 0 [5496069C]: NextHop[5496069C], SN[1], LSASN [0], New flag[0], From[5496069C], # of neighbors [1]
+2026-11-20 17:33:07.858 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 67843486 - RTT[1356]
+2026-11-20 17:33:07.858 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Node 1 [67843486]: NextHop[67843486], SN[1], LSASN [0], New flag[0], From[67843486], # of neighbors [1]
+2026-11-20 17:33:07.858 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5496069C - RTT[10809]
+2026-11-20 17:33:07.858 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:33:07.860 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:33:13.361 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:33:13.362 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:33:18.867 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:33:18.868 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:33:18.868 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:33:18.868 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:33:24.371 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:33:24.371 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Node 0 [5496069C]: NextHop[5496069C], SN[1], LSASN [0], New flag[0], From[5496069C], # of neighbors [1]
+2026-11-20 17:33:24.371 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 67843486 - RTT[1356]
+2026-11-20 17:33:24.371 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Node 1 [67843486]: NextHop[67843486], SN[1], LSASN [0], New flag[0], From[67843486], # of neighbors [1]
+2026-11-20 17:33:24.371 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5496069C - RTT[10809]
+2026-11-20 17:33:24.371 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:33:24.374 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:33:24.375 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:33:24.377 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:33:29.875 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:33:29.875 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:33:29.875 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:33:29.875 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:33:35.379 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:33:35.380 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:33:35.380 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:33:35.380 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:33:40.881 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:33:40.882 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Node 0 [5496069C]: NextHop[5496069C], SN[1], LSASN [0], New flag[0], From[5496069C], # of neighbors [1]
+2026-11-20 17:33:40.882 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 67843486 - RTT[1356]
+2026-11-20 17:33:40.882 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Node 1 [67843486]: NextHop[67843486], SN[1], LSASN [0], New flag[0], From[67843486], # of neighbors [1]
+2026-11-20 17:33:40.882 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5496069C - RTT[10809]
+2026-11-20 17:33:40.882 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:33:40.882 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:33:40.882 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:33:40.882 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:33:46.387 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:33:46.390 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:33:46.391 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:33:46.396 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:33:49.100 Df テンゲル[61308:2a6d8] [com.apple.WebKit:ProcessSuspension] 0x10f0580f0 - [PID=61321, throttler=0x10f0b8150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:33:49.101 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Process] WebContent[61321] 0x133008c08 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: frameID=0
+2026-11-20 17:33:49.106 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Process] WebContent[61321] 0x133008c08 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: Request to run JavaScript succeeded
+2026-11-20 17:33:49.107 Df テンゲル[61308:2a6d8] [com.apple.WebKit:ProcessSuspension] 0x10f0580f0 - [PID=61321, throttler=0x10f0b8150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:33:50.055 Df テンゲル[61308:2a6d8] [com.apple.WebKit:ProcessSuspension] 0x10f0580f0 - [PID=61321, throttler=0x10f0b8150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:33:50.055 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Process] WebContent[61321] 0x133008c08 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: frameID=0
+2026-11-20 17:33:50.060 Df テンゲル[61308:2a7f7] [com.apple.WebKit:Process] WebContent[61321] 0x133008c08 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: Request to run JavaScript succeeded
+2026-11-20 17:33:50.062 Df テンゲル[61308:2a6d8] [com.apple.WebKit:ProcessSuspension] 0x10f0580f0 - [PID=61321, throttler=0x10f0b8150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:33:51.901 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:33:51.902 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:33:57.406 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:33:57.406 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Node 0 [5496069C]: NextHop[5496069C], SN[1], LSASN [0], New flag[0], From[5496069C], # of neighbors [1]
+2026-11-20 17:33:57.406 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 67843486 - RTT[1356]
+2026-11-20 17:33:57.406 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Node 1 [67843486]: NextHop[67843486], SN[1], LSASN [0], New flag[0], From[67843486], # of neighbors [1]
+2026-11-20 17:33:57.406 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5496069C - RTT[10809]
+2026-11-20 17:33:57.406 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:33:57.406 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:33:57.406 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:33:57.407 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:34:02.903 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:34:02.905 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:34:02.905 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:34:02.905 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:34:08.411 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:34:08.413 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:34:08.413 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:34:08.414 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:34:13.918 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:34:13.918 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Node 0 [5496069C]: NextHop[5496069C], SN[1], LSASN [0], New flag[0], From[5496069C], # of neighbors [1]
+2026-11-20 17:34:13.918 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 67843486 - RTT[1356]
+2026-11-20 17:34:13.918 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Node 1 [67843486]: NextHop[67843486], SN[1], LSASN [0], New flag[0], From[67843486], # of neighbors [1]
+2026-11-20 17:34:13.918 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5496069C - RTT[10809]
+2026-11-20 17:34:13.918 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:34:13.922 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:34:13.922 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:34:13.924 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:34:19.421 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:34:19.422 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:34:19.422 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:34:19.422 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:34:24.926 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:34:24.926 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [67843486] over channel [4].
+2026-11-20 17:34:24.926 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [67843486] over channel [4].
+2026-11-20 17:34:24.927 Df テンゲル[61308:2acdb] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [67843486] over channel [4].

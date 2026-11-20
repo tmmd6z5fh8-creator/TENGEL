@@ -1,0 +1,40 @@
+{
+ "phase": 7,
+ "device": "ipad",
+ "host": false,
+ "room": "6650",
+ "evs": [
+  "state:connecting",
+  "state:connected",
+  "data×19"
+ ],
+ "api": "object",
+ "open": true,
+ "go": true,
+ "shown": "6650",
+ "connected": true,
+ "screen": "game",
+ "kind": "guest",
+ "auto": {
+  "clicks": 10,
+  "kinds": {
+   "set": 3,
+   "k": 4,
+   "m": 3
+  },
+  "ended": true,
+  "ms": 10075
+ },
+ "res": "win",
+ "wins": [
+  3,
+  0
+ ],
+ "discard": 6,
+ "early": 3,
+ "gift": "🎟お世話トークン＋1個 GET！今 6こ／25個1連勝中！　あと 4勝で 3個",
+ "errors": [
+  "ResizeObserver loop completed with undelivered notifications. @index.html:0"
+ ],
+ "at": "2026-11-20T17:33:03.895Z"
+}
