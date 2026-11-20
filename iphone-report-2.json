@@ -1,0 +1,112 @@
+{
+ "phase": 2,
+ "device": "iphone",
+ "basic": {
+  "href": "tengel://localhost/index.html",
+  "secure": true,
+  "native": true,
+  "info": {
+   "device": "phone",
+   "build": "1",
+   "version": "1.0"
+  },
+  "bridge": true,
+  "memOnly": "",
+  "races": 290,
+  "bets": 1,
+  "sw": false,
+  "ls": true,
+  "clipboard": true,
+  "ver": "",
+  "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+  "w": 402,
+  "h": 812,
+  "dpr": 3,
+  "dark": false,
+  "safeTop": "0px",
+  "safeBottom": "34px"
+ },
+ "persist": {
+  "bets": 1,
+  "ids": [
+   "20261010-v-08"
+  ],
+  "form": true
+ },
+ "wallet": {
+  "total": 1700,
+  "balance": {
+   "total": 1700,
+   "paid_sub": 0,
+   "paid_pack": 0,
+   "free": 1700,
+   "lots": [],
+   "lost": 0,
+   "nextExpire": null,
+   "paidIn": 0,
+   "freeIn": 1700,
+   "used": {
+    "paid_sub": 0,
+    "paid_pack": 0,
+    "free": 0
+   }
+  },
+  "events": [
+   "gift-first:1500",
+   "login-2026-11-20:200"
+  ],
+  "counted": 0,
+  "gift": {
+   "ok": false,
+   "error": "error:-34018"
+  },
+  "zoom": {
+   "pinch": true,
+   "zoom": 1
+  },
+  "viewport": "width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=3",
+  "gate": "splash"
+ },
+ "clock": {
+  "a": {
+   "proc": "032C28BD-F267-4942-8E1F-D240AB9DEDC9",
+   "mono": 1131356.7002916664,
+   "wall": 1795195291680.397,
+   "dev": "",
+   "boot": "F819571E-3516-494B-8ECD-748CCADB3427"
+  },
+  "b": {
+   "proc": "032C28BD-F267-4942-8E1F-D240AB9DEDC9",
+   "mono": 1131765.2870833334,
+   "wall": 1795195292088.9841,
+   "dev": "",
+   "boot": "F819571E-3516-494B-8ECD-748CCADB3427"
+  },
+  "js": [
+   1795195291678,
+   1795195291680
+  ],
+  "has": true,
+  "how": "ok",
+  "st": {
+   "v": 1,
+   "dev": "",
+   "boot": "F819571E-3516-494B-8ECD-748CCADB3427",
+   "proc": "032C28BD-F267-4942-8E1F-D240AB9DEDC9",
+   "mono": 1131786.1179166664,
+   "t": 1795195292109.8142,
+   "tB": 1795194599806.798,
+   "mB": 439483.10104166664,
+   "hi": 1795195292109.8142,
+   "u": 0
+  },
+  "diff": 0
+ },
+ "autobackup": {
+  "n": 1,
+  "at": "2026-11-20T17:21:30.820Z"
+ },
+ "deleteDB": "ok",
+ "errors": [],
+ "at": "2026-11-20T17:21:34.683Z"
+}

@@ -1,0 +1,400 @@
+2026-11-20 17:52:11.813 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Channel [2] priority [-1].
+2026-11-20 17:52:11.813 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Not in connected state, currently Connecting. Skipping.
+2026-11-20 17:52:11.813 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Channel [3] priority [-1].
+2026-11-20 17:52:11.813 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Not in connected state, currently Connecting. Skipping.
+2026-11-20 17:52:11.813 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Channel [4] priority [0].
+2026-11-20 17:52:11.815 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Checking pCList if[en0] chan[4] cList priority [0] flags[00000008] interface priority [6-Ethernet].
+2026-11-20 17:52:11.815 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Currently active clist priority 6-Ethernet; highest interface priority 6-Ethernet.
+2026-11-20 17:52:11.815 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Connection attempt in progress on channel [2] for participant [5D2BFC90].
+2026-11-20 17:52:11.815 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Connection attempt in progress on channel [3] for participant [5D2BFC90].
+2026-11-20 17:52:11.815 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Channel [4] is active and connected for participant [5D2BFC90].
+2026-11-20 17:52:11.815 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] There is a valid route to participant [5D2BFC90].
+2026-11-20 17:52:11.815 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Scheduling to close CList corresponding to participant (5D2BFC90), channel 1.
+2026-11-20 17:52:11.815 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Timed out, enforcing clean up.
+2026-11-20 17:52:11.815 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Closing connection to participant [5D2BFC90] on channel [1].
+2026-11-20 17:52:11.815 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Closing clist for participant [5D2BFC90] channel [1].
+2026-11-20 17:52:11.815 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] ICE timeout expired for participant [5D2BFC90] on channel [2] state [Connecting].
+2026-11-20 17:52:11.815 E  テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Not in connected state, so giving up for participant [5D2BFC90] on channel [2].
+2026-11-20 17:52:11.815 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Participant 5D2BFC90, channel [2]: State Change with event ForceDisconnect: Connecting -> Disconnected.
+2026-11-20 17:52:11.815 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Reconcile Channel Priority for participant [5D2BFC90].
+2026-11-20 17:52:11.817 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Channel [2] priority [-1].
+2026-11-20 17:52:11.817 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Not in connected state, currently Disconnected. Skipping.
+2026-11-20 17:52:11.817 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Channel [3] priority [-1].
+2026-11-20 17:52:11.817 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Not in connected state, currently Connecting. Skipping.
+2026-11-20 17:52:11.817 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Channel [4] priority [0].
+2026-11-20 17:52:11.819 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Checking pCList if[en0] chan[4] cList priority [0] flags[00000008] interface priority [6-Ethernet].
+2026-11-20 17:52:11.819 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Currently active clist priority 6-Ethernet; highest interface priority 6-Ethernet.
+2026-11-20 17:52:11.819 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Connection attempt in progress on channel [3] for participant [5D2BFC90].
+2026-11-20 17:52:11.819 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Channel [4] is active and connected for participant [5D2BFC90].
+2026-11-20 17:52:11.819 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] There is a valid route to participant [5D2BFC90].
+2026-11-20 17:52:11.819 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Scheduling to close CList corresponding to participant (5D2BFC90), channel 2.
+2026-11-20 17:52:11.819 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Timed out, enforcing clean up.
+2026-11-20 17:52:11.819 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Closing connection to participant [5D2BFC90] on channel [2].
+2026-11-20 17:52:11.819 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Closing clist for participant [5D2BFC90] channel [2].
+2026-11-20 17:52:11.819 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] ICE timeout expired for participant [5D2BFC90] on channel [3] state [Connecting].
+2026-11-20 17:52:11.819 E  テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Not in connected state, so giving up for participant [5D2BFC90] on channel [3].
+2026-11-20 17:52:11.819 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Participant 5D2BFC90, channel [3]: State Change with event ForceDisconnect: Connecting -> Disconnected.
+2026-11-20 17:52:11.819 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Reconcile Channel Priority for participant [5D2BFC90].
+2026-11-20 17:52:11.821 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Channel [3] priority [-1].
+2026-11-20 17:52:11.821 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Not in connected state, currently Disconnected. Skipping.
+2026-11-20 17:52:11.821 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Channel [4] priority [0].
+2026-11-20 17:52:11.823 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Checking pCList if[en0] chan[4] cList priority [0] flags[00000008] interface priority [6-Ethernet].
+2026-11-20 17:52:11.823 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Currently active clist priority 6-Ethernet; highest interface priority 6-Ethernet.
+2026-11-20 17:52:11.823 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Channel [4] is active and connected for participant [5D2BFC90].
+2026-11-20 17:52:11.823 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] There is a valid route to participant [5D2BFC90].
+2026-11-20 17:52:11.823 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Scheduling to close CList corresponding to participant (5D2BFC90), channel 3.
+2026-11-20 17:52:11.823 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Timed out, enforcing clean up.
+2026-11-20 17:52:11.823 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Closing connection to participant [5D2BFC90] on channel [3].
+2026-11-20 17:52:11.823 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Closing clist for participant [5D2BFC90] channel [3].
+2026-11-20 17:52:14.263 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:14.264 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:15.419 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec0c0 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:52:15.420 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: frameID=0
+2026-11-20 17:52:15.421 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: Request to run JavaScript succeeded
+2026-11-20 17:52:15.423 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec0c0 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:52:15.946 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec150 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:52:15.948 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: frameID=0
+2026-11-20 17:52:15.948 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: Request to run JavaScript succeeded
+2026-11-20 17:52:15.949 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec150 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:52:19.764 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:52:19.764 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 0 [6B753970]: NextHop[6B753970], SN[1], LSASN [0], New flag[0], From[6B753970], # of neighbors [1]
+2026-11-20 17:52:19.764 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5D2BFC90 - RTT[2730]
+2026-11-20 17:52:19.765 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 1 [5D2BFC90]: NextHop[5D2BFC90], SN[1], LSASN [0], New flag[0], From[5D2BFC90], # of neighbors [1]
+2026-11-20 17:52:19.765 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 6B753970 - RTT[1811]
+2026-11-20 17:52:19.765 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:19.773 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:25.283 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:25.284 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:30.812 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:30.813 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:30.814 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:30.815 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:36.313 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:52:36.314 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 0 [6B753970]: NextHop[6B753970], SN[1], LSASN [0], New flag[0], From[6B753970], # of neighbors [1]
+2026-11-20 17:52:36.314 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5D2BFC90 - RTT[2730]
+2026-11-20 17:52:36.314 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 1 [5D2BFC90]: NextHop[5D2BFC90], SN[1], LSASN [0], New flag[0], From[5D2BFC90], # of neighbors [1]
+2026-11-20 17:52:36.314 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 6B753970 - RTT[1811]
+2026-11-20 17:52:36.314 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:36.314 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:41.817 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:41.818 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:41.818 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:41.821 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:47.339 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:47.340 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:47.349 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:47.351 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:52.854 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:52.854 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:52.854 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:52:52.854 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 0 [6B753970]: NextHop[6B753970], SN[1], LSASN [0], New flag[0], From[6B753970], # of neighbors [1]
+2026-11-20 17:52:52.854 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5D2BFC90 - RTT[2730]
+2026-11-20 17:52:52.854 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 1 [5D2BFC90]: NextHop[5D2BFC90], SN[1], LSASN [0], New flag[0], From[5D2BFC90], # of neighbors [1]
+2026-11-20 17:52:52.854 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 6B753970 - RTT[1811]
+2026-11-20 17:52:58.351 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:52:58.351 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:03.855 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:03.855 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:03.855 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:03.855 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:09.385 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:53:09.385 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 0 [6B753970]: NextHop[6B753970], SN[1], LSASN [0], New flag[0], From[6B753970], # of neighbors [1]
+2026-11-20 17:53:09.471 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5D2BFC90 - RTT[2730]
+2026-11-20 17:53:09.471 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 1 [5D2BFC90]: NextHop[5D2BFC90], SN[1], LSASN [0], New flag[0], From[5D2BFC90], # of neighbors [1]
+2026-11-20 17:53:09.471 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 6B753970 - RTT[1811]
+2026-11-20 17:53:09.472 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:09.473 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:09.477 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:09.478 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:14.983 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:14.983 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:15.274 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec0c0 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:53:15.277 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: frameID=0
+2026-11-20 17:53:15.279 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: Request to run JavaScript succeeded
+2026-11-20 17:53:15.281 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec0c0 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:53:15.915 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec0c0 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:53:15.916 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: frameID=0
+2026-11-20 17:53:15.921 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: Request to run JavaScript succeeded
+2026-11-20 17:53:15.923 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec0c0 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:53:20.488 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:20.488 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:20.488 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:20.488 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:25.987 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:53:25.988 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 0 [6B753970]: NextHop[6B753970], SN[1], LSASN [0], New flag[0], From[6B753970], # of neighbors [1]
+2026-11-20 17:53:25.988 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5D2BFC90 - RTT[2730]
+2026-11-20 17:53:25.988 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 1 [5D2BFC90]: NextHop[5D2BFC90], SN[1], LSASN [0], New flag[0], From[5D2BFC90], # of neighbors [1]
+2026-11-20 17:53:25.988 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 6B753970 - RTT[1811]
+2026-11-20 17:53:25.988 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:25.988 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:31.502 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:31.502 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:31.502 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:31.504 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:37.007 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:37.007 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:42.512 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:53:42.512 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 0 [6B753970]: NextHop[6B753970], SN[1], LSASN [0], New flag[0], From[6B753970], # of neighbors [1]
+2026-11-20 17:53:42.512 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5D2BFC90 - RTT[2730]
+2026-11-20 17:53:42.512 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 1 [5D2BFC90]: NextHop[5D2BFC90], SN[1], LSASN [0], New flag[0], From[5D2BFC90], # of neighbors [1]
+2026-11-20 17:53:42.512 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 6B753970 - RTT[1811]
+2026-11-20 17:53:42.512 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:42.512 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:42.514 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:42.514 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:48.017 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:48.017 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:48.017 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:48.017 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:53.526 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:53.557 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:53.557 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:53.559 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:59.065 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:53:59.066 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 0 [6B753970]: NextHop[6B753970], SN[1], LSASN [0], New flag[0], From[6B753970], # of neighbors [1]
+2026-11-20 17:53:59.066 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5D2BFC90 - RTT[2730]
+2026-11-20 17:53:59.066 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 1 [5D2BFC90]: NextHop[5D2BFC90], SN[1], LSASN [0], New flag[0], From[5D2BFC90], # of neighbors [1]
+2026-11-20 17:53:59.066 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 6B753970 - RTT[1811]
+2026-11-20 17:53:59.066 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:59.067 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:59.070 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:53:59.077 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:04.582 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:04.590 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:04.590 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:04.590 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:10.088 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:10.088 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:15.279 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec0c0 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:54:15.282 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: frameID=0
+2026-11-20 17:54:15.353 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: Request to run JavaScript succeeded
+2026-11-20 17:54:15.357 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec0c0 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:54:15.596 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:54:15.596 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 0 [6B753970]: NextHop[6B753970], SN[1], LSASN [0], New flag[0], From[6B753970], # of neighbors [1]
+2026-11-20 17:54:15.596 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5D2BFC90 - RTT[2730]
+2026-11-20 17:54:15.596 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 1 [5D2BFC90]: NextHop[5D2BFC90], SN[1], LSASN [0], New flag[0], From[5D2BFC90], # of neighbors [1]
+2026-11-20 17:54:15.596 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 6B753970 - RTT[1811]
+2026-11-20 17:54:15.596 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:15.603 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:15.603 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:15.603 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:15.919 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec150 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:54:15.919 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: frameID=0
+2026-11-20 17:54:15.924 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: Request to run JavaScript succeeded
+2026-11-20 17:54:15.926 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec150 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:54:21.106 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:21.106 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:21.106 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:21.106 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:26.623 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:26.635 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:26.635 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:26.636 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:32.143 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:54:32.145 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 0 [6B753970]: NextHop[6B753970], SN[1], LSASN [0], New flag[0], From[6B753970], # of neighbors [1]
+2026-11-20 17:54:32.146 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5D2BFC90 - RTT[2730]
+2026-11-20 17:54:32.146 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 1 [5D2BFC90]: NextHop[5D2BFC90], SN[1], LSASN [0], New flag[0], From[5D2BFC90], # of neighbors [1]
+2026-11-20 17:54:32.146 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 6B753970 - RTT[1811]
+2026-11-20 17:54:32.146 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:32.146 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:32.147 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:32.148 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:37.649 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:37.654 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:37.654 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:37.654 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:43.151 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:43.152 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:48.651 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:48.652 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:48.652 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:54:48.652 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 0 [6B753970]: NextHop[6B753970], SN[1], LSASN [0], New flag[0], From[6B753970], # of neighbors [1]
+2026-11-20 17:54:48.653 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5D2BFC90 - RTT[2730]
+2026-11-20 17:54:48.653 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 1 [5D2BFC90]: NextHop[5D2BFC90], SN[1], LSASN [0], New flag[0], From[5D2BFC90], # of neighbors [1]
+2026-11-20 17:54:48.653 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 6B753970 - RTT[1811]
+2026-11-20 17:54:54.155 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:54.156 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:54.156 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:54.156 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:59.660 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:54:59.661 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:05.176 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:55:05.176 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 0 [6B753970]: NextHop[6B753970], SN[1], LSASN [0], New flag[0], From[6B753970], # of neighbors [1]
+2026-11-20 17:55:05.177 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5D2BFC90 - RTT[2730]
+2026-11-20 17:55:05.177 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 1 [5D2BFC90]: NextHop[5D2BFC90], SN[1], LSASN [0], New flag[0], From[5D2BFC90], # of neighbors [1]
+2026-11-20 17:55:05.177 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 6B753970 - RTT[1811]
+2026-11-20 17:55:05.177 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:05.178 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:05.178 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:05.178 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:10.676 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:10.676 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:10.676 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:10.676 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:15.295 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec0c0 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:55:15.302 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: frameID=0
+2026-11-20 17:55:15.306 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: Request to run JavaScript succeeded
+2026-11-20 17:55:15.309 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec0c0 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:55:15.933 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec150 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:55:15.934 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: frameID=0
+2026-11-20 17:55:15.936 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: Request to run JavaScript succeeded
+2026-11-20 17:55:15.938 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec150 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:55:16.180 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:16.182 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:16.183 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:16.183 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:21.683 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:55:21.684 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 0 [6B753970]: NextHop[6B753970], SN[1], LSASN [0], New flag[0], From[6B753970], # of neighbors [1]
+2026-11-20 17:55:21.684 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5D2BFC90 - RTT[2730]
+2026-11-20 17:55:21.684 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 1 [5D2BFC90]: NextHop[5D2BFC90], SN[1], LSASN [0], New flag[0], From[5D2BFC90], # of neighbors [1]
+2026-11-20 17:55:21.684 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 6B753970 - RTT[1811]
+2026-11-20 17:55:21.684 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:21.685 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:27.267 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:27.269 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:27.269 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:27.270 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:32.769 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:32.774 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:32.774 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:32.774 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:38.272 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:55:38.272 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 0 [6B753970]: NextHop[6B753970], SN[1], LSASN [0], New flag[0], From[6B753970], # of neighbors [1]
+2026-11-20 17:55:38.272 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5D2BFC90 - RTT[2730]
+2026-11-20 17:55:38.272 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 1 [5D2BFC90]: NextHop[5D2BFC90], SN[1], LSASN [0], New flag[0], From[5D2BFC90], # of neighbors [1]
+2026-11-20 17:55:38.272 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 6B753970 - RTT[1811]
+2026-11-20 17:55:38.272 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:38.273 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:43.783 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:43.785 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:43.785 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:43.785 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:49.289 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:49.290 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:49.290 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:49.291 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:54.798 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:55:54.798 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 0 [6B753970]: NextHop[6B753970], SN[1], LSASN [0], New flag[0], From[6B753970], # of neighbors [1]
+2026-11-20 17:55:54.809 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5D2BFC90 - RTT[2730]
+2026-11-20 17:55:54.810 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 1 [5D2BFC90]: NextHop[5D2BFC90], SN[1], LSASN [0], New flag[0], From[5D2BFC90], # of neighbors [1]
+2026-11-20 17:55:54.810 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 6B753970 - RTT[1811]
+2026-11-20 17:55:54.810 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:54.813 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:54.815 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:55:54.826 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:00.324 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:00.327 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:05.883 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:05.955 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:05.955 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:05.956 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:11.458 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:11.458 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:11.458 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:56:11.460 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 0 [6B753970]: NextHop[6B753970], SN[1], LSASN [0], New flag[0], From[6B753970], # of neighbors [1]
+2026-11-20 17:56:11.460 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5D2BFC90 - RTT[2730]
+2026-11-20 17:56:11.460 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 1 [5D2BFC90]: NextHop[5D2BFC90], SN[1], LSASN [0], New flag[0], From[5D2BFC90], # of neighbors [1]
+2026-11-20 17:56:11.460 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 6B753970 - RTT[1811]
+2026-11-20 17:56:15.276 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec0c0 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:56:15.279 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: frameID=0
+2026-11-20 17:56:15.283 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: Request to run JavaScript succeeded
+2026-11-20 17:56:15.292 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec0c0 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:56:15.926 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec150 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:56:15.926 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: frameID=0
+2026-11-20 17:56:15.929 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: Request to run JavaScript succeeded
+2026-11-20 17:56:15.931 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec150 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:56:16.955 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:16.956 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:22.457 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:22.458 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:22.458 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:22.458 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:27.964 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:56:27.964 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 0 [6B753970]: NextHop[6B753970], SN[1], LSASN [0], New flag[0], From[6B753970], # of neighbors [1]
+2026-11-20 17:56:27.964 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5D2BFC90 - RTT[2730]
+2026-11-20 17:56:27.964 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 1 [5D2BFC90]: NextHop[5D2BFC90], SN[1], LSASN [0], New flag[0], From[5D2BFC90], # of neighbors [1]
+2026-11-20 17:56:27.964 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 6B753970 - RTT[1811]
+2026-11-20 17:56:27.964 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:27.964 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:27.965 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:27.965 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:33.473 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:33.479 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:33.479 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:33.479 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:38.976 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:38.976 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:44.500 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:56:44.500 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 0 [6B753970]: NextHop[6B753970], SN[1], LSASN [0], New flag[0], From[6B753970], # of neighbors [1]
+2026-11-20 17:56:44.500 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5D2BFC90 - RTT[2730]
+2026-11-20 17:56:44.500 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 1 [5D2BFC90]: NextHop[5D2BFC90], SN[1], LSASN [0], New flag[0], From[5D2BFC90], # of neighbors [1]
+2026-11-20 17:56:44.500 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 6B753970 - RTT[1811]
+2026-11-20 17:56:44.500 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:44.512 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:44.517 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:44.528 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:50.016 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:50.016 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:55.521 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:55.523 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:55.523 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:56:55.524 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:01.027 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:57:01.028 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 0 [6B753970]: NextHop[6B753970], SN[1], LSASN [0], New flag[0], From[6B753970], # of neighbors [1]
+2026-11-20 17:57:01.029 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5D2BFC90 - RTT[2730]
+2026-11-20 17:57:01.029 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 1 [5D2BFC90]: NextHop[5D2BFC90], SN[1], LSASN [0], New flag[0], From[5D2BFC90], # of neighbors [1]
+2026-11-20 17:57:01.029 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 6B753970 - RTT[1811]
+2026-11-20 17:57:01.029 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:01.031 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:01.037 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:01.037 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:06.559 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:06.565 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:06.565 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:06.565 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:12.062 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:12.067 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:12.067 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:12.069 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:15.311 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec0c0 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:57:15.313 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: frameID=0
+2026-11-20 17:57:15.319 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: Request to run JavaScript succeeded
+2026-11-20 17:57:15.319 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec0c0 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:57:15.929 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec150 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::Activity: Starting foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:57:15.930 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: frameID=0
+2026-11-20 17:57:15.939 Df テンゲル[49016:248a6] [com.apple.WebKit:Process] WebContent[49034] 0x1125e0008 - [webPageID=10] WebPage::runJavaScriptInFrameInScriptWorld: Request to run JavaScript succeeded
+2026-11-20 17:57:15.939 Df テンゲル[49016:24787] [com.apple.WebKit:ProcessSuspension] 0x10e0ec150 - [PID=49034, throttler=0x10e0b8150] ProcessThrottler::Activity::invalidate: Ending foreground activity / 'WebPageProxy::runJavaScriptInFrameInScriptWorld'
+2026-11-20 17:57:17.574 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:57:17.574 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 0 [6B753970]: NextHop[6B753970], SN[1], LSASN [0], New flag[0], From[6B753970], # of neighbors [1]
+2026-11-20 17:57:17.574 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5D2BFC90 - RTT[2730]
+2026-11-20 17:57:17.574 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 1 [5D2BFC90]: NextHop[5D2BFC90], SN[1], LSASN [0], New flag[0], From[5D2BFC90], # of neighbors [1]
+2026-11-20 17:57:17.575 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 6B753970 - RTT[1811]
+2026-11-20 17:57:17.575 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:17.575 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:17.578 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:17.578 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:23.075 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:23.086 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:23.086 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:23.088 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:28.588 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:28.588 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:28.588 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:28.588 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:34.089 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] My routing table: 2 nodes.
+2026-11-20 17:57:34.090 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 0 [6B753970]: NextHop[6B753970], SN[1], LSASN [0], New flag[0], From[6B753970], # of neighbors [1]
+2026-11-20 17:57:34.090 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 5D2BFC90 - RTT[2730]
+2026-11-20 17:57:34.090 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Node 1 [5D2BFC90]: NextHop[5D2BFC90], SN[1], LSASN [0], New flag[0], From[5D2BFC90], # of neighbors [1]
+2026-11-20 17:57:34.090 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] 	neighbor 0: 6B753970 - RTT[1811]
+2026-11-20 17:57:34.090 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:34.108 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:34.108 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:34.145 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:39.648 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:39.649 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:39.649 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:39.649 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:45.206 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Retransmitting Heartbeat with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:45.207 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (request) with SN [1] from participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:45.207 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Sending Heartbeat (response) with SN [1] to participant [5D2BFC90] over channel [4].
+2026-11-20 17:57:45.248 Df テンゲル[49016:24b02] [com.apple.multipeerconnectivity:GCKSession] Received Heartbeat (response) with SN [1] from participant [5D2BFC90] over channel [4].

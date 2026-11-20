@@ -1,0 +1,2 @@
+Timestamp               Ty Process[PID:TID]
+2026-11-20 18:00:39.171 Df log[54037:0] [com.apple.log:] log run noninteractively, parent: 44952 (launchd_sim), args: 'log' 'show' '--last' '8m' '--style' 'compact' '--predicate' 'subsystem CONTAINS "MultipeerConnectivity" OR eventMessage CONTAINS[c] "MCNearby" OR eventMessage CONTAINS[c] "local network" OR eve
