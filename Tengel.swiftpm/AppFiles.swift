@@ -120,6 +120,7 @@ enum AppFiles {
         case "gif": return "image/gif"
         case "mp4": return "video/mp4"
         case "m4a": return "audio/mp4"   // 的中ボタンの効果音（第3弾）
+        case "mp3": return "audio/mpeg"  // 決戦調査の フィールドの 音（第4.210版）
         case "woff2": return "font/woff2"
         case "woff": return "font/woff"
         case "ttf": return "font/ttf"

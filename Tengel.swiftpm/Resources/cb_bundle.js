@@ -1350,8 +1350,14 @@ const CBApp = (() => {
   const BGMS = { main: { file: 'cb_bgm.m4a', pre: 0.5, len: 34 * 3 * 60 / 76, vol: 0.42, fin: 1.4, fout: 0.45 },      
     quest: { file: 'cb_qbgm.m4a', pre: 0.5, len: 16 * 4 * 60 / 132, vol: 0.40, fin: 0.9, fout: 0.6 } };      
   
+  
+  
   let BGM = BGMS.main;
   const bg = { raw: null, buf: null, dec: null, cur: null, tau: 0, gone: false, want: false, trk: 'main', taus: {} };      
+  
+  const bgLp = (B, dur) => (B.ls == null ? { ls: B.pre / 2, le: B.pre / 2 + B.len, at: B.pre } : { ls: B.ls, le: Math.min(B.le, dur || Infinity), at: B.at || 0 });
+  
+  const bgOk = (B, b) => (B.ls == null ? b.duration > B.len + B.pre : b.duration > B.ls + 0.5 && (B.le === Infinity || b.duration >= B.le - 0.02));
   function bgmLoad() {
     if (bg.buf || bg.gone) return Promise.resolve(bg.buf);
     if (bg.dec) return bg.dec;
@@ -1361,21 +1367,27 @@ const CBApp = (() => {
     const dec = bg.raw.then(b => (b ? new Promise(ok => { try { const q = c.decodeAudioData(b.slice(0), ok, () => ok(null)); if (q && q.catch) q.catch(() => ok(null)); } catch (e) { ok(null); } }) : null)).then(b => {
       if (BGM !== B) return null;
       bg.dec = null;
-      if (b && b.duration > B.len + B.pre) bg.buf = b; else if (!b) { bg.gone = true; bg.raw = null; } else bg.gone = true;
+      if (b && bgOk(B, b)) bg.buf = b; else if (!b) { bg.gone = true; bg.raw = null; } else bg.gone = true;
       return bg.buf;
     });
     bg.dec = dec;
     return dec;
   }
-  const bgmPos = () => (bg.cur && snd.ac ? (bg.tau + Math.max(0, snd.ac.currentTime - bg.cur.t0)) % BGM.len : bg.tau);      
+  
+  const bgmPos = () => bgWrap(bg.cur && snd.ac ? bg.tau + Math.max(0, snd.ac.currentTime - bg.cur.t0) : bg.tau);
+  function bgWrap(t) {
+    if (BGM.ls == null) return t % BGM.len;
+    const L = bgLp(BGM, bg.buf ? bg.buf.duration : 0), x = L.at + t;
+    return (x < L.le || L.le === Infinity ? x : L.ls + (x - L.ls) % (L.le - L.ls)) - L.at;
+  }
   function bgmStart() {
     const c = snd.ac; if (!c || bg.cur || !bg.buf) return;
     try {
-      const s = c.createBufferSource(), g = c.createGain(), n = c.currentTime;
-      s.buffer = bg.buf; s.loop = true; s.loopStart = BGM.pre / 2; s.loopEnd = BGM.pre / 2 + BGM.len;
-      let off = BGM.pre + bg.tau; if (off >= BGM.pre / 2 + BGM.len) off -= BGM.len;
+      const s = c.createBufferSource(), g = c.createGain(), n = c.currentTime, L = bgLp(BGM, bg.buf.duration);
+      s.buffer = bg.buf; s.loop = true; s.loopStart = L.ls; s.loopEnd = L.le;
+      let off = L.at + bg.tau; if (off >= L.le) off = L.ls + (off - L.ls) % (L.le - L.ls);
       g.gain.setValueAtTime(0, n); g.gain.linearRampToValueAtTime(BGM.vol, n + BGM.fin);
-      s.connect(g); g.connect(c.destination); s.start(0, off); bg.cur = { s: s, g: g, t0: n };
+      s.connect(g); g.connect(c.destination); s.start(0, off); bg.cur = { s: s, g: g, t0: n, off: off };
     } catch (e) { bg.cur = null; }
   }
   function bgmStop(fade) {
@@ -1395,14 +1407,16 @@ const CBApp = (() => {
     bgmLoad().then(b => { if (b && bg.want && !bg.cur) bgmStart(); });
   }
   
-  function bgmTrack(t) {
-    t = t === 'quest' || t === 'main' ? t : '';
-    if (t === bg.trk) return bgmSync();
+  
+  function bgmTrack(t, lv) {
+    const B = t === 'field' ? QBG[lv - 1] || null : t === 'quest' || t === 'main' ? BGMS[t] : null;
+    t = B ? t : '';
+    if (t === bg.trk && t !== 'field') return bgmSync();
     if (bg.cur) bgmStop(BGM.fout);
-    if (bg.trk) bg.taus[bg.trk] = bg.tau;
+    if (bg.trk && bg.trk !== 'field') bg.taus[bg.trk] = bg.tau;
     bg.trk = t;
-    if (t && BGMS[t] !== BGM) { BGM = BGMS[t]; bg.buf = null; bg.raw = null; bg.dec = null; bg.gone = false; }
-    bg.tau = t ? bg.taus[t] || 0 : bg.tau;
+    if (B && B !== BGM) { BGM = B; bg.buf = null; bg.raw = null; bg.dec = null; bg.gone = false; }
+    bg.tau = t === 'field' ? 0 : t ? bg.taus[t] || 0 : bg.tau;
     bgmSync();
   }
   
@@ -1903,10 +1917,14 @@ const CBApp = (() => {
 #cbOv .qfld{position:absolute;opacity:0;transition:opacity .6s}
 #cbOv .cbqf.in .qfld{opacity:1}
 #cbOv .qfld>.bg{position:absolute;inset:0;width:100%;height:100%;display:block}
-#cbOv .qfld>.qe{position:absolute;display:block;height:auto;opacity:0;transform:translate(-50%,-70.42%);transform-origin:50% 70.42%}
+#cbOv .qfld>.qe{position:absolute;display:block;opacity:.001;transform:translate(-50%,-70.42%);transform-origin:50% 70.42%;pointer-events:none;will-change:transform,opacity}
+#cbOv .qfld>.qe>img{display:block;width:100%;height:auto}
+#cbOv .qfld>.qe>.q2{position:absolute;left:0;top:0;filter:brightness(2.4) blur(3px);opacity:.001;will-change:opacity}
 #cbOv .qfld.en>.qe{animation:qein 1s cubic-bezier(.2,.8,.3,1) both}
-@keyframes qein{0%{opacity:0;transform:translate(-50%,-70.42%) scale(1.09);filter:brightness(2.4) blur(3px)}30%{opacity:1;filter:brightness(1.7) blur(1px)}100%{opacity:1;transform:translate(-50%,-70.42%) scale(1);filter:none}}
-#cbOv .qfld>.qdu{position:absolute;aspect-ratio:3/1;transform:translate(-50%,-62%);border-radius:50%;opacity:0;pointer-events:none;background:radial-gradient(closest-side,rgba(232,214,180,.55),rgba(200,180,150,.25) 55%,rgba(200,180,150,0))}
+#cbOv .qfld.en>.qe>.q2{animation:qeg .9s ease-out both}
+@keyframes qein{0%{opacity:0;transform:translate(-50%,-70.42%) scale(1.09)}30%{opacity:1}100%{opacity:1;transform:translate(-50%,-70.42%) scale(1)}}
+@keyframes qeg{0%{opacity:.9}100%{opacity:0}}
+#cbOv .qfld>.qdu{position:absolute;aspect-ratio:3/1;transform:translate(-50%,-62%);border-radius:50%;opacity:0;pointer-events:none;will-change:transform,opacity;background:radial-gradient(closest-side,rgba(232,214,180,.55),rgba(200,180,150,.25) 55%,rgba(200,180,150,0))}
 #cbOv .qfld.en>.qdu{animation:qdu 1.3s ease-out .15s both}
 @keyframes qdu{0%{opacity:0;transform:translate(-50%,-62%) scale(.5)}25%{opacity:.9}100%{opacity:0;transform:translate(-50%,-62%) scale(1.35)}}
 #cbOv .qfld>.qsh{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 70% at 50% 60%,rgba(0,0,0,0) 40%,rgba(0,0,0,.35) 100%)}
@@ -1990,7 +2008,7 @@ const CBApp = (() => {
 @keyframes qcf{0%{opacity:0;transform:translate(0,0) rotate(0)}8%{opacity:1}100%{opacity:.9;transform:translate(var(--x),112vh) rotate(var(--r))}}
 #cbOv .qpt .cn{position:absolute;top:-8%;width:30px;height:30px;opacity:0;animation:qcn 2.4s cubic-bezier(.4,0,.8,.6) var(--d) forwards}
 @keyframes qcn{0%{opacity:0;transform:translateY(0) scale(var(--s)) rotateY(0)}10%{opacity:1}100%{opacity:1;transform:translateY(115vh) scale(var(--s)) rotateY(900deg)}}
-@media (prefers-reduced-motion: reduce){#cbOv .qpo,#cbOv .qnd.op .ring,#cbOv .qnd .go,#cbOv .qsay .nx,#cbOv .qtap.on,#cbOv .qv .rays{animation:none}#cbOv .qv .rays{opacity:1}#cbOv .qpt{display:none}#cbOv .qfld.en>.qe{animation:none;opacity:1}}
+@media (prefers-reduced-motion: reduce){#cbOv .qpo,#cbOv .qnd.op .ring,#cbOv .qnd .go,#cbOv .qsay .nx,#cbOv .qtap.on,#cbOv .qv .rays{animation:none}#cbOv .qv .rays{opacity:1}#cbOv .qpt{display:none}#cbOv .qfld.en>.qe{animation:none;opacity:1}#cbOv .qfld.en>.qe>.q2{animation:none;opacity:0}}
 /* 第4.197版：決戦宝石（ケースは 手札の 下）・トークンの カード・宝石の 窓・相手の 宝石・部屋の あり／なし */
 #cbOv .cbgem{position:relative;flex:none;width:calc(100% - 20px);max-width:430px;margin:0 auto;aspect-ratio:1100/185}
 #cbOv .cbgem[hidden],#cbOv .ogem[hidden]{display:none}
@@ -2067,7 +2085,7 @@ const CBApp = (() => {
     ov.querySelectorAll('.cbs').forEach(e => { scr[e.dataset.s] = e; });
     flyEl = $('.cbfly'); modEl = $('.cbmod'); toastEl = $('.cbtoast'); banEl = $('.cbban'); useEl = $('.cbuse');
     ov.addEventListener('click', onClick);
-    document.addEventListener('visibilitychange', () => { if (ov.classList.contains('on')) bgmSync(); });      
+    document.addEventListener('visibilitychange', () => { if (ov.classList.contains('on')) { bgmSync(); if (document.hidden) qaStop(0.05, true); } });      
     window.addEventListener('resize', () => { if (ov.classList.contains('on')) { layout(); qMapLayout(); qFieldLayout(); } });
     if (window.ResizeObserver) new ResizeObserver(() => { if (ov.classList.contains('on')) layout(); }).observe(scr.game);
   }
@@ -2136,6 +2154,7 @@ const CBApp = (() => {
   
   function showMenu() {
     pk = null;      
+    qaStop(0.15, true);      
     closeMod(); show('menu'); msRoll();
     const tot = st.win + st.lose + st.draw;
     $('.rec', scr.menu).innerHTML = (tot ? `<b>${st.win}</b>勝 <b>${st.lose}</b>敗 <b>${st.draw}</b>分` + (st.streak > 0 ? `　今 <b>${st.streak}</b>連勝！` : '') + '<br>' : '')
@@ -3029,7 +3048,7 @@ const CBApp = (() => {
     if (k === 'se' && on) se('tap', 0.8);
     if (modEl.classList.contains('cbset')) gearModal();
   }
-  function applySets() { bgmSync(); }
+  function applySets() { bgmSync(); if (!seOn()) qaStop(0.05, true); }      
   function quitModal() {
     const mid = !ended && !!V;
     if (qRun) { modal(`<h3 class="gold">調査を やめる？</h3><p>${mid ? '途中で やめると 調査 失敗に なるよ' : 'マップに 戻るよ（この 調査は ここまで）'}</p><div class="rowb"><button type="button" class="cbb dk" data-cb="modx">続ける</button><button type="button" class="cbb" data-cb="quitgo">やめる</button></div>`); return; }      
@@ -3518,6 +3537,7 @@ const CBApp = (() => {
   
   
   
+  
   const QG = [[0.50, 0.80, 0.74], [0.52, 0.80, 0.76], [0.50, 0.80, 0.74], [0.50, 0.81, 0.70], [0.52, 0.80, 0.74], [0.50, 0.80, 0.74], [0.50, 0.76, 0.80], [0.50, 0.80, 0.74], [0.50, 0.81, 0.76], [0.50, 0.80, 0.80], [0.50, 0.81, 0.72], [0.50, 0.81, 0.78]];
   const QFOOT = 1 / 1.42;
   
@@ -3543,6 +3563,79 @@ const CBApp = (() => {
   const qp2 = n => String(n).padStart(2, '0');
   const qF = lv => `cb_q_f${qp2(lv)}.webp`, qE = lv => `cb_q_e${qp2(lv)}.webp`, qHL = lv => `cb_q_hl${qp2(lv)}.webp`;      
   const qTier = lv => (lv >= 10 ? 3 : lv >= 6 ? 2 : 1);      
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  const QS_SR = 44100;
+  const QSND = [
+    { b: { ls: 132300, le: 438795 }, s: [{}], t: [null, 0] },                                  
+    { b: { ls: 26901, le: 531405 }, s: [{}, {}], t: [0, 1] },                                  
+    { b: { len: 352297 }, s: [{}, {}, { d: 0.8 }], t: [0, 1, 2] },                             
+    { b: { ls: 372646, le: 712216 }, s: [{}, {}, {}], t: [2, 0, 1] },                          
+    { b: { len: 353682 }, s: [{}, {}], t: [null, 0, 1] },                                      
+    { b: { len: 352800 }, s: [{}, {}], t: [0, 0, 1] },                                         
+    { b: { len: 353259 }, s: [{}], t: [null, 0, 0] },                                          
+    { b: { len: 351477 }, s: [{}, {}], t: [null, 0, 1] },                                      
+    { b: { ls: 0, le: Infinity }, s: [{}, {}], t: [null, 0, 1] },                              
+    { b: { ls: 371971, le: 587387 }, s: [{}, {}], t: [null, 0, 1] },                           
+    { b: { len: 1904321 }, s: [{}, {}], t: [0, 0, 1] },                                        
+    { b: { len: 1839784 }, s: [{}, {}, { k: true }], t: [0, 1, 2, null] }                      
+  ];
+  const QBG = QSND.map((x, i) => Object.assign({ file: `cb_q_bgm${qp2(i + 1)}.mp3`, vol: 0.45, fin: 0.6, fout: 0.6 },
+    x.b.len != null ? { pre: 0.5, len: x.b.len / QS_SR } : { ls: x.b.ls / QS_SR, le: x.b.le / QS_SR, at: 0 }));
+  const qaFile = (lv, k) => `cb_q_se${qp2(lv)}${['a', 'b', 'c'][k]}.mp3`;      
+  const qa = { lv: 0, buf: {}, cur: null, kept: [] };      
+  const qaLog = (...a) => { const L = CBApp._sl; if (Array.isArray(L)) L.push(a); };      
+  
+  function qaLoad(lv) {
+    const A = QSND[lv - 1], c = A && seOn() && typeof fetch === 'function' ? actx() : null;
+    if (!c) return Promise.resolve();
+    if (qa.lv !== lv) { qa.lv = lv; qa.buf = {}; }
+    return Promise.all(A.s.map((x, k) => {
+      const f = qaFile(lv, k);
+      if (!qa.buf[f]) qa.buf[f] = fetch(f).then(r => (r.ok ? r.arrayBuffer() : null)).then(b => (b ? new Promise(ok => { try { const q = c.decodeAudioData(b, ok, () => ok(null)); if (q && q.catch) q.catch(() => ok(null)); } catch (e) { ok(null); } }) : null)).catch(() => null);
+      return qa.buf[f];
+    }));
+  }
+  
+  function qaWait(p, ms, fn) { let done = false; const go = () => { if (!done) { done = true; fn(); } }; p.then(go, go); later(go, ms); }
+  
+  function qaPlay(i) {
+    if (!qs) return;
+    const lv = qs.lv, A = QSND[lv - 1], k = A ? A.t[i] : null;
+    if (k != null && i > 0 && A.t[i - 1] === k) { qaLog('cont', qaFile(lv, k), i); return; }      
+    qaStop(0.05);
+    if (k == null || !seOn()) return;
+    const c = actx(); if (!c) return;
+    const x = A.s[k], f = qaFile(lv, k), me = { f: f, keep: !!x.k, s: null, g: null, at: c.currentTime + (x.d || 0), dead: false };
+    qa.cur = me;
+    (qa.lv === lv && qa.buf[f] ? qa.buf[f] : qaLoad(lv).then(() => qa.buf[f])).then(b => {
+      if (me.dead || !b || !seOn()) return;
+      try {
+        const s = c.createBufferSource(), g = c.createGain(); s.buffer = b; g.gain.value = 0.9; s.connect(g); g.connect(c.destination);
+        s.onended = () => { if (qa.cur === me) qa.cur = null; qa.kept = qa.kept.filter(z => z !== me); try { s.disconnect(); g.disconnect(); } catch (e) {   } };
+        s.start(Math.max(c.currentTime, me.at)); me.s = s; me.g = g; qaLog('play', f, i, x.d || 0, me.keep);
+      } catch (e) {   }
+    });
+  }
+  
+  function qaStop(fade, all) {
+    const c = snd.ac, f = fade == null ? 0.05 : fade;
+    const cut = o => {
+      o.dead = true; if (!o.s || !c) return;
+      qaLog('cut', o.f, f);
+      try { const n = c.currentTime; o.g.gain.cancelScheduledValues(n); o.g.gain.setValueAtTime(o.g.gain.value, n); o.g.gain.linearRampToValueAtTime(0, n + f); o.s.stop(n + f + 0.02); }
+      catch (e) { try { o.s.stop(); } catch (e2) {   } }
+    };
+    if (qa.cur) { if (qa.cur.keep && !all) qa.kept.push(qa.cur); else cut(qa.cur); qa.cur = null; }
+    if (all) { qa.kept.forEach(cut); qa.kept = []; }
+  }
   let qRun = null;              
   let lostQ = false;            
   let qs = null;                
@@ -3624,7 +3717,7 @@ const CBApp = (() => {
 
   
   function showQMap() {
-    pk = null; closeMod(); qs = null; qPop = 0; show('qmap'); msRoll(); qRoll(); bgmTrack('main');
+    pk = null; closeMod(); qs = null; qPop = 0; qaStop(0.15, true); show('qmap'); msRoll(); qRoll(); bgmTrack('main');
     $('.qtt', scr.qmap).hidden = !(testOn() && window.CBTest.qHtml);      
     const op = qOpen(), all = st.q.clr >= QN;
     const ym = st.q.m.split('-');
@@ -3677,6 +3770,7 @@ const CBApp = (() => {
     m.appendChild(el); qPop = lv;
     m.querySelectorAll('.qnd').forEach(n => n.classList.toggle('sel', +n.dataset.lv === lv));
     qPopPlace();
+    if (go) qaLoad(lv);      
   }
   function qPopClose() {
     const m = scr.qmap && $('.qmap', scr.qmap); qPop = 0; if (!m) return;
@@ -3701,19 +3795,24 @@ const CBApp = (() => {
     if (qRoll()) { showQMap(); toast('月が 変わったので、決戦調査を リセットしたよ', 2.6); return; }      
     const q = QUEST[lv - 1]; if (!q || lv > qOpen()) return;      
     if (qtNow().n < 1) { se('tap', 0.5); return qtModal(true); }      
-    closeMod(); qPopClose(); se('tap');
-    qs = { lv: lv, step: 'say', i: -1, tw: null, g: GEN, rv: 0, snd: false };
-    const f = scr.qf;
-    $('.qfld', f).innerHTML = `<img class="bg" src="${qF(lv)}" alt=""><i class="qsh"></i><img class="qe" src="${qE(lv)}" alt="" style="left:${q.g[0] * 100}%;top:${q.g[1] * 100}%;width:${q.g[2] * 100}%"><i class="qdu" style="left:${q.g[0] * 100}%;top:${q.g[1] * 100}%;width:${q.g[2] * 100}%"></i>`;
+    closeMod(); qPopClose(); se('tap'); qaStop(0.15, true);
+    qs = { lv: lv, step: 'say', i: -1, tw: null, g: GEN, rv: 0 };
+    const f = scr.qf, pos = `left:${q.g[0] * 100}%;top:${q.g[1] * 100}%;width:${q.g[2] * 100}%`;
+    
+    
+    
+    $('.qfld', f).innerHTML = `<img class="bg" src="${qF(lv)}" alt=""><i class="qsh"></i><div class="qe" style="${pos}"><img class="q1" src="${qE(lv)}" alt=""><img class="q2" src="${qE(lv)}" alt=""></div><i class="qdu" style="${pos}"></i>`;
+    $('.qfld', f).querySelectorAll('img').forEach(im => { try { if (im.decode) im.decode().catch(() => { }); } catch (e) {   } });
     $('.qfld', f).classList.remove('en');
     $('.qtel', f).classList.remove('on'); $('.qtel', f).innerHTML = `<div class="bd"><b class="gold">レベル${lv}の 敵 出現！</b><small>${lv <= st.q.clr ? `${q.w}連勝して もう 一度 討伐しよう！` : `${q.w}連勝して バトルコインを ${q.c}枚 手に入れよう！`}</small></div>`;
     $('.qnm', f).classList.remove('on'); $('.qnm', f).textContent = q.n;
     $('.qtap', f).classList.remove('on'); $('.qsay', f).classList.remove('on'); $('.qsay p', f).textContent = '';
-    f.classList.remove('in'); show('qf'); qFieldLayout(); bgmTrack('');      
+    f.classList.remove('in'); show('qf'); qFieldLayout(); bgmTrack('field', lv);      
     void f.offsetWidth; f.classList.add('in');
     { const im = new Image(); im.src = qHL(lv); }      
     try { if (typeof fetch === 'function') fetch(BGMS.quest.file).catch(() => { }); } catch (e) {   }
-    later(() => { if (qs && qs.lv === lv && qs.i < 0 && screen === 'qf') qLine(0); }, 700 * SPEED);
+    const ld = qaLoad(lv);      
+    later(() => { if (qs && qs.lv === lv && qs.i < 0 && screen === 'qf') qaWait(ld, 1500 * SPEED, () => { if (qs && qs.lv === lv && qs.i < 0 && screen === 'qf') qLine(0); }); }, 700 * SPEED);
   }
   
   function qFieldLayout() {
@@ -3733,6 +3832,7 @@ const CBApp = (() => {
     const sh = p.firstChild, hd = p.lastChild; hd.textContent = t;
     const step = () => { if (!qs || qs.i !== i) return; n += 1; sh.textContent = t.slice(0, n); hd.textContent = t.slice(n); if (n < t.length) qs.tw = later(step, 34 * SPEED); else qs.tw = null; };
     step();
+    qaPlay(i);                          
     if (i === q.en - 1) qReveal();      
   }
   function qTap() {
@@ -3741,25 +3841,22 @@ const CBApp = (() => {
     if (qs.step === 'say') {
       if (qs.i < 0) return qLine(0);
       if (qs.tw) { unlater(qs.tw); qs.tw = null; $('.qsay p', scr.qf).textContent = q.say[qs.i]; return; }      
-      se('tap', 0.5);
-      if (qs.i + 1 < q.say.length) return qLine(qs.i + 1);
+      if (qs.i + 1 < q.say.length) return qLine(qs.i + 1);      
       return qEnd();
     }
     if (qs.step === 'en') return qBattle();
   }
   
+  
   async function qReveal() {
     const f = scr.qf, lv = qs.lv; if (qs.rv) return;
-    qs.rv = 1; $('.qtel', f).classList.add('on'); se('magic', 0.5);
-    await T(420); if (!qs || qs.lv !== lv || qs.rv !== 1) return;
-    se('appear'); qs.snd = true;                     
-    await T(480); if (!qs || qs.lv !== lv || qs.rv !== 1) return;
+    qs.rv = 1; $('.qtel', f).classList.add('on');
+    await T(900); if (!qs || qs.lv !== lv || qs.rv !== 1) return;
     qShowEnemy();
   }
   function qShowEnemy() {
     const f = scr.qf; if (!qs || qs.rv === 2) return;
     qs.rv = 2; $('.qtel', f).classList.add('on'); $('.qfld', f).classList.add('en');
-    if (!qs.snd) { se('appear'); qs.snd = true; }      
   }
   
   async function qEnd() {
@@ -3776,7 +3873,7 @@ const CBApp = (() => {
     if (!qs || qs.step !== 'en') return;
     if (qGone()) { qs = null; return; }      
     if (!qtUse()) { qs = null; showQMap(); qtModal(true); return; }      
-    const lv = qs.lv; qs.step = 'go'; se('tap');
+    const lv = qs.lv; qs.step = 'go'; se('tap'); qaStop(0.4);      
     qRun = { lv: lv, won: 0, m: st.q.m, gu: [] };
     startMatch(CBNet.cpu(CBApp._rng || undefined, CBApp._think || undefined, qOpt(lv, 1)));
     bgmTrack('quest');
@@ -3935,6 +4032,7 @@ const CBApp = (() => {
     clearInterval(qtTick); qtTick = 0;
     roomStop(); leave(true);
     if (ov) ov.classList.remove('on');
+    qaStop(0.05, true); qa.lv = 0; qa.buf = {};      
     soundRest();
     try { if (window.TengelWallet && window.TengelWallet.lockZoom) window.TengelWallet.lockZoom(false); } catch (e) {   }
     try { document.dispatchEvent(new CustomEvent('tengel:cb')); } catch (e) {   }
@@ -3943,12 +4041,14 @@ const CBApp = (() => {
   
   document.addEventListener('tengel:cbgift', () => { if (!st || !takeGift()) return; if (ov && ov.classList.contains('on') && screen === 'menu' && !modOn()) showMenu(); });
   return {
-    open, close, REWARD, rewardFor, COIN, coinFor, coinBonus, MS, PACK, FACES, _rng: null, _randInt: null, _think: null, _link: null, _opt: null, _room: null, _guard: null, _as: null, _now: null,      
+    open, close, REWARD, rewardFor, COIN, coinFor, coinBonus, MS, PACK, FACES, _rng: null, _randInt: null, _think: null, _link: null, _opt: null, _room: null, _guard: null, _as: null, _now: null, _sl: null,      
     _t: {      
       get view() { return V; }, get screen() { return screen; }, get match() { return match; }, get mode() { return mode; }, get state() { return st; }, get ended() { return ended; },
       get idle() { return !pumping && !queue.length && !busy && !lock; }, get ask() { return askOn(); }, say, get sets() { return { bgm: bgmOn(), se: seOn(), raw: { bgm: st.bgm, se: st.se }, as: AS }; },
       qopt: (lv, n) => qOpt(lv, n), qApi, qtPaint: () => qtPaint(), qGu: a => { if (qRun) qRun.gu = a.slice(); }, qmsWin: r => qmsWin(r), get qt() { return st ? Object.assign({ left: qtLeft() }, qtNow()) : null; }, get quest() { return { run: qRun ? Object.assign({}, qRun) : null, st: st ? Object.assign({}, st.q) : null, scene: qs ? { lv: qs.lv, step: qs.step, i: qs.i, typing: !!qs.tw, rv: qs.rv || 0 } : null, data: QUEST, open: st ? qOpen() : 0, track: bg.trk }; },      
-      get bgm() { return { on: !!bg.cur, want: bg.want, have: !!bg.buf, gone: bg.gone, pos: bgmPos(), len: BGM.len, pre: BGM.pre, vol: BGM.vol, file: BGM.file, loop: bg.cur ? [bg.cur.s.loopStart, bg.cur.s.loopEnd] : null, ctx: snd.ac ? snd.ac.state : null }; }, setSet, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, pay, load, save, takeGift, modOn, pkDraw, pkPool, pkGroup, randInt, get pk() { return pk; }, dz: t => showDz(t), dzApi, msKey: () => monthKey(), msRoll, ms: tab => showMs(tab), pic
+      get bgm() { return { on: !!bg.cur, want: bg.want, have: !!bg.buf, gone: bg.gone, pos: bgmPos(), len: BGM.len, pre: BGM.pre, vol: BGM.vol, file: BGM.file, loop: bg.cur ? [bg.cur.s.loopStart, bg.cur.s.loopEnd] : null, ctx: snd.ac ? snd.ac.state : null, off: bg.cur ? bg.cur.off : null, dur: bg.buf ? bg.buf.duration : null, trk: bg.trk }; },
+      get qsnd() { return { lv: qa.lv, cur: qa.cur ? { f: qa.cur.f, keep: qa.cur.keep, on: !!qa.cur.s } : null, kept: qa.kept.map(o => o.f), have: Object.keys(qa.buf), data: QSND, bgs: QBG }; },      
+      setSet, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, pay, load, save, takeGift, modOn, pkDraw, pkPool, pkGroup, randInt, get pk() { return pk; }, dz: t => showDz(t), dzApi, msKey: () => monthKey(), msRoll, ms: tab => showMs(tab), pic
     }
   };
 })();
