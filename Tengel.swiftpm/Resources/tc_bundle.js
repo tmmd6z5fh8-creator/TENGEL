@@ -5853,7 +5853,10 @@ const TCApp = (() => {
   window.TC_ASSET = AP;
 
   
-  const DEF = () => ({ v: 1, color: 0, cares: 0, total: 0, stock: 5, stockAt: Date.now(), heart: 0, high: 0, tickets: 0, fav: null, poops: [], trash: [], trashAt: 0, visit: null, rs: { n: 0, at: 0, el: 0 }, snd: true, gen: 1, bulk: false, push: false, buy: null, dp: null });      
+  
+  
+  const wallNow = () => { try { const c = window.TengelClock; if (c && typeof c.now === 'function') { const t = +c.now(); if (isFinite(t) && t > 0) return t; } } catch (e) {   } return Date.now(); };
+  const DEF = () => ({ v: 1, color: 0, cares: 0, total: 0, stock: 5, stockAt: wallNow(), heart: 0, high: 0, tickets: 0, fav: null, poops: [], trash: [], trashAt: 0, visit: null, rs: { n: 0, at: 0, el: 0 }, snd: true, gen: 1, bulk: false, push: false, buy: null, dp: null });      
   let st = null, dirty = false, saveAt = 0;
   function load() {
     try { const s = JSON.parse(localStorage.getItem(SK) || 'null'); st = Object.assign(DEF(), s && s.v === 1 ? s : {}); } catch (e) { st = DEF(); }
@@ -5873,8 +5876,11 @@ const TCApp = (() => {
   
   
   
+  
+  
+  
   function tnow() {
-    const n = Date.now(), s0 = +st.seen || 0;
+    const n = wallNow(), s0 = +st.seen || 0;
     if (n > s0) { st.seen = n; if (n > (tnow.saved || 0) + 60000) { tnow.saved = n; touch(); } }
     return Math.max(n, s0);
   }

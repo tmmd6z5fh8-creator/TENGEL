@@ -772,11 +772,19 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBCpu;
 
 
 
+
+
+
+
+
+
+
+
 const CBNet = (() => {
   'use strict';
   const R = CBRules, PROTO = 13, MAXLEN = 20000;      
   
-  const STAKE_MAX = 999;
+  const STAKE_MAX = 100;                               
   function stakeOf(k) {
     const e = Math.max(0, Math.min(STAKE_MAX, Math.floor(+(k && k.e) || 0)));
     const w = Math.max(e, Math.min(e * 2, Math.floor(+(k && k.w) || 0)));
@@ -795,6 +803,35 @@ const CBNet = (() => {
     R.KINDS.forEach(k => { if (Object.prototype.hasOwnProperty.call(f, k) && typeof f[k] === 'string' && DZID.test(f[k])) o.f[k] = f[k]; });
     return o;
   }
+
+  
+  
+  const SAFE = /^[A-Za-z0-9_-]{0,24}$/, BAD = {}, MIN_SETS = 3;
+  let minSets = MIN_SETS;                              
+  function clean(v, d) {
+    if (v === null || typeof v === 'boolean') return v;
+    if (typeof v === 'number') return isFinite(v) && Math.abs(v) <= 1e6 ? v : BAD;
+    if (typeof v === 'string') return SAFE.test(v) ? v : BAD;
+    if (typeof v !== 'object' || d >= 8) return BAD;
+    if (Array.isArray(v)) {
+      if (v.length > 64) return BAD;
+      const a = [];
+      for (let i = 0; i < v.length; i++) { const x = clean(v[i], d + 1); if (x === BAD) return BAD; a.push(x); }
+      return a;
+    }
+    const ks = Object.keys(v), o = {};
+    if (ks.length > 48) return BAD;
+    for (let i = 0; i < ks.length; i++) {
+      const k = ks[i]; if (!SAFE.test(k) || k === '__proto__' || k === 'constructor' || k === 'prototype') return BAD;
+      const x = clean(v[k], d + 1); if (x === BAD) return BAD;
+      o[k] = x;
+    }
+    return o;
+  }
+  const isObj = x => !!x && typeof x === 'object' && !Array.isArray(x);
+  
+  const viewOk = v => isObj(v) && isObj(v.my) && isObj(v.op) && isObj(v.can) && Array.isArray(v.my.hand) && Array.isArray(v.op.hand) && Array.isArray(v.discard);
+  const evOk = ev => Array.isArray(ev) && ev.every(x => isObj(x) && typeof x.e === 'string' && x.e.length > 0);
 
   
   
@@ -879,8 +916,11 @@ const CBNet = (() => {
         }
         if (o.t === 'bye') { m._.end('bye'); return; }
         if (!joined) return;
-        if (o.t === 'act') { const r = m._.apply(1, o.a); send({ t: 'ack', id: o.id, ok: r.ok, why: r.why }); }
-        else if (o.t === 'again') m._.seatAgain();
+        if (o.t === 'act') {                            
+          const a = clean(o.a, 0); let r;
+          try { r = a === BAD || !isObj(a) ? { ok: false, why: 'arg' } : m._.apply(1, a); } catch (e) { r = { ok: false, why: 'err' }; }
+          send({ t: 'ack', id: typeof o.id === 'number' && isFinite(o.id) ? o.id : 0, ok: r.ok, why: r.why });
+        } else if (o.t === 'again') m._.seatAgain();
       };
       link.onLost = () => { if (!closed) m._.end('lost'); };
       return {
@@ -895,27 +935,43 @@ const CBNet = (() => {
 
   
   function guest(link, dz) {
-    let alive = true, id = 0, hello = false;
-    const wait = {}, myDz = dzOf(dz);
+    let alive = true, id = 0, hello = false, sets = 0;      
+    let joined = false, over = false, again = false;      
+    const wait = new Map(), myDz = dzOf(dz);
     const m = { kind: 'guest', me: 1, onUpdate: null, onState: null, stake: null, opDz: null, gm: null };      
     const send = o => { if (alive) link.send(JSON.stringify(o)); };
-    const end = why => { if (!alive) return; alive = false; Object.keys(wait).forEach(k => wait[k]({ ok: false, why: 'off' })); try { link.close(); } catch (e) {   } say(m, 'onState', why); };
+    const end = why => { if (!alive) return; alive = false; const fs = Array.from(wait.values()); wait.clear(); fs.forEach(f => f({ ok: false, why: 'off' })); try { link.close(); } catch (e) {   } say(m, 'onState', why); };
     link.onText = txt => {
       if (!alive || typeof txt !== 'string' || txt.length > MAXLEN) return;
       let o; try { o = JSON.parse(txt); } catch (e) { return; }
       if (!o || typeof o !== 'object') return;
       if (o.t === 'hello') { if (o.v !== PROTO) end('ver'); else if (!hello) { hello = true; m.stake = stakeOf(o.stake); m.opDz = dzOf(o.dz); m.gm = gmOf(o.gm); say(m, 'onState', 'ready'); say(m, 'onState', 'stake'); } }      
-      else if (o.t === 'up' && o.view && Array.isArray(o.ev)) say(m, 'onUpdate', { n: o.n, ev: o.ev, view: o.view });
-      else if (o.t === 'ack') { const f = wait[o.id]; if (f) { delete wait[o.id]; f({ ok: !!o.ok, why: o.why }); } }
+      else if (o.t === 'up') {
+        
+        const ev = clean(o.ev, 0), view = clean(o.view, 0);
+        if (!hello || !joined || ev === BAD || view === BAD || !evOk(ev) || !viewOk(view)) return end('bad');      
+        
+        
+        for (let i = 0; i < ev.length; i++) {
+          if (ev[i].e === 'deal') { if (over && !again) return end('bad'); over = false; again = false; sets = 0; }
+          else if (ev[i].e === 'end') { if (over || sets < minSets) return end('bad'); over = true; sets = 0; }
+        }
+        say(m, 'onUpdate', { n: typeof o.n === 'number' && isFinite(o.n) ? o.n : 0, ev: ev, view: view });
+      } else if (o.t === 'ack') { const f = wait.get(o.id); if (f) { wait.delete(o.id); f({ ok: o.ok === true, why: typeof o.why === 'string' && SAFE.test(o.why) ? o.why : '' }); } }
       else if (o.t === 'again') say(m, 'onState', 'again');
       else if (o.t === 'bye') end('bye');
     };
     link.onLost = () => end('lost');
     m.start = () => send({ t: 'hello', v: PROTO, dz: myDz });
-    m.join = () => { if (hello && m.stake) send({ t: 'join', stake: m.stake }); };      
-    m.act = a => new Promise(ok => { if (!alive) return ok({ ok: false, why: 'off' }); id += 1; wait[id] = ok; send({ t: 'act', id: id, a: a }); });
+    m.join = () => { if (hello && m.stake) { joined = true; send({ t: 'join', stake: m.stake }); } };      
+    m.act = a => new Promise(ok => {
+      if (!alive) return ok({ ok: false, why: 'off' });
+      id += 1; wait.set(id, ok);
+      if (a && a.t === 'set') sets += 1;               
+      send({ t: 'act', id: id, a: a });
+    });
     m.idle = () => { };
-    m.again = () => send({ t: 'again' });
+    m.again = () => { if (over) again = true; send({ t: 'again' }); };
     m.leave = () => { if (!alive) return; send({ t: 'bye' }); alive = false; setTimeout(() => { try { link.close(); } catch (e) {   } }, 250); };
     return m;
   }
@@ -952,7 +1008,8 @@ const CBNet = (() => {
     };
   }
 
-  return { PROTO, STAKE_MAX, stakeOf, dzOf, gmOf, cpu, host, guest, nativeRoom };
+  return { PROTO, STAKE_MAX, MIN_SETS, stakeOf, dzOf, gmOf, clean: v => { const x = clean(v, 0); return x === BAD ? undefined : x; }, cpu, host, guest, nativeRoom,
+    _t: { get minSets() { return minSets; }, set minSets(n) { minSets = Math.max(0, Math.floor(+n || 0)); } } };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = CBNet;
 
@@ -1281,12 +1338,16 @@ const CBApp = (() => {
   }
   const rewardFor = streak => (streak > 0 && streak % REWARD.every === 0 ? REWARD.bonus : REWARD.win);
   
+  
+  
+  
   async function pay() {
-    if (!(st.owe > 0) || typeof window.TCGift !== 'function') return null;
+    if (!(st.owe > 0) || typeof window.TCGift !== 'function' || window.__cbPayBusy) return null;
     const want = st.owe; let r = null;
-    try { r = await window.TCGift(want); } catch (e) { r = null; }
+    window.__cbPayBusy = true;
+    try { r = await window.TCGift(want); } catch (e) { r = null; } finally { window.__cbPayBusy = false; }
     if (!r) return null;                               
-    st.owe = 0; save();                                
+    st.owe = Math.max(0, st.owe - want); save();       
     return { want: want, add: r.add, stock: r.stock, max: r.max };
   }
   
@@ -1309,9 +1370,11 @@ const CBApp = (() => {
   
   function msLive() { if (!match) return; msRoll(); st.ms.live = qRun ? 'qc' : msKind(match); save(); }      
   
+  
+  
   function payStake() {
     const k = match && match.stake; st.stake = null;
-    if (k && k.e > 0) { st.coin = Math.max(0, st.coin - k.e); st.stake = { e: k.e, w: k.w }; }
+    if (k && k.e > 0 && st.coin >= k.e) { st.coin -= k.e; st.stake = { e: k.e, w: k.w }; }
     save();
   }
 
@@ -2207,7 +2270,7 @@ const CBApp = (() => {
       + `<h4>バトルコイン</h4><ul><li><b>コンピュータに 勝つと ${COIN.win}枚</b> もらえるよ。連勝すると ボーナス：${COIN.bonus.map(t => `<b>${t[0]}連勝 ごとに ＋${t[1]}枚</b>`).join('・')}（${COIN.bonus.reduce((a, t) => a * t[0], 1)}連勝 など、両方の ときは 両方）</li>`
       + `<li><b>毎日の ログインボーナス</b>でも <b>${COIN.day}枚</b>（<b>7日目は ＋${COIN.day7}枚</b>）もらえるよ。<b>買う ことは できない</b>よ</li>`
       + '<li>友達と 対戦する 部屋を 作る とき、<b>参加コイン</b>と <b>勝者の 獲得コイン</b>（参加コインの 2倍 まで）を 決められるよ</li><li>部屋に 入る 人は、同じ 数の 参加コインを 持って いないと 入れないよ</li>'
-      + '<li>2人とも 初めに 参加コインを 出す。<b>勝った 人は、テンゲルから 獲得コインを プレゼントで もらえる</b>。同点は 参加コインが 戻る</li><li><b>途中で やめると、参加コインは 戻らない</b>（つながりが 切れた ときは 戻るよ）</li></ul>'
+      + '<li>2人とも 初めに 参加コインを 出す。<b>勝った 人は、テンゲルから 獲得コインを プレゼントで もらえる</b>。同点は 参加コインが 戻る</li><li><b>途中で やめると、参加コインは 戻らない</b>（つながりが 切れた ときは 戻るよ）</li><li>相手が 途中で やめた とき：あなたが カードを 3回 出した 後 なら 獲得コインを もらえる。その 前なら 参加コインが 戻るよ</li></ul>'
       + `<h4>デザインカスタム</h4><ul><li>メニューの「<b>デザインカスタム</b>」で、カードの <b>表</b>・<b>裏</b>と <b>プレイボード</b>の デザインを 変えられるよ</li>`
       + `<li><b>カードの 表</b>は <b>カードパック</b>で 集めるよ：1パック <b>バトルコイン ${PACK.cost}枚</b>・<b>${PACK.size}枚</b>入り（ノーマル ${PACK.size - 1}枚 ＋ くじの 1枚）</li>`
       + `<li>くじの 1枚：<b>レア 2パックに 1枚</b>・<b>超レア 5パックに 1枚</b>（どちらも 神様馬・幻の馬を 含む）・<b>神様馬／幻の馬の レア 10パックに 1枚</b>・<b>神様馬／幻の馬の 超レア 23パックに 1枚</b>（どれも 平均。詳しい 確率は カードパックの「出る 確率」）</li>`
@@ -2683,11 +2746,13 @@ const CBApp = (() => {
   let match = null, V = null, queue = [], pumping = false, mode = { k: 'idle' }, busy = false, lock = false, ended = false, gameNo = 0, dealHold = false;      
   
   let fin = false, ends = [];
+  
+  let mySets = 0;
   function onEv(u) {
     if (qRun && u && u.view && u.view.my && u.view.my.gem) qRun.gu = u.view.my.gem.used.slice();      
     (u && u.ev || []).forEach(x => {
       if (!x) return;
-      if (x.e === 'deal') fin = false;
+      if (x.e === 'deal') { fin = false; mySets = 0; }
       else if (x.e === 'end' && !fin) { fin = true; ends.push(settle(x.res)); }
     });
   }
@@ -2725,12 +2790,16 @@ const CBApp = (() => {
     if (s === 'joined') return;
     if (s === 'stake') return joinAsk();
     const playing = !ended && !fin && !!V;      
-    const why = s === 'bye' ? WHO() + 'が 部屋を 出たよ' : s === 'ver' ? 'アプリの 版が 違うので 対戦できないよ。\n2人とも 新しい 版に してね' : 'つながりが 切れたよ';
+    const why = s === 'bye' ? WHO() + 'が 部屋を 出たよ' : s === 'ver' ? 'アプリの 版が 違うので 対戦できないよ。\n2人とも 新しい 版に してね' : s === 'bad' ? '相手から 正しくない 知らせが 届いた ので、\n対戦を 終わったよ' : 'つながりが 切れたよ';      
+    
+    
+    
     
     let coinMsg = '';
     if (st.stake) {
       const k = st.stake; st.stake = null;
-      if (s === 'bye') { addCoin(k.w); coinMsg = `${WHO()}が 途中で やめた ので、バトルコイン ${k.w}枚を もらったよ`; } else { addCoin(k.e); coinMsg = `参加コイン ${k.e}枚は 戻ったよ`; }
+      if (s === 'bye' && mySets >= CBNet.MIN_SETS) { addCoin(k.w); coinMsg = `${WHO()}が 途中で やめた ので、バトルコイン ${k.w}枚を もらったよ`; }
+      else { addCoin(k.e); coinMsg = s === 'bye' ? `${WHO()}が 序盤で やめた ので、参加コイン ${k.e}枚は 戻ったよ` : `参加コイン ${k.e}枚は 戻ったよ`; }
       save();
     }
     if (st.ms.live) { st.ms.live = ''; save(); }      
@@ -3066,6 +3135,7 @@ const CBApp = (() => {
     let r = null; const g = GEN;
     try { r = await match.act(a); } catch (e) { r = { ok: false, why: 'err' }; }
     if (g !== GEN) return false;                       
+    if (r && r.ok && a && a.t === 'set') mySets += 1;   
     busy = false;
     if (!r || !r.ok) { lock = false; if (match && V) { mode = { k: 'idle' }; render(); toast('その 手は 打てなかったよ', 2); } return false; }
     return true;
@@ -4048,6 +4118,7 @@ const CBApp = (() => {
       qopt: (lv, n) => qOpt(lv, n), qApi, qtPaint: () => qtPaint(), qGu: a => { if (qRun) qRun.gu = a.slice(); }, qmsWin: r => qmsWin(r), get qt() { return st ? Object.assign({ left: qtLeft() }, qtNow()) : null; }, get quest() { return { run: qRun ? Object.assign({}, qRun) : null, st: st ? Object.assign({}, st.q) : null, scene: qs ? { lv: qs.lv, step: qs.step, i: qs.i, typing: !!qs.tw, rv: qs.rv || 0 } : null, data: QUEST, open: st ? qOpen() : 0, track: bg.trk }; },      
       get bgm() { return { on: !!bg.cur, want: bg.want, have: !!bg.buf, gone: bg.gone, pos: bgmPos(), len: BGM.len, pre: BGM.pre, vol: BGM.vol, file: BGM.file, loop: bg.cur ? [bg.cur.s.loopStart, bg.cur.s.loopEnd] : null, ctx: snd.ac ? snd.ac.state : null, off: bg.cur ? bg.cur.off : null, dur: bg.buf ? bg.buf.duration : null, trk: bg.trk }; },
       get qsnd() { return { lv: qa.lv, cur: qa.cur ? { f: qa.cur.f, keep: qa.cur.keep, on: !!qa.cur.s } : null, kept: qa.kept.map(o => o.f), have: Object.keys(qa.buf), data: QSND, bgs: QBG }; },      
+      get mySets() { return mySets; }, setMySets: n => { mySets = Math.max(0, Math.floor(+n || 0)); },      
       setSet, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, pay, load, save, takeGift, modOn, pkDraw, pkPool, pkGroup, randInt, get pk() { return pk; }, dz: t => showDz(t), dzApi, msKey: () => monthKey(), msRoll, ms: tab => showMs(tab), pic
     }
   };
