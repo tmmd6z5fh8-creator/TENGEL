@@ -13,6 +13,11 @@ odds = [1.5, 3.2, 4.8, 6.5, 8.9, 12.1, 15.6, 20.3, 28.4, 35.0, 48.2, 66.0]; nos 
 FORM = {"id": None, "venue": "大井", "date": "2026-10-12", "r": "9", "dist": "1400", "surface": "ダ", "baba": "良", "n": "12", "tan1": "", "s1": "9.0", "s1combo": "", "s5": "", "s5combo": "", "s10": "", "s10combo": "",
         "rows": [{"no": no, "tan": str(t), "fuku": ""} for no, t in zip(nos, odds)]}   # 比6.0 → A層
 fails, errs = [], []
+
+def rec_year(pg):      # 第4.211版：記録タブは 今月を 開く。この テストの 記録は 2026年10月 → 今月で なくても 出る ように、2026年の「年間」に して から 見る
+    pg.evaluate("""() => { const y = document.querySelector('#v-rec select[data-ym=y]'); if (y && [...y.options].some(o => o.value === '2026') && y.value !== '2026') { y.value = '2026'; y.dispatchEvent(new Event('change', { bubbles: true })); }
+      const b = document.querySelector('#v-rec button[data-ym=m][data-v="0"]'); if (b && b.getAttribute('aria-pressed') !== 'true') b.click(); }"""); pg.wait_for_timeout(300)
+
 def check(c, label):
     print(('  ✅ ' if c else '  ❌ ') + label)
     if not c: fails.append(label)
@@ -55,7 +60,7 @@ try:
         check('保存できたよ（的中）' in msg, '保存した記録は「的中」 ' + msg)
         pg.locator('#recCard').screenshot(path=os.path.join(OUT, 'buyzone_card.png'))
         # 記録タブ：一覧に買ったゾーン → 開いて第1も足して 1-2-3 に直す
-        pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(500)
+        pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(500); rec_year(pg)
         row = pg.locator('#recList .lrow[data-id="20261012-oi-09"]'); s_line = row.locator('.lmid .s').inner_text()
         print('[6] 記録タブ:', s_line, '|', row.locator('.stc').first.inner_text()); check('買った：人気→中穴' in s_line, '一覧に「買った：人気→中穴」')
         row.locator('.lmain').click(); pg.wait_for_timeout(400)

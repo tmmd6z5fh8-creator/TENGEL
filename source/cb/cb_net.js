@@ -37,11 +37,19 @@
 //   第4.199版（まさちゃん 22:01「7トークンを1枚見せて…捨てることで、3枚引けるって効果ね！」：7トークンで 7 の 3まい 交換は 見せて 捨てる＝ルールが かわった）：PROTO 12
 //   第4.202版（まさちゃん 23:42「手札から使える効果は、カードセット前に使えるようにして！」・23:55「５ターンのうち、どちらかが３ターン勝利したら、試合終了にして！」）：
 //     7 の 3まい 交換・3 の 交換は セットの 前（手 x7・x3）・効果タイムは 5 → 4 だけ・決着したら その ターンで おわり（ルールが かわった）：PROTO 13
+//   第4.211版（まさちゃん 2026/11/22 21:36「不正にポイントやバトルコイン、お世話トークンを手に入れる抜け穴は無いか全部細かく徹底的に確認して！」）：部屋の 相手は「本物の アプリ」とは かぎらない
+//     （サーバーを 使わない ので たしかめられない：同じ つなぎ方を まねた にせものの 相手を 作れる 人が いる）→ 相手から 届いた ものは 形を たしかめて から 使う：
+//     ・届いた 知らせ（up の ev・view／ack の why／ゲストの 手 act）は、数・はい いいえ・null・短い 英数字（SAFE）だけで できて いる こと（clean）。それ 以外（タグに なる 字・長い 字・深い 入れ子）が
+//       1つでも あれば 使わない：ゲストは 対戦を そこで 終える（onState('bad')：勝ち負けに 数えない・参加コインは もどる）・ホストは その 手を ことわる
+//     ・ゲストは、自分が カードを 3回 セットして から で ないと「対戦が 終わった」（end）を 受けとらない（MIN_SETS：どの 対戦も 3ターンは ある）。
+//       前は にせものの ホストが「配った → あなたの 勝ち」を くり返し 送る だけで、勝ちの 数・お世話トークン・ミッションの 連勝を いくらでも ふやせた
+//     ・ゲストは、自分が「参加する」と 答える 前・「もう 1回」を 押す 前に 配られた 対戦（deal）も 受けとらない（決まりを 見て いない のに 参加コインを 出させない）
+//     ・参加コインの 上限は 画面で えらべる 数（100枚）まで（前は 届いた 数を 999枚まで 受けとって いた）
 const CBNet = (() => {
   'use strict';
   const R = CBRules, PROTO = 13, MAXLEN = 20000;      // PROTO 13（第4.202版）：7 の 3まい 交換・3 は セットの 前・決着したら 試合終了。PROTO 12（第4.199版）：7トークンで 7 の 3まい 交換は 見せて 捨てる。PROTO 11（第4.197版）：決戦宝石（手 gem・トークン・あいさつの gm）。PROTO 10（第4.190版）：6 は セットの 前・効果タイムは 1つずつ。PROTO 9（第4.188版）：効果の 順 6 → 7 → 3 → 5 → 4。PROTO 8（第4.187版）：7 の 4まい 公開は セットの 前（手 x7r）・場の カードは いつも うら。PROTO 7（第4.185版）：7 の 4まい 公開で 強さ 逆転。PROTO 6（第4.183版）：4 の 効果で 交換して 5 を 出したら 5 の 効果（ルールが かわった：phase 'u5'・手 u5）＝ 前の 版の アプリとは 対戦しない。PROTO 5（第4.181版）：2人とも 4 の 効果を 使ったら ドロー（ルールが かわった）＝ 前の 版の アプリとは 対戦しない。PROTO 4（第4.179版）：あいさつに 参加コインの 決まり・「参加する」の 返事が ふえた ＝ 前の 版の アプリとは 対戦しない（「アプリの 版が ちがう」と 出る）。PROTO 3＝第4.178版（5ターン・手札 7まい・逆転勝利）・PROTO 2＝第4.177版
   // 参加コイン e（0〜STAKE_MAX）・勝者の 獲得コイン w（e 〜 e の 2倍）。数字で ない・はんいの 外は 直す（相手から 届いた ものも ここを 通す）
-  const STAKE_MAX = 999;
+  const STAKE_MAX = 100;                               // 第4.211版：999 → 100（画面で えらべる いちばん 大きい 数：cb_app.js の STAKE_CHIPS）
   function stakeOf(k) {
     const e = Math.max(0, Math.min(STAKE_MAX, Math.floor(+(k && k.e) || 0)));
     const w = Math.max(e, Math.min(e * 2, Math.floor(+(k && k.w) || 0)));
@@ -60,6 +68,35 @@ const CBNet = (() => {
     R.KINDS.forEach(k => { if (Object.prototype.hasOwnProperty.call(f, k) && typeof f[k] === 'string' && DZID.test(f[k])) o.f[k] = f[k]; });
     return o;
   }
+
+  // 第4.211版：相手から 届いた ものを たしかめる。使って よい 形に 写した もの（だめ なら BAD）
+  //   数（−100万〜100万）・はい いいえ・null・短い 英数字（24字 まで）・ならび（64こ まで）・見出しも 短い 英数字（48こ まで）・入れ子は 8段 まで
+  const SAFE = /^[A-Za-z0-9_-]{0,24}$/, BAD = {}, MIN_SETS = 3;
+  let minSets = MIN_SETS;                              // テスト 用（短い 対戦：3ターンの 形）に だけ かえる（_t.minSets）。アプリの 中では いつも MIN_SETS
+  function clean(v, d) {
+    if (v === null || typeof v === 'boolean') return v;
+    if (typeof v === 'number') return isFinite(v) && Math.abs(v) <= 1e6 ? v : BAD;
+    if (typeof v === 'string') return SAFE.test(v) ? v : BAD;
+    if (typeof v !== 'object' || d >= 8) return BAD;
+    if (Array.isArray(v)) {
+      if (v.length > 64) return BAD;
+      const a = [];
+      for (let i = 0; i < v.length; i++) { const x = clean(v[i], d + 1); if (x === BAD) return BAD; a.push(x); }
+      return a;
+    }
+    const ks = Object.keys(v), o = {};
+    if (ks.length > 48) return BAD;
+    for (let i = 0; i < ks.length; i++) {
+      const k = ks[i]; if (!SAFE.test(k) || k === '__proto__' || k === 'constructor' || k === 'prototype') return BAD;
+      const x = clean(v[k], d + 1); if (x === BAD) return BAD;
+      o[k] = x;
+    }
+    return o;
+  }
+  const isObj = x => !!x && typeof x === 'object' && !Array.isArray(x);
+  // 見せて もらった 形（view）と おきた こと（ev）が、画面が 使える 形か
+  const viewOk = v => isObj(v) && isObj(v.my) && isObj(v.op) && isObj(v.can) && Array.isArray(v.my.hand) && Array.isArray(v.op.hand) && Array.isArray(v.discard);
+  const evOk = ev => Array.isArray(ev) && ev.every(x => isObj(x) && typeof x.e === 'string' && x.e.length > 0);
 
   // ---------- 親（コンピュータと 対戦・部屋の ホスト）----------
   //   seat1＝相手の 席：{ up(u)（相手に 見せる ものが できた）, idle()（画面が 落ちついた）, stop() }
@@ -144,8 +181,11 @@ const CBNet = (() => {
         }
         if (o.t === 'bye') { m._.end('bye'); return; }
         if (!joined) return;
-        if (o.t === 'act') { const r = m._.apply(1, o.a); send({ t: 'ack', id: o.id, ok: r.ok, why: r.why }); }
-        else if (o.t === 'again') m._.seatAgain();
+        if (o.t === 'act') {                            // 第4.211版：手は 形を たしかめて から ルールへ（おかしな 手・ルールの 中の まちがいで 対戦を 止めない）
+          const a = clean(o.a, 0); let r;
+          try { r = a === BAD || !isObj(a) ? { ok: false, why: 'arg' } : m._.apply(1, a); } catch (e) { r = { ok: false, why: 'err' }; }
+          send({ t: 'ack', id: typeof o.id === 'number' && isFinite(o.id) ? o.id : 0, ok: r.ok, why: r.why });
+        } else if (o.t === 'again') m._.seatAgain();
       };
       link.onLost = () => { if (!closed) m._.end('lost'); };
       return {
@@ -160,27 +200,43 @@ const CBNet = (() => {
 
   // 部屋の ゲスト：親（ホスト）に 手を 送って、見せて もらった ものを 受ける。dz＝自分が えらんだ デザイン（第4.183版）
   function guest(link, dz) {
-    let alive = true, id = 0, hello = false;
-    const wait = {}, myDz = dzOf(dz);
+    let alive = true, id = 0, hello = false, sets = 0;      // sets（第4.211版）：この 対戦で 自分が セットを 送った 数（画面で カードを 出した 数）
+    let joined = false, over = false, again = false;      // 第4.211版：「参加する」と 答えた・対戦が 1つ 終わった・「もう 1回」を 押した
+    const wait = new Map(), myDz = dzOf(dz);
     const m = { kind: 'guest', me: 1, onUpdate: null, onState: null, stake: null, opDz: null, gm: null };      // gm：部屋の 決戦宝石の 決まり（第4.197版）
     const send = o => { if (alive) link.send(JSON.stringify(o)); };
-    const end = why => { if (!alive) return; alive = false; Object.keys(wait).forEach(k => wait[k]({ ok: false, why: 'off' })); try { link.close(); } catch (e) { /* なし */ } say(m, 'onState', why); };
+    const end = why => { if (!alive) return; alive = false; const fs = Array.from(wait.values()); wait.clear(); fs.forEach(f => f({ ok: false, why: 'off' })); try { link.close(); } catch (e) { /* なし */ } say(m, 'onState', why); };
     link.onText = txt => {
       if (!alive || typeof txt !== 'string' || txt.length > MAXLEN) return;
       let o; try { o = JSON.parse(txt); } catch (e) { return; }
       if (!o || typeof o !== 'object') return;
       if (o.t === 'hello') { if (o.v !== PROTO) end('ver'); else if (!hello) { hello = true; m.stake = stakeOf(o.stake); m.opDz = dzOf(o.dz); m.gm = gmOf(o.gm); say(m, 'onState', 'ready'); say(m, 'onState', 'stake'); } }      // stake：部屋の 決まり（参加コイン・勝者の 獲得コイン）が 届いた → 画面が 聞いて match.join()
-      else if (o.t === 'up' && o.view && Array.isArray(o.ev)) say(m, 'onUpdate', { n: o.n, ev: o.ev, view: o.view });
-      else if (o.t === 'ack') { const f = wait[o.id]; if (f) { delete wait[o.id]; f({ ok: !!o.ok, why: o.why }); } }
+      else if (o.t === 'up') {
+        // 第4.211版：届いた 知らせは 形を たしかめて から 画面へ。おかしければ 対戦を 終える（'bad'：数えない）
+        const ev = clean(o.ev, 0), view = clean(o.view, 0);
+        if (!hello || !joined || ev === BAD || view === BAD || !evOk(ev) || !viewOk(view)) return end('bad');      // joined：「参加する」と 答える 前の 知らせは 受けとらない
+        // 「配った」（deal）は、はじめの 1回 か、前の 対戦が 終わって 自分が「もう 1回」を 押した あと だけ。
+        // 「対戦が 終わった」（end）は、自分が MIN_SETS 回 セットした あと だけ（配り直したら 0 から・受けとったら 0 に）
+        for (let i = 0; i < ev.length; i++) {
+          if (ev[i].e === 'deal') { if (over && !again) return end('bad'); over = false; again = false; sets = 0; }
+          else if (ev[i].e === 'end') { if (over || sets < minSets) return end('bad'); over = true; sets = 0; }
+        }
+        say(m, 'onUpdate', { n: typeof o.n === 'number' && isFinite(o.n) ? o.n : 0, ev: ev, view: view });
+      } else if (o.t === 'ack') { const f = wait.get(o.id); if (f) { wait.delete(o.id); f({ ok: o.ok === true, why: typeof o.why === 'string' && SAFE.test(o.why) ? o.why : '' }); } }
       else if (o.t === 'again') say(m, 'onState', 'again');
       else if (o.t === 'bye') end('bye');
     };
     link.onLost = () => end('lost');
     m.start = () => send({ t: 'hello', v: PROTO, dz: myDz });
-    m.join = () => { if (hello && m.stake) send({ t: 'join', stake: m.stake }); };      // 決まりを 見て「参加する」（ホストは これが 届いて から 配る）
-    m.act = a => new Promise(ok => { if (!alive) return ok({ ok: false, why: 'off' }); id += 1; wait[id] = ok; send({ t: 'act', id: id, a: a }); });
+    m.join = () => { if (hello && m.stake) { joined = true; send({ t: 'join', stake: m.stake }); } };      // 決まりを 見て「参加する」（ホストは これが 届いて から 配る）
+    m.act = a => new Promise(ok => {
+      if (!alive) return ok({ ok: false, why: 'off' });
+      id += 1; wait.set(id, ok);
+      if (a && a.t === 'set') sets += 1;               // 第4.211版：セットを 送った 数（さいごの セットの 返事〈ack〉は「終わった」の 知らせの あとに 届く ので、送った ときに 数える）
+      send({ t: 'act', id: id, a: a });
+    });
     m.idle = () => { };
-    m.again = () => send({ t: 'again' });
+    m.again = () => { if (over) again = true; send({ t: 'again' }); };
     m.leave = () => { if (!alive) return; send({ t: 'bye' }); alive = false; setTimeout(() => { try { link.close(); } catch (e) { /* なし */ } }, 250); };
     return m;
   }
@@ -217,6 +273,7 @@ const CBNet = (() => {
     };
   }
 
-  return { PROTO, STAKE_MAX, stakeOf, dzOf, gmOf, cpu, host, guest, nativeRoom };
+  return { PROTO, STAKE_MAX, MIN_SETS, stakeOf, dzOf, gmOf, clean: v => { const x = clean(v, 0); return x === BAD ? undefined : x; }, cpu, host, guest, nativeRoom,
+    _t: { get minSets() { return minSets; }, set minSets(n) { minSets = Math.max(0, Math.floor(+n || 0)); } } };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = CBNet;

@@ -362,12 +362,34 @@ KANJI_INDEX = [      # 長い 言い回しから 順に かける
 ]
 
 
+# 第4.211版（まさちゃん 2026/11/22 21:36「不正にポイントやバトルコイン、お世話トークンを手に入れる抜け穴は無いか全部細かく徹底的に確認して！」）：
+#   保存して ある 字を そのまま 画面（HTML）に 入れて いた 所を、字と して 出す（esc）・欄の 名前（id・for）に 使う 字は 英数字と - _ だけ。
+#   App Store版は ポイントが ある ので、画面に 入った 字が タグと して 読まれる（＝スクリプトを 動かせる）と ポイントを 作れて しまう。打った 字・画像から 読んだ 字・ファイルから 読んだ 字が
+#   ここへ とどく 道は 入口で ふさいで ある（区切りの 字は「-」に・ファイルの 字は 全角に・記録の id は 日付と 16進の 字）が、出す 側でも 止める（test_inject.py が 総当たりで 見る）。
+#   Web版は かえない（ポイントが ない・src.html は Web版と 同じ ファイル）→ アプリを 作る ときに 置きかえる
+SAFE_INDEX = [
+    # 判定画面の 人気順位の 表：3連単の 組番（入力の 字）
+    ("const x = J.x, arrow = s => String(s || '').replace(/[-－ー‐ｰ\\s]+/g, '→');\n  const so = (v, cb) => v == null ? '読取不可' : (cb ? arrow(cb) + ' / ' : '') + fmt(v) + '倍';",
+     "const x = J.x, arrow = s => String(s || '').replace(/[-－ー‐ｰ\\s]+/g, '→');\n  const so = (v, cb) => v == null ? '読取不可' : (cb ? esc(arrow(cb)) + ' / ' : '') + fmt(v) + '倍';", 1),
+    # 買い目の 組の 一覧：券種の 名前・組
+    ("\">${R.label(t, c)}</span>`; }).join('　');", "\">${esc(R.label(t, c))}</span>`; }).join('　');", 1),
+    ('<div class="betrow"><span class="bt">${t}</span>', '<div class="betrow"><span class="bt">${esc(t)}</span>', 1),
+    # 予約済み・結果待ちの 窓：馬番の 丸・層の 札
+    ('const chips = nos => (nos || []).map(no => `<span class="num ${wakuCls(no, n)}">${no}</span>`).join(\'\');', 'const chips = nos => (nos || []).map(no => `<span class="num ${wakuCls(no, n)}">${esc(no)}</span>`).join(\'\');', 1),
+    ('<div class="rvh"><span class="lb L${L}">${L}</span>', '<div class="rvh"><span class="lb L${esc(L)}">${esc(L)}</span>', 1),
+    # 記録の 入力の 欄の 名前（id・for）：記録の id から 作る
+    ("const sfx = ctx.scope + '-' + (v.id || 'new');", "const sfx = (ctx.scope + '-' + (v.id || 'new')).replace(/[^A-Za-z0-9_-]/g, '_');", 1),
+    ("sfx = 'rsv-' + b.id, sn = b.snap || {};", "sfx = ('rsv-' + b.id).replace(/[^A-Za-z0-9_-]/g, '_'), sn = b.snap || {};", 1),
+]
+
+
 def app_index(html):
     """App Store版の index.html：コメントを消して、名前を置きかえて、残っていないか確かめる"""
     html = strip_web_only(html)
     html = strip_page_comments(html)
     html = apply(html, INDEX, 'index.html')
     html = apply(html, KANJI_INDEX, 'index.html（漢字に そろえる）')
+    html = apply(html, SAFE_INDEX, 'index.html（字と して 出す）')      # 第4.211版
     check_clean(html, 'index.html')
     return html
 

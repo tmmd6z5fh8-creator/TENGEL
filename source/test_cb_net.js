@@ -12,8 +12,12 @@
 //   第4.202版：PROTO 13（7 の 3まい 交換・3 は セットの 前・決着したら 試合終了）
 //   第4.203版：相手の 手札は いつも 本当の 手札（見た カードを セットしたら 手札から 消える：ホストが 作る 見え方。ルールは 同じ ＝ PROTO 13 の まま）
 //   第4.197版：PROTO 11（決戦宝石）・部屋を 作る 人が「決戦宝石 あり」→ あいさつで ゲストへ → 参加 → 2人とも 5つ（まさちゃん 20:21「お友達バトルは1試合で5個使える！」）・おたがいに 見える
+//   第4.211版（まさちゃん 2026/11/22 21:36「不正に…手に入れる抜け穴は無いか全部細かく徹底的に確認して！」）：部屋の 相手が にせもの でも ズルが できない
+//     ・ゲスト：にせものの ホストが「配った → あなたの 勝ち」を 送っても 受けとらない（3回 セットして から）・タグに なる 字・長い 字・深い 入れ子の 知らせは 使わない（'bad' で 終える）・返事（ack）の 字も たしかめる
+//     ・ホスト：おかしな 手（act）は ことわる（止まらない）・参加コインの 上限は 100枚（画面で えらべる 数）・本物どうしの 対戦（5ターン）は 今まで どおり
 global.CBRules = require('./cb/cb_rules.js'); global.CBCpu = require('./cb/cb_cpu.js');
 const R = global.CBRules, C = global.CBCpu, N = require('./cb/cb_net.js');
+N._t.minSets = 2;      // 第4.211版：前から ある 場面は「3ターン」の 形（2勝で 決着＝セット 2回）で 動かす。アプリの 中の 形（5ターン・3回）は さいごの「■ 第4.211版」で 見る
 let fails = [];
 function check(c, label) { console.log((c ? '  ✅ ' : '  ❌ ') + label); if (!c) fails.push(label); }
 function rngOf(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -291,8 +295,9 @@ async function playOut(pairs, rng, guard) {
   {
     const S = N.stakeOf;
     check(JSON.stringify([S(null), S({}), S({ e: 3, w: 6 }), S({ e: 3, w: 9 }), S({ e: 3, w: 1 }), S({ e: -2, w: 5 }), S({ e: 2.7, w: 4.9 }), S({ e: '4', w: '7' }), S({ e: 'x', w: 3 }), S({ e: 5000, w: 1 }), S({ e: 0, w: 9 })])
-      === JSON.stringify([{ e: 0, w: 0 }, { e: 0, w: 0 }, { e: 3, w: 6 }, { e: 3, w: 6 }, { e: 3, w: 3 }, { e: 0, w: 0 }, { e: 2, w: 4 }, { e: 4, w: 7 }, { e: 0, w: 0 }, { e: N.STAKE_MAX, w: N.STAKE_MAX }, { e: 0, w: 0 }]) && N.STAKE_MAX === 999,
-      '数字の はんい：参加コインは 0〜999・獲得コインは 参加コイン 〜 2倍（はみ出したら はじに よせる・数字で ない ものは 0）');
+      === JSON.stringify([{ e: 0, w: 0 }, { e: 0, w: 0 }, { e: 3, w: 6 }, { e: 3, w: 6 }, { e: 3, w: 3 }, { e: 0, w: 0 }, { e: 2, w: 4 }, { e: 4, w: 7 }, { e: 0, w: 0 }, { e: N.STAKE_MAX, w: N.STAKE_MAX }, { e: 0, w: 0 }]) && N.STAKE_MAX === 100
+      && JSON.stringify([S({ e: 999, w: 1998 }), S({ e: 101, w: 0 }), S({ e: 100, w: 300 })]) === JSON.stringify([{ e: 100, w: 200 }, { e: 100, w: 100 }, { e: 100, w: 200 }]),
+      '数字の はんい：参加コインは 0〜100（第4.211版：画面で えらべる 数 まで・前は 999）・獲得コインは 参加コイン 〜 2倍（はみ出したら はじに よせる・数字で ない ものは 0）');
     const w = wire(), rng = rngOf(21), H = N.host(w.a, rng, { hands: [['1', '2', '3', '6', '7'], ['2', '3', '6', '7', '7']], turns: 3 }, { e: 3, w: 9 }), G = N.guest(w.b), hs = seat(H), gs = seat(G);
     H.start(); G.start(); await tick(); await tick(); await tick();
     const hello = JSON.parse(w.log.find(x => x[0] === 'h' && JSON.parse(x[1]).t === 'hello')[1]);
@@ -421,6 +426,144 @@ async function playOut(pairs, rng, guard) {
     check(JSON.stringify(G.gm) === '{"on":false}' && hs.ups.length === 1 && S.p[0].gems.length === 0 && S.p[1].gems.length === 0 && hs.view.my.gem === null && gs.view.op.gem === null,
       '決戦宝石 なし の 部屋：宝石 なしで 配る');
     H.leave();
+  }
+  console.log('■ 第4.211版：部屋の 相手が にせもの でも ズルが できない（まさちゃん 11/22 21:36「抜け穴は無いか全部細かく徹底的に確認して！」）');
+  N._t.minSets = N.MIN_SETS;      // ここからは アプリの 中と 同じ（3回 セットして から）
+  {
+    // にせものの ホスト（線の むこうで 好きな 文字を 送る）と 本物の ゲスト
+    const fakeHost = () => { const w = wire(), G = N.guest(w.b), gs = seat(G), got = []; w.a.onText = t => got.push(JSON.parse(t)); G.start(); return { w, G, gs, got, say: o => w.a.send(typeof o === 'string' ? o : JSON.stringify(o)) }; };
+    const VIEW = () => ({ v: 4, me: 1, turn: 1, turns: 5, phase: 'set', deckN: 20, rv: false, discard: [], my: { hand: [{ u: 1, k: '1', seen: false }, { u: 2, k: '2', seen: false }, { u: 3, k: '3', seen: false }], set: null, wins: 0, gem: null }, op: { hand: [{ u: 9, k: null }], set: null, wins: 0, gem: null },
+      can: { set: true, x7r: false, x7: false, x3: false, x3p: [], gem: [], eff: null, six: null }, pend: null, wait: false, last: null, res: null, early: 0 });
+    const WIN = { e: 'end', wins: [3, 0], res: 'win' };
+    check(N.MIN_SETS === 3 && N._t.minSets === 3 && R.TURNS === 5 && Math.floor(R.TURNS / 2) + 1 === N.MIN_SETS, `アプリの 対戦は ${R.TURNS}ターン ＝ どちらかが ${N.MIN_SETS}勝 する まで 終わらない ＝ 自分の セットは かならず ${N.MIN_SETS}回 以上`);
+    // ① 配った → すぐ「あなたの 勝ち」
+    let f = fakeHost(); await tick(); await tick();
+    f.say({ t: 'hello', v: N.PROTO, stake: { e: 0, w: 0 } }); await tick(); await tick();
+    f.G.join(); await tick();
+    f.say({ t: 'up', n: 1, ev: [{ e: 'deal' }, WIN], view: Object.assign(VIEW(), { phase: 'end', res: 'win' }) }); await tick(); await tick();
+    check(f.gs.ups.length === 0 && f.gs.states.join() === 'ready,stake,bad', `にせものの ホストが「配った → あなたの 勝ち」を 1つの 知らせで 送っても、画面には 何も 届かない（対戦は 'bad' で 終わる：${f.gs.states.join()}）`);
+    const off = await f.G.act({ t: 'set', u: 1 });
+    check(off.ok === false && off.why === 'off', '終わった あとは 手も 送らない');
+    // ② 配る → 少し たって「あなたの 勝ち」（セットは 0回・2回）
+    for (const n of [0, 2]) {
+      f = fakeHost(); await tick(); await tick();
+      f.say({ t: 'hello', v: N.PROTO }); await tick(); await tick(); f.G.join(); await tick();
+      f.say({ t: 'up', n: 1, ev: [{ e: 'deal' }], view: VIEW() }); await tick(); await tick();
+      for (let i = 0; i < n; i++) { const pr = f.G.act({ t: 'set', u: i + 1 }); await tick(); const a = f.got[f.got.length - 1]; f.say({ t: 'ack', id: a.id, ok: true }); await tick(); await pr; }
+      f.say({ t: 'up', n: 2, ev: [WIN], view: Object.assign(VIEW(), { phase: 'end', res: 'win' }) }); await tick(); await tick();
+      check(f.gs.ups.length === 1 && f.gs.ups.every(u => !u.ev.some(e => e.e === 'end')) && f.gs.states[f.gs.states.length - 1] === 'bad', `自分の セットが ${n}回 の ときの「あなたの 勝ち」は 受けとらない（'bad'・画面に end は 届かない）`);
+    }
+    // ③ 3回 セットした あと なら 受けとる。でも つづけて 2つ目の「勝ち」は 受けとらない（配り直して から また 3回）
+    f = fakeHost(); await tick(); await tick();
+    f.say({ t: 'hello', v: N.PROTO }); await tick(); await tick(); f.G.join(); await tick();
+    f.say({ t: 'up', n: 1, ev: [{ e: 'deal' }], view: VIEW() }); await tick(); await tick();
+    for (let i = 0; i < 3; i++) { const pr = f.G.act({ t: 'set', u: i + 1 }); await tick(); const a = f.got[f.got.length - 1]; if (i < 2) { f.say({ t: 'ack', id: a.id, ok: true }); await tick(); await pr; } }
+    f.say({ t: 'up', n: 2, ev: [WIN], view: Object.assign(VIEW(), { phase: 'end', res: 'win' }) }); await tick(); await tick();      // 3回目の 返事（ack）より 先に「終わった」が 届く（本物の ホストと 同じ 順）
+    check(f.gs.ups.length === 2 && f.gs.ups[1].ev[0].e === 'end' && f.gs.states.join() === 'ready,stake', '3回 セットを 送った あとの「終わった」は 受けとる（3回目の 返事より 先に 届いても）');
+    f.say({ t: 'up', n: 3, ev: [{ e: 'deal' }, WIN], view: Object.assign(VIEW(), { phase: 'end', res: 'win' }) }); await tick(); await tick();
+    check(f.gs.ups.length === 2 && f.gs.states[f.gs.states.length - 1] === 'bad', 'つづけて「配った → 勝ち」を 送って きても 2つ目は 受けとらない');
+    f = fakeHost(); await tick(); await tick();
+    f.say({ t: 'hello', v: N.PROTO }); await tick(); await tick(); f.G.join(); await tick();
+    f.say({ t: 'up', n: 1, ev: [{ e: 'deal' }], view: VIEW() }); await tick(); await tick();
+    for (let i = 0; i < 3; i++) { f.G.act({ t: 'set', u: i + 1 }); await tick(); }
+    f.say({ t: 'up', n: 2, ev: [WIN], view: Object.assign(VIEW(), { phase: 'end', res: 'win' }) }); await tick(); await tick();
+    f.say({ t: 'up', n: 3, ev: [WIN], view: Object.assign(VIEW(), { phase: 'end', res: 'win' }) }); await tick(); await tick();
+    check(f.gs.ups.length === 2 && f.gs.states[f.gs.states.length - 1] === 'bad', '配り直さずに「勝ち」を 2回 送って きても 2つ目は 受けとらない');
+    // ④ タグに なる 字・長い 字・深い 入れ子・おかしな 形
+    const XS = '<img src=x onerror=alert(1)>', deep = (() => { let o = 1; for (let i = 0; i < 12; i++) o = [o]; return o; })();
+    const BADS = [
+      ['見え方の 中に タグに なる 字', v => { v.my.hand[0].k = XS; }, null],
+      ['見え方の 中に 「"」', v => { v.phase = 'set" x="'; }, null],
+      ['見出しに タグに なる 字', v => { v.my[XS] = 1; }, null],
+      ['見出しが __proto__', v => { Object.defineProperty(v.my, '__proto__', { value: { hand: [] }, enumerable: true }); }, null],
+      ['25字 より 長い 字', v => { v.phase = 'a'.repeat(25); }, null],
+      ['深い 入れ子（12段）', v => { v.last = deep; }, null],
+      ['ならびが 65こ', v => { v.discard = Array(65).fill(0); }, null],
+      ['数で ない 数（大きすぎ）', v => { v.turn = 1e9; }, null],
+      ['手札が ならびで ない', v => { v.my.hand = { length: 3 }; }, null],
+      ['できごとに タグに なる 字', null, [{ e: 'deal' }, { e: 'open', my: { k: XS } }]],
+      ['できごとが ならびで ない', null, { e: 'deal' }],
+      ['できごとの 名前が ない', null, [{ x: 1 }]]
+    ];
+    const res = [];
+    for (const [nm, mut, ev] of BADS) {
+      f = fakeHost(); await tick(); await tick();
+      f.say({ t: 'hello', v: N.PROTO }); await tick(); await tick(); f.G.join(); await tick();
+      const v = VIEW(); if (mut) mut(v);
+      f.say({ t: 'up', n: 1, ev: ev || [{ e: 'deal' }], view: v }); await tick(); await tick();
+      res.push([nm, f.gs.ups.length === 0 && f.gs.states[f.gs.states.length - 1] === 'bad']);
+    }
+    check(res.every(x => x[1]), `おかしな 知らせ ${BADS.length}とおり（タグに なる 字・「"」・見出し・__proto__・長い 字・深い 入れ子・大きな ならび・大きすぎる 数・形が ちがう）は 画面へ 届かない（'bad'）${res.filter(x => !x[1]).map(x => '※' + x[0]).join('')}`);
+    f = fakeHost(); await tick(); await tick();
+    f.say({ t: 'up', n: 1, ev: [{ e: 'deal' }], view: VIEW() }); await tick(); await tick();
+    check(f.gs.ups.length === 0 && f.gs.states.join() === 'bad', 'あいさつ（hello）の 前の 知らせも 受けとらない');
+    // ④-2「参加する」と 答える 前・「もう 1回」を 押す 前に 配られた 対戦も 受けとらない（決まりを 見て いない のに 参加コインを 出させない）
+    f = fakeHost(); await tick(); await tick();
+    f.say({ t: 'hello', v: N.PROTO, stake: { e: 50, w: 100 } }); await tick(); await tick();
+    f.say({ t: 'up', n: 1, ev: [{ e: 'deal' }], view: VIEW() }); await tick(); await tick();
+    check(f.gs.ups.length === 0 && f.gs.states.join() === 'ready,stake,bad' && !f.got.some(x => x.t === 'join'), '「参加する」と 答える 前に 配られても 受けとらない');
+    const full = async again => {      // 1つ 対戦を 終えて（3回 セット）→ もう 1回を 押す／押さない → 配り直し
+      const q = fakeHost(); await tick(); await tick();
+      q.say({ t: 'hello', v: N.PROTO }); await tick(); await tick(); q.G.join(); await tick();
+      q.say({ t: 'up', n: 1, ev: [{ e: 'deal' }], view: VIEW() }); await tick(); await tick();
+      for (let i = 0; i < 3; i++) { q.G.act({ t: 'set', u: i + 1 }); await tick(); }
+      q.say({ t: 'up', n: 2, ev: [WIN], view: Object.assign(VIEW(), { phase: 'end', res: 'win' }) }); await tick(); await tick();
+      if (again) { q.G.again(); await tick(); }
+      q.say({ t: 'up', n: 3, ev: [{ e: 'deal' }], view: VIEW() }); await tick(); await tick();
+      return q;
+    };
+    const qa = await full(true), qb = await full(false);
+    check(qa.gs.ups.length === 3 && qa.gs.states.join() === 'ready,stake' && qa.got.some(x => x.t === 'again') && qb.gs.ups.length === 2 && qb.gs.states[qb.gs.states.length - 1] === 'bad',
+      '対戦が 終わった あとの 配り直し：自分が「もう 1回」を 押した あと なら 受けとる・押して いない のに 配られたら 受けとらない');
+    for (let i = 0; i < 2; i++) { qa.G.act({ t: 'set', u: i + 1 }); await tick(); }
+    qa.say({ t: 'up', n: 4, ev: [WIN], view: Object.assign(VIEW(), { phase: 'end', res: 'win' }) }); await tick(); await tick();
+    check(qa.gs.ups.length === 3 && qa.gs.states[qa.gs.states.length - 1] === 'bad', '配り直した あとは セットの 数も 0 から（2回 では「勝ち」を 受けとらない）');
+    // ⑤ 返事（ack）の 字
+    f = fakeHost(); await tick(); await tick();
+    f.say({ t: 'hello', v: N.PROTO }); await tick(); await tick(); f.G.join(); await tick();
+    f.say({ t: 'up', n: 1, ev: [{ e: 'deal' }], view: VIEW() }); await tick(); await tick();
+    let pr = f.G.act({ t: 'set', u: 1 }); await tick(); f.say({ t: 'ack', id: f.got[f.got.length - 1].id, ok: false, why: XS }); await tick(); const a1 = await pr;
+    pr = f.G.act({ t: 'set', u: 1 }); await tick(); f.say({ t: 'ack', id: f.got[f.got.length - 1].id, ok: 'yes', why: 'card' }); await tick(); const a2 = await pr;
+    f.say({ t: 'ack', id: 'constructor', ok: true }); f.say({ t: 'ack', id: '__proto__', ok: true }); await tick(); await tick();
+    check(a1.ok === false && a1.why === '' && a2.ok === false && a2.why === 'card' && f.gs.states.join() === 'ready,stake', `返事（ack）の わけは 短い 英数字 だけ（タグに なる 字は 空に）・ok は true の とき だけ・おかしな 番号の 返事では 何も おきない（${JSON.stringify([a1, a2])}）`);
+    // ⑥ そうじ（clean）の 形
+    check(JSON.stringify(N.clean({ a: [1, 'x-_Z9', null, true, { b: '' }] })) === '{"a":[1,"x-_Z9",null,true,{"b":""}]}' && N.clean({ a: XS }) === undefined && N.clean('ひらがな') === undefined && N.clean(NaN) === undefined && N.clean(Infinity) === undefined
+      && N.clean(undefined) === undefined && N.clean(() => 1) === undefined && N.clean(JSON.parse('{"constructor":1}')) === undefined && N.clean(JSON.parse('{"a":{"prototype":1}}')) === undefined,
+      'そうじ：数・はい いいえ・null・短い 英数字（- _ も）は そのまま／タグに なる 字・かな・NaN・∞・undefined・関数・constructor・prototype の 見出しは 使わない');
+  }
+  {
+    // にせものの ゲスト（線の むこうで 好きな 文字を 送る）と 本物の ホスト：おかしな 手は ことわる（止まらない）
+    let w, H, hs, got, say;
+    for (let sd = 1; sd < 60; sd++) {      // 配った すぐ あとが「セット」の 番に なる 種（6 の 効果を 聞かない 配り方）を さがす
+      w = wire(); H = N.host(w.a, rngOf(sd)); hs = seat(H); got = []; const g0 = got, w0 = w; w.b.onText = t => g0.push(JSON.parse(t));
+      say = o => w0.b.send(JSON.stringify(o));
+      H.start(); say({ t: 'hello', v: N.PROTO }); await tick(); await tick(); say({ t: 'join', stake: { e: 0, w: 0 } }); await tick(); await tick();
+      if (H._.state().phase === 'set') break;
+      H.leave();
+    }
+    const u0 = got.filter(x => x.t === 'up').length;
+    const junk = [null, 5, 'set', [], { t: 'set', u: '<b>' }, { t: 'set', u: { x: 1 } }, { t: '<i>' }, { t: 'm', drop: Array(100).fill(1) }, { t: 'eff', use: { u5: { a: { b: { c: { d: { e: { f: { g: { h: { i: 1 } } } } } } } } } } }, { t: 'x3', pick: 'x'.repeat(30) }, { t: 'set', u: 1e9 }];
+    for (let i = 0; i < junk.length; i++) { say({ t: 'act', id: i + 1, a: junk[i] }); await tick(); await tick(); }
+    say({ t: 'act', id: '<b>', a: { t: 'set', u: -1 } }); await tick(); await tick();
+    const acks = got.filter(x => x.t === 'ack');
+    check(acks.length === junk.length + 1 && acks.every(a => a.ok === false && /^[a-z0-9]{1,8}$/.test(a.why)) && acks[acks.length - 1].id === 0 && got.filter(x => x.t === 'up').length === u0 && H._.state().phase === 'set' && !H._.state().p[1].set,
+      `にせものの ゲストの おかしな 手 ${junk.length + 1}とおりは ぜんぶ ことわる（返事の 番号は 数 だけ・対戦は そのまま：${[...new Set(acks.map(a => a.why))].join('・')}）`);
+    const ok = await H.act({ t: 'set', u: hs.view.my.hand[0].u }); await tick();
+    check(ok.ok === true, 'その あとも ホストは ふつうに 出せる');
+    H.leave();
+  }
+  {
+    // 本物どうし（5ターン・手札 7まい・アプリの 中と 同じ）：30回 ぜんぶ さいごまで・ゲストに「終わった」が 届く・どの 知らせも そうじを 通る
+    let endN = 0, badN = 0, minSets = 99, cleanAll = true;
+    for (let g = 0; g < 30; g++) {
+      const w = wire(), rng = rngOf(7000 + g), H = N.host(w.a, rng, undefined, g % 2 ? { e: 5, w: 9 } : null, null, g % 3 ? { on: true } : null), G = N.guest(w.b), hs = seat(H), gs = seat(G);
+      H.start(); G.start(); await tick(); await tick(); await tick(); G.join(); await tick(); await tick();
+      const r = await playOut([[H, hs], [G, gs]], rng, 400);
+      if (r === 'end' && gs.ups.some(u => u.ev.some(e => e.e === 'end')) && gs.states.indexOf('bad') < 0) endN++; else badN++;
+      let sets = 0; w.log.forEach(([tag, txt]) => { const o = JSON.parse(txt); if (tag === 'g' && o.t === 'act' && o.a.t === 'set') sets++; if (tag === 'h' && o.t === 'up' && (N.clean(o.ev) === undefined || N.clean(o.view) === undefined)) cleanAll = false; });
+      minSets = Math.min(minSets, sets);
+    }
+    check(endN === 30 && badN === 0 && minSets >= N.MIN_SETS && cleanAll, `本物どうしの 対戦 30回（5ターン・参加コイン・決戦宝石 あり／なし）：ぜんぶ さいごまで・ゲストの セットは いちばん 少ない 対戦でも ${minSets}回・どの 知らせも そうじを 通る`);
   }
   console.log('結果：', fails.length ? fails.length + '件おかしい' : 'OK');
   process.exit(fails.length ? 1 : 0);

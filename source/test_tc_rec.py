@@ -183,6 +183,8 @@ try:
             # 紙の 大きさが かわった（なめらかさを 守る しくみが 絵の 細かさを 下げた）：台の 下でも 描き直す
             pg.evaluate(SETTOK, 12); pg.evaluate("() => { const S = TCCare.S; if (!(S.push && S.push.hideT == null)) TCCare.pushShow(S.lastT + 0.05); }"); pg.wait_for_timeout(900)
             stage_click(pg, *G['dp']); pg.wait_for_function("() => TCDrop.isOpen() && TCDrop.covers()", timeout=10000); pg.evaluate(FRAMES, 6)
+            # 第4.211版：テストの 機械が おそい と、なめらかさを 守る しくみが ここまでに 自分で 1段 下げて いる ことが ある（紙の 幅 780 → 640）→ いちど いちばん 細かい 段に もどして から 測る
+            pg.evaluate("() => { if (TCApp._t.govSet) TCApp._t.govSet(0, true); }"); pg.evaluate(FRAMES, 4)
             w0 = pg.evaluate("() => document.querySelector('#tcOv .tco').width"); r0 = pg.evaluate(STAT)
             pg.evaluate("() => { const G = TCApp._t.gov; TCApp._t.govSet ? TCApp._t.govSet(1, false) : null; }")
             has_gov = pg.evaluate("() => typeof TCApp._t.govSet === 'function'")

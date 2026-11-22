@@ -14,7 +14,7 @@
 #     前から ある 場面（効果の しくみ）は「3ターン・手札 5まい」の まま 動かす（start() が turns: 3 を わたす）。本番の 形（5ターン・手札 7まい）は「■ 5ターン・手札 7まい」で 見る
 #   第4.179版（まさちゃん 2026/11/16 15:47・16:01・16:10・16:18）：バトルコイン（買えない・コンピュータに 勝つと 1枚・5連勝 ごとに 5枚）・部屋の 参加コインと 勝者の 獲得コイン（2倍 まで）
 #   第4.188版（まさちゃん 2026/11/17 11:22）：バトルコイン（コンピュータに 勝つと 2枚・3連勝 ごとに ＋6枚・5連勝 ごとに ＋10枚・さいごの 画面の「🔥 ○連勝 ボーナス！」の 札・ログインボーナスで 毎日 2枚〈7日目 ＋10枚〉を 受け取る）
-#     ・入れない（足りない）・参加する → 2人とも 出す → 勝者が もらう・同点は もどる・とちゅうで やめた 人は もどらない（相手が もらう）・つながりが 切れたら もどる
+#     ・入れない（足りない）・参加する → 2人とも 出す → 勝者が もらう・同点は もどる・とちゅうで やめた 人は もどらない（相手が もらう：第4.211版から 相手が 3回 セットした あと だけ。その前は 相手に もどる だけ）・つながりが 切れたら もどる
 #   第4.183版（まさちゃん 2026/11/16 20:51・20:53）：ミッション（コンピュータ／友だちバトルで 連続勝利 → バトルコイン・毎月 リセット）・友だちバトルは それぞれの デザイン
 #   第4.182版（まさちゃん 2026/11/16 20:00・20:09）：デザインカスタム（カードの おもて 18種・うら 7種：バトルコインで 解放＝おもて 300枚・神様馬／幻の馬 500枚・うら 300枚）
 #   第4.185版（まさちゃん 2026/11/16 22:39・22:45）：7 の 4まい 公開で 強さ 逆転（効果タイムで 聞く・見せる 窓・捨て札・「強さ 逆転中」・その 対戦が 終わる まで・コンピュータも 使う）・7 の 新しい 絵と カスタムの 名前
@@ -27,6 +27,10 @@
 #   第4.189版（まさちゃん 2026/11/17 15:00・15:18・15:39）：カードパック（1パック 112枚・5まい＝ノーマル 4まい ＋ くじ 1まい：0〜229 の 番号・コイン／カード／記録を いっしょに 保存・2回 しない・記録から もう 1回 見る・パックの 絵）。おもては パックで 集める（コインで 解放は うら・ボード だけ）
 #   第4.190版（まさちゃん 2026/11/17 17:14）：6 は ターンの はじめ（配った あとの「6 の 効果」の 帯・聞く 窓「ターンの はじめ！」・相手は 待つ・2人とも 6 が 2まい・使わなかった ふきだし）・
 #     効果タイムは 1つずつ（7 を 行って から 5 を 聞く・7 で 引いた カードも 5 で 捨てられる・うっかり 押し 防止は 次の 質問が 出て すぐ）
+#   第4.211版（まさちゃん 2026/11/22 21:36「不正にポイントやバトルコイン、お世話トークンを手に入れる抜け穴は無いか全部細かく徹底的に確認して！」）：
+#     ・ごほうび（お世話トークン）を わたして いる 途中に もう 1回 よばれても 2回 わたさない（結果の 画面・メニューの 両方が わたす）
+#     ・部屋の 相手が にせもの（本物の アプリで ない）でも ズルが できない：「配った → あなたの 勝ち」を くり返し 送られても 勝ち・お世話トークン・ミッション・バトルコインは ふえない・
+#       参加コインは もどる・タグに なる 字の 入った 知らせは 画面に 出ない・参加コインの 上限 100枚
 #   ルールの 計算は test_cb_rules.js・対戦の 進め役は test_cb_net.js（node）
 import json, os, re, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -1262,6 +1266,7 @@ try:
         print('■ 部屋：2つの 画面（ホスト・ゲスト）で 対戦')
         gp = ctx.new_page(); gerrs = []; gp.on('pageerror', lambda e: gerrs.append(str(e)))
         gp.goto(APP); gp.wait_for_timeout(1300); gate(gp); gp.wait_for_timeout(600); open_cb(gp)
+        gp.evaluate("() => { CBNet._t.minSets = 2; }")      # 第4.211版：前から ある 部屋の 場面は「3ターン」の 形（2勝で 決着＝セット 2回）で 動かす。アプリの 中の 形（3回 セットして から）は さいごの「■ 抜け穴」で 見る
         pg.evaluate("() => { CBApp._opt = { hands: [['k', '1', '2', '6', '6'], ['m', '3', '4', '5', '7']], turns: 3 }; }")
         pg.evaluate("() => { CBApp._t.state.coin = 10; }"); gp.evaluate("() => { CBApp._t.state.coin = 2; }")      # 2つの 画面は 保存の 場所が 同じ → 数は 画面の 中で 決める（読み直さない）
         c0 = pg.evaluate("() => window.__room.calls.length")
@@ -1457,8 +1462,21 @@ try:
         gp.locator('#cbOv .cbmod [data-cb=quitgo]').click(); gp.wait_for_timeout(200)
         pg.wait_for_function("() => CBApp._t.modOn() && /部屋を 出たよ/.test(document.querySelector('#cbOv .cbmod').textContent)", timeout=20000)
         mt = pg.locator('#cbOv .cbmod').inner_text()
-        check(gp.evaluate(COINS) == [3, None] and gp.evaluate("() => CBApp._t.state.lose") == lose0 + 1 and pg.evaluate(COINS) == [14, None] and '友達が 途中で やめた ので、バトルコイン 2枚を もらったよ' in mt and '勝ち負けに 数えないよ' in mt,
-              f'途中で やめた 人：参加コインは 戻らない（3枚の まま・負けに 数える）・相手は 勝者の 獲得コイン 2枚（12 → 14）（{mt[:80]!r}）')
+        # 第4.211版：相手が「序盤」（自分が まだ 3回 セットして いない）で やめた ときは、参加コインが もどる だけ（獲得コインは もらえない）。やめた 人の 参加コインは 今まで どおり もどらない
+        check(gp.evaluate(COINS) == [3, None] and gp.evaluate("() => CBApp._t.state.lose") == lose0 + 1 and pg.evaluate(COINS) == [13, None] and pg.evaluate("() => CBApp._t.mySets") == 0
+              and '友達が 序盤で やめた ので、参加コイン 1枚は 戻ったよ' in mt and 'もらったよ' not in mt and '勝ち負けに 数えないよ' in mt,
+              f'途中で やめた 人：参加コインは 戻らない（3枚の まま・負けに 数える）・配られた すぐ あとに やめられた 相手は 参加コインが 戻る だけ（12 → 13：獲得コインは もらえない）（{mt[:80]!r}）')
+        pg.locator('#cbOv .cbmod [data-cb=menu]').click(); pg.wait_for_timeout(200)
+        # 自分が 3回 セットした あと（勝ち負けが つく ところまで 進んだ 対戦）に 相手が やめた → 勝者の 獲得コインを もらう
+        gp.evaluate("() => { CBApp._t.state.coin = 4; }")
+        num = make_room(1); join_room(num); gp.locator('#cbOv .cbjoin [data-cb=joinyes]').click()
+        pg.wait_for_function("() => CBApp._t.view && CBApp._t.idle", timeout=30000); gp.wait_for_function("() => CBApp._t.view && CBApp._t.idle", timeout=30000)
+        ms0 = pg.evaluate("() => CBApp._t.mySets"); pg.evaluate("() => CBApp._t.setMySets(CBNet.MIN_SETS)")
+        gp.locator('#cbOv .cbtop [data-cb=quit]').click(); gp.wait_for_timeout(80); gp.locator('#cbOv .cbmod [data-cb=quitgo]').click(); gp.wait_for_timeout(200)
+        pg.wait_for_function("() => CBApp._t.modOn() && /部屋を 出たよ/.test(document.querySelector('#cbOv .cbmod').textContent)", timeout=20000)
+        mt = pg.locator('#cbOv .cbmod').inner_text()
+        check(ms0 == 0 and gp.evaluate(COINS) == [3, None] and pg.evaluate(COINS) == [14, None] and '友達が 途中で やめた ので、バトルコイン 2枚を もらったよ' in mt,
+              f'自分が 3回 セットした あとに 相手が やめた → 勝者の 獲得コイン 2枚を もらう（13 → 12 → 14・配り直すと セットの 数は 0 から）（{mt[:80]!r}）')
         pg.locator('#cbOv .cbmod [data-cb=menu]').click(); pg.wait_for_timeout(200)
         # つながりが 切れた：2人とも 参加コインが もどる
         num = make_room(1); join_room(num); gp.locator('#cbOv .cbjoin [data-cb=joinyes]').click()
@@ -2323,6 +2341,94 @@ try:
         d0 = pg.evaluate(GEMQ)
         check(d0['hid'] and d0['og'] is None and pg.evaluate("() => CBApp._t.view.my.gem") is None and '💎' not in pg.evaluate(MSG), '決戦宝石 なし（いつもの 対戦）：ケースは 出ない・下の 字も 前と 同じ')
         pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(150)
+        print('■ 抜け穴（第4.211版・まさちゃん 11/22 21:36「不正にポイントやバトルコイン、お世話トークンを手に入れる抜け穴は無いか全部細かく徹底的に確認して！」）')
+        # ① ごほうびを わたして いる 途中に もう 1回（結果の 画面 ＋ メニュー）→ わたすのは 1回 だけ
+        py = pg.evaluate("""async () => {
+          const T = CBApp._t, st = T.state, real = window.TCGift, wait = ms => new Promise(r => setTimeout(r, ms)); let calls = [];
+          window.TCGift = n => { calls.push(n); return new Promise(ok => setTimeout(() => ok({ add: n, stock: 9, max: 25 }), 300)); };
+          st.owe = 3; T.save();
+          const a = T.pay(), b = T.pay(); T.menu();      // つづけて 2回 ＋ メニューを 開く（メニューも わたそうと する）
+          const ra = await a, rb = await b; await wait(500);
+          const out = { calls: calls.slice(), ra: ra, rb: rb, owe: st.owe, saved: JSON.parse(localStorage.getItem('tengel.cb')).owe };
+          calls = []; st.owe = 2; const c = T.pay(); st.owe += 1; const rc = await c;      // わたして いる 途中に 次の 勝ち（＋1）
+          out.mid = { calls: calls.slice(), add: rc && rc.add, owe: st.owe };
+          calls = []; window.TCGift = () => Promise.resolve(null); st.owe = 2; const rn = await T.pay(); out.ng = { r: rn, owe: st.owe };      // 読みこめなかった：そのまま のこる
+          window.TCGift = n => { calls.push(n); return Promise.resolve({ add: n, stock: 9, max: 25 }); }; const r2 = await T.pay(); out.again = { calls: calls.slice(), add: r2 && r2.add, owe: st.owe, busy: !!window.__cbPayBusy };
+          window.TCGift = real; st.owe = 0; T.save(); return out; }""")
+        check(py['calls'] == [3] and py['ra'] and py['ra']['add'] == 3 and py['rb'] is None and py['owe'] == 0 and py['saved'] == 0,
+              f'ごほうびを わたして いる 途中に もう 1回（つづけて 2回 ＋ メニュー）→ トレーニングセンターへ わたすのは 1回 だけ（{py["calls"]}・のこり {py["owe"]}）')
+        check(py['mid'] == {'calls': [2], 'add': 2, 'owe': 1} and py['ng'] == {'r': None, 'owe': 2} and py['again'] == {'calls': [2], 'add': 2, 'owe': 0, 'busy': False},
+              f'わたして いる 途中に ふえた ぶんは のこる・読みこめなかった ときは そのまま のこって 次に わたせる（{py["mid"]}・{py["ng"]}・{py["again"]}）')
+        # ② にせものの ホスト（本物の アプリで ない 相手）：「配った → あなたの 勝ち」を 50回
+        FKV = """{ v: 4, me: 1, turn: 1, turns: 5, phase: 'set', deckN: 20, rv: false, discard: [], my: { hand: [{ u: 1, k: '1', seen: false }, { u: 2, k: '2', seen: false }, { u: 3, k: '3', seen: false }, { u: 4, k: '4', seen: false }], set: null, wins: 0, gem: null },
+          op: { hand: [{ u: 9, k: null }, { u: 10, k: null }], set: null, wins: 0, gem: null }, can: { set: true, x7r: false, x7: false, x3: false, x3p: [], gem: [], eff: null, six: null }, pend: null, wait: false, last: null, res: null, early: 0 }"""
+        FK0 = """() => { const T = CBApp._t, st = T.state; return { win: st.win, lose: st.lose, draw: st.draw, streak: st.streak, owe: st.owe, coin: st.coin, fr: st.ms.fr, got: st.ms.got.fr.length, stake: st.stake, live: st.ms.live }; }"""
+        pg.evaluate("() => { const T = CBApp._t, st = T.state; st.coin = 40; st.owe = 0; st.stake = null; st.ms.fr = 2; st.ms.got.fr = []; T.save(); CBApp._opt = null; CBApp._rng = null; T.menu(); }"); pg.wait_for_timeout(200)
+        f0 = pg.evaluate(FK0)
+        fk = pg.evaluate("""async (VS) => {
+          const T = CBApp._t, wait = ms => new Promise(r => setTimeout(r, ms)), VIEW = () => (0, eval)('(' + VS + ')');
+          const link = { sent: [], send(t) { this.sent.push(JSON.parse(t)); }, onText: null, onLost: null, close() { this.closed = true; } };
+          const say = o => { if (link.onText) link.onText(JSON.stringify(o)); };
+          T.start(CBNet.guest(link)); await wait(60);
+          say({ t: 'hello', v: CBNet.PROTO, stake: { e: 0, w: 0 } }); await wait(120);
+          const joined = link.sent.some(x => x.t === 'join');
+          for (let i = 0; i < 50; i++) say({ t: 'up', n: i + 1, ev: [{ e: 'deal' }, { e: 'end', wins: [3, 0], res: 'win' }], view: Object.assign(VIEW(), { phase: 'end', res: 'win' }) });
+          await wait(400);
+          const m = document.querySelector('#cbOv .cbmod');
+          return { joined: joined, min: CBNet._t.minSets, modal: m ? m.textContent.replace(/\\s+/g, ' ') : '', match: !!T.match, closed: !!link.closed }; }""", FKV)
+        f1 = pg.evaluate(FK0)
+        check(fk['joined'] and fk['min'] == 3 and f1 == f0 and not fk['match'] and fk['closed'] and '正しくない 知らせ' in fk['modal'] and '勝ち負けに 数えない' not in fk['modal'].replace('（この 対戦は 勝ち負けに 数えないよ）', ''),
+              f'にせものの ホストが「配った → あなたの 勝ち」を 50回 送っても、勝ち・連勝・お世話トークン・バトルコイン・ミッションは ふえない（{f1}）・「{fk["modal"][:44]}…」で 終わる')
+        pg.locator('#cbOv .cbmod [data-cb=menu]').click(); pg.wait_for_timeout(200)
+        # ③ 参加コインの ある 部屋：にせものの ホストが 999枚の 部屋を 作る → 受けとる 決まりは 100枚 まで・足りない（40枚）ので 入れない →「参加する」を 待たずに 配って 切っても 何も ふえない
+        fs = pg.evaluate("""async (VS) => {
+          const T = CBApp._t, st = T.state, wait = ms => new Promise(r => setTimeout(r, ms)), VIEW = () => (0, eval)('(' + VS + ')');
+          const link = { sent: [], send(t) { this.sent.push(JSON.parse(t)); }, onText: null, onLost: null, close() { this.closed = true; } };
+          const say = o => { if (link.onText) link.onText(JSON.stringify(o)); };
+          T.start(CBNet.guest(link)); await wait(60);
+          say({ t: 'hello', v: CBNet.PROTO, stake: { e: 999, w: 1998 } }); await wait(150);
+          const ask = document.querySelector('#cbOv .cbjoin'), askT = ask ? ask.textContent.replace(/\\s+/g, ' ') : '', stk = JSON.stringify(T.match.stake), yes = !!document.querySelector('#cbOv .cbjoin [data-cb=joinyes]');
+          say({ t: 'up', n: 1, ev: [{ e: 'deal' }], view: VIEW() }); await wait(500);      //「参加する」を 待たずに 配る
+          if (link.onLost) link.onLost(); await wait(200);                                    // すぐ 切る
+          const m = document.querySelector('#cbOv .cbmod');
+          return { askT: askT, stk: stk, yes: yes, joined: link.sent.filter(x => x.t === 'join').length, modal: m ? m.textContent.replace(/\\s+/g, ' ') : '', match: !!T.match }; }""", FKV)
+        f2 = pg.evaluate(FK0)
+        check(fs['stk'] == '{"e":100,"w":200}' and '参加コイン 100枚' in fs['askT'] and '勝者 200枚' in fs['askT'] and '足りない' in fs['askT'] and not fs['yes'] and fs['joined'] == 0,
+              f'にせものの ホストが 参加コイン 999枚の 部屋を 作っても、受けとる 決まりは 100枚 まで（{fs["stk"]}）・足りなければ「参加する」は 出ない（40枚：「{fs["askT"][-32:]}」）')
+        check(f2 == f0 and not fs['match'] and '正しくない 知らせ' in fs['modal'] and '戻ったよ' not in fs['modal'] and 'もらったよ' not in fs['modal'],
+              f'「参加する」を 待たずに 配って すぐ 切っても、出して いない 参加コインは「戻って」こない（バトルコイン {f2["coin"]}枚の まま・前は 100枚 ふえた）')
+        pg.locator('#cbOv .cbmod [data-cb=menu]').click(); pg.wait_for_timeout(200)
+        fs2 = pg.evaluate("""async (VS) => {
+          const T = CBApp._t, st = T.state, wait = ms => new Promise(r => setTimeout(r, ms)), VIEW = () => (0, eval)('(' + VS + ')'), until = async f => { for (let i = 0; i < 200 && !f(); i++) await wait(50); return f(); };
+          const link = { sent: [], send(t) { this.sent.push(JSON.parse(t)); }, onText: null, onLost: null, close() { this.closed = true; } };
+          const say = o => { if (link.onText) link.onText(JSON.stringify(o)); };
+          T.start(CBNet.guest(link)); await wait(60);
+          say({ t: 'hello', v: CBNet.PROTO, stake: { e: 30, w: 60 } }); await wait(150);
+          const yes = document.querySelector('#cbOv .cbjoin [data-cb=joinyes]'); if (yes) yes.click(); await wait(150);
+          say({ t: 'up', n: 1, ev: [{ e: 'deal' }], view: VIEW() });
+          await until(() => !!st.stake && T.idle); const paid = { coin: st.coin, stake: st.stake && st.stake.e, live: st.ms.live };
+          for (let i = 0; i < 2; i++) { CBApp._t.match.act({ t: 'set', u: i + 1 }); await wait(30); }      // 自分の セットは 2回 だけ
+          say({ t: 'up', n: 2, ev: [{ e: 'end', wins: [3, 0], res: 'win' }], view: Object.assign(VIEW(), { phase: 'end', res: 'win' }) }); await wait(400);
+          const m = document.querySelector('#cbOv .cbmod');
+          return { paid: paid, modal: m ? m.textContent.replace(/\\s+/g, ' ') : '', sets: link.sent.filter(x => x.t === 'act' && x.a.t === 'set').length, joined: link.sent.filter(x => x.t === 'join').map(x => x.stake) }; }""", FKV)
+        f3 = pg.evaluate(FK0)
+        check(fs2['joined'] == [{'e': 30, 'w': 60}] and fs2['paid'] == {'coin': 10, 'stake': 30, 'live': 'fr'} and fs2['sets'] == 2 and f3 == f0 and '正しくない 知らせ' in fs2['modal'] and '参加コイン 30枚は 戻ったよ' in fs2['modal'],
+              f'参加コイン 30枚の 部屋：配られて 30枚 出した（のこり {fs2["paid"]["coin"]}枚）→ セット 2回で「あなたの 勝ち」が 届いても 受けとらない・勝者の 60枚は もらえない・出した 30枚は 戻る（{f3["coin"]}枚）・勝ち負けも そのまま')
+        pg.locator('#cbOv .cbmod [data-cb=menu]').click(); pg.wait_for_timeout(200)
+        # ④ タグに なる 字の 入った 知らせ：画面には 出ない
+        fx = pg.evaluate("""async (VS) => {
+          const T = CBApp._t, wait = ms => new Promise(r => setTimeout(r, ms)), VIEW = () => (0, eval)('(' + VS + ')');
+          const link = { sent: [], send(t) { this.sent.push(JSON.parse(t)); }, onText: null, onLost: null, close() { this.closed = true; } };
+          const say = o => { if (link.onText) link.onText(JSON.stringify(o)); };
+          T.start(CBNet.guest(link)); await wait(60);
+          say({ t: 'hello', v: CBNet.PROTO, stake: { e: 0, w: 0 } }); await wait(120);
+          const v = VIEW(); v.my.hand[0].k = '"><i data-xss="1">X</i>'; v.phase = '<b data-xss="2">';
+          say({ t: 'up', n: 1, ev: [{ e: 'deal' }, { e: '<i data-xss="3">' }], view: v }); await wait(400);
+          const m = document.querySelector('#cbOv .cbmod');
+          return { xss: document.querySelectorAll('[data-xss]').length, html: document.querySelector('#cbOv').innerHTML.indexOf('data-xss'), modal: m ? m.textContent.replace(/\\s+/g, ' ') : '', match: !!T.match }; }""", FKV)
+        check(fx['xss'] == 0 and fx['html'] == -1 and not fx['match'] and '正しくない 知らせ' in fx['modal'], f'タグに なる 字の 入った 知らせは 画面に 出ない（タグ {fx["xss"]}こ）・対戦は そこで 終わる')
+        pg.locator('#cbOv .cbmod [data-cb=menu]').click(); pg.wait_for_timeout(200)
+        pg.evaluate("() => { const T = CBApp._t, st = T.state; st.coin = 0; st.ms.fr = 0; T.save(); }")
         check(not errs and not gerrs, f'エラー なし {errs[:3]} {gerrs[:3]}')
         if HAVE:
             miss = sorted(set(f for f in reqs if f.startswith('cb_') and f != 'cb_bundle.js' and f not in CBF))

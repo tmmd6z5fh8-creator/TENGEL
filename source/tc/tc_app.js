@@ -74,7 +74,10 @@ const TCApp = (() => {
   window.TC_ASSET = AP;
 
   // ---------- 保存 ----------
-  const DEF = () => ({ v: 1, color: 0, cares: 0, total: 0, stock: 5, stockAt: Date.now(), heart: 0, high: 0, tickets: 0, fav: null, poops: [], trash: [], trashAt: 0, visit: null, rs: { n: 0, at: 0, el: 0 }, snd: true, gen: 1, bulk: false, push: false, buy: null, dp: null });      // bulk＝トークンを まとめて 使う（PUSH の 横の スイッチ）・push＝お世話の あとの PUSH が まだ 出て いる（第4.159版）・rs＝馬の リセット（n：前の リセットからの お世話の 回数・at：タイマーが 動いた 時刻（0＝まだ）・el：それから ひらいて いた 秒）・buy＝お世話トークンの 買い物の しるし { id, n }（第4.165版：台帳に 入れる 前に 書いて、トークンを わたしたら 消す）
+  // 第4.211版（抜け穴を ふさぐ）：時間で たまる もの（お世話トークン・ゴミ・馬の リセットの タイマー・幻の馬／神様馬の タイムリミット）の 時刻は、時計の 番人（clock_guard.js の TengelClock.now：
+  //   iPhone の 日付と 時刻を 設定で かえても かわらない 本当の 時刻）で 見る。番人が いない とき（テストの にせもの・前の 版の アプリ）は iPhone の 時計の まま
+  const wallNow = () => { try { const c = window.TengelClock; if (c && typeof c.now === 'function') { const t = +c.now(); if (isFinite(t) && t > 0) return t; } } catch (e) { /* なし */ } return Date.now(); };
+  const DEF = () => ({ v: 1, color: 0, cares: 0, total: 0, stock: 5, stockAt: wallNow(), heart: 0, high: 0, tickets: 0, fav: null, poops: [], trash: [], trashAt: 0, visit: null, rs: { n: 0, at: 0, el: 0 }, snd: true, gen: 1, bulk: false, push: false, buy: null, dp: null });      // bulk＝トークンを まとめて 使う（PUSH の 横の スイッチ）・push＝お世話の あとの PUSH が まだ 出て いる（第4.159版）・rs＝馬の リセット（n：前の リセットからの お世話の 回数・at：タイマーが 動いた 時刻（0＝まだ）・el：それから ひらいて いた 秒）・buy＝お世話トークンの 買い物の しるし { id, n }（第4.165版：台帳に 入れる 前に 書いて、トークンを わたしたら 消す）
   let st = null, dirty = false, saveAt = 0;
   function load() {
     try { const s = JSON.parse(localStorage.getItem(SK) || 'null'); st = Object.assign(DEF(), s && s.v === 1 ? s : {}); } catch (e) { st = DEF(); }
@@ -94,8 +97,11 @@ const TCApp = (() => {
   //   いままでに 見た いちばん 先の 時刻（st.seen）より 前には もどらない。時計を もどした あとは、本当の 時刻が そこへ 追いつくまで トークンは ふえない
   //   （前は トークンが 満タンの ときに 数えはじめの 時刻を いまの 時刻に 書きかえて いた ので、満タンに して から 時計を もどせば すぐ また ためられた）。
   //   ※ 時計を 先へ 進めた ままに する ズルは、端末の 中だけでは 見分けられない（電波で 正しい 時刻を もらう しくみが いる）
+  // 第4.211版（抜け穴を ふさぐ）：↑の ズル（iPhone の 時刻を 25分 先へ 進める → お世話トークンが 満タン → また 進める … を くり返す と、トークンを いくらでも ためられた）を ふさぐ。
+  //   いまの 時刻は iPhone の 時計（Date.now）では なく 時計の 番人（wallNow＝TengelClock.now）：ログインボーナス・カードバトルの ミッションの 月・調査隊切符と 同じ（第4.191版・第4.203版）。
+  //   設定で 時刻を 進めても・もどしても、番人の 時刻は 本当に たった 時間 だけ 進む（電源を 入れ直した あとは 番人も iPhone の 時計を 信じる：そこは 端末の 中だけでは 見分けられない）
   function tnow() {
-    const n = Date.now(), s0 = +st.seen || 0;
+    const n = wallNow(), s0 = +st.seen || 0;
     if (n > s0) { st.seen = n; if (n > (tnow.saved || 0) + 60000) { tnow.saved = n; touch(); } }
     return Math.max(n, s0);
   }

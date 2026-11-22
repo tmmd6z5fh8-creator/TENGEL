@@ -13,6 +13,11 @@ odds = [1.5, 3.2, 4.8, 6.5, 8.9, 12.1, 15.6, 20.3, 28.4, 35.0, 48.2, 66.0]; nos 
 FORM = {"id": None, "venue": "大井", "date": "2026-10-13", "r": "9", "dist": "1400", "surface": "ダ", "baba": "良", "n": "12", "tan1": "", "s1": "9.0", "s1combo": "", "s5": "", "s5combo": "", "s10": "", "s10combo": "",
         "rows": [{"no": no, "tan": str(t), "fuku": ""} for no, t in zip(nos, odds)]}   # A層（第1 人気→人気・第2 人気→中穴）
 fails, errs = [], []
+
+def rec_year(pg):      # 第4.211版：記録タブは 今月を 開く。この テストの 記録は 2026年10月 → 今月で なくても 出る ように、2026年の「年間」に して から 見る
+    pg.evaluate("""() => { const y = document.querySelector('#v-rec select[data-ym=y]'); if (y && [...y.options].some(o => o.value === '2026') && y.value !== '2026') { y.value = '2026'; y.dispatchEvent(new Event('change', { bubbles: true })); }
+      const b = document.querySelector('#v-rec button[data-ym=m][data-v="0"]'); if (b && b.getAttribute('aria-pressed') !== 'true') b.click(); }"""); pg.wait_for_timeout(300)
+
 def check(c, label):
     print(('  ✅ ' if c else '  ❌ ') + label)
     if not c: fails.append(label)
@@ -81,7 +86,7 @@ try:
           await db.collection('bets').doc('20261013-oi-12').set(b); }""")
         pg.wait_for_timeout(600)
         # 記録タブ
-        pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(500)
+        pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(500); rec_year(pg)
         r9 = pg.locator('#recList .lrow[data-id="20261013-oi-09"]'); print('[7] 記録タブ:', r9.locator('.lmid').inner_text().replace('\n', ' '), '|', r9.locator('.lend').inner_text().replace('\n', ' '))
         check('単勝・馬単・ワイド' in r9.locator('.lmid').inner_text() and '1,900→4,570' in r9.locator('.lend').inner_text(), '一覧に券種と合計')
         r9.locator('.lmain').click(); pg.wait_for_timeout(400)
@@ -108,7 +113,7 @@ try:
         check(rows_.get('3連複', [None] * 8)[1] == '1' and rows_['3連複'][4] == '1,200' and rows_['3連複'][5] == '1,200', '3連複（払い戻し）：1,200円→1,200円')
         check('券種を分けていない記録' in rows_ and rows_['券種を分けていない記録'][4] == '1,000', '前の記録は「券種を分けていない記録」にまとめる')
         # 書き出し
-        pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(300); pg.click('#recExportBtn'); pg.wait_for_timeout(300)
+        pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(300); rec_year(pg); pg.click('#recExportBtn'); pg.wait_for_timeout(300)
         lines = pg.locator('#recExportText').input_value().split('\n'); head = lines[0].split('\t')
         row9 = [l for l in lines if '\t9\t' in l][0].split('\t')
         print('[10] 書き出し:', head[8], '=', row9[head.index('券種ごとの金額（購入→回収）')])

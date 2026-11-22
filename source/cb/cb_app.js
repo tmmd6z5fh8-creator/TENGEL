@@ -322,12 +322,16 @@ const CBApp = (() => {
   }
   const rewardFor = streak => (streak > 0 && streak % REWARD.every === 0 ? REWARD.bonus : REWARD.win);
   // まだ わたして いない ごほうびを わたす → { want, add, stock, max }（わたす ものが ない・読みこめない ときは null）
+  //   第4.211版（抜け穴を ふさぐ）：わたして いる 途中（トレーニングセンターを 読みこんで いる 間）に もう 1回 よばれても、2回目は 何も しない（payBusy）。
+  //     前は 対戦が 終わった すぐ あとに メニューへ もどる と、同じ ごほうび（st.owe）を 2回 わたす ことが あった（結果の 画面と メニューの 両方が わたす）。
+  //     わたした 数を 引く のは わたせた あと（その 間に 次の 勝ちで ふえた ぶんは のこす）。payBusy は 画面を またいで 1つ（window に 置く：カードバトルを 閉じて 開き直しても 同じ）
   async function pay() {
-    if (!(st.owe > 0) || typeof window.TCGift !== 'function') return null;
+    if (!(st.owe > 0) || typeof window.TCGift !== 'function' || window.__cbPayBusy) return null;
     const want = st.owe; let r = null;
-    try { r = await window.TCGift(want); } catch (e) { r = null; }
+    window.__cbPayBusy = true;
+    try { r = await window.TCGift(want); } catch (e) { r = null; } finally { window.__cbPayBusy = false; }
     if (!r) return null;                               // 読みこめなかった：つぎに 開いた とき
-    st.owe = 0; save();                                // 持てる 数（25こ）を こえる ぶんは なくなる
+    st.owe = Math.max(0, st.owe - want); save();       // 持てる 数（25こ）を こえる ぶんは なくなる
     return { want: want, add: r.add, stock: r.stock, max: r.max };
   }
   // 対戦が 終わった：数える → ごほうび（お世話トークン）
@@ -350,9 +354,11 @@ const CBApp = (() => {
   // 配った：対戦 ちゅうの しるし（とちゅうで アプリが 閉じられたら、つぎに 開いた とき その 連勝を 0 に：第4.183版）
   function msLive() { if (!match) return; msRoll(); st.ms.live = qRun ? 'qc' : msKind(match); save(); }      // 第4.196版：決戦調査の 戦は 'qc'
   // 参加コインを 出す（配った とき：2人とも 自分の 端末で）。出した 数は 対戦が 終わる まで おぼえて おく（st.stake）
+  //   第4.211版（抜け穴を ふさぐ）：持って いる 数が 足りない ときは 出さない（出して いない ので、もどる ことも もらう ことも ない）。
+  //     前は 足りない ぶんを 0 で 止めて「出した」ことに して いた → にせものの ホスト（本物の アプリで ない 相手）が「参加する」を 待たずに 配って すぐ 切ると、出して いない 参加コインが「もどって」ふえた
   function payStake() {
     const k = match && match.stake; st.stake = null;
-    if (k && k.e > 0) { st.coin = Math.max(0, st.coin - k.e); st.stake = { e: k.e, w: k.w }; }
+    if (k && k.e > 0 && st.coin >= k.e) { st.coin -= k.e; st.stake = { e: k.e, w: k.w }; }
     save();
   }
 
@@ -1248,7 +1254,7 @@ const CBApp = (() => {
       + `<h4>バトルコイン</h4><ul><li><b>コンピュータに 勝つと ${COIN.win}枚</b> もらえるよ。連勝すると ボーナス：${COIN.bonus.map(t => `<b>${t[0]}連勝 ごとに ＋${t[1]}枚</b>`).join('・')}（${COIN.bonus.reduce((a, t) => a * t[0], 1)}連勝 など、両方の ときは 両方）</li>`
       + `<li><b>毎日の ログインボーナス</b>でも <b>${COIN.day}枚</b>（<b>7日目は ＋${COIN.day7}枚</b>）もらえるよ。<b>買う ことは できない</b>よ</li>`
       + '<li>友達と 対戦する 部屋を 作る とき、<b>参加コイン</b>と <b>勝者の 獲得コイン</b>（参加コインの 2倍 まで）を 決められるよ</li><li>部屋に 入る 人は、同じ 数の 参加コインを 持って いないと 入れないよ</li>'
-      + '<li>2人とも 初めに 参加コインを 出す。<b>勝った 人は、テンゲルから 獲得コインを プレゼントで もらえる</b>。同点は 参加コインが 戻る</li><li><b>途中で やめると、参加コインは 戻らない</b>（つながりが 切れた ときは 戻るよ）</li></ul>'
+      + '<li>2人とも 初めに 参加コインを 出す。<b>勝った 人は、テンゲルから 獲得コインを プレゼントで もらえる</b>。同点は 参加コインが 戻る</li><li><b>途中で やめると、参加コインは 戻らない</b>（つながりが 切れた ときは 戻るよ）</li><li>相手が 途中で やめた とき：あなたが カードを 3回 出した 後 なら 獲得コインを もらえる。その 前なら 参加コインが 戻るよ</li></ul>'
       + `<h4>デザインカスタム</h4><ul><li>メニューの「<b>デザインカスタム</b>」で、カードの <b>表</b>・<b>裏</b>と <b>プレイボード</b>の デザインを 変えられるよ</li>`
       + `<li><b>カードの 表</b>は <b>カードパック</b>で 集めるよ：1パック <b>バトルコイン ${PACK.cost}枚</b>・<b>${PACK.size}枚</b>入り（ノーマル ${PACK.size - 1}枚 ＋ くじの 1枚）</li>`
       + `<li>くじの 1枚：<b>レア 2パックに 1枚</b>・<b>超レア 5パックに 1枚</b>（どちらも 神様馬・幻の馬を 含む）・<b>神様馬／幻の馬の レア 10パックに 1枚</b>・<b>神様馬／幻の馬の 超レア 23パックに 1枚</b>（どれも 平均。詳しい 確率は カードパックの「出る 確率」）</li>`
@@ -1724,11 +1730,13 @@ const CBApp = (() => {
   let match = null, V = null, queue = [], pumping = false, mode = { k: 'idle' }, busy = false, lock = false, ended = false, gameNo = 0, dealHold = false;      // dealHold：第4.190版（下の play の deal）
   // 第4.191版：結果は 決まった とき（'end' が 届いた とき）に すぐ 数える（settle）。fin＝この 対戦の 結果は もう 数えた・ends＝数えた 結果（endShow が 順に 使う）
   let fin = false, ends = [];
+  // 第4.211版：この 対戦で 自分が カードを セットした 数（配り直したら 0 から：下の onEv）。相手が とちゅうで やめた ときの 獲得コインは、ここまで 進んだ 対戦 だけ（下の onNet）
+  let mySets = 0;
   function onEv(u) {
     if (qRun && u && u.view && u.view.my && u.view.my.gem) qRun.gu = u.view.my.gem.used.slice();      // 第4.197版（20:20）：この 調査で もう 使った 決戦宝石（次の 戦へ もちこす）
     (u && u.ev || []).forEach(x => {
       if (!x) return;
-      if (x.e === 'deal') fin = false;
+      if (x.e === 'deal') { fin = false; mySets = 0; }
       else if (x.e === 'end' && !fin) { fin = true; ends.push(settle(x.res)); }
     });
   }
@@ -1766,12 +1774,16 @@ const CBApp = (() => {
     if (s === 'joined') return;
     if (s === 'stake') return joinAsk();
     const playing = !ended && !fin && !!V;      // 第4.191版：結果を もう 数えた（fin）ときは「数えないよ」と 言わない
-    const why = s === 'bye' ? WHO() + 'が 部屋を 出たよ' : s === 'ver' ? 'アプリの 版が 違うので 対戦できないよ。\n2人とも 新しい 版に してね' : 'つながりが 切れたよ';
+    const why = s === 'bye' ? WHO() + 'が 部屋を 出たよ' : s === 'ver' ? 'アプリの 版が 違うので 対戦できないよ。\n2人とも 新しい 版に してね' : s === 'bad' ? '相手から 正しくない 知らせが 届いた ので、\n対戦を 終わったよ' : 'つながりが 切れたよ';      // 第4.211版：'bad'（cb_net.js：形の おかしい 知らせ・セットして いない のに「終わった」）
     // 参加コイン（第4.179版）：相手が とちゅうで やめた → 勝者の 獲得コインを もらう／つながりが 切れた → 参加コインが もどる
+    //   第4.211版（抜け穴を ふさぐ）：獲得コインを もらえる のは、自分が 3回 セットした あと（CBNet.MIN_SETS：勝ち負けが つく ところまで 進んだ 対戦）に 相手が やめた とき だけ。
+    //     その 前に やめられた ときは 参加コインが もどる だけ（やめた 人の 参加コインは 今まで どおり もどらない）。
+    //     前は 配られた すぐ あとに「やめた」と 送る だけの にせものの 相手（本物の アプリで ない）で、何も しないで 獲得コインを くり返し もらえた
     let coinMsg = '';
     if (st.stake) {
       const k = st.stake; st.stake = null;
-      if (s === 'bye') { addCoin(k.w); coinMsg = `${WHO()}が 途中で やめた ので、バトルコイン ${k.w}枚を もらったよ`; } else { addCoin(k.e); coinMsg = `参加コイン ${k.e}枚は 戻ったよ`; }
+      if (s === 'bye' && mySets >= CBNet.MIN_SETS) { addCoin(k.w); coinMsg = `${WHO()}が 途中で やめた ので、バトルコイン ${k.w}枚を もらったよ`; }
+      else { addCoin(k.e); coinMsg = s === 'bye' ? `${WHO()}が 序盤で やめた ので、参加コイン ${k.e}枚は 戻ったよ` : `参加コイン ${k.e}枚は 戻ったよ`; }
       save();
     }
     if (st.ms.live) { st.ms.live = ''; save(); }      // 第4.183版：ミッションの 連勝は 数えない（そのまま）
@@ -2107,6 +2119,7 @@ const CBApp = (() => {
     let r = null; const g = GEN;
     try { r = await match.act(a); } catch (e) { r = { ok: false, why: 'err' }; }
     if (g !== GEN) return false;                       // 第4.190版：返事を 待つ あいだに 対戦を はなれた（新しい 対戦の 形は かえない）
+    if (r && r.ok && a && a.t === 'set') mySets += 1;   // 第4.211版
     busy = false;
     if (!r || !r.ok) { lock = false; if (match && V) { mode = { k: 'idle' }; render(); toast('その 手は 打てなかったよ', 2); } return false; }
     return true;
@@ -3089,6 +3102,7 @@ const CBApp = (() => {
       qopt: (lv, n) => qOpt(lv, n), qApi, qtPaint: () => qtPaint(), qGu: a => { if (qRun) qRun.gu = a.slice(); }, qmsWin: r => qmsWin(r), get qt() { return st ? Object.assign({ left: qtLeft() }, qtNow()) : null; }, get quest() { return { run: qRun ? Object.assign({}, qRun) : null, st: st ? Object.assign({}, st.q) : null, scene: qs ? { lv: qs.lv, step: qs.step, i: qs.i, typing: !!qs.tw, rv: qs.rv || 0 } : null, data: QUEST, open: st ? qOpen() : 0, track: bg.trk }; },      // 第4.196版：決戦調査
       get bgm() { return { on: !!bg.cur, want: bg.want, have: !!bg.buf, gone: bg.gone, pos: bgmPos(), len: BGM.len, pre: BGM.pre, vol: BGM.vol, file: BGM.file, loop: bg.cur ? [bg.cur.s.loopStart, bg.cur.s.loopEnd] : null, ctx: snd.ac ? snd.ac.state : null, off: bg.cur ? bg.cur.off : null, dur: bg.buf ? bg.buf.duration : null, trk: bg.trk }; },
       get qsnd() { return { lv: qa.lv, cur: qa.cur ? { f: qa.cur.f, keep: qa.cur.keep, on: !!qa.cur.s } : null, kept: qa.kept.map(o => o.f), have: Object.keys(qa.buf), data: QSND, bgs: QBG }; },      // 第4.210版：フィールドの 音
+      get mySets() { return mySets; }, setMySets: n => { mySets = Math.max(0, Math.floor(+n || 0)); },      // 第4.211版：この 対戦で 自分が セットした 数
       setSet, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, pay, load, save, takeGift, modOn, pkDraw, pkPool, pkGroup, randInt, get pk() { return pk; }, dz: t => showDz(t), dzApi, msKey: () => monthKey(), msRoll, ms: tab => showMs(tab), pic
     }
   };

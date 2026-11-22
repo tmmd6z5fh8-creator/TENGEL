@@ -8,6 +8,11 @@ shutil.rmtree(SRV, ignore_errors=True); os.makedirs(SRV)
 subprocess.run(['python3', 'build_pwa.py', os.path.join(SRV, 'TENGEL')], check=True, stdout=subprocess.DEVNULL)
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(0.8)
 fails, errs = [], []
+
+def rec_year(pg):      # 第4.211版：記録タブは 今月を 開く。この テストの 記録は 2026年10月 → 今月で なくても 出る ように、2026年の「年間」に して から 見る
+    pg.evaluate("""() => { const y = document.querySelector('#v-rec select[data-ym=y]'); if (y && [...y.options].some(o => o.value === '2026') && y.value !== '2026') { y.value = '2026'; y.dispatchEvent(new Event('change', { bubbles: true })); }
+      const b = document.querySelector('#v-rec button[data-ym=m][data-v="0"]'); if (b && b.getAttribute('aria-pressed') !== 'true') b.click(); }"""); pg.wait_for_timeout(300)
+
 def check(c, label):
     print(('  ✅ ' if c else '  ❌ ') + label)
     if not c: fails.append(label)
@@ -49,7 +54,7 @@ try:
         print('[5] 保存:', {k: bet.get(k) for k in ('n1', 'n2', 'n3', 'p1', 'p2', 'p3')} if bet else None)
         check(bet and (bet['n1'], bet['n2'], bet['n3']) == (7, 6, 2), '762のまま保存しても7-6-2で入る')
         # 記録タブで直す
-        pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(500)
+        pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(500); rec_year(pg)
         pg.locator('#recList .lmain').first.click(); pg.wait_for_timeout(400)
         r2 = pg.locator('#recList .recf [data-k=res]'); print('[6] 記録タブの欄:', r2.input_value(), r2.get_attribute('inputmode'))
         r2.fill(''); r2.press_sequentially('2.7.1', delay=20); pg.wait_for_timeout(200)

@@ -2559,6 +2559,30 @@ try:
           rsv: { state: 'done', types: ['馬単'], bets: { '馬単': [[5, 2]] }, result: { p: [[5], [2], [1]] }, fx: 'miss', at: new Date().toISOString() }, mem: { at: new Date().toISOString(), v: 'a' } }])""", XS); pS.wait_for_timeout(400)
         pS.evaluate("() => document.querySelector('.tabbar button[data-tab=rec]').click()"); pS.wait_for_timeout(600)
         check(pS.evaluate(XN) == 0 and pS.evaluate("() => (document.querySelector('#recList').innerText.match(/data-xss/g) || []).length") >= 2, '台帳に じかに 入った 字でも、記録の 一覧の R・層の 札は 字と して 出る（タグに ならない）')
+        # 第4.211版（まさちゃん 11/22 21:36「抜け穴は無いか全部細かく徹底的に確認して！」）：じかに 入った 字（層の 札・券種の 名前・組の 馬番・3連単の 組番）でも、
+        #   予約済み・結果待ちの 窓／そこから 開いた 判定画面の 人気順位の 表／記録の 行の 組の 一覧で タグに ならない（前は この 4か所が 字を そのまま 画面に 入れて いた）
+        XS2 = '"\'><i data-xss="1">X</i>'
+        pS.evaluate("""async (C) => {
+          const now = new Date().toISOString(), d = new Date(), ym = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+          const horses = Array.from({ length: 14 }, (_, i) => ({ no: i + 1, tan: +(1.8 + i * 2.7).toFixed(1), fuku: null }));
+          const mk = (i, state) => ({ id: 'xsrsv' + i, date: ym + '-0' + (i + 1), venue: 'V', r: 7 + i, rname: 'N', n: 14, dist: 1200, surface: 'ダ', baba: '良', tan1: 1.8, s1: 30.5, s5: 60.2, s10: 90.4, s1combo: '6-2-10' + C, s5combo: '1-2-3' + C, s10combo: '3-2-1' + C,
+            horses: horses, types: ['馬単'], n1: 5, n2: 2, n3: 1, p1: 3, p2: 1, p3: 2, stake: '600', payout: '0', start: '23:5' + i, snap: { L: 'B' + C, kubun: 'B', zones: [] },
+            rsv: { state: state, types: ['馬単' + C], bets: { ['馬単' + C]: [[5, 2], ['3' + C, 1]] }, legs: [{ k: 'x' + C, l: 'L' + C, a: ['5' + C], b: [2] }], at: now, start: '23:5' + i, result: state === 'done' ? { p: [[5], [2], [1]] } : undefined, fx: state === 'done' ? 'miss' : undefined }, updatedAt: now, createdAt: now });
+          await TengelLocal.putBets([mk(0, 'reserved'), mk(1, 'done')]); }""", XS2); pS.wait_for_timeout(500)
+        TXN = "(sel) => ((document.querySelector(sel) || {}).innerText || '').split('data-xss').length - 1"
+        pS.evaluate("() => document.querySelector('#rsvBtn').click()"); pS.wait_for_timeout(700)
+        pS.evaluate("() => document.querySelectorAll('#rsvOv details').forEach(d => { d.open = true; })"); pS.wait_for_timeout(200)
+        r1 = [pS.evaluate(XN), pS.evaluate(TXN, '#rsvOv')]
+        pS.evaluate("() => { const b = [...document.querySelectorAll('#rsvOv .rvcard')].filter(c => c.dataset.id === 'xsrsv0')[0]; if (b) b.querySelector('[data-rv=open]').click(); }"); pS.wait_for_timeout(900)
+        r2 = [pS.evaluate(XN), pS.evaluate("() => ((document.querySelector('#result .rankbox') || {}).innerText || '').split('data→xss').length - 1"), pS.evaluate("() => !!document.querySelector('#result .rankbox')")]      # 組番の「-」は「→」に なる（data→xss）
+        pS.evaluate("() => document.querySelector('.tabbar button[data-tab=rec]').click()"); pS.wait_for_timeout(600)
+        pS.evaluate("() => { const b = document.querySelector('button[data-ym=m][data-v=\"0\"]'); if (b) b.click(); }"); pS.wait_for_timeout(400)      # 年間（今月の 記録も 出る）
+        pS.evaluate("() => { document.querySelectorAll('#recList details').forEach(d => { d.open = true; }); document.querySelectorAll('#recList .lrow').forEach(r => { if (/^xsrsv/.test(r.dataset.id || '')) { const b = r.querySelector('.lmain'); if (b && b.getAttribute('aria-expanded') !== 'true') b.click(); } }); }"); pS.wait_for_timeout(700)
+        pS.evaluate("() => document.querySelectorAll('#recList details').forEach(d => { d.open = true; })"); pS.wait_for_timeout(200)
+        r3 = [pS.evaluate(XN), pS.evaluate("() => [...document.querySelectorAll('#recList .betrow .bt')].filter(e => e.textContent.indexOf('data-xss') >= 0).length")]
+        check(r1[0] == 0 and r1[1] >= 4 and r2[0] == 0 and r2[2] and r2[1] == 3 and r3[0] == 0 and r3[1] >= 1,
+              f'じかに 入った 字でも タグに ならない：予約済み・結果待ちの 窓（層の 札・券種・組：タグ {r1[0]}・字 {r1[1]}）・そこから 開いた 判定画面の 人気順位の 表（3連単の 組番：タグ {r2[0]}・字 {r2[1]}）・記録の 行の 組の 一覧（タグ {r3[0]}・字 {r3[1]}）')
+        pS.evaluate("() => document.querySelector('.tabbar button[data-tab=rec]').click()"); pS.wait_for_timeout(300)
         # ② タグに 書いた スクリプト（onerror など）は 動かない（Content-Security-Policy）・ページに タグの スクリプトは ない
         csp = pS.evaluate("(document.querySelector('meta[http-equiv=\"Content-Security-Policy\"]') || {}).content || ''")
         pS.evaluate("() => { window.__xssRan = 0; const d = document.createElement('div'); d.id = 'cspProbe'; d.innerHTML = '<img src=\"missing-x.png\" onerror=\"window.__xssRan = 1\"><button id=\"cspBtn\" onclick=\"window.__xssRan = 2\">x</button>'; document.body.appendChild(d); document.querySelector('#cspBtn').click(); }")

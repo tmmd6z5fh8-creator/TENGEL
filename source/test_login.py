@@ -9,6 +9,7 @@
 #   第4.188版（まさちゃん 2026/11/17 11:22「毎日ログインにも、バトルコイン1日2枚 7日ログインで10枚貰えるようにして！」）：
 #   ・ポイントと いっしょに バトルコイン（1〜6日目 2枚・7日目 12枚）→ localStorage 'tengel.cbgift' に ためる（同じ 日は 1回）・窓と 7日ぶんの 札にも 出る
 #   第4.191版（まさちゃん 2026/11/17 21:23「お願い！」＝ 21:11「アプリ内のポイントとか、バトルコインとか不正に受け取ることできないようになってる？」）：
+#   ・第4.211版：トレーニングセンターの お世話トークン（時間で たまる）も 時計の 番人で 数える（iPhone の 時刻を 進めても ふえない）
 #   ・時計の 番人（clock_guard.js の TengelClock）：アプリの 時計（Clock.swift：お願い「clock」）の にせもので、iPhone の 日付を 進めても・アプリを 開き直しても
 #     つぎの 日の ボーナスは もらえない・本当に 1日 たつと 本当の 日付の ボーナス・もどしても もらえない・サブスクの ポイントの 期限は 日付を もどしても もどらない・
 #     電源を 入れ直した あとは iPhone の 時計を 信じる（再起動を くり返す やり方は 見分けられない）。アプリの 時計が ない ときは 前と 同じ（ほかの 場面は この まま）
@@ -244,6 +245,21 @@ try:
         p5.evaluate("() => __setDay(-31)"); x2 = p5.evaluate("async () => { await TengelClock.sync(); return [TengelWallet.balance().paid_sub, TengelClock.how()]; }")
         p5.evaluate("() => __setDay(0)"); p5.evaluate("() => TengelLogin.close()")
         check(sub >= 9200 and x1 == [0, 'ok'] and x2 == [0, 'back'], f'サブスクの ポイント（{sub:,}P）：31日 たって 期限が 切れた（{x1}）→ iPhone の 日付を 31日 もどしても 使えない（{x2}）')
+        # 第4.211版（抜け穴を ふさぐ）：トレーニングセンターの お世話トークン（5分で 5個・25個 まで）も 時計の 番人で 数える。
+        #   前は iPhone の 時計（Date.now）だった ので、時刻を 25分 進める たびに 満タン（＝抽選 25回）に できた
+        TKN = "async (sync) => { if (sync) await TengelClock.sync(); const r = await TCGift(0); return [r && r.stock, TengelClock.how()]; }"
+        t0 = p5.evaluate(TKN, True)
+        p5.evaluate("() => { const s = TCApp.state; s.stock = 0; s.stockAt = TengelClock.now(); s.seen = TengelClock.now(); localStorage.setItem('tengel.tc', JSON.stringify(s)); }")
+        ta = p5.evaluate(TKN, True)
+        p5.evaluate("() => __setDay(1)"); tb = p5.evaluate(TKN, False); tc_ = p5.evaluate(TKN, True)      # iPhone の 日付を 1日 進めた すぐ あと（たしかめる 前）・たしかめた あと
+        p5.goto(APP); p5.wait_for_timeout(1500); gate(p5); p5.wait_for_timeout(600); p5.evaluate("() => TengelLogin.close()"); td = p5.evaluate(TKN, False)      # 進めた まま アプリを 開き直した（開いた すぐ あとの TCGift は 番人が たしかめ おわる のを 待つ）
+        p5.evaluate("() => __pass(5 * 60000 + 2000)"); te = p5.evaluate(TKN, True)      # 本当に 5分 たった
+        p5.evaluate("() => __setDay(-2)"); tf = p5.evaluate(TKN, True)                  # 日付を もどした
+        p5.evaluate("() => __setDay(0)"); p5.evaluate("() => __pass(60 * 60000)"); tg = p5.evaluate(TKN, True)      # 本当に 1時間 たった
+        sv = p5.evaluate("() => { const s = JSON.parse(localStorage.getItem('tengel.tc')); return [s.stock, s.seen <= TengelClock.now() + 1000, s.stockAt <= TengelClock.now() + 1000]; }")
+        check(t0[0] == 5 and ta == [0, 'ok'] and tb[0] == 0 and tc_ == [0, 'ahead'] and td[0] == 0 and te[0] == 5 and tf == [5, 'back'] and tg == [25, 'ok'] and sv == [25, True, True],
+              f'お世話トークン：iPhone の 日付を 1日 進めても ふえない（たしかめる 前 {tb[0]}個・あと {tc_}・開き直しても {td[0]}個）→ 本当に 5分 たつと 5個（{te}）・日付を もどしても そのまま（{tf}）・1時間で 満タン（{tg}）')
+        p5.evaluate("() => TengelLogin.close()")
         # 電源を 入れ直した（日付を 進めた まま）→ わからない ので 信じる
         p5.evaluate("async () => { await TengelLogin.check(); TengelLogin.close(); }"); p5.wait_for_timeout(300); k6 = p5.evaluate(CLKI)
         p5.evaluate("() => { __setDay(1); __reboot(); }"); p5.goto(APP); p5.wait_for_timeout(1500); gate(p5)

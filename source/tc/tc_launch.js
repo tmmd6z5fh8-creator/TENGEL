@@ -234,14 +234,22 @@
     if (!loading) loading = new Promise(function (ok, ng) { var s = document.createElement('script'); s.src = 'tc_bundle.js'; s.onload = function () { ok(); }; s.onerror = function () { loading = null; ng(new Error('load')); }; document.head.appendChild(s); });
     return loading;
   }
+  // 第4.211版（抜け穴を ふさぐ）：トレーニングセンターの 時刻は 時計の 番人（TengelClock：tc_app.js の wallNow）。アプリを 開いた すぐ あと は 番人が まだ iPhone の 時計を
+  //   たしかめて いない（その 間 だけ iPhone の 時計の まま）→ たしかめ おわって から 開く・ごほうびを わたす（ふつうは 一瞬。返事が ない ときも 1.5秒で 先へ）
+  function clockReady() {
+    try {
+      var c = window.TengelClock; if (!c || !c.ready || typeof c.ready.then !== 'function') return Promise.resolve();
+      return new Promise(function (ok) { var done = false, go = function () { if (!done) { done = true; ok(); } }; c.ready.then(go, go); setTimeout(go, 1500); });
+    } catch (e) { return Promise.resolve(); }
+  }
   function open(opt) {
     if (fab) fab.disabled = true;
-    return load().then(function () { return window.TCApp.open(opt); }).catch(function () { note('トレーニングセンターを 読みこめなかったよ。もう一度 押してね'); }).then(function () { if (fab) fab.disabled = false; });
+    return clockReady().then(load).then(function () { return window.TCApp.open(opt); }).catch(function () { note('トレーニングセンターを 読みこめなかったよ。もう一度 押してね'); }).then(function () { if (fab) fab.disabled = false; });
   }
   window.TCOpen = open;
   // 第4.176版：馬カードバトルの ごほうび（cb/cb_app.js）：お世話トークンを n こ わたす → Promise<{ add（わたせた 数）, stock, max }>（読みこめない ときは null）。
   //   トークンの 数え方（時間で たまる・25こ まで）は tc_app.js に ある ので、バンドルを 読んで から TCApp.tokens.give に まかせる（画面は 開かない）
-  window.TCGift = function (n) { return load().then(function () { return window.TCApp.tokens.give(n); }).catch(function () { return null; }); };
+  window.TCGift = function (n) { return clockReady().then(load).then(function () { return window.TCApp.tokens.give(n); }).catch(function () { return null; }); };
   // ---------- 作戦会議の 入口：判定タブの「レース情報」の カードの 右上（第4.160版・まさちゃん 11/12 14:58「作戦会議は、1番左の項目判定のページでも開けるようにして！アイコンは右上に設置して！」）----------
   //   ・絵は トレーニングセンターの 作戦会議の 札と 同じ（tc_icon_plan.webp：500×200 の 中に 札が 468×141）。絵の 大きさ 118×47 ＝ 見える 札 110×33・押せる 所は 絵 ぜんぶ（高さ 47）
   //   ・場所（第4.165版・11/13 13:55「赤枠の作戦会議のアイコンを青四角のあたりに設置して！」）＝ カードの 右上の かど：
