@@ -22,8 +22,11 @@ QBGM = 'cb_qbgm.m4a'         # 第4.196版：決戦調査の BGM（kisekae/cb_qb
 
 
 def files():
-    """アプリに 入れる 音の 名前（build_ios.py・テストが 使う）：効果音 18こ（第4.196版：決戦調査の 7こ を たした）＋ BGM 2こ（いつもの・決戦調査）"""
-    return [f'cb_se_{n}.m4a' for n in NAMES] + [BGM, QBGM]
+    """アプリに 入れる 音の 名前（build_ios.py・テストが 使う）：効果音 18こ（第4.196版：決戦調査の 7こ を たした）＋ BGM 2こ（いつもの・決戦調査）
+    ＋ 第4.210版：決戦調査の フィールドの 音 37こ（まさちゃんが 送って くれた 音：エリアの BGM 12こ・タップの 効果音 25こ ＝ kisekae/cb_qsnd.py が ios/cb_assets/ に 入れる。ここでは 作らない）"""
+    if H not in sys.path: sys.path.insert(0, H)
+    import cb_qsnd
+    return [f'cb_se_{n}.m4a' for n in NAMES] + [BGM, QBGM] + cb_qsnd.files()
 
 
 def t_(sec):

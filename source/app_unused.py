@@ -21,7 +21,7 @@
 #   ・使って いない ファイル だけが 名前を 書いて いる ファイル
 import os, re, sys, zipfile, tempfile, shutil
 
-EXT = r'(?:webp|m4a|mp4|json|bin|woff2|svg|jpg|png|ttf|xlsx|html|js)'
+EXT = r'(?:webp|m4a|mp3|mp4|json|bin|woff2|svg|jpg|png|ttf|xlsx|html|js)'      # 第4.210版：mp3（決戦調査の フィールドの 音）
 TEXT = ('.html', '.js', '.json', '.svg', '.css')
 V = '\x00'                                           # 組み立ての 形の 中の「変わる 所」の しるし
 

@@ -1,7 +1,9 @@
 # 馬カードバトルの「決戦調査」（第4.196版・まさちゃん 2026/11/18 15:09）の 画面の テスト：App Store版（TARGET=app）を localhost で アプリ版として 開く
 #   ・メニューの「⚔️ 決戦調査」→ マップ（エリア 1 だけ 開いて いる・ほかは 鍵）→ エリアを タップ → その 場に ふきだし（まさちゃん 16:47：開いて いる →「決戦調査に 行く」／「もどる」・鍵／討伐済み → わけ と「もどる」・マップは 見えた まま）
 #   ・フィールド：セリフ（字が 1つずつ・タップで ぜんぶ → 次へ）→ テロップ「レベル○の 敵 出現！」→ 敵（蹄の 線が フィールドの 決めた 高さ）→ 名前 →「タップで バトル開始！」
-#   ・バトル：上は 敵HP ゲージ（盾の 中に 顔・名前・HP のこま：赤い 帯は 枠の 中に ぴったり〈角も 枠と 同じ 形〉）・「ターン」は 出ない・相手の 名前は 敵の 短い 名前・BGM は 決戦調査の 曲（フィールドでは 止まる）
+#   ・バトル：上は 敵HP ゲージ（盾の 中に 顔・名前・HP のこま：赤い 帯は 枠の 中に ぴったり〈角も 枠と 同じ 形〉）・「ターン」は 出ない・相手の 名前は 敵の 短い 名前・BGM は 決戦調査の 曲
+#   ・第4.210版：フィールドの 音（まさちゃんの 音：エリアの BGM・タップ〈行〉ごとの 効果音・前の 行と 同じ 音は つづく・Lv3 の ③は 0.8秒 あと・Lv12 の ③は 止まらない）・ほかの 音は 鳴らない・
+#     マップへ・アプリが うしろへ・効果音 オフ で 止まる・敵の 出方は transform と opacity だけ（カクカク しない）
 #   ・勝ち → HP が へる（あいだの 窓「第2戦へ」）→ 討伐（勝利の 演出 3段階・バトルコイン GET）→ マップ（次の エリアが 開く・討伐の はんこ）
 #   ・同点 → 同じ 戦を やり直し（HP は そのまま）／負け → 調査 失敗（もう 一度 → HP は 満タン）／とちゅうで やめる → マップ（ミッションの 連勝 0・いつもの 負けには 数えない）
 #   ・確定カード（レベル 5〜12：決まった 戦で 敵の 手札に かならず）・ミッション（コンピュータに 連続勝利）は 数える・いつもの 勝ち負け・連勝・お世話トークン・いつもの コインは かわらない
@@ -44,6 +46,24 @@ LOSE = [['7', '6', '5', '4', '3', '2', '1'], ['k', 'm', '1', '1', '2', '3', '6']
 DRAW = [['k', '1', '2', '3', '4', '5', '6'], ['m', '7', '7', '6', '2', '3', '1']]
 # 第4.200版：まさちゃんの セリフの 表（11/18 22:54「セリフ変更と、タップ数、何タップ目に敵表示するか書いてるからこれ通り入れて！」）＝ [[セリフ（1タップで 1行）], 何行目で 敵が 出るか]（レベル 1〜12）
 SAY = [[["「ふぅ、ここでひと休み……」　チリン♪", "チリンチリンッ！　ダダダッ！　「わっ、子馬がこっちに！」"], 2], [["バタバタバタッ！　「すごい風だ。……坂の上に馬？」", "ビュンッ！　「早い！こいつも敵か！」"], 2], [["ザク、ザク……。　「茨で行き止まりか。」", "ガサ……ガサッ。　「ん？　茨が動いたぞ。」", "ブルルッ！　「森番だ！　その茨、鎧だったのか！」"], 3], [["ジャラララ……。　「よし、門が開くぞ！」", "ギギギ……ガシャン！　門の奥から、カツン……カツン……ダンッ！", "関守のひと踏みで、門の鎖が揺れる。　「明らかに今までより強そうだ！」"], 3], [["ヒュゥゥ……。霧の奥で、ぴちゃん。……ぴちゃん。　「水面に、馬が映ってる。」", "そっと振り向く。　「……誰もいない。」", "背後で、ちゃぷ……。すぐ後ろで、ポチャン、、、すぐ後ろに何かいる…ブルルッ！　「……湖霊だ！」"], 3], [["ヒュオォ……。振り返ると、足跡が砂に消えていく。　「砂の王国……？　さっきもこの門を通ったぞ。」", "王墓の奥で、コン……コン……。大砂時計のガラスが内側から鳴る。　「なんだ、あれ……。砂が上に落ちてる？」", "――ドゴォンッ！　真横で砂が噴き上がり、黄金の馬が飛び出す！　「うわっ！　刻砂の時守だ！」"], 3], [["ハァ……ハァ……。震える足で、吊り橋を踏む。ギシッ。　「やっと六戦……。少し、息を――」", "ズドォン！ズドォンン！！ズドォン！そこらじゅうに落雷が落ちている…ズドドドォンッ！！　「うわっ！」", "キィィン……。爆煙が晴れる。パチッ。青い火花が、たてがみを走る。　「……雷鳴峡の迅雷だ！」"], 3], [["ヒュウゥ……。　「寒っ。息が真っ白だ。」", "門の裏で何かが。ズン、ズン…。ズシィンッ！「自分の足元まで揺れてるぞ……。」", "守将が頭をかがめて門をくぐる。蹄から足元へ、ピキピキピキッ！　「靴の先が凍っている！とてつもない大きさだ！」"], 3], [["カーン……カーン……。　「炉の奥で、誰かが鉄を打ってる。」", "カン、カン、カカカンッ！　音が止まった…？火の向こうで、蹄が鉄をこする。ギリッ……。　「……来る。」", "ガァンッ！　鉄床を蹴り、火花の幕を突き破って突進してくる！　「紅蓮の鉄槌だ！　来るぞ！」"], 3], [["ふわり。　「白い羽……どこから？」", "夜空の星が、すうっと動く。　「あの星座、翼だ……！」", "ファサ……バサッ、バサァッ！　風が頬を打つ。青い石床に、蹄がカツン。　「天馬が目の前に、こんなにデカいのか！」"], 3], [["ギィ……クルクルクルッ。　「天球儀が、勝手に……！」", "キリ……キリキリキリッ！　カチッ、カチッ、カチン！　金の輪が一直線に重なる。　「あれは…王冠？」", "コツ……コツ……。紫水晶が低くうなる。ヴゥゥン……。ダンッ！　王冠の馬が光の中へ踏み出す。　「こいつが、黒曜の覇王か！」"], 3], [["ギィィ……。　「ここが、最後の玉座か。」", "ザワ……ザワザワッ。薔薇が一斉に揺れる。玉座の陰から、羽のこすれる音。ファサ……。　「……そこにいるのか。」", "一瞬、静まり返る。――バサァァッ！！　黒い翼が花びらを払い、女王の蹄が最後の一段を降りる。　薔薇女王「十一勝、お見事。あと一勝、取れるかしら？」", "シャッ！　カードを構える。　「お前が最後だ！行くぞ！」"], 3]]
+
+# 第4.210版：まさちゃんが デモで 決めた フィールドの 音（タップ〈行〉ごとの 効果音 a・b・c＝0・1・2〈None＝なし〉・遅らせる 秒・タップで 止まらない 音・BGM の くり返し：len＝前後 0.5秒の 形／(ls, le)＝頭から 鳴らして ls〜le〈le None＝おわりまで〉：サンプル）
+QSPEC = {1: ([None, 0], {}, [], (132300, 438795)), 2: ([0, 1], {}, [], (26901, 531405)), 3: ([0, 1, 2], {2: 0.8}, [], 352297), 4: ([2, 0, 1], {}, [], (372646, 712216)),
+         5: ([None, 0, 1], {}, [], 353682), 6: ([0, 0, 1], {}, [], 352800), 7: ([None, 0, 0], {}, [], 353259), 8: ([None, 0, 1], {}, [], 351477),
+         9: ([None, 0, 1], {}, [], (0, None)), 10: ([None, 0, 1], {}, [], (371971, 587387)), 11: ([0, 0, 1], {}, [], 1904321), 12: ([0, 1, 2, None], {}, [2], 1839784)}
+QSF = lambda lv, k: f'cb_q_se{lv:02d}{"abc"[k]}.mp3'
+# 音の 出し方を 見る（AudioBufferSourceNode の start：その とき フィールドの 何行目か〈qi〉・くり返しか）
+HOOK = """(function () { if (!window.AudioBufferSourceNode) return; window.__src = [];
+  var P = AudioBufferSourceNode.prototype, st = P.start;
+  P.start = function (when, off) { var Q = window.CBApp && CBApp._t && CBApp._t.quest.scene; window.__src.push({ qi: Q ? Q.i : null, d: this.buffer ? this.buffer.duration : 0, when: when || 0, now: this.context.currentTime, loop: !!this.loop }); return st.apply(this, arguments); };
+})();"""
+HID = "(h) => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => h }); document.dispatchEvent(new Event('visibilitychange')); }"
+# フィールドの 画面の 動き（CSS の アニメーション・トランジション）が 動かす もの
+ANIM = """() => { const f = document.querySelector('#cbOv .cbqf'), out = [];
+  for (const a of document.getAnimations()) { const t = a.effect && a.effect.target; if (!t || !f.contains(t)) continue;
+    const ps = new Set(); a.effect.getKeyframes().forEach(k => Object.keys(k).forEach(x => { if (['offset', 'computedOffset', 'easing', 'composite'].indexOf(x) < 0) ps.add(x); }));
+    out.push({ el: (t.className && t.className.baseVal == null ? t.className : t.tagName).toString(), name: a.animationName || a.transitionProperty || '', ps: [...ps] }); }
+  return out; }"""
 
 
 def gate(pg):
@@ -163,7 +183,7 @@ try:
     with sync_playwright() as p:
         b = p.chromium.launch()
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2 if SHOT else 1, locale='ja-JP', timezone_id='Asia/Tokyo')
-        ctx.add_init_script(FAKE)
+        ctx.add_init_script(FAKE); ctx.add_init_script(HOOK)
         pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.goto(APP); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(5200)
         open_cb(pg); pg.evaluate("() => { CBApp._t.load(); CBApp._t.menu(); }"); pg.wait_for_timeout(200)
@@ -215,14 +235,14 @@ try:
 
         print('■ フィールド（第4.200版：まさちゃんの セリフの 表 → その 行で 敵 出現）')
         pg.locator('#cbOv .qnd[data-lv="1"]').click(); pg.wait_for_timeout(120)
+        pg.evaluate("() => CBApp._t.speed(3)")      # 字が 1つずつ 出る ところを 見る（第4.209版：ゆっくり＝1字 102ミリ秒。第4.210版：1行目が 出る 前に かえる＝前は 出てから かえて いて、短い 1行目が 先に 出おわる ことが あった）
         pg.locator('#cbOv .qpo [data-cb=qgo]').click()
-        pg.wait_for_function("() => CBApp._t.quest.scene && CBApp._t.quest.scene.i === 0", timeout=10000)
-        check(scr(pg) == 'qf' and q(pg)['track'] == '', 'フィールドの 画面・BGM は 止まる（敵が 出る 音を 聞かせる）')
+        pg.wait_for_function("() => CBApp._t.quest.scene && CBApp._t.quest.scene.i === 0", timeout=15000)
+        check(scr(pg) == 'qf' and q(pg)['track'] == 'field', 'フィールドの 画面・BGM は その エリアの 曲（第4.210版：前の 版は 止めて いた）')
         data = pg.evaluate("() => CBApp._t.quest.data.map(x => [x.say, x.en])")
         check(data == SAY, f'セリフ 12 エリア ぶん：まさちゃんの 表（11/18 22:54）の まま・何行目で 敵が 出るか（{[len(x[0]) for x in data]} 行・敵 {[x[1] for x in data]} 行目）')
         say = data[0][0]
         check(not pg.locator('#cbOv .qsay .who').count(), 'セリフの 窓に「あなた」の 札は 出さない（セリフに 話す 人が 入って いる）')
-        pg.evaluate("() => CBApp._t.speed(3)")      # 字が 1つずつ 出る ところを 見る（第4.209版：ゆっくり＝1字 102ミリ秒：とちゅうで タップ するまでに 行が 出おわらない ように）
         pg.wait_for_timeout(300)
         tw = pg.evaluate("() => { const p = document.querySelector('#cbOv .qsay p'); return [(p.querySelector('.sh') || p).textContent.length, CBApp._t.quest.scene.typing]; }")
         check(0 < tw[0] < len(say[0]) and tw[1], f'セリフは 字が 1つずつ 出る（{tw[0]}字 ／ {len(say[0])}字）')
@@ -231,7 +251,7 @@ try:
         fs = pg.evaluate("() => parseFloat(getComputedStyle(document.querySelector('#cbOv .qsay p')).fontSize)")
         check(fs >= 17, f'セリフの 字は 読みやすい 大きさ（{fs}px）')
         en0 = pg.evaluate("() => [getComputedStyle(document.querySelector('#cbOv .qfld .qe')).opacity, !!document.querySelector('#cbOv .qtel.on'), CBApp._t.quest.scene.rv]")
-        check(float(en0[0]) == 0 and not en0[1] and en0[2] == 0, f'1行目「{say[0]}」：敵は まだ 見えない・テロップも まだ')
+        check(float(en0[0]) < 0.01 and not en0[1] and en0[2] == 0, f'1行目「{say[0]}」：敵は まだ 見えない（透明度 {en0[0]}：第4.210版 先に 絵を 用意する ため 0.001）・テロップも まだ')
         shot(pg, 'q03_say')
         pg.evaluate("() => CBApp._t.speed(0.03)")
         pg.locator('#cbOv .qfw').click()
@@ -660,16 +680,38 @@ try:
           return { top: b.top, bot: b.bottom, hoof: e.top + e.height / 1.42, eh: e.height, et: e.top, tel: t.bottom, vh: innerHeight, op: +getComputedStyle(document.querySelector('#cbOv .qfld .qe')).opacity,
             on: document.querySelector('#cbOv .qsay').classList.contains('on'), telon: !!document.querySelector('#cbOv .qtel.on'), txt: document.querySelector('#cbOv .qsay p').textContent, rv: CBApp._t.quest.scene.rv }; }"""
         bad12 = []; cov = []
+        # 第4.210版：フィールドの 音（まさちゃんの 音）も いっしょに 見る：BGM・効果音は オン（消音スイッチに 合わせられる iOS と 同じ 形）
+        sv0 = pg.evaluate("() => { const s = CBApp._t.state, o = { bgm: s.bgm, se: s.se, as: CBApp._as }; s.bgm = true; s.se = true; CBApp._as = true; return o; }")
+        badq = []; badb = []; badt = []; anim = []; dec = []; qplays = 0
         for lv in range(1, 13):
             pg.evaluate(f"() => {{ CBApp._t.state.q.clr = {lv - 1}; CBApp._t.save(); }}")
             if scr(pg) == 'qmap': pg.locator('#cbOv [data-cb=qx]').click(); pg.wait_for_timeout(100)
             elif scr(pg) != 'menu': pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(100)
             pg.locator('#cbOv .cbmenu [data-cb=quest]').click(); pg.wait_for_timeout(200)
-            pg.locator(f'#cbOv .qnd[data-lv="{lv}"]').click(); pg.wait_for_timeout(120); pg.locator('#cbOv .qpo [data-cb=qgo]').click()
+            pg.locator(f'#cbOv .qnd[data-lv="{lv}"]').click(); pg.wait_for_timeout(120)
+            pg.evaluate("() => { CBApp._sl = []; window.__src.length = 0; }")
+            pg.locator('#cbOv .qpo [data-cb=qgo]').click()
             sy, en = SAY[lv - 1]
+            taps, dly, kp, bl = QSPEC[lv]
+            if len(taps) != len(sy): badq.append(f'Lv{lv}：タップの 数 {len(taps)} ≠ セリフ {len(sy)}行')
             for i in range(len(sy)):
                 pg.wait_for_function(f"() => CBApp._t.quest.scene.i === {i} && !CBApp._t.quest.scene.typing", timeout=10000)
-                if i >= en - 1: pg.wait_for_function("() => CBApp._t.quest.scene.rv === 2", timeout=10000); pg.wait_for_timeout(950)
+                k = taps[i]; cont = k is not None and i > 0 and taps[i - 1] == k
+                if HAVE and k is not None and not cont: pg.wait_for_function(f"() => CBApp._sl.some(e => e[0] === 'play' && e[2] === {i})", timeout=10000)
+                if i == 0:
+                    if HAVE:
+                        pg.wait_for_function("() => CBApp._t.bgm.on", timeout=10000)
+                        bg = pg.evaluate("() => CBApp._t.bgm")
+                        if isinstance(bl, int): L0, L1, off = 0.25, 0.25 + bl / 44100, 0.5
+                        else: L0, L1, off = bl[0] / 44100, (bl[1] / 44100 if bl[1] else bg['dur']), 0
+                        if not (bg['file'] == f'cb_q_bgm{lv:02d}.mp3' and bg['loop'] and abs(bg['loop'][0] - L0) < 1e-6 and abs(bg['loop'][1] - L1) < 1e-6 and abs(bg['off'] - off) < 1e-6 and abs(bg['vol'] - 0.45) < 1e-9 and bg['trk'] == 'field' and bg['dur'] >= L1 - 1e-6):
+                            badb.append(f'Lv{lv} {bg["file"]} {bg["loop"]} {bg["off"]} {bg["vol"]} {bg["dur"]}')
+                        dec.append(pg.evaluate("() => [...document.querySelectorAll('#cbOv .qfld img')].every(i => i.complete && i.naturalWidth > 0) && document.querySelectorAll('#cbOv .qfld .qe img').length === 2"))
+                    elif q(pg)['track'] != 'field': badb.append(f'Lv{lv} track {q(pg)["track"]}')
+                if i >= en - 1:
+                    pg.wait_for_function("() => CBApp._t.quest.scene.rv === 2", timeout=10000)
+                    if i == en - 1: anim.append((lv, pg.evaluate(ANIM)))
+                    pg.wait_for_timeout(950)
                 L = pg.evaluate(LAY)
                 if L['txt'] != sy[i] or not L['on']: bad12.append(f'Lv{lv} {i + 1}行目の 文')
                 if i < en - 1 and (L['op'] > 0.01 or L['telon'] or L['rv']): bad12.append(f'Lv{lv} {i + 1}行目：敵が もう 見える')
@@ -682,10 +724,90 @@ try:
             pg.wait_for_function("() => document.querySelector('#cbOv .qtap.on')", timeout=10000); pg.wait_for_timeout(300)
             e1 = pg.evaluate("() => [document.querySelector('#cbOv .qnm').textContent, document.querySelector('#cbOv .qsay').classList.contains('on'), CBApp._t.quest.scene.step]")
             if e1 != [pg.evaluate(f"() => CBApp._t.quest.data[{lv - 1}].n"), False, 'en']: bad12.append(f'Lv{lv} さいご {e1}')
+            # 第4.210版：この エリアの 効果音（行ごと）：決めた 音 だけ・前の 行と 同じ 音は つづく・遅らせる 秒・止まらない 音／ほかの 音（タップ・magic・appear）は 鳴らない
+            sl = pg.evaluate("() => CBApp._sl.slice()"); src = [x for x in pg.evaluate("() => window.__src.slice()") if x['qi'] is not None and x['qi'] >= 0 and not x['loop']]
+            want_p = [(QSF(lv, k), i, dly.get(k, 0), k in kp) for i, k in enumerate(taps) if k is not None and not (i > 0 and taps[i - 1] == k)] if HAVE else []
+            want_c = [(QSF(lv, k), i) for i, k in enumerate(taps) if k is not None and i > 0 and taps[i - 1] == k]
+            got_p = [tuple(e[1:5]) for e in sl if e[0] == 'play']; got_c = [tuple(e[1:3]) for e in sl if e[0] == 'cont']
+            if got_p != want_p or got_c != want_c: badq.append(f'Lv{lv}：鳴らした {got_p}・つづけた {got_c}（決めた {want_p}・{want_c}）')
+            if len(src) != len(got_p): badq.append(f'Lv{lv}：ほかの 音が 鳴った（{len(src)}こ／効果音 {len(got_p)}こ）')
+            for f_, i, d, _k in got_p:
+                xs = [x for x in src if x['qi'] == i]
+                if not xs or abs((xs[0]['when'] - xs[0]['now']) - d) > 0.05: badt.append(f'Lv{lv} タップ{i + 1}：{xs and round(xs[0]["when"] - xs[0]["now"], 3)}秒 あと（{d}）')
+            qplays += len(got_p)
+            pg.evaluate("() => { CBApp._sl = []; }")
             pg.locator('#cbOv [data-cb=qback]').click(); pg.wait_for_timeout(250)
             if scr(pg) != 'qmap': bad12.append(f'Lv{lv}：「← マップ」で マップに 戻らない（{scr(pg)}）')
+            qa = pg.evaluate("() => ({ q: CBApp._t.qsnd, sl: CBApp._sl.slice(), trk: CBApp._t.quest.track })")
+            if qa['q']['cur'] or qa['q']['kept'] or any(e[0] != 'cut' or e[2] != 0.15 for e in qa['sl']) or qa['trk'] != 'main': badq.append(f'Lv{lv}：「← マップ」で 止まらない {qa["q"]["cur"]} {qa["q"]["kept"]} {qa["sl"]} {qa["trk"]}')
         check(not bad12, f'12 エリア：1タップで 1行・表の 行で テロップと 敵が 出る（その 前は 見えない）・Lv12 は 3行目で 女王 → 4行目・さいごの 行の あと 名前 と「タップで バトル開始！」・'
                          f'窓は 敵の 蹄に かからない（かかって いちばん {max(cov):.0f}px）{bad12[:4]}')
+        print('■ フィールドの 音（第4.210版・まさちゃん 11/21〜22 の 音：エリアの BGM・タップの 効果音）')
+        check(not badq, f'12 エリア：タップ（行）ごとに 決めた 効果音（{qplays}回）・前の 行と 同じ 音は 鳴らし直さず つづく・ほかの 音（進める タップ・magic・appear）は 鳴らない・「← マップ」で ぜんぶ 止まる（0.15秒）・BGM は いつもの 曲へ {badq[:3]}')
+        if HAVE:
+            check(not badb, f'12 エリアの BGM：cb_q_bgm01〜12.mp3・決めた くり返しの 所（前後 0.5秒の 形／頭から 鳴らして ls〜le）・頭から 鳴る・大きさ 0.45 {badb[:3]}')
+            check(not badt, f'効果音の 鳴る 時刻：行が 出た とき（Lv3 の ③は 0.8秒 あと）{badt[:3]}')
+            check(all(dec) and len(dec) == 12, f'フィールドの 絵（背景・敵 2まい）は 出る 前に 読めて いる（12 エリア）')
+        else:
+            check(not badb, 'フィールドでは track が field（音の ファイルが ない ビルド：鳴らない だけ）')
+        bada = [(lv, a) for lv, aa in anim for a in aa if not set(a['ps']) <= {'transform', 'opacity'}]
+        names = sorted(set(a['name'] for _, aa in anim for a in aa))
+        check(len(anim) == 12 and not bada and all(any(a['name'] == 'qein' for a in aa) and any(a['name'] == 'qeg' for a in aa) for _, aa in anim),
+              f'なめらか：敵が 出る ときの 動きは 大きさ（transform）と 透明度（opacity）だけ（光って ぼやけた 絵は 先に 作って うすく する：qein・qeg・qdu）・フィールドの ほかの 動きも 同じ（{names}）{bada[:2]}')
+        q2 = pg.evaluate("() => { const e = document.querySelector('#cbOv .qfld .qe .q2'); return e ? getComputedStyle(e).filter : ''; }")
+        check('blur' in q2 and 'brightness' in q2, f'敵の 光る 絵（.q2）は 明るさ・ぼかしを 先に つけて おく（{q2}）')
+        # Lv12：③は 4タップ目でも バトル開始でも 止まらない・BGM は 決戦調査の 曲 → やめる（マップへ）で 止まる
+        pg.evaluate("() => { CBApp._t.state.q.clr = 11; CBApp._t.save(); CBApp._t.qApi.tkf(); }"); pg.wait_for_timeout(200)      # 切符を 満タンに（マップが 出る）
+        pg.locator('#cbOv .qnd[data-lv="12"]').click(); pg.wait_for_timeout(120); pg.evaluate("() => { CBApp._sl = []; }"); pg.locator('#cbOv .qpo [data-cb=qgo]').click()
+        for i in range(4):
+            pg.wait_for_function(f"() => CBApp._t.quest.scene.i === {i} && !CBApp._t.quest.scene.typing", timeout=10000)
+            if HAVE and i < 3: pg.wait_for_function(f"() => CBApp._sl.some(e => e[0] === 'play' && e[2] === {i})", timeout=10000)
+            pg.locator('#cbOv .qfw').click()
+        pg.wait_for_function("() => document.querySelector('#cbOv .qtap.on')", timeout=10000); pg.wait_for_timeout(200)
+        k4 = pg.evaluate("() => CBApp._t.qsnd")
+        pg.evaluate(f"() => {{ window.__qh = {json.dumps({'turns': 1, 'hands': WIN})}; CBApp._qopt = () => window.__qh; CBApp._sl = []; }}")
+        pg.locator('#cbOv .qfw').click()
+        pg.wait_for_function("() => CBApp._t.screen === 'game' && CBApp._t.view && CBApp._t.view.can.set", timeout=20000); idle(pg)
+        k5 = pg.evaluate("() => ({ q: CBApp._t.qsnd, sl: CBApp._sl.slice(), trk: CBApp._t.quest.track })")
+        if HAVE:
+            check(k4['kept'] == ['cb_q_se12c.mp3'] and k5['q']['kept'] == ['cb_q_se12c.mp3'] and not [e for e in k5['sl'] if e[0] == 'cut'] and k5['trk'] == 'quest',
+                  f'Lv12：③（19秒）は 4タップ目でも「タップで バトル開始！」でも 止まらない（まさちゃん 11/21「4タップ目は3タップ目の音消せなくして！タップしても！」）・BGM は 決戦調査の 曲 {k4["kept"]} {k5["q"]["kept"]} {k5["sl"]} {k5["trk"]}')
+        else:
+            check(k5['trk'] == 'quest' and not k5['q']['kept'], 'Lv12：バトル開始 → BGM は 決戦調査の 曲（音の ファイルが ない ビルド）')
+        pg.evaluate("() => { CBApp._sl = []; }")
+        pg.locator('#cbOv .cbtop [data-cb=quit]').click(); pg.wait_for_timeout(80); pg.locator('#cbOv .cbmod [data-cb=quitgo]').click(); pg.wait_for_timeout(300)
+        if scr(pg) != 'qmap': pg.locator('#cbOv .cbmod [data-cb=qmapgo]').click(); pg.wait_for_timeout(200)
+        k6 = pg.evaluate("() => ({ q: CBApp._t.qsnd, sl: CBApp._sl.slice(), trk: CBApp._t.quest.track })")
+        check(scr(pg) == 'qmap' and not k6['q']['kept'] and not k6['q']['cur'] and k6['trk'] == 'main' and (not HAVE or ['cut', 'cb_q_se12c.mp3', 0.15] in k6['sl']), f'やめる → マップ：止まらない 音も 止まる・BGM は いつもの 曲 {k6["sl"]} {k6["trk"]}')
+        # アプリが うしろへ → 効果音は 止まる（もどっても 鳴らし直さない）／効果音 オフ → 鳴らさない（読まない）／BGM オフ → フィールドの BGM も 鳴らない
+        pg.evaluate("() => { CBApp._t.state.q.clr = 5; CBApp._t.save(); CBApp._sl = []; }")
+        pg.locator('#cbOv [data-cb=qx]').click(); pg.wait_for_timeout(100); pg.locator('#cbOv .cbmenu [data-cb=quest]').click(); pg.wait_for_timeout(200)
+        pg.locator('#cbOv .qnd[data-lv="6"]').click(); pg.wait_for_timeout(120); pg.locator('#cbOv .qpo [data-cb=qgo]').click()
+        pg.wait_for_function("() => CBApp._t.quest.scene.i === 0 && !CBApp._t.quest.scene.typing", timeout=10000)
+        if HAVE: pg.wait_for_function("() => CBApp._sl.some(e => e[0] === 'play' && e[2] === 0)", timeout=10000)
+        pg.evaluate(HID, True); pg.wait_for_timeout(150)
+        h1 = pg.evaluate("() => ({ q: CBApp._t.qsnd, sl: CBApp._sl.slice(), on: CBApp._t.bgm.on })")
+        pg.evaluate(HID, False); pg.wait_for_timeout(400)
+        h2 = pg.evaluate("() => ({ q: CBApp._t.qsnd, n: CBApp._sl.filter(e => e[0] === 'play').length })")
+        check(not h1['q']['cur'] and not h1['on'] and (not HAVE or ['cut', 'cb_q_se06a.mp3', 0.05] in h1['sl']) and not h2['q']['cur'] and h2['n'] == (1 if HAVE else 0),
+              f'アプリが うしろへ：フィールドの 効果音と BGM は 止まる・もどっても 効果音は 鳴らし直さない {h1["sl"]}')
+        pg.locator('#cbOv [data-cb=qback]').click(); pg.wait_for_timeout(250)
+        pg.evaluate("() => { CBApp._t.state.se = false; CBApp._t.state.q.clr = 1; CBApp._t.save(); CBApp._sl = []; window.__src.length = 0; }")
+        pg.locator('#cbOv .qnd[data-lv="2"]').click(); pg.wait_for_timeout(120); pg.locator('#cbOv .qpo [data-cb=qgo]').click()
+        for i in range(2):
+            pg.wait_for_function(f"() => CBApp._t.quest.scene.i === {i} && !CBApp._t.quest.scene.typing", timeout=10000); pg.wait_for_timeout(300)
+            pg.locator('#cbOv .qfw').click()
+        pg.wait_for_timeout(300)
+        o1 = pg.evaluate("() => ({ q: CBApp._t.qsnd, sl: CBApp._sl.slice(), n: window.__src.filter(x => x.qi !== null && x.qi >= 0 && !x.loop).length, bgm: CBApp._t.bgm.on })")
+        check(not o1['sl'] and o1['n'] == 0 and not [f for f in o1['q']['have'] if f.startswith('cb_q_se02')] and (o1['bgm'] or not HAVE), f'効果音 オフ：フィールドの 効果音は 鳴らない（読みも しない）・BGM は 鳴る {o1["sl"]}')
+        pg.locator('#cbOv [data-cb=qback]').click(); pg.wait_for_timeout(250)
+        pg.evaluate("() => { CBApp._t.state.se = true; CBApp._t.state.bgm = false; CBApp._t.save(); }")
+        pg.locator('#cbOv .qnd[data-lv="2"]').click(); pg.wait_for_timeout(120); pg.locator('#cbOv .qpo [data-cb=qgo]').click()
+        pg.wait_for_function("() => CBApp._t.quest.scene.i === 0 && !CBApp._t.quest.scene.typing", timeout=10000); pg.wait_for_timeout(400)
+        o2 = pg.evaluate("() => ({ on: CBApp._t.bgm.on, want: CBApp._t.bgm.want, trk: CBApp._t.quest.track })")
+        check(not o2['on'] and not o2['want'] and o2['trk'] == 'field', f'BGM オフ：フィールドの BGM も 鳴らない {o2}')
+        pg.locator('#cbOv [data-cb=qback]').click(); pg.wait_for_timeout(250)
+        pg.evaluate("o => { const s = CBApp._t.state; s.bgm = o.bgm; s.se = o.se; CBApp._as = o.as; CBApp._sl = null; CBApp._t.save(); }", sv0)
         pg.evaluate("() => { CBApp._t.state.q.clr = 0; CBApp._t.save(); }")
         if scr(pg) == 'qmap': pg.locator('#cbOv [data-cb=qx]').click(); pg.wait_for_timeout(100)
         pg.evaluate("() => { const T = CBApp._t; if (T.screen !== 'menu') T.menu(); }"); pg.wait_for_timeout(100)
