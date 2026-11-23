@@ -1,0 +1,608 @@
+<title>決戦調査の音 聞きくらべ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Dela+Gothic+One&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: テンゲルと同じ「紺の帯＋本文」。エリアごとのカードの列（スマホ1列・広い画面2列）＋下に固定の聞きくらべプレーヤー（アプリの下タブの位置） */
+:root{
+  --bg:#ECEEF3; --surface:#FFFFFF; --surface-2:#F5F6F9; --ink:#141A2E; --muted:#5A6175; --line:#D7DBE4;
+  --night:#16203D; --night-2:#22305A; --night-line:#3A4877; --night-ink:#F3F0E6; --night-muted:#B4BBD2; --lamp:#E2A23B; --lamp-soft:rgba(226,162,59,.3);
+  --primary:#1B2A55; --primary-ink:#FFFFFF; --focus:#E2A23B;
+  --B-bg:#FBF0D6;
+  --ok:#17784A; --ok-bg:#DDF2E6; --warn:#A14E06; --warn-bg:#FCEBD9; --bad:#A8231B; --bad-bg:#F9E0DE;
+  --nA:#7DB1EC; --nB:#F2BE55; --nC:#F27399; --nOk:#5FD39A; --nBad:#F2867D; --on-n:#0B1226;
+  --shadow:rgba(9,14,28,.2);
+  --font-display:'Dela Gothic One','Hiragino Sans','Yu Gothic',sans-serif;
+  --font-body:'BIZ UDPGothic','Hiragino Sans','Hiragino Kaku Gothic ProN','Yu Gothic UI','Meiryo',sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+  --r:10px; --gap:14px; --ph:190px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0C1121; --surface:#141B31; --surface-2:#1A2340; --ink:#ECEEF5; --muted:#9BA3BB; --line:#2A3457;
+  --night:#090E1C; --night-2:#161E38; --night-line:#2A3457; --night-ink:#F3F0E6; --night-muted:#9BA3BB; --lamp:#F0B54E; --lamp-soft:rgba(240,181,78,.28);
+  --primary:#F0B54E; --primary-ink:#1C1300; --focus:#F0B54E;
+  --B-bg:#3A2C0D;
+  --ok:#5FD39A; --ok-bg:#123726; --warn:#F3A45B; --warn-bg:#3D2410; --bad:#F2867D; --bad-bg:#401A17;
+  --shadow:rgba(0,0,0,.55); color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0C1121; --surface:#141B31; --surface-2:#1A2340; --ink:#ECEEF5; --muted:#9BA3BB; --line:#2A3457;
+  --night:#090E1C; --night-2:#161E38; --night-line:#2A3457; --night-ink:#F3F0E6; --night-muted:#9BA3BB; --lamp:#F0B54E; --lamp-soft:rgba(240,181,78,.28);
+  --primary:#F0B54E; --primary-ink:#1C1300; --focus:#F0B54E;
+  --B-bg:#3A2C0D;
+  --ok:#5FD39A; --ok-bg:#123726; --warn:#F3A45B; --warn-bg:#3D2410; --bad:#F2867D; --bad-bg:#401A17;
+  --shadow:rgba(0,0,0,.55); color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.7;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.wrap{max-width:1040px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+
+/* 紺の帯（見出し） */
+.band{background:var(--night);color:var(--night-ink);border-bottom:1px solid var(--night-line);margin-top:calc(-1 * env(safe-area-inset-top,0px));padding-top:calc(env(safe-area-inset-top,0px) + 22px);padding-bottom:22px}
+.band .wrap{display:grid;gap:12px}
+.eyebrow{margin:0;font-size:12px;letter-spacing:.08em;color:var(--night-muted)}
+h1{margin:0;font-family:var(--font-display);font-weight:400;font-size:clamp(25px,6.6vw,34px);line-height:1.25;letter-spacing:.03em;text-wrap:balance}
+h1 em{font-style:normal;color:var(--lamp)}
+.lead{margin:0;max-width:41em}
+.facts{margin:4px 0 0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.facts div{border-top:1px solid var(--night-line);padding-top:8px;min-width:0}
+.facts dt{font-size:11.5px;line-height:1.4;color:var(--night-muted)}
+.facts dd{margin:2px 0 0;font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:13px;line-height:1.3}
+.facts dd b{font-size:25px;font-weight:600;color:var(--lamp);margin-right:2px}
+.facts small{display:block;font-size:11px;color:var(--night-muted);font-family:var(--font-body)}
+
+/* 本文 */
+main.wrap{display:grid;gap:24px;padding-block:22px calc(var(--ph) + 32px)}
+main > section{min-width:0}
+h2{margin:0 0 10px;font-size:16px;font-weight:700;letter-spacing:.02em;line-height:1.4}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.how{padding:14px 16px}
+.how ol{margin:0;padding-left:1.5em;display:grid;gap:6px}
+.how li::marker{font-family:var(--font-mono);font-weight:600;color:var(--muted)}
+.how .tip{margin:12px 0 0;padding-top:10px;border-top:1px solid var(--line);color:var(--muted);font-size:13.5px;line-height:1.65}
+.key{display:inline-block;padding:0 7px;border-radius:999px;font-size:13px;font-weight:700;line-height:1.6;background:var(--night);color:var(--night-ink);white-space:nowrap}
+.key i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.key .da{background:var(--nA)}.key .db{background:var(--nB)}.key .dx{background:var(--nC)}
+
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.legend{margin:0 0 12px;color:var(--muted);font-size:13px;line-height:1.6;max-width:44em}
+.tab{min-height:40px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;font-size:14px}
+.tab[aria-pressed="true"]{background:var(--primary);color:var(--primary-ink);border-color:var(--primary);font-weight:700}
+.hot{color:var(--warn)}
+.tab[aria-pressed="true"] .hot{color:inherit}
+.list{display:grid;gap:var(--gap);grid-template-columns:minmax(0,1fr);align-items:start}
+@media (min-width:860px){.list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.area{overflow:hidden}
+.area-h{display:flex;align-items:baseline;gap:10px;padding:10px 14px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+.lv{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.04em;white-space:nowrap}
+.area-n{margin:0;font-family:var(--font-display);font-weight:400;font-size:16px;letter-spacing:.05em;line-height:1.4}
+.area-s{margin-left:auto;font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:12px;color:var(--muted);white-space:nowrap}
+.row{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;min-height:58px;padding:8px 14px;background:none;border:0;border-top:1px solid var(--line);text-align:left;scroll-margin-bottom:calc(var(--ph) + 16px);scroll-margin-top:12px}
+.area-h + .row{border-top:0}
+button.row{cursor:pointer}
+.row.is-cur{background:var(--B-bg)}
+.ico{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);border:1px solid var(--line);color:var(--primary)}
+.row.is-cur .ico{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
+.ico svg{width:12px;height:12px;fill:currentColor;display:block}
+.i-eq,.i-spin{display:none}
+.row.is-play .i-play,.row.is-load .i-play{display:none}
+.row.is-play .i-eq{display:flex;align-items:flex-end;gap:2px;height:12px}
+.i-eq i{width:3px;height:100%;background:currentColor;border-radius:1px;transform-origin:50% 100%;animation:eq .9s ease-in-out infinite}
+.i-eq i:nth-child(2){animation-delay:-.3s}.i-eq i:nth-child(3){animation-delay:-.6s}
+@keyframes eq{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
+.row.is-load .i-spin{display:block;width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tx{min-width:0;display:grid;gap:1px}
+.nm{font-weight:700;font-size:15px;line-height:1.4}
+.sub{font-size:12.5px;color:var(--muted);line-height:1.45;overflow-wrap:anywhere}
+.rt{display:grid;justify-items:end;gap:4px}
+.sv{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--muted);white-space:nowrap}
+.chip{font-size:11.5px;line-height:1;padding:4px 8px;border-radius:999px;border:1px solid transparent;white-space:nowrap}
+.chip:empty{display:none}
+.chip.same{background:var(--ok-bg);color:var(--ok);font-weight:700}
+.chip.diff{background:var(--bad-bg);color:var(--bad);font-weight:700}
+.chip.heard,.chip.keep{background:var(--surface-2);color:var(--muted);border-color:var(--line)}
+.row.off{color:var(--muted)}
+.row.off .nm{font-weight:400}
+.row.off .ico{background:none;border-style:dashed;color:var(--muted);font-family:var(--font-mono);font-size:13px}
+
+/* まとめ */
+.sum{padding:14px 16px;display:grid;gap:12px}
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:baseline;gap:6px;padding:4px 12px;border-radius:999px;font-size:13px;border:1px solid var(--line);background:var(--surface-2)}
+.pill b{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:16px;font-weight:600}
+.pill.same{background:var(--ok-bg);border-color:transparent;color:var(--ok)}
+.pill.diff{background:var(--bad-bg);border-color:transparent;color:var(--bad)}
+.sum p{margin:0;max-width:44em}
+.sum .note{color:var(--muted);font-size:13.5px}
+.send{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--font-body);font-size:14px;line-height:1.7;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;-webkit-user-select:all;user-select:all}
+.acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{min-height:44px;padding:8px 18px;border-radius:8px;border:1px solid var(--primary);background:var(--primary);color:var(--primary-ink);font-weight:700;cursor:pointer}
+.btn.ghost{background:none;color:var(--muted);border-color:var(--line);font-weight:400;font-size:13.5px}
+details.card > summary{cursor:pointer;padding:12px 16px;font-weight:700;min-height:44px;line-height:1.5}
+.dnote{margin:0;padding:0 16px 12px;color:var(--muted);font-size:13.5px;max-width:46em}
+.tbl{overflow-x:auto;border-top:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:13px}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:700;color:var(--muted);font-size:12px;background:var(--surface-2)}
+td.n{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+tr.off td{color:var(--muted)}
+tr:last-child td{border-bottom:0}
+
+/* 聞きくらべプレーヤー（下に固定・いつも紺） */
+.player{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--night);color:var(--night-ink);border-top:1px solid var(--night-line);box-shadow:0 -8px 24px var(--shadow);padding-top:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+.player .wrap{max-width:760px;display:grid;gap:8px}
+.p-top{display:flex;align-items:baseline;gap:10px}
+.p-name{min-width:0;flex:1;font-weight:700;font-size:14px;line-height:1.35;overflow-wrap:anywhere}
+.p-time{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--night-muted);white-space:nowrap}
+.bar{position:relative;height:22px;cursor:pointer;touch-action:none;border-radius:4px}
+.bar::before{content:"";position:absolute;left:0;right:0;top:9px;height:4px;border-radius:2px;background:var(--night-2)}
+.bar .loop{position:absolute;top:9px;height:4px;border-radius:2px;background:var(--lamp-soft)}
+.bar .fill{position:absolute;left:0;top:9px;height:4px;width:0;border-radius:2px;background:var(--lamp)}
+.bar .knob{position:absolute;left:0;top:5px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:var(--lamp)}
+.p-main{display:grid;grid-template-columns:48px minmax(0,1fr);gap:8px}
+.pp{width:48px;min-height:48px;border-radius:10px;border:1px solid var(--night-line);background:var(--night-2);color:var(--night-ink);display:grid;place-items:center;cursor:pointer;padding:0}
+.pp svg{width:16px;height:16px;fill:currentColor;display:block}
+.pp .i-stop{display:none}.pp.on .i-stop{display:block}.pp.on .i-go{display:none}
+.seg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 58px;gap:6px}
+.sg{min-height:48px;border-radius:10px;border:1px solid var(--night-line);background:var(--night-2);color:var(--night-ink);font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;padding:4px 6px;line-height:1.2}
+.sg::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;background:var(--dot)}
+.sg-a{--dot:var(--nA)}.sg-b{--dot:var(--nB)}.sg-x{--dot:var(--nC)}
+.sg[aria-pressed="true"]{background:var(--dot);border-color:var(--dot);color:var(--on-n)}
+.sg[aria-pressed="true"]::before{background:var(--on-n)}
+.p-sub{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:40px}
+.lbl{font-size:12.5px;color:var(--night-muted)}
+.jb{min-height:40px;padding:4px 14px;border-radius:999px;border:1px solid var(--night-line);background:none;color:var(--night-ink);font-size:14px;cursor:pointer;line-height:1.2}
+.jb-same[aria-pressed="true"]{background:var(--nOk);border-color:var(--nOk);color:var(--on-n);font-weight:700}
+.jb-diff[aria-pressed="true"]{background:var(--nBad);border-color:var(--nBad);color:var(--on-n);font-weight:700}
+.jb.ga{border-color:var(--nA)}.jb.gb{border-color:var(--nB)}
+.nx{margin-left:auto;display:inline-flex;align-items:center;gap:6px}
+.nx svg{width:10px;height:10px;fill:currentColor}
+.p-msg{min-height:1.45em;margin:0;font-size:12.5px;line-height:1.45;color:var(--night-muted)}
+.p-msg.good{color:var(--nOk)}.p-msg.bad{color:var(--nBad)}
+@media (prefers-reduced-motion: reduce){.i-eq i,.row.is-load .i-spin{animation:none}}
+</style>
+
+<header class="band">
+  <div class="wrap">
+    <p class="eyebrow">テンゲル カードバトル・フィールドの BGM と効果音</p>
+    <h1>決戦調査の音 <em>聞きくらべ</em></h1>
+    <p class="lead">今アプリに入っている音（今の音）と、作り直して軽くした音（軽い音）を、鳴らしたまま切りかえて聞けるよ。まさちゃんの耳で同じに聞こえたら、姫に「軽い音にして」って言ってね。</p>
+    <dl class="facts">
+      <div><dt>くらべる音</dt><dd><b id="f-n">30</b>こ<small id="f-n2">BGM 12・効果音 18</small></dd></div>
+      <div><dt>アプリが軽くなる量</dt><dd><b id="f-mb">3.1</b>MB<small id="f-mb2">zip 195.0 → 191.8MB</small></dd></div>
+      <div><dt>しるしをつけた音</dt><dd><b id="f-done">0</b>/<span id="f-all">30</span><small id="f-done2">同じ 0・ちがう 0</small></dd></div>
+    </dl>
+  </div>
+</header>
+
+<main class="wrap">
+  <section aria-labelledby="h-how">
+    <h2 id="h-how">聞き方</h2>
+    <div class="card how">
+      <ol>
+        <li>下のリストで音をタップすると鳴るよ。鳴っているあいだに <span class="key"><i class="da"></i>今の音</span> と <span class="key"><i class="db"></i>軽い音</span> を押すと、同じ場所のまま切りかわる。</li>
+        <li><span class="key"><i class="dx"></i>？</span> は当てっこ。今の音か軽い音のどちらかが、名前をかくして鳴る。当てられなければ、耳では聞き分けられていないということ。</li>
+        <li>聞いたら「同じ」か「ちがう」をつけてね。いちばん下に、姫に送るまとめが出るよ。</li>
+      </ol>
+      <p class="tip">イヤホンで聞くと分かりやすいよ。音が出ないときは、本体の消音スイッチ（マナーモード）を切ってね。音の大きさはアプリと同じ（BGM 0.45・効果音 0.9）。リストで灰色の <span class="num" id="k-off">7</span>こ は、軽くしてもほとんどへらない（または大きくなる）ので、今のままにする音。パソコンなら 1・2・3 キーで切りかえ、スペースで鳴らす／止める。</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-list">
+    <h2 id="h-list">音のリスト</h2>
+    <div class="tabs" role="group" aria-label="リストのしぼりこみ">
+      <button class="tab" id="t-all" type="button" aria-pressed="true">ぜんぶ <span class="num" id="t-all-n">30</span>こ</button>
+      <button class="tab" id="t-hot" type="button" aria-pressed="false"><span class="hot" aria-hidden="true">◆</span> ちがいが出やすい <span class="num" id="t-hot-n">9</span>こ</button>
+    </div>
+    <p class="legend"><span class="hot" aria-hidden="true">◆</span> は、数字のうえで今の音とのちがいがいちばん大きい音。時間がないときは、まずここから聞いてみてね。</p>
+    <div class="list" id="list"></div>
+  </section>
+
+  <section aria-labelledby="h-sum">
+    <h2 id="h-sum">まとめ（姫に送ることば）</h2>
+    <div class="card sum">
+      <div class="pills">
+        <span class="pill same">同じ <b id="s-same">0</b>こ</span>
+        <span class="pill diff">ちがう <b id="s-diff">0</b>こ</span>
+        <span class="pill">まだ <b id="s-rest">30</b>こ</span>
+        <span class="pill">当てっこ <b id="s-abx">0/0</b>回</span>
+      </div>
+      <p id="s-say"></p>
+      <pre class="send" id="s-text"></pre>
+      <div class="acts">
+        <button class="btn" id="b-copy" type="button">まとめをコピー</button>
+        <button class="btn ghost" id="b-reset" type="button">しるしを全部消す</button>
+      </div>
+      <p class="note">コピーしたまとめを姫に送って、「軽い音にして」か「今のままで」って言ってね。「ちがう」をつけた音だけ今のままにして、ほかを軽くすることもできるよ。</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-num">
+    <details class="card">
+      <summary id="h-num">くわしい数字（大きさ・へる量・ちがいの小ささ）</summary>
+      <p class="dnote">「へる量」はアプリの zip の中でへる大きさ。「ちがいの小ささ」は、今の音にくらべて、ちがいの成分がどれだけ小さいか（dB・数字が大きいほど同じ）。◆ は 36dB より小さい音。数字はあくまで目安で、決めるのはまさちゃんの耳だよ。</p>
+      <div class="tbl"><table>
+        <thead><tr><th>音</th><th>長さ</th><th>今の音</th><th>軽い音</th><th>へる量</th><th>ちがいの小ささ</th></tr></thead>
+        <tbody id="tb"></tbody>
+      </table></div>
+    </details>
+  </section>
+</main>
+
+<div class="player" id="player" role="region" aria-label="聞きくらべプレーヤー">
+  <div class="wrap">
+    <div class="p-top">
+      <div class="p-name" id="p-name"></div>
+      <div class="p-time" id="p-time">0:00 / 0:00</div>
+    </div>
+    <div class="bar" id="bar" role="slider" tabindex="0" aria-label="鳴っている場所" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <span class="loop" id="bar-loop" hidden></span><span class="fill" id="bar-fill"></span><span class="knob" id="bar-knob"></span>
+    </div>
+    <div class="p-main">
+      <button class="pp" id="b-play" type="button" aria-label="鳴らす">
+        <svg class="i-go" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2v12l10-6z"/></svg>
+        <svg class="i-stop" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="3" width="10" height="10" rx="1.5"/></svg>
+      </button>
+      <div class="seg" role="group" aria-label="聞く音">
+        <button class="sg sg-a" id="b-a" type="button" aria-pressed="true">今の音</button>
+        <button class="sg sg-b" id="b-b" type="button" aria-pressed="false">軽い音</button>
+        <button class="sg sg-x" id="b-x" type="button" aria-pressed="false" aria-label="当てっこ（どちらかをかくして鳴らす）">？</button>
+      </div>
+    </div>
+    <div class="p-sub" id="p-judge">
+      <span class="lbl">この音は</span>
+      <button class="jb jb-same" id="b-same" type="button" aria-pressed="false">同じ</button>
+      <button class="jb jb-diff" id="b-diff" type="button" aria-pressed="false">ちがう</button>
+      <button class="jb nx" id="b-next" type="button">つぎの音<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1v8l6-4z"/></svg></button>
+    </div>
+    <div class="p-sub" id="p-abx" hidden>
+      <span class="lbl">？はどっち？</span>
+      <button class="jb ga" id="b-ga" type="button">今の音</button>
+      <button class="jb gb" id="b-gb" type="button">軽い音</button>
+    </div>
+    <p class="p-msg" id="p-msg" aria-live="polite"></p>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const DATA = /*__DATA__*/null;
+  const SND = DATA.sounds, AREAS = DATA.areas, byId = {};
+  SND.forEach(s => { byId[s.id] = s; });
+  const PLAY = SND.filter(s => s.in);
+  const VOL = { bgm: 0.45, se: 0.9 };                 // アプリと同じ大きさ
+  const $ = id => document.getElementById(id);
+  const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+  const kb = n => (n >= 0 ? '−' : '＋') + Math.round(Math.abs(n) / 1000).toLocaleString('ja-JP') + 'KB';
+  const mmss = t => { t = Math.max(0, t); const m = Math.floor(t / 60), s = Math.floor(t % 60); return m + ':' + String(s).padStart(2, '0'); };
+  const name = s => (s.k === 'bgm' ? 'BGM' : s.tap + 'タップ目の音');
+  const full = s => 'Lv' + s.lv + ' ' + AREAS[s.lv - 1] + '・' + name(s);
+  const span = s => (s.k === 'bgm' ? (s.le == null ? s.sec : Math.min(s.le, s.sec)) : s.sec);      // バーの右はし（BGM はくり返しのおわり）
+
+  // ---- おぼえておくこと（この端末のブラウザの中だけ） ----
+  const KEY = 'kessen-kikikurabe-v1';
+  let mem = { marks: {}, heard: {}, abx: {} };
+  try { const j = JSON.parse(localStorage.getItem(KEY) || 'null'); if (j && typeof j === 'object') ['marks', 'heard', 'abx'].forEach(k => { if (j[k] && typeof j[k] === 'object') mem[k] = j[k]; }); } catch (e) { /* なくても動く */ }
+  const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(mem)); } catch (e) { /* なくても動く */ } };
+
+  // ---- いまのようす ----
+  const st = { cur: PLAY[0].id, sel: 'a', playing: false, loading: false, filter: 'all', x: {}, res: null, err: '', warn: '' };
+
+  // ---- 音（アプリと同じ：ほどいた音を WebAudio で鳴らす。今の音と軽い音を同時に流して、聞かせる方だけ音量を上げる） ----
+  let ctx = null, cur = null, token = 0, used = 0;
+  const raw = new Map(), dec = new Map(), pend = new Map();
+  function ac() {
+    if (!ctx) {
+      const C = window.AudioContext || window.webkitAudioContext;
+      if (!C) return null;
+      try { ctx = new C(); } catch (e) { ctx = null; return null; }
+      try { if (navigator.audioSession && 'type' in navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* なし */ }
+    }
+    if (ctx.state !== 'running' && ctx.resume) { try { const q = ctx.resume(); if (q && q.catch) q.catch(() => { }); } catch (e) { /* なし */ } }
+    return ctx;
+  }
+  function getRaw(url) {
+    if (!raw.has(url)) {
+      const p = fetch(url).then(r => { if (!r.ok) throw new Error('http ' + r.status); return r.arrayBuffer(); });
+      p.catch(() => { raw.delete(url); });
+      raw.set(url, p);
+    }
+    return raw.get(url);
+  }
+  const decode = (c, ab) => new Promise((ok, ng) => { try { const q = c.decodeAudioData(ab.slice(0), ok, () => ng(new Error('decode'))); if (q && q.catch) q.catch(() => { }); } catch (e) { ng(e); } });
+  function load(id) {
+    const hit = dec.get(id);
+    if (hit) { hit.t = ++used; return Promise.resolve(hit); }
+    if (pend.has(id)) return pend.get(id);
+    const s = byId[id], c = ctx;
+    const p = Promise.all([getRaw('a/' + s.f), getRaw('b/' + s.f)])
+      .then(([x, y]) => Promise.all([decode(c, x), decode(c, y)]))
+      .then(([a, b]) => { const o = { a: a, b: b, t: ++used }; dec.set(id, o); pend.delete(id); trim(id); return o; }, e => { pend.delete(id); throw e; });
+    pend.set(id, p);
+    return p;
+  }
+  function trim(keep) {      // ほどいた音は大きいので、合わせて 190秒ぶんまで（古いものから手ばなす）
+    let sum = 0; dec.forEach(o => { sum += o.a.duration + o.b.duration; });
+    const ids = Array.from(dec.keys()).sort((p, q) => dec.get(p).t - dec.get(q).t);
+    for (const id of ids) {
+      if (sum <= 190) break;
+      if (id === keep || (cur && cur.id === id)) continue;
+      const o = dec.get(id); sum -= o.a.duration + o.b.duration; dec.delete(id);
+    }
+  }
+  function region(s, buf) {      // 鳴らす所：BGM はアプリと同じくり返し（at から鳴らして ls〜le をくり返す）・効果音は頭からおわりまで
+    if (s.k !== 'bgm') return { loop: false, ls: 0, le: buf.duration, at: 0 };
+    return { loop: true, ls: s.ls, le: s.le == null ? buf.duration : Math.min(s.le, buf.duration), at: s.at };
+  }
+  const xOf = id => st.x[id] || (st.x[id] = Math.random() < 0.5 ? 'a' : 'b');
+  const live = () => (st.sel === 'x' ? xOf(st.cur) : st.sel);
+  function drop(me) { try { me.sa.disconnect(); me.sb.disconnect(); me.ga.disconnect(); me.gb.disconnect(); me.mg.disconnect(); } catch (e) { /* なし */ } }
+  function halt(f) {
+    const me = cur; if (!me || !ctx) return;
+    cur = null; st.playing = false;
+    const n = ctx.currentTime;
+    try { me.mg.gain.cancelScheduledValues(n); me.mg.gain.setValueAtTime(me.mg.gain.value, n); me.mg.gain.linearRampToValueAtTime(0, n + f); me.sa.stop(n + f + 0.02); me.sb.stop(n + f + 0.02); }
+    catch (e) { try { me.sa.stop(); me.sb.stop(); } catch (e2) { /* もう止まっている */ } }
+    setTimeout(() => drop(me), (f + 0.25) * 1000);
+  }
+  function startAt(id, off, mid) {
+    const c = ctx, s = byId[id], o = dec.get(id);
+    if (!c || !o) return;
+    halt(0.03);
+    const L = region(s, o.a), n = c.currentTime + 0.05, which = live();
+    off = Math.max(0, Math.min(off, L.le - 0.05));
+    const mg = c.createGain(), ga = c.createGain(), gb = c.createGain(), vol = VOL[s.k];
+    ga.gain.value = which === 'a' ? 1 : 0; gb.gain.value = which === 'b' ? 1 : 0;
+    if (mid) { mg.gain.value = 0; mg.gain.setValueAtTime(0, n); mg.gain.linearRampToValueAtTime(vol, n + 0.015); }               // とちゅうから：プチッと言わないように
+    else if (s.k === 'bgm') { mg.gain.value = 0; mg.gain.setValueAtTime(0, n); mg.gain.linearRampToValueAtTime(vol, n + 0.6); }   // アプリと同じ入り方（0.6秒で大きく）
+    else mg.gain.value = vol;                                                                                                      // 効果音はアプリと同じ：いきなり 0.9
+    const mk = (buf, g) => { const x = c.createBufferSource(); x.buffer = buf; if (L.loop) { x.loop = true; x.loopStart = L.ls; x.loopEnd = L.le; } x.connect(g); g.connect(mg); return x; };
+    const sa = mk(o.a, ga), sb = mk(o.b, gb);
+    mg.connect(c.destination);
+    const me = { id: id, sa: sa, sb: sb, ga: ga, gb: gb, mg: mg, t0: n, off: off, L: L };
+    sa.onended = () => { if (cur === me) { cur = null; st.playing = false; drop(me); paint(); } };
+    sa.start(n, off); sb.start(n, off);
+    cur = me; st.playing = true; o.t = ++used;
+    st.warn = o.a.length !== o.b.length ? '（この端末では2つの長さが ' + Math.abs(o.a.length - o.b.length) + ' サンプルちがう）' : '';
+    heard(); paint(); loop();
+  }
+  function xfade(which) {
+    const me = cur; if (!me) return;
+    const n = ctx.currentTime, d = 0.02;
+    [[me.ga, which === 'a' ? 1 : 0], [me.gb, which === 'b' ? 1 : 0]].forEach(p => { const g = p[0].gain; g.cancelScheduledValues(n); g.setValueAtTime(g.value, n); g.linearRampToValueAtTime(p[1], n + d); });
+  }
+  function pos() {
+    const me = cur; if (!me) return 0;
+    const x = me.off + Math.max(0, ctx.currentTime - me.t0), L = me.L;
+    if (!L.loop) return Math.min(x, L.le);
+    return x < L.le ? x : L.ls + (x - L.ls) % (L.le - L.ls);
+  }
+  function heard() {
+    if (!st.playing || st.sel === 'x') return;
+    const h = mem.heard[st.cur] || (mem.heard[st.cur] = {});
+    if (!h[st.sel]) { h[st.sel] = 1; persist(); }
+  }
+  async function play(id, off) {
+    const c = ac();
+    if (!c) { st.err = 'このブラウザでは音を鳴らせないみたい…ほかのブラウザで開いてみてね'; paint(); return; }
+    const my = ++token;
+    halt(0.03);
+    if (st.cur !== id) { st.cur = id; st.sel = 'a'; st.res = null; }      // 新しい音はいつも「今の音」から
+    st.loading = true; st.err = ''; paint();
+    try { await load(id); } catch (e) {
+      if (my === token) { st.loading = false; st.err = '読みこめなかった…もう一回タップしてね'; paint(); }
+      return;
+    }
+    if (my !== token) return;
+    st.loading = false;
+    const s = byId[id];
+    startAt(id, off == null ? (s.k === 'bgm' ? s.at : 0) : off, off != null);
+    const o = order(), nx = o[(o.indexOf(id) + 1) % o.length];      // つぎの音を先に取っておく（まだほどかない）
+    if (nx && nx !== id) { getRaw('a/' + byId[nx].f).catch(() => { }); getRaw('b/' + byId[nx].f).catch(() => { }); }
+  }
+  function stop() { token++; st.loading = false; halt(0.05); paint(); }
+  function select(v) {
+    if (v === 'x') { xOf(st.cur); if (st.res && st.res.id === st.cur) st.res = null; }
+    st.sel = v;
+    if (cur && cur.id === st.cur) { ac(); xfade(live()); heard(); paint(); }
+    else play(st.cur);      // 止まっていたら頭から
+  }
+  function answer(g) {
+    const id = st.cur, x = st.x[id];
+    if (!x || st.sel !== 'x') return;
+    const t = mem.abx[id] || (mem.abx[id] = { n: 0, ok: 0 });
+    t.n++; if (g === x) t.ok++;
+    persist();
+    delete st.x[id]; st.sel = x;      // 鳴っている音はそのまま（？の正体のボタンに光がうつる）。次の「？」はまた引き直す
+    st.res = { id: id, ok: g === x, x: x };
+    heard(); paint(); summary();
+  }
+  function mark(v) {
+    const id = st.cur;
+    if (mem.marks[id] === v) delete mem.marks[id]; else mem.marks[id] = v;
+    persist(); paint(); summary();
+  }
+  const order = () => PLAY.filter(s => st.filter === 'all' || s.hot).map(s => s.id);
+  function next() {
+    const o = order(), i = o.indexOf(st.cur), id = o[(i + 1) % o.length];
+    play(id);
+    const r = rows.get(id); if (r && r.scrollIntoView) r.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+  function seek(fr) {
+    const s = byId[st.cur], off = Math.max(0, Math.min(1, fr)) * span(s);
+    if (ac() && dec.has(st.cur)) { token++; st.loading = false; startAt(st.cur, off, true); } else play(st.cur, off);
+  }
+
+  // ---- 画面 ----
+  const rows = new Map();
+  const ICO = '<svg class="i-play" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.5v9l7.5-4.5z"/></svg><span class="i-eq" aria-hidden="true"><i></i><i></i><i></i></span><span class="i-spin" aria-hidden="true"></span>';
+  function build() {
+    const list = $('list');
+    AREAS.forEach((an, i) => {
+      const lv = i + 1, mine = SND.filter(s => s.lv === lv);
+      const card = el('section', 'card area'); card.dataset.lv = lv;
+      const h = el('div', 'area-h');
+      h.append(el('span', 'lv', 'Lv' + lv), el('h3', 'area-n', an), el('span', 'area-s', kb(mine.reduce((a, s) => a + (s.in ? s.save : 0), 0))));
+      card.append(h);
+      mine.forEach(s => {
+        const r = el(s.in ? 'button' : 'div', 'row' + (s.in ? '' : ' off'));
+        if (s.in) { r.type = 'button'; r.id = 'row-' + s.id; r.dataset.id = s.id; }
+        const ico = el('span', 'ico'); if (s.in) ico.innerHTML = ICO; else ico.textContent = '–';
+        const tx = el('span', 'tx'), nm = el('span', 'nm');
+        if (s.hot) { const d = el('span', 'hot', '◆ '); d.title = '数字のうえで、ちがいが出やすい音'; nm.append(d); }
+        nm.append(name(s));
+        const sub = s.in ? (s.k === 'bgm' ? s.sec.toFixed(1) + '秒・くり返して鳴る' : s.say + '　' + s.sec.toFixed(1) + '秒') : (s.why === 'bigger' ? '軽い音のほうが大きくなるので、今のまま' : s.save < 1000 ? '軽くしてもほとんどへらないので、今のまま' : '軽くしても ' + Math.round(s.save / 1000) + 'KB しかへらないので、今のまま');
+        tx.append(nm, el('span', 'sub', sub));
+        const rt = el('span', 'rt');
+        if (s.in) rt.append(el('span', 'sv', kb(s.save)), el('span', 'chip')); else rt.append(el('span', 'chip keep', '今のまま'));
+        r.append(ico, tx, rt);
+        if (s.in) { r.addEventListener('click', () => { if (st.cur === s.id && (st.playing || st.loading)) stop(); else play(s.id); }); rows.set(s.id, r); }
+        card.append(r);
+      });
+      list.append(card);
+    });
+    const tb = $('tb');
+    SND.forEach(s => {
+      const tr = el('tr', s.in ? '' : 'off');
+      const c = (t, n) => { const d = el('td', n ? 'n' : '', t); tr.append(d); };
+      c((s.hot ? '◆ ' : '') + full(s)); c(s.sec.toFixed(1) + '秒', 1); c(Math.round(s.a / 1000) + 'KB', 1);
+      c(s.in ? Math.round(s.b / 1000) + 'KB' : '今のまま', s.in); c(s.in ? kb(s.save) : '—', 1); c(s.snr.toFixed(1) + 'dB', 1);
+      tb.append(tr);
+    });
+    $('f-n').textContent = PLAY.length; $('f-all').textContent = PLAY.length;
+    $('f-n2').textContent = 'BGM ' + PLAY.filter(s => s.k === 'bgm').length + '・効果音 ' + PLAY.filter(s => s.k !== 'bgm').length;
+    $('f-mb').textContent = (DATA.total.save / 1e6).toFixed(1);
+    $('f-mb2').textContent = 'zip ' + (DATA.total.zip / 1e6).toFixed(1) + ' → ' + ((DATA.total.zip - DATA.total.save) / 1e6).toFixed(1) + 'MB';
+    $('t-all-n').textContent = PLAY.length; $('t-hot-n').textContent = PLAY.filter(s => s.hot).length; $('k-off').textContent = SND.length - PLAY.length;
+  }
+  function chipOf(id) {
+    const m = mem.marks[id], h = mem.heard[id];
+    return m === 'same' ? ['same', '同じ'] : m === 'diff' ? ['diff', 'ちがう'] : h && h.a && h.b ? ['heard', '聞いた'] : ['', ''];
+  }
+  function paint() {
+    const id = st.cur, s = byId[id];
+    rows.forEach((r, rid) => {
+      const on = rid === id;
+      r.classList.toggle('is-cur', on); r.classList.toggle('is-play', on && st.playing); r.classList.toggle('is-load', on && st.loading);
+      if (on) r.setAttribute('aria-current', 'true'); else r.removeAttribute('aria-current');
+      const c = r.querySelector('.chip'), k = chipOf(rid);
+      c.className = 'chip' + (k[0] ? ' ' + k[0] : ''); c.textContent = k[1];
+    });
+    $('p-name').textContent = full(s);
+    ['a', 'b', 'x'].forEach(v => $('b-' + v).setAttribute('aria-pressed', String(st.sel === v)));
+    const bp = $('b-play'); bp.classList.toggle('on', st.playing || st.loading); bp.setAttribute('aria-label', st.playing || st.loading ? '止める' : '鳴らす');
+    const inX = st.sel === 'x';
+    $('p-judge').hidden = inX; $('p-abx').hidden = !inX;
+    $('b-same').setAttribute('aria-pressed', String(mem.marks[id] === 'same'));
+    $('b-diff').setAttribute('aria-pressed', String(mem.marks[id] === 'diff'));
+    const lp = $('bar-loop'), sp = span(s);
+    if (s.k === 'bgm') { lp.hidden = false; lp.style.left = (s.ls / sp * 100) + '%'; lp.style.width = ((sp - s.ls) / sp * 100) + '%'; } else lp.hidden = true;
+    const m = $('p-msg'), t = mem.abx[id];
+    let txt = '', cls = '';
+    if (st.err) { txt = st.err; cls = 'bad'; }
+    else if (st.loading) txt = '読みこみ中…';
+    else if (st.res && st.res.id === id) { txt = (st.res.ok ? '当たり！ ' : 'はずれ… ') + '？は「' + (st.res.x === 'a' ? '今の音' : '軽い音') + '」だったよ（この音の当てっこ ' + t.n + '回中 ' + t.ok + '回当たり）'; cls = st.res.ok ? 'good' : 'bad'; }
+    else if (inX) txt = '？はどちらか。3つを聞きくらべて当ててね' + (t ? '（この音 ' + t.n + '回中 ' + t.ok + '回当たり）' : '');
+    else if (st.playing) txt = (s.k === 'bgm' ? '鳴らしたまま切りかえてね。バーで場所もえらべる' : '鳴っているあいだは同じ場所のまま切りかわるよ') + st.warn;
+    else txt = '「今の音」か「軽い音」を押すと頭から鳴るよ';
+    m.textContent = txt; m.className = 'p-msg' + (cls ? ' ' + cls : '');
+    const done = PLAY.filter(x => mem.marks[x.id]).length;
+    $('f-done').textContent = done;
+    $('f-done2').textContent = '同じ ' + PLAY.filter(x => mem.marks[x.id] === 'same').length + '・ちがう ' + PLAY.filter(x => mem.marks[x.id] === 'diff').length;
+    if (!st.playing) prog(0);
+  }
+  function prog(t) {
+    const s = byId[st.cur], sp = span(s), f = Math.max(0, Math.min(1, t / sp));
+    $('bar-fill').style.width = (f * 100) + '%'; $('bar-knob').style.left = (f * 100) + '%';
+    $('p-time').textContent = mmss(t) + ' / ' + mmss(sp);
+    $('bar').setAttribute('aria-valuenow', String(Math.round(f * 100)));
+  }
+  let raf = 0;
+  function loop() {
+    cancelAnimationFrame(raf);
+    const step = () => { if (!cur) return; prog(pos()); raf = requestAnimationFrame(step); };
+    raf = requestAnimationFrame(step);
+  }
+  const binomTail = (n, k) => { let p = 0, c = 1; for (let i = 0; i <= n; i++) { if (i >= k) p += c; c = c * (n - i) / (i + 1); } return p / Math.pow(2, n); };      // 当てずっぽうで k回より多く当たる確率
+  function summary() {
+    const same = PLAY.filter(s => mem.marks[s.id] === 'same'), diff = PLAY.filter(s => mem.marks[s.id] === 'diff'), rest = PLAY.length - same.length - diff.length;
+    let n = 0, ok = 0; PLAY.forEach(s => { const t = mem.abx[s.id]; if (t) { n += t.n; ok += t.ok; } });
+    $('s-same').textContent = same.length; $('s-diff').textContent = diff.length; $('s-rest').textContent = rest; $('s-abx').textContent = ok + '/' + n;
+    const save = DATA.total.save - diff.reduce((a, s) => a + s.save, 0), mb = (save / 1e6).toFixed(1);
+    let say;
+    if (!same.length && !diff.length && !n) say = 'まだしるしがないよ。聞いて「同じ」「ちがう」をつけると、ここにまとめが出るよ。';
+    else {
+      say = diff.length ? '「ちがう」の ' + diff.length + 'こを今のままにすると、軽くなる量は約' + mb + 'MB。' : 'ぜんぶ軽い音にすると、軽くなる量は約' + mb + 'MB。';
+      if (n >= 5) { const p = binomTail(n, ok); say += p < 0.05 ? '当てっこは ' + n + '回中 ' + ok + '回当たり＝聞き分けられているみたい（当てずっぽうでここまで当たるのは 100回に ' + Math.max(1, Math.round(p * 100)) + '回くらい）。' : '当てっこは ' + n + '回中 ' + ok + '回当たり＝当てずっぽうと変わらない（耳では聞き分けられていない）。'; }
+      else if (n) say += '当てっこは 5回より多くやると、聞き分けられているかが分かるよ。';
+    }
+    $('s-say').textContent = say;
+    const L = ['聞きくらべの結果：同じ ' + same.length + 'こ・ちがう ' + diff.length + 'こ・まだ ' + rest + 'こ（' + PLAY.length + 'こ中）'];
+    if (diff.length) L.push('ちがう音：' + diff.map(full).join('／'));
+    if (same.length && rest) L.push('同じ音：' + same.map(full).join('／'));
+    if (n) L.push('当てっこ：' + n + '回中 ' + ok + '回当たり');
+    $('s-text').textContent = L.join('\n');
+  }
+  function setFilter(f) {
+    st.filter = f;
+    $('t-all').setAttribute('aria-pressed', String(f === 'all')); $('t-hot').setAttribute('aria-pressed', String(f === 'hot'));
+    document.querySelectorAll('#list .area').forEach(card => {
+      let any = false;
+      card.querySelectorAll('.row').forEach(r => { const s = r.dataset.id ? byId[r.dataset.id] : null, show = f === 'all' || (s && s.hot); r.hidden = !show; if (show) any = true; });
+      card.hidden = !any;
+    });
+  }
+
+  // ---- ボタン ----
+  build();
+  $('b-play').addEventListener('click', () => { if (st.playing || st.loading) stop(); else play(st.cur); });
+  $('b-a').addEventListener('click', () => select('a'));
+  $('b-b').addEventListener('click', () => select('b'));
+  $('b-x').addEventListener('click', () => select('x'));
+  $('b-ga').addEventListener('click', () => answer('a'));
+  $('b-gb').addEventListener('click', () => answer('b'));
+  $('b-same').addEventListener('click', () => mark('same'));
+  $('b-diff').addEventListener('click', () => mark('diff'));
+  $('b-next').addEventListener('click', next);
+  $('t-all').addEventListener('click', () => setFilter('all'));
+  $('t-hot').addEventListener('click', () => setFilter('hot'));
+  const bar = $('bar');
+  bar.addEventListener('click', e => { const r = bar.getBoundingClientRect(); if (r.width > 0) seek((e.clientX - r.left) / r.width); });
+  bar.addEventListener('keydown', e => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    const s = byId[st.cur], sp = span(s), now = cur ? pos() : 0;
+    seek((now + (e.key === 'ArrowRight' ? 2 : -2)) / sp);
+  });
+  document.addEventListener('keydown', e => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const t = e.target, tag = t && t.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (e.key === '1') select('a'); else if (e.key === '2') select('b'); else if (e.key === '3') select('x');
+    else if (e.key === ' ' && tag !== 'BUTTON' && tag !== 'SUMMARY') { e.preventDefault(); if (st.playing || st.loading) stop(); else play(st.cur); }
+  });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && (st.playing || st.loading)) stop(); });
+  const bc = $('b-copy');
+  bc.addEventListener('click', () => {
+    const txt = $('s-text').textContent, done = ok => { bc.textContent = ok ? 'コピーしたよ' : '上のまとめを長押しでコピーしてね'; setTimeout(() => { bc.textContent = 'まとめをコピー'; }, 2600); };
+    const pick = () => { try { const r = document.createRange(); r.selectNodeContents($('s-text')); const g = getSelection(); g.removeAllRanges(); g.addRange(r); } catch (e) { /* なし */ } done(false); };
+    try { navigator.clipboard.writeText(txt).then(() => done(true), pick); } catch (e) { pick(); }
+  });
+  const br = $('b-reset'); let arm = 0;
+  br.addEventListener('click', () => {
+    if (!arm) { arm = setTimeout(() => { arm = 0; br.textContent = 'しるしを全部消す'; }, 4000); br.textContent = 'もう一回押すと消えるよ'; return; }
+    clearTimeout(arm); arm = 0; br.textContent = 'しるしを全部消す';
+    mem = { marks: {}, heard: {}, abx: {} }; st.res = null; persist(); paint(); summary();
+  });
+  const pl = $('player'), fit = () => { document.documentElement.style.setProperty('--ph', pl.offsetHeight + 'px'); };
+  if (window.ResizeObserver) new ResizeObserver(fit).observe(pl);
+  window.addEventListener('resize', fit); fit();
+  paint(); summary();
+  window.__kiki = { st: st, mem: () => mem, cur: () => cur, pos: pos, ctx: () => ctx, dec: dec };      // たしかめ用
+})();
+</script>
