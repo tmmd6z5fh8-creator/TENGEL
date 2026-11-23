@@ -245,7 +245,7 @@ print("wall %s mono %s(+%s ms, wall %+d ms) boot %s dev %s proc %s->%s web %s/%s
 n1 = c1.get("net") or {}; n2 = c2.get("net") or {}
 okn = all(n.get("ok") is True and isinstance(n.get("rt"), (int, float)) and 0 <= n["rt"] < 8000 for n in (n1, n2)) and all(isinstance(x.get("netDiff"), (int, float)) and abs(x["netDiff"]) < 15000 for x in (c1, c2)) \
       and c1.get("sure") is True and c2.get("sure") is True and (s2.get("u") or 0) == 0 and (s2.get("nv") or 0) > 0
-print("   clock net: ok %s/%s why %s/%s rt %s/%s ms diff %s/%s ms sure %s/%s -> %s" % (n1.get("ok"), n2.get("ok"), n1.get("why") or n1.get("error") or "", n2.get("why") or n2.get("error") or "", round(n1.get("rt") or 0), round(n2.get("rt") or 0), c1.get("netDiff"), c2.get("netDiff"), c1.get("sure"), c2.get("sure"), "OK" if okn else "CHECK"))
+print("   clock net: ok %s/%s why %s/%s rt %s/%s ms diff %s/%s ms sure %s/%s tries %s/%s -> %s" % (n1.get("ok"), n2.get("ok"), n1.get("why") or n1.get("error") or "", n2.get("why") or n2.get("error") or "", round(n1.get("rt") or 0), round(n2.get("rt") or 0), c1.get("netDiff"), c2.get("netDiff"), c1.get("sure"), c2.get("sure"), c1.get("netTries"), c2.get("netTries"), "OK" if okn else "CHECK"))
 ' "$OUT/iphone-report-1.json" "$OUT/iphone-report-2.json" 2>&1)"
   fi
   phase "$IPHONE" iphone 3 700 offer restored report-3 report-link

@@ -77,10 +77,18 @@
     await sleep(400);
     var b = await TengelNative.call('clock', {}).catch(function (e) { return { error: String(e) }; });
     // 第4.212版：インターネットの 時刻（Clock.swift の net：App Store の lookup の 返事の 日付）。net.t は 聞いた ときの 時刻・rt は 行って 帰る までの 時間
-    var n = await TengelNative.call('clock', { net: 1 }).catch(function (e) { return { error: String(e) }; }), tn = Date.now();
+    // 第4.213版：GitHub の Mac の 通信が 一瞬 切れる ことが ある（run 183 の macOS 26：2回目の 起動で 1回 通らなかった）→ 通らなかった（why＝net）とき だけ、2秒 あけて 2回まで 聞き直す。
+    //   何回目で 通ったかを 報告に のこす（netTries）。3回とも 通らなければ CHECK の まま（本当に つながらない）
+    var n = null, tries = 0;
+    for (;;) {
+      n = await TengelNative.call('clock', { net: 1 }).catch(function (e) { return { error: String(e) }; }); tries++;
+      if (tries >= 3 || !(n && n.net && n.net.ok === false && n.net.why === 'net')) break;
+      await sleep(2000);
+    }
+    var tn = Date.now();
     var C = window.TengelClock; if (C) await C.sync();
     return { a: a, b: b, js: [t0, t1], has: !!C, how: C ? C.how() : null, st: C ? C.state() : null, diff: C ? Math.round(C.now() - Date.now()) : null,
-      net: n && n.net ? n.net : (n && n.error ? { error: n.error } : null), netDiff: n && n.net && n.net.ok ? Math.round(n.net.t - tn) : null, sure: C && typeof C.sure === 'function' ? C.sure() : null };
+      net: n && n.net ? n.net : (n && n.error ? { error: n.error } : null), netDiff: n && n.net && n.net.ok ? Math.round(n.net.t - tn) : null, netTries: tries, sure: C && typeof C.sure === 'function' ? C.sure() : null };
   }
   // 第4.212版：おもちゃ（TENGERカードバトル・お世話チャレンジ：1つ 3,000P で 解放）を 0P で 解放した ことに する（台帳に しるしを 足して 入れ直す：アプリの 自動バックアップから 戻す 口と 同じ。
   //   シミュレーターは キーチェーンが 使えなくて 初回プレゼントが 入らない ことが ある ので、ポイントは 使わない）
