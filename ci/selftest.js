@@ -235,7 +235,7 @@
       res.nd = { kind: F.show(Object.assign({ force: 'nd' }, spec, { ranks: { 11: 11, 8: 6, 2: 2 } })), cur: (F.current() || {}).kind, push: !!document.querySelector('#fxOv .ov.fz .pbox.pz .push'), pz: (F.current() || {}).pz,
         decide: F.decide(Object.assign({}, spec, { ranks: { 11: 11, 8: 6, 2: 2 } })).kind };
       await sleep(300); F.close(); await sleep(200);
-      // 第4.117版：神様極的中（gk：超神様と 同じ 虹色の PUSH（1.6倍）→ 押した 画面（ノーマルど的中と 同じ）→ 動画 gk_film.mp4（12.03秒）→ ボード 12.0秒）。
+      // 第4.117版：神様極的中（gk：超神様と 同じ 虹色の PUSH（1.6倍）→ 押した 画面（ノーマルど的中と 同じ）→ 動画 gk_film.mp4（12.03秒）→ ボード 12.0秒。第4.215版から 寄りを ゆっくりに した gk_film3.mp4：13.77秒・ボード 13.73秒）。
       // 動画は リポジトリに 入れない → CIでは 読めない → 動画の さいごの 1まい（still）→ 1.3秒で ボード「神様極的中！！！」（帯は 超大穴と 大穴）
       res.gk = { kind: F.show(Object.assign({ force: 'gk' }, spec)), push: !!document.querySelector('#fxOv .ov.fz .pbox.rbw .push .rbf'), pz: (F.current() || {}).pz };
       await sleep(400); F.prime(); F.tap(); res.gk.fps = await fps(1000);
