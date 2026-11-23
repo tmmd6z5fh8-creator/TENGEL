@@ -306,10 +306,11 @@ for nm, jp, new, old in ([(nm, SET[nm]['jp'], [ID[nm]], [SET[nm]['old']]) for nm
 #   絵：前の 絵（第4.166〜4.167版：a1fc4438…）と くらべて、形（すき通し）は 1点も ちがわない・大きく かわった 点は どの コマも おなかの 細い たての 帯の 中 だけ（前は 暗い → いまは 馬の 体の 色）
 _cr = open(os.path.join(K, 'flat', 'comic_rider.py'), encoding='utf8').read(); _sbn = open(os.path.join(K, 'flat', 'silks_banner.py'), encoding='utf8').read(); _hqs = open(os.path.join(K, 'flat', 'hq_silks.py'), encoding='utf8').read()
 G167 = 'a1fc44386dd7e4989af9150869ab10a6'
-check("if look.get('girth', True):" in _cr and 'girth=False' in _sbn and 'girth=False' in _hqs and ID['silks'] != G167 and G167 not in json.dumps(json.load(open(os.path.join(K, 'silks_blobs.json'), encoding='utf8'))),
+G168 = '5f20ad4af56628b329d702f6ae89162b'      # 第4.168版〜第4.214版の 絵（腹帯を 描かない）。第4.215版：体の 中の 線も 消した 絵（いまの ID['silks']）
+check("if look.get('girth', True):" in _cr and 'girth=False' in _sbn and 'girth=False' in _hqs and ID['silks'] not in (G167, G168) and G167 not in json.dumps(json.load(open(os.path.join(K, 'silks_blobs.json'), encoding='utf8'))),
       '第4.168版：勝負服の 走る 絵は 腹帯を 描かない（comic_rider.py の girth・勝負服 だけ girth=False）・台帳は 新しい 絵を さす（前の 絵 a1fc4438… は さして いない）')
-if os.path.exists(P(G167)):
-    _ga = np.asarray(Image.open(P(G167)).convert('RGBA')).astype(int); _gb = np.asarray(Image.open(P(ID['silks'])).convert('RGBA')).astype(int)
+if os.path.exists(P(G167)) and os.path.exists(P(G168)):
+    _ga = np.asarray(Image.open(P(G167)).convert('RGBA')).astype(int); _gb = np.asarray(Image.open(P(G168)).convert('RGBA')).astype(int)
     _ok = _ga.shape == _gb.shape == (441, 13860, 4) and bool((_ga[..., 3] == _gb[..., 3]).all())
     if _ok:
         _d = np.abs(_ga[..., :3] - _gb[..., :3]).max(2); _big = (_d > 40) & (_ga[..., 3] > 0); _fw = _ga.shape[1] // 15; _per = []; _in = 0
@@ -319,6 +320,19 @@ if os.path.exists(P(G167)):
         check(all(700 <= v <= 1400 for v in _per) and _in >= 0.97 * sum(_per) and _vo < 90 and _vn > 160,
               f'勝負服の 走る 絵（15コマ）：形（すき通し）は 前と 1点も ちがわない・大きく かわった 点は どの コマも おなかの 細い 帯の 中 だけ（1コマ {min(_per)}〜{max(_per)}点・その {_in / max(1, sum(_per)) * 100:.1f}% が 帯の 中）・'
               f'そこは 前は 暗い（明るさ {_vo:.0f}）→ いまは 馬の 体の 色（{_vn:.0f}）＝黒い 線は ない')
+        # 第4.215版（まさちゃん 2026/11/24 01:22「④四枚目、勝負服の赤丸の線がへんだから動いている時も見えないように消して！立体感が無くなるなら違和感なく影を追加して！」）：
+        #   馬の 体の 中の 線（肩・腹・ももの 仕切り）を ぜんぶの コマで 消して、かわりに ごく あわい かげ（flat/silks_lines.py：7.5%）。形（すき通し）は 1点も かわらない・
+        #   大きく かわった 点（線 だった 所）は 前は 暗い → いまは 馬の 体の 色・ほかの 所の ちがいは あわい かげと 圧縮の ぶん だけ
+        _gc = np.asarray(Image.open(P(ID['silks'])).convert('RGBA')).astype(int)
+        if _gc.shape == _gb.shape and bool((_gc[..., 3] == _gb[..., 3]).all()):
+            _d2 = np.abs(_gb[..., :3] - _gc[..., :3]).max(2); _a2 = _gb[..., 3] > 0; _big2 = (_d2 > 40) & _a2
+            _per2 = [int(_big2[:, _i * _fw:(_i + 1) * _fw].sum()) for _i in range(15)]; _rest = _d2[_a2 & ~_big2]
+            _o2 = float(_gb[..., :3].max(2)[_big2].mean()); _n2 = float(_gc[..., :3].max(2)[_big2].mean())
+            check(all(1000 <= v <= 3200 for v in _per2) and _o2 < 130 and _n2 > 190 and float(_rest.mean()) < 6 and float(np.percentile(_rest, 99)) <= 26 and os.path.isfile(os.path.join(K, 'flat', 'silks_lines.py')),
+                  f'第4.215版：勝負服の 走る 絵（15コマ）：体の 中の 線を 消した・形（すき通し）は 前と 1点も ちがわない・線 だった 所（1コマ {min(_per2)}〜{max(_per2)}点）は 前は 暗い（明るさ {_o2:.0f}）→ いまは 馬の 体の 色（{_n2:.0f}）・'
+                  f'ほかの 所は あわい かげ だけ（ちがいの 平均 {_rest.mean():.1f}・99% が {np.percentile(_rest, 99):.0f} まで）')
+        else:
+            check(False, '第4.215版：勝負服の 走る 絵の 形（すき通し）が 前と ちがう')
     else:
         check(False, f'勝負服の 走る 絵：前の 絵と 大きさ・形（すき通し）が ちがう（{_ga.shape}・{_gb.shape}）')
 else:

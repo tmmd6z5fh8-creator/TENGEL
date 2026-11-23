@@ -28,32 +28,49 @@ rd = lambda *p: open(os.path.join(W, *p), encoding='utf8').read()
 # (名前, 新しい 動画, 新しい さいごの 1まい, 前の 動画, 前の さいごの 1まい, コマの 数, 描き直した か)
 FILMS = (('sd', 'sd_film4.mp4', 'sd_last4.webp', 'sd_film3.mp4', 'sd_last3.webp', 315, True),
          ('nd', 'nd_film4.mp4', 'nd_last4.webp', 'nd_film3.mp4', 'nd_last3.webp', 315, True),
-         ('gk', 'gk_film2.mp4', 'gk_last2.webp', 'gk_film.mp4', 'gk_last.webp', 361, False))
+         ('gk', 'gk_film3.mp4', 'gk_last3.webp', 'gk_film.mp4', 'gk_last.webp', 413, False))
+# 第4.215版（まさちゃん 2026/11/24 01:35）：神様極的中は 顔の まだら・かけら・寄りを ゆっくり に した 第15稿（kisekae/gk15/）を 3倍に のばした …3（413コマ）。
+#   前の 動画（361コマ）と くらべる とき：寄り（新 155〜250・前 155〜198）より 前は 同じ コマ番号・あとは 52コマ おそい。わざと 直した コマ（顔 30〜112・かけら 116〜130）は くらべない
+N_OLD = {'gk': 361}
+CHANGED = {'gk': set(range(30, 131))}
+
+
+def old_of(nm, k):
+    """新しい 動画の コマ k に あたる 前の 動画の コマ（ない・わざと 直した コマは None）"""
+    if nm != 'gk': return k
+    if k in CHANGED['gk'] or 155 <= k < 251: return None
+    return k if k < 155 else k - 52
+
+
 JP = dict(sd='極ど的中', nd='ノーマルど的中', gk='神様極的中')
 # 前の ファイルの md5（もとの フォルダに のこす：消さない・上書きしない）
 OLD = {'sd_film3.mp4': 'b3a39134056574606fb399a5d195183b', 'sd_last3.webp': 'f98df32869e9a84f3a85fdba84f072b0', 'nd_film3.mp4': 'b54073509e3e0acc6bdd2c6ce9f7b44d', 'nd_last3.webp': 'ff9e25768da640a1eb7ced3ab79b0a39',
-       'gk_film.mp4': 'e0cbfa4408ca4092dd53550e50821c4a', 'gk_last.webp': '922c113414d599bfdc354a1fe1286e45', 'sgd_film2.mp4': '561c2d853e363119cd713e693d50b6f1', 'sgd_last2.webp': '657236f8c21d03874b2946d4291e8425'}
+       'gk_film.mp4': 'e0cbfa4408ca4092dd53550e50821c4a', 'gk_last.webp': '922c113414d599bfdc354a1fe1286e45', 'gk_film2.mp4': '8ca7bc477008f930058a13e0d6ebbd03', 'gk_last2.webp': '8edddc2450153eda5ee3562844f70e3b', 'sfx_gk.m4a': '8a86a39deff30e774e329cfc237445c5', 'sgd_film2.mp4': '561c2d853e363119cd713e693d50b6f1', 'sgd_last2.webp': '657236f8c21d03874b2946d4291e8425'}
 
 print('■ アプリ（動画の 名前）')
-check(BF.FILMS == {'sgd_film': 'sgd_film2.mp4', 'sd_film': 'sd_film5.mp4', 'nd_film': 'nd_film4.mp4', 'gk_film': 'gk_film2.mp4'}      # 第4.195版：極ど的中の 動画は 顔の 場面だけ 新しい 馬の …5（test_sd_thunder.py）
-      and BF.STILL == {'sgd_last': 'sgd_last2.webp', 'sd_last': 'sd_last4.webp', 'nd_last': 'nd_last4.webp', 'gk_last': 'gk_last2.webp'}
-      and BF.ART == {'sd': ['sd_last4.webp'], 'nd': [], 'sgd': ['sgd_last2.webp'], 'gk': ['gk_last2.webp']} and len(BF.ASSET_FILES) == 23 and 'nd_last4.webp' not in BF.ASSET_FILES,
-      f'アプリに 入れる 動画と さいごの 1まい：極ど的中・ノーマルど的中は …4（第4.195版：極ど的中の 動画は 顔の 場面だけ 新しい 馬の …5）・神様極的中は …2（3倍の もの）・超神様は いままで どおり（ぜんぶで {len(BF.ASSET_FILES)}こ：第4.175版から ノーマルど的中の さいごの 1まいは 入れない）')
+check(BF.FILMS == {'sgd_film': 'sgd_film2.mp4', 'sd_film': 'sd_film5.mp4', 'nd_film': 'nd_film4.mp4', 'gk_film': 'gk_film3.mp4'}      # 第4.195版：極ど的中の 動画は 顔の 場面だけ 新しい 馬の …5（test_sd_thunder.py）
+      and BF.STILL == {'sgd_last': 'sgd_last2.webp', 'sd_last': 'sd_last4.webp', 'nd_last': 'nd_last4.webp', 'gk_last': 'gk_last3.webp'}
+      and BF.ART == {'sd': ['sd_last4.webp'], 'nd': [], 'sgd': ['sgd_last2.webp'], 'gk': ['gk_last3.webp']} and len(BF.ASSET_FILES) == 23 and 'nd_last4.webp' not in BF.ASSET_FILES
+      and BF.SFX['gk'] == 'sfx_gk2.m4a' and 'sfx_gk.m4a' not in BF.ASSET_FILES,
+      f'アプリに 入れる 動画と さいごの 1まい：極ど的中・ノーマルど的中は …4（第4.195版：極ど的中の 動画は 顔の 場面だけ 新しい 馬の …5）・神様極的中は …3（第4.215版：顔・かけら・寄りを 直した 第15稿を 3倍に のばした もの・音は sfx_gk2.m4a）・超神様は いままで どおり（ぜんぶで {len(BF.ASSET_FILES)}こ：第4.175版から ノーマルど的中の さいごの 1まいは 入れない）')
 B = BF.bundle()
 import lite_assets as LA
 import normal_do as NDM
 # 第4.175版：ノーマルど的中の さいごの 1まい（<img class="nds">）は 幕に 置かない（still に ならない ので 出ない 絵）
 check(B['films'] == BF.FILMS and all(BF.STILL[k + '_last'] in B['reveal'][k] for k in ('sd', 'gk', 'sgd')) and 'nd_last' not in json.dumps(B) and 'class="nds"' not in B['reveal']['nd'] and 'class="ndk"' in B['reveal']['nd']
-      and not any(o in json.dumps(B['reveal']) for o in ('sd_last3.webp', 'nd_last3.webp', 'gk_last.webp'))
-      and B['t']['SD'] == 9.9 and B['t']['ND'] == 9.9 and B['t']['GKB'] == 12.0 and B['t']['SDS'] == {'FROM': 9.8, 'WAIT': 1.0},
-      '演出の 束（window.__FX）：動画と さいごの 1まいは 新しい 名前・ボードが 出る 時刻は 前と 同じ（音と ずれない）')
+      and not any(o in json.dumps(B['reveal']) for o in ('sd_last3.webp', 'nd_last3.webp', 'gk_last.webp', 'gk_last2.webp'))
+      and B['t']['SD'] == 9.9 and B['t']['ND'] == 9.9 and B['t']['GKB'] == 13.73 and B['t']['GK'] == 13.58 and B['t']['GKS'] == {'FROM': 13.48, 'WAIT': 1.0} and B['t']['SDS'] == {'FROM': 9.8, 'WAIT': 1.0},
+      '演出の 束（window.__FX）：動画と さいごの 1まいは 新しい 名前・ボードが 出る 時刻は 極ど的中・ノーマルど的中は 前と 同じ／神様極的中は 寄りを ゆっくりに した ぶん 1.73秒 おそい（13.73秒：動画と 音を いっしょに 作り直した ＝ ずれない）')
 fx = rd('fx.js')
 check("video('sd_film')" in fx and "video('nd_film')" in fx and "video('gk_film')" in fx and 'film4' not in fx and 'film5' not in fx and 'gk_film2' not in fx, 'fx.js は 動画を 名前の 表（A.films）で 引く（ファイルの 名前は 書いて いない ＝ かえて いない）')
 S = assets_dir.superseded
-allf = set(OLD) | {f for _n, a, b, _o, _p, _c, _r in FILMS for f in (a, b)} | {'sfx_sd.m4a', 'sfx_gk.m4a'}
-check(S('fx_assets', allf) == {'sd_film3.mp4', 'sd_last3.webp', 'nd_film3.mp4', 'nd_last3.webp', 'gk_film.mp4', 'gk_last.webp'} and S('fx_assets', allf - {'sd_last4.webp'}) == {'nd_film3.mp4', 'nd_last3.webp', 'gk_film.mp4', 'gk_last.webp'}
-      and S('fx_assets', allf - {'gk_film2.mp4'}) == {'sd_film3.mp4', 'sd_last3.webp', 'nd_film3.mp4', 'nd_last3.webp'} and S('fx_assets', set(OLD)) == set() and len(assets_dir.FX_NEW) == 9,
-      'アプリに 入れない もの（assets_dir.superseded）：3倍の 動画と さいごの 1まいが そろって いる 組 だけ、前の もの（…3・神様極的中の はじめの もの）を 入れない（そろって いない 組は 前の ものを 使う）')
+allf = set(OLD) | {f for _n, a, b, _o, _p, _c, _r in FILMS for f in (a, b)} | {'sfx_sd.m4a', 'sfx_gk2.m4a'}
+GK_OLD = {'gk_film.mp4', 'gk_last.webp', 'gk_film2.mp4', 'gk_last2.webp', 'sfx_gk.m4a'}
+check(S('fx_assets', allf) == {'sd_film3.mp4', 'sd_last3.webp', 'nd_film3.mp4', 'nd_last3.webp'} | GK_OLD and S('fx_assets', allf - {'sd_last4.webp'}) == {'nd_film3.mp4', 'nd_last3.webp'} | GK_OLD
+      and S('fx_assets', allf - {'gk_film3.mp4'}) == {'sd_film3.mp4', 'sd_last3.webp', 'nd_film3.mp4', 'nd_last3.webp', 'gk_film.mp4', 'gk_last.webp'} and S('fx_assets', allf - {'sfx_gk2.m4a'}) == S('fx_assets', allf - {'gk_film3.mp4'})
+      and S('fx_assets', allf - {'gk_film3.mp4', 'gk_film2.mp4'}) == {'sd_film3.mp4', 'sd_last3.webp', 'nd_film3.mp4', 'nd_last3.webp'} and len(assets_dir.FX_NEW) == 10,
+      'アプリに 入れない もの（assets_dir.superseded）：3倍の 動画と さいごの 1まいが そろって いる 組 だけ、前の もの（…3・神様極的中の 前の もの）を 入れない（そろって いない 組は 前の ものを 使う）。'
+      '第4.215版：神様極的中は 新しい 動画・さいごの 1まい・音の 3つが そろって いる とき だけ 前の もの（…2・はじめの もの・前の 音 sfx_gk.m4a）を 入れない（そろわなければ …2 と 前の 音）')
 bf = rd('kisekae', 'build_fx_films.py'); nf = rd('kisekae', 'flat', 'normal_film.py'); sf = rd('kisekae', 'flat', 'shiden_film.py')
 check("GK_UP = 'scale=1170:2532:flags=lanczos+accurate_rnd+full_chroma_int,cas=0.5'" in bf and 'def gk_film_up():' in bf and "if float(os.environ.get('SCALE', '1')) != 1:\n        splice = False" in bf
       and "assert im is not None and im.shape[:2] == (H, W), 'さいごの コマが 読めない'" in nf and "assert im is not None and im.shape[:2] == (H, W), 'さいごの コマが 読めない'" in sf
@@ -67,7 +84,7 @@ if os.path.isdir(fxd) and all(os.path.isfile(os.path.join(fxd, f)) for f in NEWF
     import numpy as np
     print('■ もとの ファイル（ios/fx_assets）')
     check(all(os.path.isfile(os.path.join(fxd, f)) and md5(os.path.join(fxd, f)) == h for f, h in OLD.items()),
-          f'前の 動画・さいごの 1まい（{len(OLD)}つ：極ど的中・ノーマルど的中の …3・神様極的中・超神様）は もとの フォルダに ある・1バイトも かわって いない（上書きして いない）')
+          f'前の 動画・さいごの 1まい・音（{len(OLD)}つ：極ど的中・ノーマルど的中の …3・神様極的中〈はじめの もの・…2・前の 音〉・超神様）は もとの フォルダに ある・1バイトも かわって いない（上書きして いない）')
 
     def probe(p):
         r = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'stream=codec_type,codec_name,profile,width,height,pix_fmt,r_frame_rate,nb_frames', '-of', 'json', p], capture_output=True, text=True, check=True)
@@ -97,17 +114,18 @@ if os.path.isdir(fxd) and all(os.path.isfile(os.path.join(fxd, f)) for f in NEWF
     tot_new = tot_old = 0
     for nm, film, last, ofilm, olast, n, redraw in FILMS:
         pn, po = os.path.join(fxd, film), os.path.join(fxd, ofilm); a, b_ = probe(pn), probe(po)
-        check(a == (1, 'h264', 'High', 1170, 2532, 'yuv420p', '30/1', n, True) and b_[3:5] == (780, 1688) and b_[7] == n,
-              f'{JP[nm]}の 新しい 動画（{film}）：H.264 High・1170×2532（前は 780×1688 ＝ たて よこ 1.5倍）・30コマ/秒・{n}コマ（前と 同じ）・音なし・先読みできる 形（{os.path.getsize(pn) / 1e6:.1f}MB・前は {os.path.getsize(po) / 1e6:.1f}MB）')
+        no = N_OLD.get(nm, n)
+        check(a == (1, 'h264', 'High', 1170, 2532, 'yuv420p', '30/1', n, True) and b_[3:5] == (780, 1688) and b_[7] == no,
+              f'{JP[nm]}の 新しい 動画（{film}）：H.264 High・1170×2532（前は 780×1688 ＝ たて よこ 1.5倍）・30コマ/秒・{n}コマ（' + ('前と 同じ' if no == n else f'前は {no}コマ：寄り 4つを 11 → 24コマに') + f'）・音なし・先読みできる 形（{os.path.getsize(pn) / 1e6:.1f}MB・前は {os.path.getsize(po) / 1e6:.1f}MB）')
         tot_new += os.path.getsize(pn); tot_old += os.path.getsize(po)
         # 同じ 絵：新しい 動画の コマを 前の 大きさに 小さく して 前の 動画と くらべる（6コマ）／くっきり：前の コマを 3倍に のばした ものと 細かい 所の 量を くらべる
-        ks = [int(n * q) for q in (0.2, 0.36, 0.5, 0.68, 0.84, 0.97)]; ps, dr = [], []
+        ks = [k for k in (int(n * q) for q in ((0.2, 0.36, 0.5, 0.68, 0.84, 0.97) if no == n else (0.05, 0.33, 0.36, 0.68, 0.84, 0.92, 0.97))) if old_of(nm, k) is not None]; ps, dr = [], []
         for k in ks:
-            x, y = frame(pn, k), frame(po, k)
+            x, y = frame(pn, k), frame(po, old_of(nm, k))
             if x is None or y is None: ps.append(0); continue
             ps.append(psnr(cv2.resize(x, (780, 1688), interpolation=cv2.INTER_AREA), y))
             d0 = detail(cv2.resize(y, (1170, 2532), interpolation=cv2.INTER_LINEAR)); dr.append(detail(x) / max(1e-6, d0))
-        if not redraw: check(min(ps) > 30 and np.median(ps) > 33, f'{JP[nm]}：前の 動画と 同じ 絵（小さく して くらべた 近さ：{" ".join("%.1f" % v for v in ps)} dB）')
+        if not redraw: check(len(ps) >= 6 and min(ps) > 30 and np.median(ps) > 33, f'{JP[nm]}：前の 動画と 同じ 絵（わざと 直して いない コマ {"・".join(str(k) for k in ks)} を 小さく して くらべた 近さ：{" ".join("%.1f" % v for v in ps)} dB）')
         check(np.median(dr) > (1.25 if redraw else 1.08) and min(dr) > 0.95, f'{JP[nm]}：前の 動画を 画面の 大きさに のばした ものより くっきり（細かい 所の 量 {" ".join("%.2f" % v for v in dr)} 倍）')
         # 明るさの 流れ（点めつ）：1コマごとの 画面 ぜんぶの 明るさ・大きい ます（3×4）の 明るさが 前の 動画と 同じ
         sa, sb = small(pn), small(po)
@@ -117,11 +135,14 @@ if os.path.isdir(fxd) and all(os.path.isfile(os.path.join(fxd, f)) for f in NEWF
             med = np.median(dd.reshape(len(dd), -1), 1); frc = (dd > 0.25).reshape(len(dd), -1).mean(1)
             check(len(sa) == n and len(sb) == n and float(med.max()) < 0.035 and float(frc.max()) < 0.12 and np.median(ps) > 27,
                   f'{JP[nm]}：前の 動画と 同じ 絵（ぜんぶの コマで：画素ごとの ちがいの まん中の 値 {med.max():.3f} まで・大きく ちがう 画素 {frc.max() * 100:.1f}% まで〈雷・火花の 形は 描く たびに かわる〉・6コマの 近さ {" ".join("%.1f" % v for v in ps)} dB）')
-        A_, B2 = lum(sa), lum(sb); ga, gb = A_.mean((1, 2)), B2.mean((1, 2))
+        A_, B2 = lum(sa), lum(sb); na_, nb_ = len(A_), len(B2)
+        if no != n:      # コマの 数が ちがう 動画：あたる コマ どうし だけ くらべる（寄りと、わざと 直した コマは のぞく）
+            pair = [(k, old_of(nm, k)) for k in range(n) if old_of(nm, k) is not None]; A_ = A_[[i for i, _j in pair]] if na_ == n else A_; B2 = B2[[j for _i, j in pair]] if nb_ == no else B2
+        ga, gb = A_.mean((1, 2)), B2.mean((1, 2))
         ca = np.stack([A_[:, int(i * 35):int((i + 1) * 35), int(j * 21.67):int((j + 1) * 21.67)].mean((1, 2)) for i in range(4) for j in range(3)], 1)
         cb = np.stack([B2[:, int(i * 35):int((i + 1) * 35), int(j * 21.67):int((j + 1) * 21.67)].mean((1, 2)) for i in range(4) for j in range(3)], 1)
-        check(len(A_) == n and len(B2) == n and float(np.abs(ga - gb).max()) < 0.03 and float(np.abs(ca - cb).max()) < (0.12 if redraw else 0.08),
-              f'{JP[nm]}：明るさの 流れは 前の 動画と 同じ（1コマごとの 差：画面 ぜんぶ {np.abs(ga - gb).max():.3f} まで・大きい ます〈画面の 1/12〉 {np.abs(ca - cb).max():.3f} まで' + ('：雷の 通る 所が ちがう ぶん' if redraw else '') + '）')
+        check(na_ == n and nb_ == no and len(A_) == len(B2) and float(np.abs(ga - gb).max()) < 0.03 and float(np.abs(ca - cb).max()) < (0.12 if redraw else 0.08),
+              f'{JP[nm]}：明るさの 流れは 前の 動画と 同じ（' + ('' if no == n else f'あたる コマ {len(A_)}こ：寄りと わざと 直した コマは のぞく・') + f'1コマごとの 差：画面 ぜんぶ {np.abs(ga - gb).max():.3f} まで・大きい ます〈画面の 1/12〉 {np.abs(ca - cb).max():.3f} まで' + ('：雷の 通る 所が ちがう ぶん' if redraw else '') + '）')
         # 点めつ：新しい 動画（アプリに 入る もの）を じかに 数える（60コマ/秒の 絵に して kisekae/flash_px.py：test_fx_flash.py の film と 同じ 数え方）
         ship = os.path.join(assets_dir.adir('fx_assets'), film); ship = ship if os.path.isfile(ship) else pn; td = tempfile.mkdtemp(prefix='fhq_')
         try:

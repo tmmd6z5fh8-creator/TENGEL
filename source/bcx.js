@@ -361,7 +361,7 @@
   }
   // その デザインの 背景・前の 絵（第4.145版）：キャラなしの 背景（mo.bgx）が ある デザインは 止まった 絵を 使わない（アプリに 入って いない：kisekae/bcp/bcp_app.py の pics と 同じ きまり）
   const picBg = (name, D) => (D.mo && D.mo.bgx) || D.p || `bcp_${name}.webp`;      // D.p：ボードの 中を ぬり直した 絵（第4.153版：bcp_<name>_bl.webp）
-  const picFg = (name, D) => (D.fg ? ((D.mo && D.mo.bgx && D.mo.fgx) || `bcp_${name}_fg.webp`) : null);
+  const picFg = (name, D) => (D.fg ? ((D.mo && D.mo.bgx && D.mo.fgx) || D.f || `bcp_${name}_fg.webp`) : null);      // D.f：切りぬき直した 前の 絵（第4.215版：bcp_<name>_f2.webp）
   // 絵を 出す のに いる もの ぜんぶ（背景・前の 絵・キャラ・動かない 物。まわりの 光と 雲 amb は のぞく：あとから かさねる）
   function picSrcs(name, D) {
     const M = D.mo || {}, L = M.layers || [];

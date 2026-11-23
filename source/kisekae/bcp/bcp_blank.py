@@ -27,15 +27,24 @@ SUF = '_bl'                                           # できた 絵の 名前�
 #   force：かならず 消す 四角／keep：この 四角の 中の 物は 小さくても 消さない／thin：この 半径より 細い 線と 飾りは 消す／speck：これより 小さい 物は 消す（px）
 CFGS = {
     'stamp': dict(force=[(0.0, 0.378, 1.0, 0.44)], keep=[(0.0, 0.0, 0.42, 0.376)]),      # スタンプ：鎖は 消す・絵と つながる 的中の ハンコは のこす
+    # 第4.215版（まさちゃん 2026/11/24 01:31「スタンプボードの4連勝目の赤丸のところ前のボードが写ってて不自然だから、無くして！」）：鎖の のこり（板の 中の 小さな 点・左の わくの 星の 横の 暗い かけらと もや）も 消す。
+    #   force を 少し 上まで（鎖の 上の はし）・keep（ハンコの しぶき）は その 上まで・patch＝絵の px の 四角：あざやかで ない 所を 板の 色に（星は のこす）
+    'stamp#2': dict(force=[(0.0, 0.362, 1.0, 0.44)], keep=[(0.0, 0.0, 0.42, 0.36)], patch=[(84, 942, 120, 996)]),
     'carry': dict(thin=7),                                                             # 馬が運ぶ：板の 中の 細い 金の 線と 飾りは 消す
     'bouquet': dict(speck=900),                                                        # 花束：板の まん中に うかぶ 小さな 花びらは 消す
 }
 
 
-def cfg_of(name):
+def cfg_of(name, v2=False):
+    """v2：第4.215版の きまり（'<家族>#2' が あれば それ）＋ tight（キャラ・物の まわりの かげ・にじみを のこさず、絵の ぎりぎり まで 板を ぬる）"""
+    out = {}
     for k, v in CFGS.items():
-        if name.startswith(k): return v
-    return {}
+        if '#' not in k and name.startswith(k): out = dict(v)
+    if v2:
+        for k, v in CFGS.items():
+            if k.endswith('#2') and name.startswith(k[:-2]): out = dict(v)
+        out['tight'] = True
+    return out
 
 
 def names():
@@ -60,14 +69,18 @@ def fit_surface(P, good, roi):
     return np.clip(S, 0, 255)
 
 
-def clean(src, name, cfg=None, dbg=None):
-    """src＝絵の フォルダ。→ ぬり直した 絵（uint8）・ぬり直した 所（bool）"""
+def clean(src, name, cfg=None, dbg=None, P=None, fg=None, model=None):
+    """src＝絵の フォルダ。→ ぬり直した 絵（uint8）・ぬり直した 所（bool）
+       第4.215版：P（絵・float32）と fg（前の 絵の ある 所・bool）を じかに わたせる（上下を 作り直した 絵・切りぬき直した 前の 絵で ぬり直す）。
+       model（dict）を わたすと、板の 形（面 ＋ ふちの 光：もの が ない ときの 板の 色）を model['board'] に 入れる（bcp_fg2.py が 前の 絵の「板と 同じ 色の 所」を はぶく のに 使う）"""
     cfg = cfg or {}
-    P = np.asarray(Image.open(os.path.join(src, f'bcp_{name}.webp')).convert('RGB')).astype(np.float32); H, W = P.shape[:2]
+    if P is None: P = np.asarray(Image.open(os.path.join(src, f'bcp_{name}.webp')).convert('RGB')).astype(np.float32)
+    P = np.asarray(P, np.float32); H, W = P.shape[:2]
     q = np.array(bcp_app.design(name)['q'], np.float64) * 3
     quad = np.zeros((H, W), np.uint8); cv2.fillConvexPoly(quad, np.round(q).astype(np.int32), 1)
     roi = cv2.dilate(quad, disk(34)) > 0; core = cv2.erode(quad, disk(46)) > 0
-    fgf = os.path.join(src, f'bcp_{name}_fg.webp'); fg = (np.asarray(Image.open(fgf).convert('RGBA'))[..., 3] > 8) if bcp_app.cfg(name).get('fg') and os.path.exists(fgf) else np.zeros((H, W), bool)
+    if fg is None:
+        fgf = os.path.join(src, f'bcp_{name}_fg.webp'); fg = (np.asarray(Image.open(fgf).convert('RGBA'))[..., 3] > 8) if bcp_app.cfg(name).get('fg') and os.path.exists(fgf) else np.zeros((H, W), bool)
     R_, G_, B_ = P[..., 0], P[..., 1], P[..., 2]; mx = P.max(2)
     navy = roi & (B_ > R_ + 10) & (B_ >= G_ + 2) & (mx < 150)                                         # 紺（板の 色・うすい あと・明るい すじ）
     dark = roi & (mx < 46)                                                                           # 黒い かげ・へこみ
@@ -84,11 +97,17 @@ def clean(src, name, cfg=None, dbg=None):
         tin = cv2.erode(quad, disk(10)) > 0; si_ = strong & tin; strong = (strong & ~tin) | (cv2.morphologyEx(si_.astype(np.uint8), cv2.MORPH_OPEN, disk(cfg['thin'])) > 0)
     sl, sn = ndimage.label(strong); ssz = np.bincount(sl.ravel(), minlength=sn + 1); strong &= ~(np.isin(sl, [i for i in range(1, sn + 1) if ssz[i] < cfg.get('speck', 380)]) & ~keepm)      # 小さな 点（あとの かけら）は 消す
     for b in cfg.get('force', []): strong &= ~box(b)                 # かならず 消す 四角（鎖 など）
-    guard = (cv2.dilate((strong & inner).astype(np.uint8), disk(6)) > 0) | (cv2.dilate(strong.astype(np.uint8), disk(1)) > 0) | (cv2.dilate(fg.astype(np.uint8), disk(3)) > 0)
+    # 物（と 前の 絵）の まわりは まもる（ふち取り・にじみ）。第4.215版 tight（まさちゃん 2026/11/24 01:31「影みたいなのは、絵のぎりぎりまで合わせて…影がボードに入りすぎないようにして」）：
+    #   まもる はばを 6px・3px → 2px・1px に（キャラの まわりの かげ・光の にじみを のこさず、絵の ぎりぎり まで 板の 色）
+    g_in, g_fg = (2, 1) if cfg.get('tight') else (6, 3)
+    guard = (cv2.dilate((strong & inner).astype(np.uint8), disk(g_in)) > 0) | (cv2.dilate(strong.astype(np.uint8), disk(1)) > 0) | (cv2.dilate(fg.astype(np.uint8), disk(g_fg)) > 0)
     free = roi & ~guard & (cv2.dilate(quad, disk(12)) > 0)
     lab, n = ndimage.label(free); ids = np.unique(lab[core & free]); ids = ids[ids > 0]; cnt = np.bincount(lab.ravel(), minlength=n + 1); M = np.isin(lab, [i for i in ids if cnt[i] > 3000])
     M = cv2.morphologyEx(cv2.morphologyEx(M.astype(np.uint8), cv2.MORPH_CLOSE, disk(8)), cv2.MORPH_OPEN, disk(5)) > 0; M &= ~guard            # ふちを なめらかに
     M |= ndimage.binary_fill_holes(M) & ~guard & roi                                                        # 物で ない 小さな 穴は うめる
+    for (px0, py0, px1, py1) in cfg.get('patch', []):                                                        # 絵の px の 四角：あざやかで ない 所（暗い かけら・もや）を 板の 色に。あざやかな 物（星 など）と その ふち 2px は のこす
+        bx = np.zeros((H, W), bool); bx[py0:py1, px0:px1] = True; viv = cv2.dilate((mx >= 170).astype(np.uint8), disk(2)) > 0
+        M |= bx & ~viv & ~fg
     # ── ふちの 帯：板を まっすぐな 四角に 直して（射影）、角の まるい 四角の ふちに そって「面からの ずれ」の まん中の 値を とる
     #    （へこみ・パネルの さかい・あとが 消えて、ふちの 暗い すき間と 光の にじみは 同じ はばで のこる。わくの きらきらは そのまま 上に のこる）
     D = 40; PADc = 40; Wc = int(round((np.linalg.norm(q[1] - q[0]) + np.linalg.norm(q[2] - q[3])) / 2)); Hc = int(round((np.linalg.norm(q[3] - q[0]) + np.linalg.norm(q[2] - q[1])) / 2))
@@ -126,6 +145,7 @@ def clean(src, name, cfg=None, dbg=None):
     fade = np.clip((D - d) / 16.0, 0, 1)[..., None]; synR = (Um[db, si] * fade).astype(np.float32); synR[d > D] = 0      # ふちから はなれると 面の 色へ
     syn = cv2.warpPerspective(synR, Hm, (W, H), flags=cv2.INTER_LINEAR | cv2.WARP_INVERSE_MAP, borderMode=cv2.BORDER_REPLICATE)
     a = cv2.GaussianBlur(M.astype(np.float32), (0, 0), 0.8)[..., None]; out = np.clip(P * (1 - a) + (S + syn) * a, 0, 255)      # ふちを なじませる（1px）
+    if model is not None: model.update(board=np.clip(S + syn, 0, 255), quad=quad > 0, roi=roi, q=q)
     if dbg:
         x0, y0, x1, y1 = [int(t) for t in (max(0, q[:, 0].min() - 50), max(0, q[:, 1].min() - 50), min(W, q[:, 0].max() + 50), min(H, q[:, 1].max() + 50))]
         v = P.copy(); edge = cv2.morphologyEx(M.astype(np.uint8), cv2.MORPH_GRADIENT, np.ones((3, 3), np.uint8)) > 0; v[edge] = (255, 0, 255); gm = guard & roi & ~M; v[gm] = v[gm] * 0.6 + np.array([0, 255, 0]) * 0.4
@@ -141,5 +161,5 @@ if __name__ == '__main__':
     src, out = sys.argv[1], sys.argv[2]; os.makedirs(out, exist_ok=True); dbgd = os.environ.get('DBG')
     if dbgd: os.makedirs(dbgd, exist_ok=True)
     for n in (sys.argv[3:] or names()):
-        o, M = clean(src, n, cfg_of(n), os.path.join(dbgd, f'{n}.jpg') if dbgd else None); f = os.path.join(out, f'bcp_{n}{SUF}.webp'); Image.fromarray(o).save(f, 'WEBP', quality=90, method=6)
+        o, M = clean(src, n, cfg_of(n), os.path.join(dbgd, f'{n}.jpg') if dbgd else None); f = os.path.join(out, f'bcp_{n}{SUF}.webp'); Image.fromarray(o).save(f, 'WEBP', quality=90, method=6)      # 第4.153版の 形（_bl）。第4.215版の 形（_b2）は bcp_remake.py
         print(n, 'ぬり直した 点', int(M.sum()), '→', f, os.path.getsize(f), flush=True)

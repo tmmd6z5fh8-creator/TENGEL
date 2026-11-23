@@ -34,6 +34,8 @@
      gk_film.mp4  … 神様極的中の 動画（第4.117版：kami_kiwami.py。まさちゃんの 3D と 背景の 絵で 1コマずつ 描いた できた 動画（MASTER・第13稿・リポジトリの 外：
                      GK_MASTER=<mp4> で ほかの 所も）を アプリ用に CRF 23 で 作り直す ＝ 361コマ・12.03秒・780×1688・約10.3MB）。FILMS=gk で これだけ 作る
      gk_last.webp … 神様極的中の 動画の さいごの 1まい
+     gk_film3.mp4・gk_last3.webp・sfx_gk2.m4a … 第4.215版（まさちゃん 2026/11/24 01:35）：顔の まだらを けした・かけらを 画面に 近づく ほど うすく・寄りを ゆっくり（1つ 0.8秒）に した
+                     できた 動画（第15稿：kisekae/gk15/ の 道具が 第14稿の コマから 作る・413コマ・13.77秒）を 3倍に のばした もの と、その 時刻の 音（FILMS=gk）
    乱数の 種が 決まって いるので、コマの 絵は 何回 作っても 同じ（動画の ファイルは ffmpeg の 版で 少し ちがう ことが ある）。
    第4.162版：もう ある 動画は 作り直さない（もと＝マスターを 上書きしない）。作り直す ときは FORCE=1（その 動画の 名前を FILMS で 決めて）。
    numpy・opencv・fontTools・librsvg・ffmpeg・Playwright がいる。キャンバス（見本）から 取った 同じ 名前の ファイルを 置いても よい。"""
@@ -255,7 +257,9 @@ GK_UP = 'scale=1170:2532:flags=lanczos+accurate_rnd+full_chroma_int,cas=0.5'    
 def gk_film_up():
     """第4.171版（まさちゃん 2026/11/14 16:18「①的中演出の画質上げる！」）：神様極的中の 動画と さいごの 1まいを 3倍（1170×2532）に → 新しい 名前（build_fx.py の FILMS・STILL：gk_film2.mp4・gk_last2.webp）。
        もとの 絵を 1コマずつ 描く 道具と 素材は もう そろわない ので、できた 動画（780×1688・第14稿）を のばす（Lanczos ＋ りんかくを 少し はっきり）。端末が その場で のばす より くっきり 見える。
-       コマの 数・時刻は 同じ（361コマ・12.03秒）。前の もの（gk_film.mp4・gk_last.webp）は もとの フォルダに のこす（上書きしない・アプリには 入れない：assets_dir.py の superseded）"""
+       コマの 数・時刻は できた 動画と 同じ。前の もの（gk_film.mp4・gk_last.webp）は もとの フォルダに のこす（上書きしない・アプリには 入れない：assets_dir.py の superseded）
+       第4.215版（まさちゃん 2026/11/24 01:35）：できた 動画が 第15稿（顔の まだら・かけら・寄りを ゆっくり：kisekae/gk15/・413コマ・13.77秒）に なった ＝ 名前は gk_film3.mp4・gk_last3.webp
+       （gk_film2.mp4・gk_last2.webp＝第14稿・361コマ も のこす）。音は gk_sound()（sfx_gk2.m4a）"""
     import kami_kiwami as KK
     src = os.environ.get('GK_MASTER') or KK.MASTER
     assert os.path.exists(src), f'神様極的中の できた 動画が ない：{src}（GK_MASTER=<mp4> で 指定）'
@@ -271,6 +275,25 @@ def gk_film_up():
     cv2.imwrite(os.path.join(out, last), im, [cv2.IMWRITE_WEBP_QUALITY, 90])
     os.remove(tmp)
     print(last, f'{os.path.getsize(os.path.join(out, last)) / 1e6:.2f}MB', flush=True)
+
+
+def gk_sound():
+    """神様極的中の 動画の 音（gen_sfx.py の sfx_gk＝kami_kiwami.py の FILM の 時刻で 作る）→ out/<build_fx.py の SFX の gk>（AAC 160kbps：build_fx_assets.py の 音と 同じ 形）。
+       第4.215版：寄りを ゆっくりに して 時刻が かわった ので 新しい 名前（sfx_gk2.m4a）。前の 音（sfx_gk.m4a＝第14稿までの 時刻）は のこす"""
+    name = BF.SFX['gk']
+    assert name != 'sfx_gk.m4a', '新しい 名前で 書き出す（前の ものを 上書きしない）'
+    argv = sys.argv
+    sys.argv = ['gen_sfx.py']
+    try:
+        import gen_sfx as S
+    finally:
+        sys.argv = argv
+    x = S.sfx_gk()
+    wav = os.path.join(work, name[:-4] + '.wav')
+    S.write_wav(wav, x)
+    run([FF, '-y', '-loglevel', 'error', '-i', wav, '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', os.path.join(out, name)])
+    os.remove(wav)
+    print(name, f'{len(x) / S.SR:.2f}秒  {S.lufs(x):.1f} LUFS  {os.path.getsize(os.path.join(out, name)) / 1e6:.2f}MB', flush=True)
 
 
 def gk_film():
@@ -296,7 +319,7 @@ def gk_film():
 
 if __name__ == '__main__':
     which = os.environ.get('FILMS', 'sgd,spg,sd,nd,gk').split(',')
-    jobs = (('sgd', sgd_film, BF.FILMS['sgd_film']), ('sgd', sgd_sound, BF.SFX['sgd']), ('spg', spg_up, 'spg_up.mp4'), ('sd', sd_film, BF.FILMS['sd_film']), ('nd', nd_film, BF.FILMS['nd_film']), ('gk', gk_film, BF.FILMS['gk_film']))
+    jobs = (('sgd', sgd_film, BF.FILMS['sgd_film']), ('sgd', sgd_sound, BF.SFX['sgd']), ('spg', spg_up, 'spg_up.mp4'), ('sd', sd_film, BF.FILMS['sd_film']), ('nd', nd_film, BF.FILMS['nd_film']), ('gk', gk_film, BF.FILMS['gk_film']), ('gk', gk_sound, BF.SFX['gk']))
     for key, fn, name in jobs:
         if key not in which:
             continue

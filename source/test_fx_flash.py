@@ -14,6 +14,7 @@
 #     sd は 押した あと まず ノーマルど的中の 動画の コマ（5.34秒ぶん）を ならべて から、極ど的中の 幕を 写す（SD_UP の BLACK が あれば 真っ黒の コマも）
 #     nd：第4.79版 押した 画面（.ndt：PUSH の 画面とは 別・押された PUSH が へこんで 光って はじける・火花 → 暗く → 1.05秒で 消える）も CSS なので いっしょに 進める
 #   第4.117版：神様極的中 gk（虹色の PUSH → 押した 画面（.ndt）→ はじめから おわりまで 動画 gk_film.mp4（12.03秒）→ ボード 12.0秒）：nd と 同じ やり方で 数える
+#     第4.215版：動画は gk_film3.mp4（顔・かけら・寄りを 直した 第15稿：13.77秒）→ ボード 13.73秒
 #   film＝アプリに 入る 動画（超神様 sgd_film2.mp4・紫電 sd_film3.mp4・ノーマルど的中 nd_film3.mp4〈第4.163版：馬と 字は まさちゃんの 3D・第4.164版：字を 明るく〉・神様極的中 gk_film.mp4）を ffmpeg で 60コマ/秒の 絵に して 数える（手元の ios/fx_assets/ に ある とき）
 #   第4.163版：sd・nd・gk の 幕の うしろに しく 動画も build_fx.py の FILMS の 名前（前は sd_film.mp4 などと 決め打ち）
 import os, shutil, subprocess, sys, time
@@ -22,7 +23,7 @@ W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 SRV = os.path.join(W, 'srv_fx'); PORT = 8796
 OUT = os.path.join(W, 't5', 'fx_frames')
 KINDS = (sys.argv[1].split(',') if len(sys.argv) > 1 else ['hit', 'big', 'fz', 'miss'])
-AFTER = dict(hit=2.5, big=2.5, miss=1.5, fz=9.5, sd=11.5, gk=13.2)   # 第4.66版：ど的中・紫電（第4.71版：プチュン → 動画 10.5秒 → ボード 10.05秒）
+AFTER = dict(hit=2.5, big=2.5, miss=1.5, fz=9.5, sd=11.5, gk=15.0)      # 第4.215版：神様極的中は 寄りを ゆっくりに して 13.77秒（ボード 13.73秒）＝ボードが 出おわる まで（前は 12.03秒・13.2）   # 第4.66版：ど的中・紫電（第4.71版：プチュン → 動画 10.5秒 → ボード 10.05秒）
 SDBG = "([u, c]) => new Promise(ok => { const im = new Image(); im.onload = im.onerror = () => { const o = document.querySelector('#fxOv .ov.' + c); if (o) o.style.background = '#000 url(' + u + ') center / cover no-repeat'; requestAnimationFrame(() => ok(1)); }; im.src = u; })"
 from assets_dir import adir
 FX_DIR = adir('fx_assets')   # 第4.146版：アプリに 入れる フォルダ（軽い 版 ios/lite/… が あれば そちら：assets_dir.py）

@@ -377,7 +377,13 @@ PLAN = [
     ('stop', [('front', 16), ('down', 18), ('front', 22)], 1.67),
     ('walk', 2, -1),
 ]
-TURN = 0.36        # くるっと 向きを かえる 秒
+TURN_N = 11        # くるっと 向きを かえる コマ（1/30秒が いくつ）
+TURN = TURN_N / FPS   # くるっと 向きを かえる 秒（第4.215版：0.36 → 11コマ ちょうど）
+# 第4.215版（まさちゃん 2026/11/24 01:22「海賊の馬が向きを変える時が、2Dで不自然だから向きを変える時も立体的に見えるように改良して」）：
+#   前は 止まった 絵を 横に つぶして 裏がえして いた（scaleX 1 → 0.06 → −1：紙が 回る ように 見えた）。
+#   → 馬を 立体の まま 回した コマ（pirate_art.build_turn の シート pirate.turn：r1〜r5）を めくる：
+#       前を 見る 形 → r1…r5（こちらへ 回る）→〔左右を いっぺんに 入れかえる〕→ r5…r1（うら返し＝むこうへ 回りきる）→ 前を 見る 形（うら返し）
+#     左右の 入れかえ（scaleX）は つぶさずに 1コマで 切りかえる。向きを かえる シートが ない とき（絵が まだ ない）は 前の つぶす 形
 
 
 def look_seq(looks, ku, kd, kt):
@@ -401,16 +407,17 @@ def look_seq(looks, ku, kd, kt):
     return seq + [f't{k}' for k in range(kt, 0, -1)]
 
 
-def walk_keys(speed, cx, names=None, cyc=36):
-    """PLAN → 動きの キー（時刻・値）。返り値：(1回りの 秒, 位置, 向き, 歩いて いるか, 止まった 形の コマ)。
-       names：止まった 形の シートの コマの 名前（pirate_art.STANDS）・cyc：歩く 1回りの コマ（1/30秒が いくつ）"""
+def walk_keys(speed, cx, names=None, cyc=36, turn_n=0):
+    """PLAN → 動きの キー（時刻・値）。返り値：(1回りの 秒, 位置, 向き, 歩いて いるか, 止まった 形の コマ, 向きを かえる コマ)。
+       names：止まった 形の シートの コマの 名前（pirate_art.STANDS）・cyc：歩く 1回りの コマ（1/30秒が いくつ）・
+       turn_n：向きを かえる シートの コマの 数（r1〜：0＝シートが ない → 前の つぶす 形）。向きを かえる コマ＝[(時刻, コマ か −1＝出さない)]"""
     names = list(names or [])
     ku = sum(1 for q in names if q[0] == 'u') or 8
     kd = sum(1 for q in names if q[0] == 'd') or 8
     kt = sum(1 for q in names if q[0] == 't') or 8
     step = speed * WALK_C
     t, x, face = 0.0, 0.0, -1
-    pos, flip, walking, frame = [(0.0, 0.0)], [(0.0, face)], [(0.0, 0)], []
+    pos, flip, walking, frame, turning = [(0.0, 0.0)], [(0.0, face)], [(0.0, 0)], [], [(0.0, -1)]
     for blk in PLAN:
         if blk[0] == 'walk':
             _, n, d = blk
@@ -435,16 +442,24 @@ def walk_keys(speed, cx, names=None, cyc=36):
             if turn is not None:
                 i_t = int(round(turn * FPS))
                 assert all(q == 'front' for q in seq[i_t:int(round((turn + TURN) * FPS)) + 1]), (blk, seq[i_t:i_t + 12])      # 向きを かえる 間は 前を 見て 立って いる
-                flip += [(t + turn, face), (t + turn + TURN / 2, face * 0.06), (t + turn + TURN, -face)]
+                if turn_n:
+                    assert TURN_N == 2 * turn_n + 1, (TURN_N, turn_n)                  # 前 → r1…rn →〔入れかえ〕→ rn…r1 → 前
+                    t0 = t + i_t / FPS; tm = t0 + (turn_n + 1) / FPS                    # tm：左右を 入れかえる 時刻（コマの さかい目）
+                    for k in range(1, turn_n + 1): turning.append((t0 + k / FPS, k - 1))
+                    for k in range(turn_n, 0, -1): turning.append((t0 + (2 * turn_n + 1 - k) / FPS, k - 1))
+                    turning.append((t0 + TURN_N / FPS, -1))
+                    flip += [(tm, -face)]                                              # つぶさずに 1コマで 切りかえる（prHf は step-end）
+                else:
+                    flip += [(t + turn, face), (t + turn + TURN / 2, face * 0.06), (t + turn + TURN, -face)]
                 face = -face
             t += dur
     assert abs(x) < 1e-6 and face == -1, (x, face)
-    return t, pos, flip, walking, frame
+    return t, pos, flip, walking, frame, turning
 
 
 # ---------------------------------------------------------------- 上の絵（HTML と CSS）
 def banner(B):
-    wk, sd = B.get('walk'), B.get('stand')
+    wk, sd, tn = B.get('walk'), B.get('stand'), B.get('turn')
     still = B.get('still')
     alt = ('海賊船の甲板を、三角帽と赤いスカーフの芦毛の馬の船長が歩きまわる。左に金貨と宝石があふれる宝箱、右に舵輪と、白い蹄鉄の海賊旗。'
            '手すりのむこうに青い海と空と宝島のイラスト（船が波で少しゆれて、ときどき遠くを黒い帆の海賊船が通り、旗がなびき、金貨がキラッと光る。'
@@ -463,7 +478,7 @@ def banner(B):
     html += '<i class="prFg">' + ''.join(f'<b style="left:{f(i * 74 / NF)}px;background-position:{f(-i * 74 / NF)}px 0;--mx:{f(-i * 74 / NF)}px;animation-delay:{f(-1.6 * i / NF, 3)}s;--a:{f(0.5 + 2.9 * (NF - i) / NF)}px"></b>' for i in range(NF)) + '</i>'
     html += img('prDk', deck_svg())
     if wk and sd:                                                       # 船長（宝箱と 舵輪の うしろを 歩く）
-        html += '<i class="prHm"><i class="prHf"><i class="prHw"><i></i></i><i class="prHs"><i></i></i></i></i>'
+        html += '<i class="prHm"><i class="prHf"><i class="prHw"><i></i></i><i class="prHs"><i></i></i>' + ('<i class="prHt"><i></i></i>' if tn else '') + '</i></i>'
     html += img('prSt', stand_svg()) + img('prWh', wheel_svg())
     html += img('prCh', chest_svg())
     gl = glint_svg()
@@ -506,7 +521,7 @@ def banner(B):
            '.prw .prCh{left:2px;top:4px;width:124px;height:152px}'
            '.prw .prGt{width:17px;height:17px;opacity:0;animation:prGlint 4.2s ease-in-out infinite;will-change:transform,opacity}')
     if wk and sd:
-        T, pos, flip, walking, frame = walk_keys(wk['speed'], wk['cx'], sd.get('names'), wk['frames'])
+        T, pos, flip, walking, frame, turning = walk_keys(wk['speed'], wk['cx'], sd.get('names'), wk['frames'], tn['frames'] if tn else 0)
         assert abs(wk['frames'] / FPS - WALK_C) < 1e-9 and abs(wk.get('cycle', WALK_C) - WALK_C) < 1e-9, (wk['frames'], wk.get('cycle'))      # 歩く コマは 1/30秒ごと
         pc = lambda t: 100 * t / T
         n, (cw, ch), (ax, ay) = wk['frames'], wk['cell'], wk['at']
@@ -516,7 +531,7 @@ def banner(B):
         css += ('.prw .prHm,.prw .prHf,.prw .prHw,.prw .prHs{position:absolute;display:block}'
                 '.prw .prHm,.prw .prHf{left:0;top:0;width:390px;height:160px}'
                 f'.prw .prHm{{animation:prHm {f(T)}s linear infinite;will-change:transform}}'
-                f'.prw .prHf{{transform-origin:{f(wk["cx"])}px 140px;animation:prHf {f(T)}s linear infinite}}'
+                f'.prw .prHf{{transform-origin:{f(wk["cx"])}px 140px;animation:prHf {f(T)}s {"step-end" if tn else "linear"} infinite}}'
                 f'.prw .prHw{{left:{f(ax / 2)}px;top:{f(ay / 2)}px;width:{f(cw / 2)}px;height:{f(ch / 2)}px;overflow:hidden;animation:prHw {f(T)}s step-end infinite}}'
                 f'.prw .prHw>i{{display:block;width:{f(wW)}px;height:{f(wH)}px;background:url({wk["url"]}) 0 0/{f(wW)}px {f(wH)}px no-repeat;'
                 f'animation:prWalk {WALK_C}s {walk_tf} infinite}}'
@@ -527,7 +542,21 @@ def banner(B):
                 + kf('prHm', [(pc(t), f'transform:translateX({f(x)}px)') for t, x in pos], 5)
                 + kf('prHf', [(pc(t), f'transform:scaleX({f(sc, 3)})') for t, sc in flip] + [(100, f'transform:scaleX({f(flip[0][1])})')], 5))
         vis = [(pc(t), f'opacity:{w}') for t, w in walking]
-        css += kf('prHw', vis, 5) + kf('prHs', [(p_, 'opacity:' + str(1 - int(v_[-1]))) for p_, v_ in vis], 5)      # ％は 小数 5けた（歩く シートと 止まった 形の シートの 入れかえが 同じ 時刻に なる）
+        css += kf('prHw', vis, 5)
+        # 止まった 形の シート：歩いて いない・向きを かえて いない 間 だけ（％は 小数 5けた：シートの 入れかえが 同じ 時刻に なる）
+        ev = sorted([(t, 'w', w) for t, w in walking] + [(t, 't', int(k >= 0)) for t, k in turning]); st = dict(w=0, t=0); sv = []
+        for t, key, v in ev:
+            st[key] = v; o = 0 if (st['w'] or st['t']) else 1
+            if sv and abs(sv[-1][0] - t) < 1e-9: sv[-1] = (t, o)
+            elif not sv or sv[-1][1] != o: sv.append((t, o))
+        css += kf('prHs', [(pc(t), f'opacity:{o}') for t, o in sv], 5)
+        if tn:                                                          # 向きを かえる コマ（第4.215版）
+            tnn, (tw_, th_), (tx, ty) = tn['frames'], tn['cell'], tn['at']; tW, tH = sheet_size(tn)
+            css += ('.prw .prHt{position:absolute;display:block;' + f'left:{f(tx / 2)}px;top:{f(ty / 2)}px;width:{f(tw_ / 2)}px;height:{f(th_ / 2)}px;overflow:hidden;opacity:0;animation:prHt {f(T)}s step-end infinite}}'
+                    f'.prw .prHt>i{{display:block;width:{f(tW)}px;height:{f(tH)}px;background:url({tn["url"]}) 0 0/{f(tW)}px {f(tH)}px no-repeat;animation:prTurn {f(T)}s step-end infinite}}')
+            css += kf('prHt', [(pc(t), 'opacity:' + str(int(k >= 0))) for t, k in turning] + [(100, 'opacity:0')], 5)
+            tk = [(pc(t), 'transform:' + sheet_at(tn, k)) for t, k in turning if k >= 0]
+            css += kf('prTurn', [(0, tk[0][1])] + tk + [(100, tk[0][1])], 5)
         look = [(pc(t), 'transform:' + sheet_at(sd, k)) for t, k in frame]      # 止まった 形の コマ（1/30秒ごとに かわる 所 だけ）
         css += kf('prLook', look + [(100, look[0][1])], 5)
     for k, (x, y, d) in enumerate(((36, 95, 0.0), (64, 88, 0.7), (86, 98, 1.4), (50, 104, 2.1), (74, 104, 2.8), (111, 145, 3.5))):

@@ -143,7 +143,7 @@ S = assets_dir.superseded
 allf = {'sd_film.mp4', 'sd_last.webp', 'sd_film2.mp4', 'sd_last2.webp', 'sd_film3.mp4', 'sd_last3.webp', 'sd_film4.mp4', 'sd_last4.webp', 'sfx_sd.m4a'}
 olds = allf - {'sd_film4.mp4', 'sd_last4.webp', 'sfx_sd.m4a'}
 check(S('fx_assets', allf | {NEW}) == olds | {'sd_film4.mp4'} and S('fx_assets', allf) == olds and S('fx_assets', (allf | {NEW}) - {'sd_last4.webp'}) == olds - {'sd_film3.mp4', 'sd_last3.webp'}
-      and len(assets_dir.FX_NEW) == 9,
+      and len(assets_dir.FX_NEW) == 10,
       f'アプリに 入れない もの（assets_dir.superseded）：{NEW} と sd_last4.webp が そろって いる とき、前の 動画（…4 まで）と 前の さいごの 1まい（…3 まで）を 入れない（もとの フォルダには 残す）')
 import lite_assets as LA
 check(LA.TAIL_LAST == {NEW: 'sd_last4.webp'} and LA.has_tail(os.path.join(assets_dir.master('fx_assets'), NEW)) == os.path.isfile(os.path.join(assets_dir.master('fx_assets'), 'sd_last4.webp')),

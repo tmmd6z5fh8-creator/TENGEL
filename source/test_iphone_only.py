@@ -100,10 +100,10 @@ if r.returncode == 0:
     check(all(f"'{k}'" in html or f'"{k}"' in html for k in ('sgd', 'sd', 'nd', 'gk')) and all(v in html for v in list(FILMS.values()) + [v for k, v in STILL.items() if k != 'nd_last'] + [SFX[k] for k in ('sgd', 'sd', 'sdp', 'nd', 'ndt', 'gk')]) and 'sd_last4.webp' in html
           and sorted(SFX) == ['big', 'big_push', 'fz_push', 'gk', 'hit', 'hit_push', 'nd', 'ndt', 'sd', 'sdp', 'sgd'] and sorted(FILMS) == ['gk_film', 'nd_film', 'sd_film', 'sgd_film'] and sorted(FXJ['sfx']) == sorted(SFX) and sorted(FXJ['films']) == sorted(FILMS)
           and [FILMS['sgd_film'], STILL['sgd_last'], SFX['sgd']] == ['sgd_film2.mp4', 'sgd_last2.webp', 'sfx_sgd2.m4a'] and FXJ['t']['SG'] == {'FILM': 12.8333, 'RES': 12.9333, 'STILL_FROM': 12.8333, 'STILL_WAIT': 1.0, 'STILL_BOARD': 1.3, 'WAIT_MAX': 4.0} and 'PC' not in FXJ['t']
-          and not any(x in html for x in ('pm_face_F.webp', 'pm_fin.webp', 'sfx_pc.m4a', 'sfx_zp.m4a', 'sfx_spg.m4a', 'sfx_spg_up.m4a', 'spg_up.mp4', 'sgd_film.mp4', 'sgd_last.webp', 'sfx_sgd.m4a', 'sd_film.mp4', 'sd_last.webp', 'nd_film.mp4', 'nd_last.webp', 'sd_film2.mp4', 'sd_last2.webp', 'nd_film2.mp4', 'nd_last2.webp', 'sd_film3.mp4', 'sd_last3.webp', 'nd_film3.mp4', 'nd_last3.webp', 'gk_film.mp4', 'gk_last.webp', '.fxs .ov.fz.pm', '.fxs .ov.fz.zp', '.fxs .spu', '.fxs .zpdefs', 'spgGo', 'spzOv')) and 'sd_t_hit.webp' not in html and 'sd_horse.webp' not in html and 'sd_film5.mp4' in html and 'sd_film4.mp4' not in html
+          and not any(x in html for x in ('pm_face_F.webp', 'pm_fin.webp', 'sfx_pc.m4a', 'sfx_zp.m4a', 'sfx_spg.m4a', 'sfx_spg_up.m4a', 'spg_up.mp4', 'sgd_film.mp4', 'sgd_last.webp', 'sfx_sgd.m4a', 'sd_film.mp4', 'sd_last.webp', 'nd_film.mp4', 'nd_last.webp', 'sd_film2.mp4', 'sd_last2.webp', 'nd_film2.mp4', 'nd_last2.webp', 'sd_film3.mp4', 'sd_last3.webp', 'nd_film3.mp4', 'nd_last3.webp', 'gk_film.mp4', 'gk_last.webp', 'gk_film2.mp4', 'gk_last2.webp', 'sfx_gk.m4a', '.fxs .ov.fz.pm', '.fxs .ov.fz.zp', '.fxs .spu', '.fxs .zpdefs', 'spgGo', 'spzOv')) and 'sd_t_hit.webp' not in html and 'sd_horse.webp' not in html and 'sd_film5.mp4' in html and 'sd_film4.mp4' not in html
           and 'nd_film4.mp4' in html and 'nd_last4.webp' not in html and 'class=\\"nds\\"' not in html and '.fxs .ov.fz.nd' in html      # 第4.175版：ノーマルど的中の さいごの 1まいは 入れない（幕にも 置かない）
           and [FILMS['sd_film'], STILL['sd_last'], FILMS['nd_film'], STILL['nd_last'], SFX['sd'], SFX['nd']] == ['sd_film5.mp4', 'sd_last4.webp', 'nd_film4.mp4', 'nd_last4.webp', 'sfx_sd.m4a', 'sfx_nd.m4a']      # 第4.195版：極ど的中の 動画は 顔の 場面だけ 新しい 馬の …5
-          and 'gk_film2.mp4' in html and 'gk_last2.webp' in html and 'sfx_gk.m4a' in html and '.fxs .ov.fz.gk' in html and FXJ['board']['titles'].get('gk') == '神様極的中！！！' and FXJ['t'].get('GKB') == 12.0   # 第4.117版：神様極的中
+          and 'gk_film3.mp4' in html and 'gk_last3.webp' in html and 'sfx_gk2.m4a' in html and '.fxs .ov.fz.gk' in html and FXJ['board']['titles'].get('gk') == '神様極的中！！！' and FXJ['t'].get('GKB') == 13.73 and FXJ['t'].get('GK') == 13.58   # 第4.117版：神様極的中・第4.215版：顔・かけら・寄りを 直した 動画（…3）と その 時刻の 音（sfx_gk2.m4a）・ボードは 13.73秒
           and '.fxs .ov.fz.sgd' in html and '.fxs .ov.fz.sd' in html and "data-film" in html and 'WAIT_MAX' in html and '.ph ' not in html.split('window.__FX=')[1][:400000]
           and sorted(FXJ['reveal']) == ['big', 'gk', 'hit', 'hit_t', 'miss', 'nd', 'sd', 'sgd'] and sorted(FXJ['push']) == ['big_t', 'fz_t', 'hit', 'hit_t'] and 'fz' not in FXJ['sfx'] and '.nic' not in FXJ['css'] and 'gd' not in FXJ['art'] and 'gd' not in FXJ['sfx'] and 'gd' not in FXJ['board']['titles'] and 'hidden' not in FXJ['board']['titles']
           and 'gd_dome.webp' not in html and 'sfx_gd.m4a' not in html and '.fxs .ov.fz.gd' not in html and 'GD' not in FXJ['t'] and 'ZP' not in FXJ['t'],
@@ -111,8 +111,9 @@ if r.returncode == 0:
           '第4.162版：プレミアムど的中・超プレミアム神様的中（押したあと・CSS・絵・音・昇格の 動画・くじ）は 入って いない・超神様の 動画／さいごの 1まい／音は 新しい もの（sgd_film2.mp4・sgd_last2.webp・sfx_sgd2.m4a：12.83秒）・'
           '第4.163版：極ど的中（紫電）と ノーマルど的中の 動画／さいごの 1まいは 新しい もの（馬と 字は まさちゃんの 3D。音は 前と 同じ）・'
           '第4.164版：字を 明るく した もの → 第4.171版：同じ 絵を 3倍（1170×2532）に した もの（sd_film4.mp4・sd_last4.webp・nd_film4.mp4・nd_last4.webp・神様極的中は gk_film2.mp4・gk_last2.webp）・前の 名前（…3・…2・はじめの もの）は 入って いない・'
-          '第4.195版：極ど的中の 動画は 顔の 場面だけ 新しい 馬（sd_film5.mp4：さいごの 1まいは sd_last4.webp の まま・sd_film4.mp4 は 入って いない）')
-    check('pm' not in ART and not [f for f in ASSET_FILES if f.startswith(('pm_', 'spg', 'sfx_pc', 'sfx_zp', 'sfx_spg'))] and 'gd' not in ART and 'gd' not in SFX and ART['sd'] == ['sd_last4.webp'] and ART['nd'] == [] and ART['gk'] == ['gk_last2.webp'] and ART['sgd'] == ['sgd_last2.webp'] and len(FILMS) == 4 and len(ASSET_FILES) == 11 + 3 + 4 + 5 and ASSET_FILES[:5] == ['bcx_hb_eye.webp', 'bcx_hb_fore.webp', 'bcx_hb_head.webp', 'bcx_hb_hind.webp', 'bcx_hb_tail.webp'] and not [f for f in ASSET_FILES if f.startswith('bcx_ph')], f'絵と音と動画の 数：音 11（第4.86版：神様的中の 音は なし・第4.109版：前の ど的中の 音と ネオンの 絵 2まいは 入れない・第4.117版：神様極的中の 音・第4.162版：プレミアム／超プレミアム／超プレミアム神様／昇格の 音 4こは なし）・プレミアムの 絵 43まいは なし（第4.162版）・さいごの 1まい 3（超神様・紫電・神様極的中。第4.175版：ノーマルど的中の ものは 入れない＝もう 出ない 絵）・動画 4（第4.162版：昇格の 動画は なし）・ボードを持つ馬の 部品 5（第4.108版）・結果ボードカスタムの 幻の 馬の 絵 2まいは 入れない（第4.113版：出世馬と いっしょに 消した）（{len(ASSET_FILES)}）')
+          '第4.195版：極ど的中の 動画は 顔の 場面だけ 新しい 馬（sd_film5.mp4：さいごの 1まいは sd_last4.webp の まま・sd_film4.mp4 は 入って いない）・'
+          '第4.215版：神様極的中は 顔の まだら・かけら・寄りを 直した もの（gk_film3.mp4・gk_last3.webp・音 sfx_gk2.m4a・ボード 13.73秒）・前の もの（…2・sfx_gk.m4a）は 入って いない')
+    check('pm' not in ART and not [f for f in ASSET_FILES if f.startswith(('pm_', 'spg', 'sfx_pc', 'sfx_zp', 'sfx_spg'))] and 'gd' not in ART and 'gd' not in SFX and ART['sd'] == ['sd_last4.webp'] and ART['nd'] == [] and ART['gk'] == ['gk_last3.webp'] and ART['sgd'] == ['sgd_last2.webp'] and len(FILMS) == 4 and len(ASSET_FILES) == 11 + 3 + 4 + 5 and ASSET_FILES[:5] == ['bcx_hb_eye.webp', 'bcx_hb_fore.webp', 'bcx_hb_head.webp', 'bcx_hb_hind.webp', 'bcx_hb_tail.webp'] and not [f for f in ASSET_FILES if f.startswith('bcx_ph')], f'絵と音と動画の 数：音 11（第4.86版：神様的中の 音は なし・第4.109版：前の ど的中の 音と ネオンの 絵 2まいは 入れない・第4.117版：神様極的中の 音・第4.162版：プレミアム／超プレミアム／超プレミアム神様／昇格の 音 4こは なし）・プレミアムの 絵 43まいは なし（第4.162版）・さいごの 1まい 3（超神様・紫電・神様極的中。第4.175版：ノーマルど的中の ものは 入れない＝もう 出ない 絵）・動画 4（第4.162版：昇格の 動画は なし）・ボードを持つ馬の 部品 5（第4.108版）・結果ボードカスタムの 幻の 馬の 絵 2まいは 入れない（第4.113版：出世馬と いっしょに 消した）（{len(ASSET_FILES)}）')
     check('root.TengelBoardArt = {' in html and 'window.TengelBoard = {' in html and 'setBoard' in html and 'jp.tengel.app.boardcustom' in html
           and html.index('root.TengelBoardArt = {') < html.index('window.TengelBoard = {') and html.index('window.TengelKisekae') < html.index('window.TengelBoard = {')
           and 'TengelBoardPhantom' not in html and 'bcx_ph0.webp' not in html and 'bcx_ph1.webp' not in html and 'bcxph' not in html and not os.path.exists(os.path.join(W, 'bcx_phantom.js')),
@@ -134,9 +135,9 @@ if r.returncode == 0:
     check(len(BCPJ.get('items', {})) == 11 and len(BCPJ.get('d', {})) == 44 and html.index('window.__BCP=') < html.index('window.TengelBoard = {')
           and [i for i, _, _ in _bcp.ITEMS] == ['toast', 'race', 'snap', 'seal', 'cup', 'hoist', 'bloom', 'rain', 'next', 'wait', 'pen']
           and [len(BCPJ['items'][i]['st']) for i in ('toast', 'hoist', 'rain')] == [4, 4, 4] and BCPJ['items']['hoist']['st'][-1] == [4, 'carry4'] and not ({'ring', 'climb', 'cover'} & set(BCPJ['items'])) and not (set(_bcp.GONE) & set(BCPJ['d']))
-          and BCPJ.get('thumb') == 'bcp_t_{}_b.webp' and len(bfiles) == 11 + 44 + 31 and len(bfiles) == len(set(bfiles))
+          and BCPJ.get('thumb') == 'bcp_t_{}_c.webp' and len(bfiles) == 11 + 44 + 31 and len(bfiles) == len(set(bfiles))
           and len(bhave) in (0, len(bfiles)) and (not os.path.isdir(bdir) or len(bhave) == len(bfiles)) and not any(f.endswith('.png') for f in bhave),
-          f'第4.214版：アプリの画面に 絵の ボード 11こ（段 44：どれも 4段・消した 3こ〈結果ボードを廻る・出世馬・隠蔽作戦〉は ない）・絵 {len(bhave)}/{len(bfiles)}こ（見本 11＋止まった 絵 44＋前の 絵 31・手元に あれば ぜんぶ・CI は なし）')
+          f'第4.214版：アプリの画面に 絵の ボード 11こ（段 44：どれも 4段・消した 3こ〈結果ボードを廻る・出世馬・隠蔽作戦〉は ない）・絵 {len(bhave)}/{len(bfiles)}こ（見本 11＋止まった 絵 44＋前の 絵 31・手元に あれば ぜんぶ・CI は なし。第4.215版：見本は 作り直した …_c.webp）')
     # 第4.150版（まさちゃん 2026/11/11 02:36「結果カスタムボードの動き全部無くして！ボードを持つ馬も含めて！その代わり、画質あげて！」）：絵の ボードは 動かない。
     #   アプリの データ（window.__BCP）に 動きの データ（mo）は ない・動く 絵の 部品（キャラなしの 背景・キャラ・光と 雲：346まい）は Resources に 入れない・
     #   59段 ぜんぶ 止まった 絵（bcp_<デザイン>.webp）と 前の 絵（_fg.webp：35段）を 入れる。絵は もとの 画質の まま（軽く しない：下の 第4.146版の 所）。
@@ -146,16 +147,17 @@ if r.returncode == 0:
     so = _bcp.stills_out()
     bsz = sum(os.path.getsize(os.path.join(bdir, f)) for f in bhave) if bhave else 0
     check(mo_d == [] and len(mo_f) == 346 and not (set(mo_f) & set(bfiles)) and not any(f in res for f in mo_f) and so == []
-          and all((BCPJ['d'][k].get('p') or f'bcp_{k}.webp') in bfiles for k in BCPJ['d']) and sum(1 for k in BCPJ['d'] if BCPJ['d'][k].get('p') == f'bcp_{k}_bl.webp') == 44 and 'D.p ||' in html and all((f'bcp_{k}_fg.webp' in bfiles) == bool(BCPJ['d'][k].get('fg')) for k in BCPJ['d']) and sum(1 for k in BCPJ['d'] if BCPJ['d'][k].get('fg')) == 31
+          and all((BCPJ['d'][k].get('p') or f'bcp_{k}.webp') in bfiles for k in BCPJ['d']) and sum(1 for k in BCPJ['d'] if BCPJ['d'][k].get('p') == f'bcp_{k}_b2.webp') == 44 and 'D.p ||' in html and all((f'bcp_{k}_f2.webp' in bfiles) == bool(BCPJ['d'][k].get('fg')) and (BCPJ['d'][k].get('f') == f'bcp_{k}_f2.webp') == bool(BCPJ['d'][k].get('fg')) for k in BCPJ['d']) and sum(1 for k in BCPJ['d'] if BCPJ['d'][k].get('fg')) == 31
+          and 'D.f ||' in html and not [f for f in bfiles if f.endswith(('_bl.webp', '_fg.webp'))]      # 第4.215版：光の 線・床・ボードに 重なる 光を 直した 絵（うしろ …_b2.webp・前の 絵 …_f2.webp：kisekae/bcp/bcp_remake.py）
           and (not bhave or 12.6e6 < bsz < 13.8e6) and 'bcpld' in html and "decoding = 'sync'" in html and 'bcp_${name}.webp' in html and 'const st = true' in html,
           f'第4.150版：絵の ボードは 動かない：動きの データ なし（{len(mo_d)}段）・動く 絵の 部品 {len(mo_f)}まいは アプリに 入れない・44段 ぜんぶ 止まった 絵と 前の 絵（31段）を 入れる・'
-          f'絵 ぜんぶで {bsz / 1e6:.1f}MB（もとの 画質の まま。第4.213版までは 14こ で 16.6MB・第4.149版は 軽く した 部品で 約14.0MB）')
+          f'絵 ぜんぶで {bsz / 1e6:.1f}MB（もとの 画質の まま。第4.213版までは 14こ で 16.6MB・第4.149版は 軽く した 部品で 約14.0MB）。第4.215版：44段 とも 直した 絵（うしろ …_b2.webp・前の 絵 …_f2.webp）')
     fxd = os.path.join(W, 'ios', 'fx_assets')
     if os.path.isdir(fxd) and all(os.path.exists(os.path.join(fxd, f)) for f in ASSET_FILES):
         sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in ASSET_FILES)
         films_sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in FILMS.values())
         gk_sz = os.path.getsize(os.path.join(fxd, FILMS['gk_film']))
-        check(70.5e6 < films_sz < 75.5e6 and 73.5e6 < sz < 78.5e6 and 24.0e6 < gk_sz < 27.0e6, f'絵と音と動画の 大きさ（もと）：動画 4本 {films_sz / 1e6:.1f}MB（第4.195版：極ど的中は 顔の 場面を 新しい 馬に した sd_film5.mp4 19.7MB〈前は 4本 約70.7MB〉／第4.171版：極ど的中・ノーマルど的中・神様極的中を 3倍〈1170×2532〉に：17.4MB・10.2MB・25.6MB。前は 4本 約40.8MB／第4.162版：昇格の 動画を 外した・超神様の 新しい 動画の もとは CRF 20 で 17.6MB〈アプリに 入る 軽い 版は 10.9MB〉。前は 5本 約39.5MB・第4.77版：ノーマルど的中の 動画 約5.0MB・10.5秒／第4.117版：神様極的中の 動画 12秒：第4.136版 さいごの 字を 入れかえ・第4.137版 極の 雷で 約9.3MB）・ぜんぶで 約73.8MB（第4.171版。前は 約43.2MB／第4.162版：プレミアムど的中の 絵と なくした 演出の 音を 入れない。前は 約45.2MB・第4.86版：神様的中の 絵と 音 約2MB を 入れない）（{films_sz / 1e6:.1f}MB・{sz / 1e6:.1f}MB・神様極的中 {gk_sz / 1e6:.2f}MB）')
+        check(72.0e6 < films_sz < 78.0e6 and 75.0e6 < sz < 81.5e6 and 26.0e6 < gk_sz < 29.0e6, f'絵と音と動画の 大きさ（もと）：動画 4本 {films_sz / 1e6:.1f}MB（第4.215版：神様極的中は 寄りを ゆっくりに した 413コマ 27.4MB〈前は 361コマ 25.6MB・4本 74.8MB〉／第4.195版：極ど的中は 顔の 場面を 新しい 馬に した sd_film5.mp4 19.7MB〈前は 4本 約70.7MB〉／第4.171版：極ど的中・ノーマルど的中・神様極的中を 3倍〈1170×2532〉に：17.4MB・10.2MB・25.6MB。前は 4本 約40.8MB／第4.162版：昇格の 動画を 外した・超神様の 新しい 動画の もとは CRF 20 で 17.6MB〈アプリに 入る 軽い 版は 10.9MB〉。前は 5本 約39.5MB・第4.77版：ノーマルど的中の 動画 約5.0MB・10.5秒／第4.117版：神様極的中の 動画 12秒：第4.136版 さいごの 字を 入れかえ・第4.137版 極の 雷で 約9.3MB）・ぜんぶで 約73.8MB（第4.171版。前は 約43.2MB／第4.162版：プレミアムど的中の 絵と なくした 演出の 音を 入れない。前は 約45.2MB・第4.86版：神様的中の 絵と 音 約2MB を 入れない）（{films_sz / 1e6:.1f}MB・{sz / 1e6:.1f}MB・神様極的中 {gk_sz / 1e6:.2f}MB）')
     # 第4.146版（まさちゃん 11/10 21:26「圧縮少しやわらか−45Mbの方でやって！」）：アプリに 入る のは 軽い 版（ios/lite/<名前>：kisekae/lite_assets.py・assets_dir.py）。
     #   動画 5本は CRF 24（第4.156版・まさちゃん 2026/11/12「的中の演出も大分画質落ちているから綺麗な状態にしてほしい！」「ほぼ見た目同じより、少し綺麗にしてみるのはどう？」：第4.155版までは CRF 29。
     #   さいごの 1まいに つながる 4本は さいごの 30コマ だけ CRF 23 → 22 → 21）・馬の 色／フィギュアと 棚の 色 は WebP quality 75。もと（ios/<名前>）は そのまま 残す（上の 大きさの 確かめは もとの もの）。
@@ -262,14 +264,14 @@ if r.returncode == 0:
             for _i, _k, st in _B3.ITEMS:
                 for _c, n in st:
                     if not _B3.blank(n): continue
-                    f = f'bcp_{n}_bl.webp'
-                    if f not in res or f'bcp_{n}.webp' in res or not os.path.isfile(os.path.join(MD_, f'bcp_{n}.webp')): return None
+                    f = f'bcp_{n}_b2.webp'
+                    if f not in res or f'bcp_{n}.webp' in res or f'bcp_{n}_bl.webp' in res or not os.path.isfile(os.path.join(MD_, f'bcp_{n}.webp')): return None
                     im = _I.open(os.path.join(RES, f))
                     if im.size != (1170, 2532): return None
                     a = _np.asarray(im.convert('RGB'), _np.float32); o = _np.asarray(_I.open(os.path.join(MD_, f'bcp_{n}.webp')).convert('RGB'), _np.float32); q, m = _q(n)
                     core = _cv.erode(m, _cv.getStructuringElement(_cv.MORPH_ELLIPSE, (121, 121))) > 0; sn, so_ = _std(a, core), _std(o, core); rat.append(sn / so_)
                     if n.startswith(('ring', 'toast', 'race', 'trophy', 'carry', 'bouquet', 'miss4')): simple.append(sn)
-                    fgp = os.path.join(MD_, f'bcp_{n}_fg.webp')
+                    fgp = os.path.join(MD_, f'bcp_{n}_f2.webp')      # 第4.215版：前の 絵（キャラに ぴったり 合わせた …_f2.webp）
                     if _B3.cfg(n).get('fg') and os.path.isfile(fgp):       # 前の 絵（キャラ）の 所は ぬり直さない（色の 差は 圧縮し直した 分 だけ）
                         fa = _np.asarray(_I.open(fgp).convert('RGBA'))[..., 3] > 200; fgd = max(fgd, float(_np.abs(a - o).max(2)[fa].mean()))
                     if n.startswith('stamp'):
@@ -281,8 +283,8 @@ if r.returncode == 0:
             return rat, simple, fgd, chain, stampd
         bl = _bl()
         check(bl is not None and len(bl[0]) == 44 and max(bl[0]) < 1.0 and sum(1 for r_ in bl[0] if r_ < 0.75) >= 36 and len(bl[1]) == 24 and max(bl[1]) < 1.8 and bl[2] < 6.0
-              and len(bl[3]) == 4 and all(o_ > 0.05 and a_ < 0.004 for o_, a_ in bl[3]) and max(bl[4]) < 7.0,      # 色の 差 6・7 まで＝圧縮し直した 分（ぬり直したら 20 より 大きい）
-              f'第4.153版：44段（第4.214版）は ボードの 中を ぬり直した 絵（bcp_<デザイン>_bl.webp・前の 絵は 入れない）・板の ずれの ばらつきは 前の {min(bl[0]) if bl else 0:.2f}〜{max(bl[0]) if bl else 0:.2f}倍（0.75倍より 小さい もの {sum(1 for r_ in bl[0] if r_ < 0.75) if bl else 0}/44）・'
+              and len(bl[3]) == 4 and all(o_ > 0.05 and a_ < 0.004 for o_, a_ in bl[3]) and max(bl[4]) < 9.0,      # 色の 差 6〜8 まで＝圧縮し直した 分（ぬり直したら 20 より 大きい。第4.215版：直した 絵を もう一度 圧縮した ぶんで 7.7）
+              f'第4.153版：44段（第4.214版）は ボードの 中を ぬり直した 絵（第4.215版：bcp_<デザイン>_b2.webp・前の 絵は 入れない）・板の ずれの ばらつきは 前の {min(bl[0]) if bl else 0:.2f}〜{max(bl[0]) if bl else 0:.2f}倍（0.75倍より 小さい もの {sum(1 for r_ in bl[0] if r_ < 0.75) if bl else 0}/44）・'
               f'パネルの 段だけ だった 板 24まいは ほぼ 1色（ばらつき {max(bl[1]) if bl else -1:.2f} まで）・前の 絵（キャラ）の 所は かわらない（色の 差 {bl[2] if bl else -1:.2f}）・スタンプ：鎖が ない（色の こい 点 前 → 今：{bl[3] if bl else None}）・ハンコは そのまま（色の 差 {max(bl[4]) if bl else -1:.2f}）')
         # 第4.152版（まさちゃん 11/11 09:43・10:13）：おそうじの 絵と 形（ゴミの 絵 4まい・3D の ほうき・3D の ちりとり：kisekae/tc/clean_assets.py）
         _cl = ['tc_trash1.webp', 'tc_trash2.webp', 'tc_trash3.webp', 'tc_trash4.webp', 'tc_prop_broom.json', 'tc_prop_broom.bin', 'tc_prop_broom_c.webp', 'tc_prop_broom_n.webp', 'tc_prop_pan.json', 'tc_prop_pan.bin', 'tc_prop_pan_c.webp']
@@ -522,10 +524,10 @@ if r.returncode == 0:
     #   パドックの おくの 1番（f1）は 早歩きを しない（pack/paddock.py の PLAN）ので、f1 の 早歩き用の 絵（f1_f）は テーマの ファイルに 出て こない＝アプリに 入れない（台帳 68こ・アプリ 67こ）
     _pkb = _pack.blobs('paddock'); n_pk_skip = 1
     _pk_f = [f"ks_{_pkb[n + '_f']['id']}.webp" for n in ('n2', 'n5', 'n7', 'f4', 'f8')]
-    check(len(ks_imgs) in (0, 76 - n_face + n_pk - n_pk_skip) and n_pk == 68 and (not os.path.isdir(os.path.join(W, 'ios', 'kisekae_blobs')) or len(ks_imgs) == 76 - n_face + n_pk - n_pk_skip)
+    check(len(ks_imgs) in (0, 76 - n_face + n_pk - n_pk_skip) and n_pk == 69 and (not os.path.isdir(os.path.join(W, 'ios', 'kisekae_blobs')) or len(ks_imgs) == 76 - n_face + n_pk - n_pk_skip)
           and (not ks_imgs or (all(f in res for f in _pk_f) and f"ks_{_pkb['f1_f']['id']}.webp" not in res))
           and (('ks_38c796c9e27ea6f52001b6605ca607a0.webp' not in res) if PB else True),
-          f'着せ替えの絵：手元にあれば{76 - n_face}こ全部 Resources/ に入る・なければ入れずに作れる（{len(ks_imgs)}こ。第4.167版：ナイターの 立つ 絵 3まいと 大理石の 止まった 像 1まいが 足された＝72 → 76こ・壁紙パックの 絵は 62 → 68こ〈アプリに 入る のは 67こ：早歩きを しない 馬（f1）の 早歩き用の 絵は 入れない〉。第4.160版：ネオンの 3まいを 外して、星座は 2 → 3まい（夜空・ペガサス・止まった 絵）＝74 → 72こ。第4.157版：花火の 馬 だけの 絵（3倍）が 1まい 足された＝73 → 74こ。第4.149版：帯の 壁紙の 絵 5 → 9まい＝69 → 73こ。第4.148版：PUSHボタンの 絵が ある ときは マスター帯の コードの PUSH の 面の 絵 1こ を 入れない＝73 → 72こ。第4.147版：壁紙を 10枚 外した ので 99 → 69こ・壁紙パックの 絵は 74 → 62こ。第4.63版：勝負服の tile2・ネオンの dust と つぶなしの 止まった絵が 足された。第4.64版：ネオンの 止まった絵は 背景だけの 絵に 入れかわり・桜の 止まった絵と シートも 入れかわり＝数は 同じ。第4.87版：ネオンの dust（光のつぶの 絵）は 使わない＝光のつぶは 1つずつ ページが 動かす → 99こ。第4.92版：壁紙パックの 絵 {n_pk}こ を 足す）')
+          f'着せ替えの絵：手元にあれば{76 - n_face}こ全部 Resources/ に入る・なければ入れずに作れる（{len(ks_imgs)}こ。第4.215版：壁紙パックの 絵は 68 → 69こ〈海賊の 馬が 向きを かえる コマ 1まい：まさちゃん 2026/11/24 01:22 ③〉。第4.167版：ナイターの 立つ 絵 3まいと 大理石の 止まった 像 1まいが 足された＝72 → 76こ・壁紙パックの 絵は 62 → 68こ〈アプリに 入る のは 67こ：早歩きを しない 馬（f1）の 早歩き用の 絵は 入れない〉。第4.160版：ネオンの 3まいを 外して、星座は 2 → 3まい（夜空・ペガサス・止まった 絵）＝74 → 72こ。第4.157版：花火の 馬 だけの 絵（3倍）が 1まい 足された＝73 → 74こ。第4.149版：帯の 壁紙の 絵 5 → 9まい＝69 → 73こ。第4.148版：PUSHボタンの 絵が ある ときは マスター帯の コードの PUSH の 面の 絵 1こ を 入れない＝73 → 72こ。第4.147版：壁紙を 10枚 外した ので 99 → 69こ・壁紙パックの 絵は 74 → 62こ。第4.63版：勝負服の tile2・ネオンの dust と つぶなしの 止まった絵が 足された。第4.64版：ネオンの 止まった絵は 背景だけの 絵に 入れかわり・桜の 止まった絵と シートも 入れかわり＝数は 同じ。第4.87版：ネオンの dust（光のつぶの 絵）は 使わない＝光のつぶは 1つずつ ページが 動かす → 99こ。第4.92版：壁紙パックの 絵 {n_pk}こ を 足す）')
     check('ios/kisekae_blobs/' in gi and subprocess.run(['git', 'check-ignore', '-q', 'source/ios/kisekae_blobs/x.webp'], cwd=os.path.dirname(W)).returncode == 0, '着せ替えの絵のフォルダ（ios/kisekae_blobs/）は git に入らない（source/.gitignore）')
     # 第4.62版：アプリの 言葉は 日本語（Package.swift の defaultLocalization: "ja" と Resources/ja.lproj/Localizable.strings）→ 写真を 選ぶ 窓など iOS の 部品が 日本語に
     check('defaultLocalization: "ja",' in pk and os.path.exists(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ja.lproj', 'Localizable.strings')), 'アプリの 言葉は 日本語（defaultLocalization: "ja"・ja.lproj）：写真を 選ぶ 窓も 日本語に')

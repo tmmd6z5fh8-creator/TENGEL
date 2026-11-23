@@ -89,10 +89,11 @@ ok = (all(hashlib.md5(open(P(k), 'rb').read()).hexdigest() == MB[k] and IM[k].fo
       and IM['plate'].mode == 'RGBA' and IM['plate'].size == (pl[2] - pl[0], pl[3] - pl[1]))
 tot = sum(os.path.getsize(P(k)) for k in KEYS)
 OLD165 = ['eae469c6', 'dca48b70', '842ffc1f', 'c67b494e', 'c14dbb38']                 # 第4.155〜4.166版の シート 5まい（id の はじめ：手元に のこって いる）
-check(ok and cw == 3 * (fw // 2) and ch == 3 * (fh // 2) and 1_000_000 < tot < 2_300_000 and all(os.path.exists(os.path.join(BL, o + '.webp')) for o in OLD)
+check(ok and cw == 3 * (fw // 2) and ch == 3 * (fh // 2) and 1_000_000 < tot < 2_900_000 and      # 第4.215版：背景を 深い 緑の 大理石に（こい 色と 石の すじは 圧縮で 大きく なる：1,644 → 2,581KB）
+      all(os.path.exists(os.path.join(BL, o + '.webp')) for o in OLD)
       and all(any(f.startswith(o) for f in os.listdir(BL)) for o in OLD165),
       f'絵 10まい：名前は 中身の md5・止まった 像の 1コマは {cw}×{ch}px（{fw // 2}×{fh // 2}pt の 3倍）・動く コマは {fw}×{fh}px（2倍）・すべる 絵は 3倍・止まった 絵と 背景 だけの 絵は 780×320 の まま・'
-      f'ぜんぶで {tot / 1e3:.0f}KB（第4.166版は 1325KB）・前の 絵も 手元に のこって いる')
+      f'ぜんぶで {tot / 1e3:.0f}KB（第4.166版は 1325KB・第4.167〜4.214版は 1644KB・第4.215版：深い 緑の 背景）・前の 絵も 手元に のこって いる')
 A = {k: np.asarray(IM[k].convert('RGBA' if IM[k].mode == 'RGBA' else 'RGB')).astype(np.float32) for k in KEYS}
 
 
@@ -138,9 +139,17 @@ for s in SHEETS:
 rr = [float(np.abs(np.asarray(Image.fromarray(cell(a_).astype(np.uint8)).resize((fw, fh), Image.LANCZOS)).astype(np.float32) - cell(b_)).mean()) for a_, b_ in (('A', 'Ar'), ('C', 'Cr'))]
 check(max(rr) < 1.5, f'動きの とちゅうの 止まった 形（2倍：Ar・Cr）は 止まった 像（3倍：A・C）を 小さく した 絵と 同じ（差の 平均 {rr[0]:.2f}・{rr[1]:.2f}）＝3倍 ↔ 2倍の 入れかわりで 像が ずれない')
 pa = A['plate'][..., 3]; pin = A['plate'][y0 - pl[1]:y1 - pl[1], x0 - pl[0]:x1 - pl[0]]
-check(max(rd) < 2.0 and same == 0 and (pin[..., 3] == 255).all() and pin[..., :3].std(axis=(0, 1)).max() < 8 and np.abs(pin[..., :3].mean((0, 1)) - A['base'][y0:y1, x0 - 14:x0 - 2].mean((0, 1))).max() < 8
+# 第4.215版（まさちゃん 2026/11/24 01:22「①一枚目、色が背景とかぶって見えずらいから見えやすくして！背景を変えるか、馬を変えるかは任せる！」）：背景は 深い 緑の 大理石（石の すじ・上から 下へ 少し 暗く）＝ 1色では ない。
+#   「背景 だけの 絵の 四角の 中に 像は ない」は、背景を 描く 関数（flat/marble_banner.background）の 同じ 所と くらべて 見る（像が あれば 100 より 大きく ちがう）
+sys.path.insert(0, os.path.join(K, 'flat')); import marble_banner as MBN
+_bgf = np.asarray(MBN.background(), np.float32); _bgf = _bgf * 255 if _bgf.max() <= 1.001 else _bgf
+_pd = np.abs(pin[..., :3] - _bgf[y0:y1, x0:x1, :3]).max(2)
+_stat = np.asarray(IM['base'].convert('RGB')).astype(np.float32)[y0:y1, x0:x1]; _lum = lambda a: a.mean(2)
+check(max(rd) < 2.0 and same == 0 and (pin[..., 3] == 255).all() and float(_pd.mean()) < 2.0 and float(_pd.max()) < 14 and np.abs(pin[..., :3].mean((0, 1)) - A['base'][y0:y1, x0 - 14:x0 - 2].mean((0, 1))).max() < 8
+      and _bgf.shape[:2] == (320, 780) and float(_lum(_bgf).mean()) < 95 and float(np.percentile(_lum(_stat), 90)) - float(np.percentile(_lum(_bgf[y0:y1, x0:x1]), 90)) > 90      # 像（白い 大理石）は 背景より ずっと 明るい ＝ 見分けやすい
       and set(np.unique(pa)) <= {0, 255},
-      f'350コマ：像は ふちの ぼかしに かからない（ふちの 帯は どの コマも 背景 だけ：差の 平均 いちばん 大きい コマで {max(rd):.2f}）・となりの コマは ぜんぶ ちがう 絵（同じ 絵 {same}組）／背景 だけの 絵の 四角の 中に 像は ない')
+      f'350コマ：像は ふちの ぼかしに かからない（ふちの 帯は どの コマも 背景 だけ：差の 平均 いちばん 大きい コマで {max(rd):.2f}）・となりの コマは ぜんぶ ちがう 絵（同じ 絵 {same}組）／背景 だけの 絵の 四角の 中に 像は ない（背景の 関数との 差 平均 {_pd.mean():.2f}・最大 {_pd.max():.0f}）・'
+      f'第4.215版：背景は 深い 緑（明るさ {_lum(_bgf).mean():.0f}）・白い 像の 明るい 所は 背景より {np.percentile(_lum(_stat), 90) - np.percentile(_lum(_bgf[y0:y1, x0:x1]), 90):.0f} 明るい')
 
 from playwright.sync_api import sync_playwright
 SRV = os.path.join(W, 'srv_marble'); PORT = 8798; APP = f'http://localhost:{PORT}/APP/'

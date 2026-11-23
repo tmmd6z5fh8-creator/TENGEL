@@ -13,6 +13,7 @@
      36コマに すると カクッと 見える）。新しい 足は 地面に ついて いる 間 ひづめが 同じ 地面の 線の 上を まっすぐ うしろへ 動く ＝ 体の 上下は ほんの 少しの ゆれ だけ（walk_dy）。
      前の 絵（12コマ・5コマ）は 消さない（手元の フォルダに 残る・アプリには 入らない：台帳が 新しい 絵を さす）
    python3 kisekae/pack/make/pirate_art.py   → ios/kisekae_blobs/<id>.webp・kisekae/pack/blobs.json の pirate.walk・pirate.stand（前の pirate.captain は 消す）"""
+import json
 import math
 import os
 import sys
@@ -260,6 +261,139 @@ def acc_i(i):
     return acc
 
 
+# ---------------------------------------------------------------- 向きを かえる コマ（第4.215版）
+#   まさちゃん 2026/11/24 01:22「海賊の馬が向きを変える時が、2Dで不自然だから向きを変える時も立体的に見えるように改良して」
+#   前は 止まった 絵を 横に つぶして 裏がえす（scaleX 1 → 0.06 → −1：紙が 回る ように 見えた）。
+#   → 馬を 立体の まま 回した コマ（カメラを 馬の まわりに 回して 描く：体の 奥行き・胸・4本の 足の 重なりが 見える）を 5コマ。向きを かえる 11コマ（1/30秒ごと）：
+#       前を 見る 形 → r1…r5（こちらへ 回る）→ 〔ここで 左右を 入れかえる〕→ r5…r1（うら返し：むこうへ 回りきる）→ 前を 見る 形（うら返し）
+#     角度は はじめと おわりが ゆっくり（smoothstep）：4.2°・15.5°・31.6°・50.1°・69.7° ｜ 110.3°・129.9°・148.4°・164.5°・175.8°（＝うら返した 69.7°…4.2°）。
+#     まん正面（70°〜110°）は 1コマで 通りすぎる（この 馬の 絵は 横から 見た 形で 帽子・顔を 描く ので、まん正面の コマは 作らない）
+#   回す 軸：画面の 左右を 入れかえる 線（meta の cx＝箱の まん中）に うつる たての 線（＝うら返しても 場所が ずれない）。ひづめは 地面の 線に（いちばん 手前の ひづめ）
+#   シートは 止まった 形の シートとは 別（pirate.turn）：前の 絵（walk・stand）は かえない
+TURN_N = 11                                                    # 向きを かえる コマの 数（1/30秒が いくつ：前を 見る 形から うら返した 前を 見る 形 まで）
+TURN_ANG = [round(180 * (3 * (k / TURN_N) ** 2 - 2 * (k / TURN_N) ** 3), 1) for k in range(1, (TURN_N + 1) // 2)]      # r1〜r5 の 角度
+
+
+def front_deco(rgb, a):
+    """まん正面に 近い コマ（r5）：この 馬の 絵は 横から 見た 形で 帽子・頭絡を 描く ので、正面では 帽子が 消えて 線の かけらが のこる。
+       → かけらを 消して、正面から 見た 三角帽（黒い つば・金の ふち・まるい 山・金の 蹄鉄・赤い 羽）と 赤い ほおの 帯・金の 輪・鼻の 帯を 描き足す（rgb・a＝0〜1 の コマ。同じ 形で 返す）"""
+    import cv2
+    from PIL import Image, ImageDraw
+    from scipy import ndimage
+    H_, W_ = a.shape; op = a > 0.5
+    rows = np.nonzero(op.any(1))[0]; y0 = int(rows.min())
+    yM = None
+    for y in range(y0 + 4, y0 + 80):
+        xs = np.nonzero(op[y])[0]
+        if len(xs) and (xs.max() - xs.min() + 1) == len(xs) and len(xs) > 18:
+            yM = y; break
+    xs = np.nonzero(op[yM + 10])[0]; hx = (xs.min() + xs.max()) / 2
+    xs = np.nonzero(op[yM + 20])[0]; u = (xs.max() - xs.min() + 1) / 2
+    edge = lambda y: (lambda q: (float(q.min()), float(q.max())))(np.nonzero(op[int(round(y))])[0])
+    img = (np.clip(rgb, 0, 1) * 255).astype(np.uint8)
+    # 1. 線の かけらを 消す：頭〜足の つけねの 細い 暗い 線（まわりより 暗い 細い 所：体の かげの 面は のこる）。目は あとで 描き直す
+    lum = img.mean(2).astype(np.float32); yb = int(rows.max() - 3.2 * u)                      # ひづめ（下）は さわらない
+    med = cv2.medianBlur(np.clip(lum, 0, 255).astype(np.uint8), 21).astype(np.float32)
+    thin = op & ((med - lum) > 10); thin[yb:] = False; thin[:yM - 2] = False
+    inner = ndimage.binary_erosion(op, iterations=3)                                          # ふちの ぼかしは さわらない
+    kill = ndimage.binary_dilation(thin & inner, iterations=2) & op
+    if kill.any(): img = cv2.inpaint(img, kill.astype(np.uint8) * 255, 5, cv2.INPAINT_TELEA)
+    # 2. 帽子と 帯（4倍で 描いて ちぢめる）
+    SS = 4; x_off, y_off = int(hx - 4 * u), int(y0 - 3.2 * u); bw, bh = int(8 * u), int(12 * u)
+    y_off = max(0, y_off); ov = Image.new('RGBA', (bw * SS, bh * SS), (0, 0, 0, 0)); d = ImageDraw.Draw(ov)
+    P = lambda x, y: ((x - x_off) * SS, (y - y_off) * SS)
+    poly = lambda pts, col: d.polygon([P(*q) for q in pts], fill=col)
+    line = lambda pts, col, w: d.line([P(*q) for q in pts], fill=col, width=max(1, int(round(w * SS))), joint='curve')
+    yc = yM + 0.1 * u; hw = 1.62 * u
+    # ほおの 赤い 帯（頭の 両はしに そって：つばの 下 → 口の よこ）・鼻の 帯・金の 輪
+    y1, y2 = yM + 0.5 * u, yM + 3.1 * u
+    for sgn in (-1, 1):
+        pts = []
+        for y in np.linspace(y1, y2, 9):
+            l_, r_ = edge(y); pts.append(((l_ + 0.13 * u) if sgn < 0 else (r_ - 0.13 * u), y))
+        line(pts, '#C8322A', 0.17 * u)
+        for y in np.linspace(y1 + 0.5 * u, y2 - 0.4 * u, 3):
+            l_, r_ = edge(y); cx_ = (l_ + 0.13 * u) if sgn < 0 else (r_ - 0.13 * u); r0 = 0.035 * u
+            d.ellipse([P(cx_ - r0, y - r0), P(cx_ + r0, y + r0)], fill='#FFF1D8')
+        # 目（頭の はしの 近く・たてに 長い）
+        ye = yM + 1.05 * u; l_, r_ = edge(ye); ex = (l_ + 0.42 * u) if sgn < 0 else (r_ - 0.42 * u)
+        d.ellipse([P(ex - 0.10 * u, ye - 0.15 * u), P(ex + 0.10 * u, ye + 0.15 * u)], fill='#1A1414')
+        d.ellipse([P(ex - 0.035 * u + sgn * 0.02 * u, ye - 0.10 * u), P(ex + 0.025 * u + sgn * 0.02 * u, ye - 0.04 * u)], fill='#FFFFFF')
+    l_, r_ = edge(y2 - 0.25 * u); line([(l_ + 0.1 * u, y2 - 0.25 * u), (hx, y2 - 0.12 * u), (r_ - 0.1 * u, y2 - 0.25 * u)], '#2A1A12', 0.1 * u)
+    for sgn in (-1, 1):
+        l_, r_ = edge(y2); cx_ = (l_ + 0.15 * u) if sgn < 0 else (r_ - 0.15 * u); r0 = 0.17 * u
+        d.ellipse([P(cx_ - r0, y2 - r0), P(cx_ + r0, y2 + r0)], outline=GOLD, width=max(1, int(0.07 * u * SS)))
+    # 赤い 羽（山の うしろ・左上へ）
+    poly([(hx - 0.22 * u, yc - 0.85 * u), (hx - 0.48 * u, yc - 1.5 * u), (hx - 0.8 * u, yc - 1.95 * u), (hx - 0.62 * u, yc - 1.35 * u), (hx - 0.5 * u, yc - 0.85 * u)], '#C8322A')
+    line([(hx - 0.36 * u, yc - 0.9 * u), (hx - 0.55 * u, yc - 1.42 * u), (hx - 0.77 * u, yc - 1.9 * u)], '#7A1414', 0.04 * u)
+    # 山（まるい）
+    cr, ch_ = 0.80 * u, 1.02 * u
+    d.pieslice([P(hx - cr, yc - 0.1 * u - ch_), P(hx + cr, yc - 0.1 * u + ch_)], 180, 360, fill=HAT)
+    d.pieslice([P(hx - cr * 0.9, yc - 0.1 * u - ch_ * 0.9), P(hx - cr * 0.1, yc - 0.1 * u + ch_ * 0.9)], 180, 300, fill=(58, 50, 54, 140))
+    # つば（両はしが 上へ 反る）
+    xsb = np.linspace(-hw, hw, 41); rise = lambda x: 0.5 * u * (abs(x) / hw) ** 2.2; th = lambda x: 0.2 * u * (1 - (abs(x) / hw) ** 2) ** 0.6 + 0.5
+    top = [(hx + x, yc - rise(x) - th(x)) for x in xsb]; bot = [(hx + x, yc - rise(x) + th(x)) for x in xsb]
+    poly(top + bot[::-1], HAT_D)
+    line([(q[0], q[1] + 0.03 * u) for q in top], GOLD, 0.09 * u)
+    line([(q[0], q[1] + 0.17 * u) for q in top[4:-4]], '#3A3236', 0.045 * u)
+    # 金の 蹄鉄（山の まん中）
+    r0 = 0.23 * u; d.arc([P(hx - r0, yc - 0.56 * u - r0), P(hx + r0, yc - 0.56 * u + r0)], 15, 165, fill=GOLD, width=max(2, int(0.09 * u * SS)))
+    ov = ov.resize((bw, bh), Image.LANCZOS); o = np.asarray(ov).astype(np.float32) / 255
+    x1_, y1_ = min(W_, x_off + bw), min(H_, y_off + bh); o = o[:y1_ - y_off, :x1_ - x_off]
+    oa = o[..., 3]; A0 = a[y_off:y1_, x_off:x1_]; C0 = img[y_off:y1_, x_off:x1_].astype(np.float32) / 255
+    pre = o[..., :3] * oa[..., None] + C0 * (A0 * (1 - oa))[..., None]; An = oa + A0 * (1 - oa)
+    out_rgb = img.astype(np.float32) / 255; out_a = a.copy()
+    out_rgb[y_off:y1_, x_off:x1_] = np.where(An[..., None] > 1e-4, pre / np.maximum(An, 1e-4)[..., None], C0); out_a[y_off:y1_, x_off:x1_] = An
+    return out_rgb.astype(rgb.dtype), out_a.astype(a.dtype)
+
+
+def build_turn(out=None):
+    import horse3d as Hm
+    from sheets import camera, shadow_layer, _hexc, W2
+    cam, m0 = camera(PAL, SPOT_W, '', 'pkpitref')
+    e, t = np.asarray(cam[0], float), np.asarray(cam[1], float)
+    # 回す 軸：地面の 上で、画面の x が 箱の まん中（2倍の 画素）に なる 点（馬の まん中の 面 z=0 の 上）
+    P1 = m0['P1']; xa, xb = 0.0, 1.0
+    pa, pb = float(P1(Hm.v3((xa, 0.0), 0.0))[0]), float(P1(Hm.v3((xb, 0.0), 0.0))[0])
+    xc = xa + ((BOX[0] + BOX[2]) / 2 - pa) * (xb - xa) / (pb - pa)
+    C = np.asarray(Hm.v3((xc, 0.0), 0.0), float)
+    print('回す 軸（世界の x）', round(xc, 3), '画面の x', round(float(P1(Hm.v3((xc, 0.0), 0.0))[0]), 2), '角度', TURN_ANG, flush=True)
+    pose = stand_pose('front'); frames = []
+    cache = os.environ.get('TURN_CACHE')                                           # 描いた コマを のこす ファイル（.npz）：描き足し（front_deco）を 直す とき 3D から 描き直さない
+    raw = dict(np.load(cache, allow_pickle=True)) if cache and os.path.exists(cache) else {}
+    for k, th in enumerate(TURN_ANG):
+        key = f'r{k}_{th}'
+        if key + '_rgb' in raw:
+            f0 = (raw[key + '_rgb'].astype(np.float32), raw[key + '_a'].astype(np.float32), [tuple(map(float, h)) for h in raw[key + '_h']])
+        else:
+            r = math.radians(th); c_, s_ = math.cos(r), math.sin(r)
+            rot = lambda v: np.array([v[0] * c_ + v[2] * s_, v[1], -v[0] * s_ + v[2] * c_])
+            ck = [list(C + rot(e - C)), list(C + rot(t - C))]
+            fr, _ = render(PAL, SPOT_P, [pose], acc=acc_i, number='', tag=f'pkpit{k}', workers=1, cam=ck)
+            f0 = fr[0]; raw[key + '_rgb'], raw[key + '_a'], raw[key + '_h'] = f0[0], f0[1], np.array(f0[2])
+        if th > 70: f0 = front_deco(f0[0], f0[1]) + (f0[2],)                       # まん正面に 近い コマ：帽子と 帯を 描き足す
+        frames.append(f0); print('  r%d' % (k + 1), th, '°', flush=True)
+    if cache: np.savez_compressed(cache, **raw)
+    # 上下：止まった 形（前を 見る）と 同じ ずらし ＝ 回す 軸の 足もとが 動かない（こちらへ 来る ひづめは 遠近で 少し 下に 見える：体は 上下しない）
+    dy0 = json.load(open(os.path.join(PACK, 'blobs.json'), encoding='utf-8'))['pirate']['stand']['dy'][0]
+    dys = [dy0] * len(frames)
+    # 影：止まった 形と 同じ 色・濃さ。はばは 馬の 見える 長さに 合わせて せまく（まん中は 4本の ひづめの まん中）
+    Hp, Wp = frames[0][1].shape[:2]; z = Wp / W2; sc = _hexc('#2A1A0E')
+
+    def shadow(i, pre, A):
+        xs = [h[0] for h in frames[i][2]]; cx = (min(xs) + max(xs)) / 2; rx = max((max(xs) - min(xs)) * 0.5 + 30 * abs(math.sin(math.radians(TURN_ANG[i]))), 34)
+        sm = shadow_layer(Wp, Hp, cx * z, (GROUND + 2.5) * z, rx * z, 5.0 * z, blur=3.4 * z, alpha=0.26)
+        return pre + sc[None, None, :] * (sm * (1 - A))[..., None], A + sm * (1 - A)
+    u8, meta = make_sheet(frames, dys, extra=shadow)
+    meta['dy'] = [round(float(d), 2) for d in dys]; meta['ang'] = TURN_ANG; meta['n'] = TURN_N
+    if out:
+        preview_png(u8, os.path.join(out, 'pirate_turn.png'), bg=(170, 120, 70))
+    bid = save_webp(u8, quality=90)
+    record('pirate', 'turn', bid, meta)
+    print('turn', bid, meta, flush=True)
+    return bid, meta
+
+
 def build(out=None):
     import horse_flat as HF
     from sheets import camera
@@ -306,4 +440,7 @@ def build(out=None):
 
 
 if __name__ == '__main__':
-    build(os.environ.get('OUT'))
+    if '--turn' in sys.argv:          # 第4.215版：向きを かえる コマ だけ 作る（歩く コマ・止まった 形の シートは かえない）
+        build_turn(os.environ.get('OUT'))
+    else:
+        build(os.environ.get('OUT'))

@@ -318,10 +318,19 @@ def stego_svg(part):
         for i in range(8):
             o += f"<ellipse cx='{f(44 + i * 9 + R.uniform(-2, 2))}' cy='{f(46 + R.uniform(-4, 5))}' rx='2.6' ry='1.7' fill='{cd}' opacity='.6'/>"
     elif part == 'tail':
-        o += f"<path d='M120 50 C134 52 144 58 150 66 C140 62 130 60 118 62 Z' fill='{c}'/>"
-        for x, y, a in ((140, 56, -60), (146, 60, -30), (143, 66, 40), (148, 64, 70)):
-            r = math.radians(a)
-            o += f"<path d='M{x - 2} {y} L{f(x + math.cos(r) * 9)} {f(y + math.sin(r) * 9)} L{x + 2} {y} Z' fill='#F0E6C8'/>"
+        # 第4.215版（まさちゃん 2026/11/24 01:22「恐竜の壁紙の黒丸の角が変だからちゃんと尻尾につけて！」）：しっぽの とげ。
+        #   前の 形は とげの 根もと（よこ 4px の 線）が しっぽの ふちに のって いる だけで、細い とげが しっぽから はなれて ういて 見えた（下の 2本は しっぽの 外）。
+        #   → しっぽを 先まで 少し 太く・とげは 根もとを しっぽの 中に うめて（しっぽの 向きに そった 太い 根もと）、しっぽの 先の 上がわから 4本（おくの 2本は 少し 暗い 色・先に 描く）
+        def spike(x, y, a, ln, wd, col):
+            r = math.radians(a); ux, uy = math.cos(r), math.sin(r); px_, py_ = -uy, ux
+            return (f"<path d='M{f(x - px_ * wd - ux * 1.2)} {f(y - py_ * wd - uy * 1.2)} Q{f(x + ux * ln * .5 - px_ * wd * .55)} {f(y + uy * ln * .5 - py_ * wd * .55)} {f(x + ux * ln)} {f(y + uy * ln)} "
+                    f"Q{f(x + ux * ln * .5 + px_ * wd * .55)} {f(y + uy * ln * .5 + py_ * wd * .55)} {f(x + px_ * wd - ux * 1.2)} {f(y + py_ * wd - uy * 1.2)} Z' fill='{col}'/>")
+        for sp in ((132.6, 54.4, -110, 10.0, 2.8, '#D6CCAA'), (139.6, 58.0, -86, 9.6, 2.6, '#D6CCAA')):       # おくの 2本（しっぽの うしろ）
+            o += spike(*sp)
+        o += f"<path d='M120 49 C133 51 142 55.5 148.6 64.6 C139 63 129 62.5 118 63.6 Z' fill='{c}'/>"       # しっぽ（絵の 箱 150px の 中に 入る）
+        o += f"<path d='M122 61 C131 60.4 139 61 146.6 63.6' fill='none' stroke='{cl}' stroke-width='1.5' stroke-linecap='round' opacity='.7'/>"
+        for sp in ((136.4, 56.0, -68, 11.4, 3.1, '#F0E6C8'), (142.8, 60.0, -56, 9.8, 2.8, '#F0E6C8')):        # 手前の 2本（根もとは しっぽの 中）
+            o += spike(*sp)
     elif part == 'head':
         o += (f"<path d='M34 52 C26 54 18 60 12 66 C8 70 10 75 15 74 C20 73 24 70 28 66 C32 62 36 58 38 56 Z' fill='{c}'/>"
               f"<circle cx='17' cy='68' r='1.4' fill='#1E2414'/><path d='M10 72 Q14 74 18 72' fill='none' stroke='#2E3A20' stroke-width='.9' stroke-linecap='round'/>")

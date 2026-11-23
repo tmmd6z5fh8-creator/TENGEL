@@ -35,9 +35,11 @@ ITEMS = [
     ('pen', 'miss', _st(['miss5', 'miss5_2', 'miss5_3', 'miss5_4'])),      # ハズレ⑤ 書き換え参戦
 ]
 GONE = ['ring1', 'ring2', 'ring3', 'ring4', 'shusse1_3d', 'shusse2_3d', 'shusse3_3d', 'shusse4_3d', 'shusse8_3d', 'shusse16_3d', 'shusse24_3d', 'miss3', 'miss3_2', 'miss3_3', 'miss3_4']      # 第4.214版：アプリから 外した デザイン（絵・設定・動きの データは 手元に のこる）
-THUMB = 'bcp_t_{}_b.webp'        # 設定の タイルの 見本（bcp_thumbs.py で 作る・いちばん はじめの 段）。第4.153版：ボードの 中を ぬり直した 絵・出世馬の 3D の 絵で 作り直した 見本（前の bcp_t_<id>.webp は 残す＝上書きしない）
+THUMB = 'bcp_t_{}_c.webp'        # 設定の タイルの 見本（bcp_thumbs.py で 作る・いちばん はじめの 段）。第4.153版：ボードの 中を ぬり直した 絵で 作り直した 見本（_b）・第4.215版：作り直した 絵（_b2・_f2）で 作り直した 見本（_c）。前の 見本（bcp_t_<id>.webp・_b.webp）は 残す＝上書きしない
 THUMB_OF = {}                    # 見本の 名前が きまりと ちがう もの（{ id: 名前 }）
-BLANK = '_bl'                    # 第4.153版（まさちゃん 2026/11/11 15:39「他の結果ボードカスタムのボードも、綺麗に何も書いていないようにして！」）：ボードの 中を きれいな 板に ぬり直した 絵（bcp_blank.py）の 名前の しっぽ
+BLANK = '_b2'                    # 背景の 絵の 名前の しっぽ。第4.153版（まさちゃん 2026/11/11 15:39「他の結果ボードカスタムのボードも、綺麗に何も書いていないようにして！」）：ボードの 中を きれいな 板に ぬり直した 絵（bcp_blank.py：_bl）
+                                 #   第4.215版（まさちゃん 2026/11/24 01:31 の ①〜④）：絵の 上下を 作り直して・板を 絵の ぎりぎり まで ぬり直した 絵（bcp_remake.py：_b2）。前の 絵（_bl）は 絵の フォルダに 残す
+FRONT = '_f2'                    # 前の 絵（ボードの 前の キャラ など）の 名前の しっぽ。第4.215版：絵の ぎりぎりで 切りぬき直した 絵（bcp_fg2.py：_f2）。前の 絵（_fg）は 絵の フォルダに 残す
 
 
 def thumb(iid):
@@ -78,7 +80,7 @@ def pics(name):
        第4.150版（まさちゃん 2026/11/11 02:36「結果カスタムボードの動き全部無くして！…その代わり、画質あげて！」）：どの デザインも 止まった 絵（bcp_<name>.webp・前の 絵 _fg.webp）。
        キャラが 動く 部品（chr/motion.json の bgx・fgx・layers・光と 雲）は アプリに 入れない（道具と 部品は 手元に のこす：もどす ときは この 関数と design の mo）"""
     bg = f'bcp_{name}{BLANK}.webp' if blank(name) else f'bcp_{name}.webp'        # 第4.153版：出世馬（3D の 絵）の ほかは ボードの 中を ぬり直した 絵。前の 絵（bcp_<name>.webp）は 絵の フォルダに 残す（ぬり直す もと）
-    fg = f'bcp_{name}_fg.webp' if cfg(name).get('fg') else None                     # 前の 絵（キャラ）は そのまま
+    fg = f'bcp_{name}{FRONT}.webp' if cfg(name).get('fg') else None                 # 前の 絵（キャラ）。第4.215版：切りぬき直した 絵（_f2）
     return bg, fg
 
 
@@ -115,6 +117,7 @@ def design(name):
     d = {'hp': HP, 'q': [[round(float(x), 2), round(float(y), 2)] for x, y in Qs], 'fg': 1 if c.get('fg') else 0,
          'ts': L.get('title_style', ''), 'nt': 1 if L.get('hide_title') else 0, 'L': lay}
     if pics(name)[0] != f'bcp_{name}.webp': d['p'] = pics(name)[0]      # 背景の 絵の 名前が きまり（bcp_<name>.webp）と ちがう とき（bcx.js の picBg）
+    if pics(name)[1] and pics(name)[1] != f'bcp_{name}_fg.webp': d['f'] = pics(name)[1]      # 前の 絵の 名前が きまり（bcp_<name>_fg.webp）と ちがう とき（bcx.js の picFg：第4.215版）
     # 第4.150版：動きの データ（mo）は 入れない（bcx.js は mo が なければ 止まった 絵を 出す）
     if c.get('close_border'):
         sh = c.get('close_shadow') or ('0 0 0 1px rgba(0,0,0,.35),0 0 %s %s' % (c.get('close_glow_r', '10px'), c.get('close_glow', 'rgba(255,200,90,.35)')))
