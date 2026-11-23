@@ -65,7 +65,8 @@
   // 第4.114版（まさちゃん 2026/11/01）：結果ボードカスタムの 解放の 数（解放した 番号の 数＝画面の「解放 n/15」・じゅんび中も 数える）→ もらえるP
   //   第4.120版（まさちゃん 2026/11/04 02:02「結果ボードカスタムは、15個にする！ミッションも変更して！」）：さいごの 16こ → 15こ（ポイントは 同じ 1,600P）。
   //   前の 版で「16こ解放」を 受け取った 人は「15こ解放」も 受け取った ことに する（boardMissions）
-  var BOARD_MISSIONS = [[3, 500], [6, 800], [9, 1100], [12, 1400], [15, 1600]];
+  //   第4.214版（結果ボードカスタムが 15こ → 12こ：下の BOARD_ITEMS）：届かなく なった「15こ解放 1,600P」を やめて 12こ まで（4こ）。3〜12こ の 4こは そのまま。前に 受け取った ぶんは 台帳に 残る
+  var BOARD_MISSIONS = [[3, 500], [6, 800], [9, 1100], [12, 1400]];
   // 第4.114版（まさちゃん 2026/11/01）：壁紙の 解放の 枚数（ポイントで 解放＋壁紙パックで 解放＋帯の 3枚：いつもの は 数えない）→ もらえるP。
   //   いま 解放できる 壁紙は WALL_TOTAL＝29枚（ポイント 16＋壁紙パック 10＋帯 3。第4.147版〜第4.159版は 30枚）。
   //   第4.139版（まさちゃん 2026/11/10 11:58「ならミッションを40枚までにして！」）：届かない「45枚 3,500P」を やめて 40枚まで（10こ）
@@ -85,30 +86,33 @@
   //     15こ（的中 9・ハズレ 5・ボードを持つ馬）・6レースごと（全部で 90レース）。1〜14 は じゅんび中・15 は ボードを持つ馬
   //   第4.113版（まさちゃん 01:24「結果ボードのカスタムには2種類カスタムつけられるようにして！①的中演出 ②ハズレ演出」）：的中の とき・ハズレの とき で べつべつに 1つずつ 選ぶ
   //     （points_ui.js の board.selHit・board.selMiss。解放の 数は 1つ＝買うのも 1回）
-  var BOARD = { product: 'jp.tengel.app.boardcustom', steps: [[15, 6]] };
+  //   第4.214版（まさちゃん 2026/11/24 00:13「結果ボードカスタム 消す物 ・出世馬結果ボード ・結果ボードを廻る ・隠蔽工作」）：3こ 消して 12こ
+  //     （的中 7・ハズレ 4・ボードを持つ馬）・6レースごと（全部で 72レース）。消したのは 前の 1「結果ボードを廻る」（ring）・9「出世馬結果ボード」（climb）・12「隠蔽作戦」（cover）。
+  //     のこりは 番号を つめる（前の 2〜8 → 1〜7・10・11 → 8・9・13・14 → 10・11・15 → 12）＝ 同じ 数を 読んだ 人は、前より 先の 飾りまで 解放して いる。
+  //     消した 飾りを 付けて いた 人は、いま 解放して いる 中で その 所（的中／ハズレ）に 使える いちばん はじめの 飾りに かわる（boardSel・GONE_BOARD）
+  var BOARD = { product: 'jp.tengel.app.boardcustom', steps: [[12, 6]] };
+  var GONE_BOARD = ['ring', 'climb', 'cover'];
   var BOARD_NEED = (function () { var out = [], n = 0; BOARD.steps.forEach(function (st) { for (var i = 0; i < st[0]; i++) { n += st[1]; out.push(n); } }); return out; })();
-  // 15こ（番号の 順＝解放の 順）。null＝じゅんび中（設定に「じゅんび中」の タイル・選べない）。
+  // 12こ（番号の 順＝解放の 順。第4.214版：15こ → 12こ）。null＝じゅんび中（設定に「じゅんび中」の タイル・選べない）。
   //   飾りを 入れる ときは、その 番号の null を [id, 名前, せつめい, when] に かえて、bcx.js に B.<id>（部品を 作る 所）を 足す（README「結果ボードカスタムに 飾りを 入れる」）
   //   when：all＝的中にも ハズレにも 使える・hit＝的中の とき だけ・big＝的中の うち デカ的中から 上 だけ・miss＝ハズレの とき だけ
-  //   第4.121版（まさちゃんの デザイン 14こ・名前も まさちゃんの もの）：1〜9＝的中①〜⑨・10〜14＝ハズレ①〜⑤ の 絵の ボード（bcx.js の 絵の ボード・kisekae/bcp/bcp_app.py の ITEMS）。
-  //     的中は 連続的中の 数（1〜4連勝・出世馬は 1・2・3・4・8・16・24連勝）、ハズレは 続けて ハズレた 数（1〜4回目）で 絵が かわる。
+  //   第4.121版（まさちゃんの デザイン 14こ・名前も まさちゃんの もの）：的中①〜⑨・ハズレ①〜⑤ の 絵の ボード（bcx.js の 絵の ボード・kisekae/bcp/bcp_app.py の ITEMS）。
+  //     的中は 連続的中の 数（1〜4連勝）、ハズレは 続けて ハズレた 数（1〜4回目）で 絵が かわる。
   //     id は 前の 版の 飾り（第4.113版で 消した 1〜21）と かぶらない 名前（前の 選択が つかない ように）
+  //   第4.214版：絵の ボードは 11こ（1〜7＝的中・8〜11＝ハズレ）。消した 3こ（ring・climb・cover）の id は もう 使わない（GONE_BOARD）
   var BOARD_ITEMS = [
-    /* 1 */ ['ring', '結果ボードを廻る', '1〜4連勝で 絵が 変わる', 'hit'],
-    /* 2 */ ['toast', '馬達の祝杯', '1〜4連勝で 絵が 変わる', 'hit'],
-    /* 3 */ ['race', '馬レース結果ボード', '1〜4連勝で 絵が 変わる', 'hit'],
-    /* 4 */ ['snap', '自撮り結果ボード', '1〜4連勝で 絵が 変わる', 'hit'],
-    /* 5 */ ['seal', 'スタンプ結果ボード', '1〜4連勝で 絵が 変わる', 'hit'],
-    /* 6 */ ['cup', 'トロフィー結果ボード', '1〜4連勝で 絵が 変わる', 'hit'],
-    /* 7 */ ['hoist', '馬が運ぶ結果ボード', '1〜4連勝で 絵が 変わる', 'hit'],
-    /* 8 */ ['bloom', '花束結果ボード', '1〜4連勝で 絵が 変わる', 'hit'],
-    /* 9 */ ['climb', '出世馬結果ボード', '1・2・3・4・8・16・24連勝で 出世する', 'hit'],
-    /* 10 */ ['rain', '二人でしょんぼり', '続けて ハズレた 数（1〜4回目）で 絵が 変わる', 'miss'],
-    /* 11 */ ['next', '次…！', '続けて ハズレた 数（1〜4回目）で 絵が 変わる', 'miss'],
-    /* 12 */ ['cover', '隠蔽作戦', '続けて ハズレた 数（1〜4回目）で 絵が 変わる', 'miss'],
-    /* 13 */ ['wait', 'ボード結果待ち', '続けて ハズレた 数（1〜4回目）で 絵が 変わる', 'miss'],
-    /* 14 */ ['pen', '書き換え参戦', '続けて ハズレた 数（1〜4回目）で 絵が 変わる', 'miss'],
-    /* 15 */ ['carry', 'ボードを持つ馬', '馬がうしろからボードを持っている', 'all']
+    /* 1 */ ['toast', '馬達の祝杯', '1〜4連勝で 絵が 変わる', 'hit'],
+    /* 2 */ ['race', '馬レース結果ボード', '1〜4連勝で 絵が 変わる', 'hit'],
+    /* 3 */ ['snap', '自撮り結果ボード', '1〜4連勝で 絵が 変わる', 'hit'],
+    /* 4 */ ['seal', 'スタンプ結果ボード', '1〜4連勝で 絵が 変わる', 'hit'],
+    /* 5 */ ['cup', 'トロフィー結果ボード', '1〜4連勝で 絵が 変わる', 'hit'],
+    /* 6 */ ['hoist', '馬が運ぶ結果ボード', '1〜4連勝で 絵が 変わる', 'hit'],
+    /* 7 */ ['bloom', '花束結果ボード', '1〜4連勝で 絵が 変わる', 'hit'],
+    /* 8 */ ['rain', '二人でしょんぼり', '続けて ハズレた 数（1〜4回目）で 絵が 変わる', 'miss'],
+    /* 9 */ ['next', '次…！', '続けて ハズレた 数（1〜4回目）で 絵が 変わる', 'miss'],
+    /* 10 */ ['wait', 'ボード結果待ち', '続けて ハズレた 数（1〜4回目）で 絵が 変わる', 'miss'],
+    /* 11 */ ['pen', '書き換え参戦', '続けて ハズレた 数（1〜4回目）で 絵が 変わる', 'miss'],
+    /* 12 */ ['carry', 'ボードを持つ馬', '馬がうしろからボードを持っている', 'all']
   ].map(function (r, i) {
     return r ? { no: i + 1, id: r[0], name: r[1], desc: r[2], when: r[3], need: BOARD_NEED[i], ready: true }
       : { no: i + 1, id: 'prep' + (i + 1), name: '準備中', desc: '新しい 飾りを 準備 して いるよ', when: 'all', need: BOARD_NEED[i], ready: false };
@@ -120,10 +124,18 @@
   // 選べる もの か（なし・いま ある 飾り）。前の 版の 飾り（第4.113版で 消した 1〜21）や じゅんび中は 選べない
   function boardKnown(id) { return id === 'none' || BOARD_ITEMS.some(function (x) { return x.ready && x.id === id; }); }
   // 台帳の board → sel。前の 版の 1つの 選択（board.sel）は 的中にも ハズレにも ついて いた ので 両方へ（知らない もの は ''）
+  //   第4.214版：消した 3こ（GONE_BOARD）を 付けて いた 所は、いま 解放して いる 中で その 所に 使える いちばん はじめの 飾り（まだ 1つも なければ ''）
   function boardSel(bd) {
     bd = bd || {};
     var old = typeof bd.sel === 'string' ? bd.sel : '', h = typeof bd.selHit === 'string' ? bd.selHit : old, m = typeof bd.selMiss === 'string' ? bd.selMiss : old;
-    return { hit: boardKnown(h) ? h : '', miss: boardKnown(m) ? m : '' };
+    var heal = function (id, kind) {
+      if (boardKnown(id)) return id;
+      if (GONE_BOARD.indexOf(id) < 0) return '';
+      var n = boardUnlocked(bd.reads);
+      for (var i = 0; i < n && i < BOARD_ITEMS.length; i++) if (boardFits(BOARD_ITEMS[i], kind)) return BOARD_ITEMS[i].id;
+      return '';
+    };
+    return { hit: heal(h, 'hit'), miss: heal(m, 'miss') };
   }
   // いま ボードに つける もの（kind＝結果の 種類：'miss'＝ハズレの 所・ほか＝的中・デカ的中・ど的中…＝的中の 所）。解放ずみで その 結果に 使える ものだけ。なし なら ''
   function boardActive(sel, reads, kind) {
@@ -415,7 +427,7 @@
   // お得パックを 出すか：単品を どちらも 持って いない ときだけ（どちらか 1つ 持って いれば 残りの 単品だけ）
   function bundleOffer(events) { return !owned(events, 'wallpack') && !owned(events, 'board'); }
   function boardOwned(events) { return owned(events, 'board'); }
-  // 読み込んだ レースの 数 → 解放した 数（0〜15：じゅんび中の 番号も 数える）
+  // 読み込んだ レースの 数 → 解放した 数（0〜12：じゅんび中の 番号も 数える）
   function boardUnlocked(reads) { var n = 0; BOARD_NEED.forEach(function (k) { if ((+reads || 0) >= k) n++; }); return n; }
   // つぎに 解放する 番号（じゅんび中も ふくむ・全部 解放ずみ なら null）：{ item, need（その 数）, left（あと いくつ）, from（ひとつ前の 数）}
   function boardNext(reads) {
@@ -475,7 +487,7 @@
   // 結果ボードカスタムの ミッション：count＝解放した 番号の 数（買って いなければ 0）
   function boardMissions(count, events) {
     var rows = rowsOf(BOARD_MISSIONS, 'mission-board-', count, events, function (n) { return '結果ボードカスタム ' + n + 'こ解放'; });
-    // 第4.120版：前の 版の「16こ解放」（mission-board-16）を 受け取った 人は「15こ解放」を 受け取った ことに（2回 もらえない）
+    // 第4.120版：前の 版の「16こ解放」（mission-board-16）を 受け取った 人は「15こ解放」を 受け取った ことに（2回 もらえない）。第4.214版：「15こ解放」の 行は もう ない（受け取った ぶんは 台帳に 残る）
     if (has(events, 'mission-board-16')) rows.forEach(function (r) { if (r.n === 15) { r.claimed = true; r.claimable = false; } });
     return rows;
   }
@@ -604,7 +616,7 @@
   var API = { PRODUCTS: PRODUCTS, PACKS: PACKS, SUBS: SUBS, COST: COST, SUB_DAYS: SUB_DAYS, MISSIONS: MISSIONS, FREE_TYPES: FREE_TYPES, UNLOCK_TYPES: UNLOCK_TYPES, ALL_TYPES: ALL_TYPES,
     balance: balance, plan: plan, txEvent: txEvent, refundEvent: refundEvent, giftEvent: giftEvent, missionEvent: missionEvent, spend: spend, unlock: unlock, unlocked: unlocked, has: has,
     TOYS: TOYS, toyName: toyName, compact: compact, carryOf: carryOf, carryDrop: carryDrop, merged: merged, CARRY_GRACE: CARRY_GRACE,
-    BOARD: BOARD, BOARD_NEED: BOARD_NEED, BOARD_ITEMS: BOARD_ITEMS, boardOwned: boardOwned, boardUnlocked: boardUnlocked, boardNext: boardNext, boardNextReady: boardNextReady, boardFits: boardFits,
+    BOARD: BOARD, BOARD_NEED: BOARD_NEED, BOARD_ITEMS: BOARD_ITEMS, GONE_BOARD: GONE_BOARD, boardOwned: boardOwned, boardUnlocked: boardUnlocked, boardNext: boardNext, boardNextReady: boardNextReady, boardFits: boardFits,
     boardSlot: boardSlot, boardKnown: boardKnown, boardSel: boardSel, boardActive: boardActive, boardOpen: boardOpen, owned: owned,
     BUNDLE: BUNDLE, bundleOwned: bundleOwned, bundleOffer: bundleOffer, BOARD_MISSIONS: BOARD_MISSIONS, WALLP_MISSIONS: WALLP_MISSIONS, WALL_TOTAL: WALL_TOTAL,
     boardMissions: boardMissions, wallpMissions: wallpMissions, rowEvent: rowEvent, wallCountAll: wallCountAll, TC_MISSIONS: TC_MISSIONS, tcMissions: tcMissions, FIG_MISSIONS: FIG_MISSIONS, figMissions: figMissions, CAP: CAP, room: room, TICKET_POINTS: TICKET_POINTS, TOKEN_PACKS: TOKEN_PACKS, tokenPack: tokenPack,

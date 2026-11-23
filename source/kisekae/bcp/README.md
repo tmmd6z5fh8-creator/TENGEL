@@ -25,6 +25,11 @@ python3 kisekae/bcp/bcp_shot.py out.png hit 3 $D/inj.js   # テスト版の た�
 
 ## アプリに 入れる（第4.121版）
 
+> **第4.214版（2026-11-24・まさちゃん「結果ボードカスタム 消す物 ・出世馬結果ボード ・結果ボードを廻る ・隠蔽工作」）**：絵の ボードは **11こ**（的中 7：toast・race・snap・seal・cup・hoist・bloom／ハズレ 4：rain・next・wait・pen）＝ 44段・絵 86こ（見本 11＋止まった 絵 44＋前の 絵 31・約 13.2MB）。
+> 消した 3こ（`ring`＝ring1〜4・`climb`＝shusse1・2・3・4・8・16・24_3d・`cover`＝miss3・miss3_2〜4）は `bcp_app.py` の `ITEMS` から 外して `GONE` に 書いた。**絵（`ios/bcp_assets/`）・設定（`designs/`）・道具（`shusse3d.py` ほか）は のこして ある**：もどす ときは `ITEMS` に 行を もどし、`points.js` の `BOARD_ITEMS`・`GONE_BOARD` を 直す。
+> 下の 説明は 第4.121版〜第4.213版の 形（14こ・59段・108こ）の まま のこして ある。
+
+
 - **番号と 段**：`bcp_app.py` の `ITEMS`（`points.js` の `BOARD_ITEMS` の 1〜14 と 同じ id・when）。段＝[連続の 数, デザイン]：その 数から その 絵（いちばん 上の 段は その 上も）。
   的中①〜⑧（ring・toast・race・snap・seal・cup・hoist・bloom）＝1・2・3・4連勝〜／的中⑨ 出世馬（climb）＝1・2・3・4・8・16・24連勝〜／
   ハズレ①〜⑤（rain・next・cover・wait・pen）＝続けて ハズレた 数 1・2・3・4回目〜（`points_ui.js` の `board.mstreak`：ハズレで +1・的中で 0）。

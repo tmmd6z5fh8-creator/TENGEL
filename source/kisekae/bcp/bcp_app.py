@@ -16,10 +16,12 @@ def _st(names, at=(1, 2, 3, 4)):
     return [[n, d] for n, d in zip(at, names)]
 
 
-# 番号の 順（points.js の BOARD_ITEMS の 1〜14 と 同じ id・when）。段＝[連続の 数, デザイン]：その 数から その 絵（いちばん 上の 段は その 上も ずっと）
-#   的中：連続的中の 数（1・2・3・4連勝〜）。出世馬：1・2・3・4・8・16・24連勝〜。ハズレ：続けて ハズレた 数（1・2・3・4回目〜）
+# 番号の 順（points.js の BOARD_ITEMS の 1〜11 と 同じ id・when）。段＝[連続の 数, デザイン]：その 数から その 絵（いちばん 上の 段は その 上も ずっと）
+#   的中：連続的中の 数（1・2・3・4連勝〜）。ハズレ：続けて ハズレた 数（1・2・3・4回目〜）
+#   第4.214版（まさちゃん 2026/11/24 00:13「結果ボードカスタム 消す物 ・出世馬結果ボード ・結果ボードを廻る ・隠蔽工作」）：3こ 消して 11こ（的中 7・ハズレ 4）。
+#     消した もの：('ring', 'hit', ring1〜4)＝的中① 結果ボードを廻る／('climb', 'hit', shusse1・2・3・4・8・16・24_3d)＝的中⑨ 出世馬結果ボード（3D の 絵：shusse3d.py）／('cover', 'miss', miss3・miss3_2〜4)＝ハズレ③ 隠蔽作戦。
+#     絵と 設定（ios/bcp_assets の bcp_ring*・bcp_shusse*・bcp_miss3*・designs/ の json・作る 道具）は 手元に のこす（アプリには 入らない だけ：もどす ときは ここに 行を もどす）
 ITEMS = [
-    ('ring', 'hit', _st(['ring1', 'ring2', 'ring3', 'ring4'])),            # 的中① 結果ボードを廻る
     ('toast', 'hit', _st(['toast1', 'toast2', 'toast3', 'toast4'])),       # 的中② 馬達の祝杯
     ('race', 'hit', _st(['race1', 'race2', 'race3', 'race4'])),            # 的中③ 馬レース結果ボード
     ('snap', 'hit', _st(['selfie1', 'selfie2', 'selfie3', 'selfie4'])),    # 的中④ 自撮り結果ボード
@@ -27,15 +29,12 @@ ITEMS = [
     ('cup', 'hit', _st(['trophy1', 'trophy2', 'trophy3', 'trophy4'])),     # 的中⑥ トロフィー結果ボード
     ('hoist', 'hit', _st(['carry1', 'carry2', 'carry3', 'carry4'])),       # 的中⑦ 馬が運ぶ結果ボード
     ('bloom', 'hit', _st(['bouquet1', 'bouquet2', 'bouquet3', 'bouquet4'])),   # 的中⑧ 花束結果ボード
-    # 的中⑨ 出世馬：第4.153版（まさちゃん 2026/11/11 13:59「出世馬の結果ボードカスタム3Dに絵を入れ替えて！」）＝3D の 絵（shusseN_3d：kisekae/bcp/shusse3d.py）。
-    #   板の 四すみと 字の 置き方は 前の 絵（shusseN）と 同じ。前の 絵と 設定（bcp_shusseN.webp・designs/shusseN.json）は 残す（3D の 絵を 作る もと）
-    ('climb', 'hit', _st(['shusse1_3d', 'shusse2_3d', 'shusse3_3d', 'shusse4_3d', 'shusse8_3d', 'shusse16_3d', 'shusse24_3d'], (1, 2, 3, 4, 8, 16, 24))),
     ('rain', 'miss', _st(['miss1', 'miss1_2', 'miss1_3', 'miss1_4'])),     # ハズレ① 二人でしょんぼり
     ('next', 'miss', _st(['miss2', 'miss2_2', 'miss2_3', 'miss2_4'])),     # ハズレ② 次…！
-    ('cover', 'miss', _st(['miss3', 'miss3_2', 'miss3_3', 'miss3_4'])),    # ハズレ③ 隠蔽作戦
     ('wait', 'miss', _st(['miss4', 'miss4_2', 'miss4_3', 'miss4_4'])),     # ハズレ④ ボード結果待ち
     ('pen', 'miss', _st(['miss5', 'miss5_2', 'miss5_3', 'miss5_4'])),      # ハズレ⑤ 書き換え参戦
 ]
+GONE = ['ring1', 'ring2', 'ring3', 'ring4', 'shusse1_3d', 'shusse2_3d', 'shusse3_3d', 'shusse4_3d', 'shusse8_3d', 'shusse16_3d', 'shusse24_3d', 'miss3', 'miss3_2', 'miss3_3', 'miss3_4']      # 第4.214版：アプリから 外した デザイン（絵・設定・動きの データは 手元に のこる）
 THUMB = 'bcp_t_{}_b.webp'        # 設定の タイルの 見本（bcp_thumbs.py で 作る・いちばん はじめの 段）。第4.153版：ボードの 中を ぬり直した 絵・出世馬の 3D の 絵で 作り直した 見本（前の bcp_t_<id>.webp は 残す＝上書きしない）
 THUMB_OF = {}                    # 見本の 名前が きまりと ちがう もの（{ id: 名前 }）
 BLANK = '_bl'                    # 第4.153版（まさちゃん 2026/11/11 15:39「他の結果ボードカスタムのボードも、綺麗に何も書いていないようにして！」）：ボードの 中を きれいな 板に ぬり直した 絵（bcp_blank.py）の 名前の しっぽ
@@ -167,7 +166,7 @@ if __name__ == '__main__':
     print('items', len(d['items']), 'designs', len(d['d']), 'files', len(files()), 'js', len(bundle_js()),
           'motion', len(MOTION), 'motion files', sum(len(motion_files(n)) for n in MOTION), '入れない 止まった 絵', len(stills_out()))
     for n in MOTION:
-        assert n in d['d'], n + '：アプリの デザインに ない'
+        assert n in d['d'] or n in GONE, n + '：アプリの デザインに ない'
     # 作業フォルダ（見本を 作った ところ）の geom.json と 同じか
     work = os.environ.get('BCP_WORK', '/home/claude/work/bcpic')
     seen = 0

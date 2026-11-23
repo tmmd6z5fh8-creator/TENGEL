@@ -6,6 +6,9 @@
 #   まさちゃん 11/14 16:18「トレーニングセンターの神様馬出現中のBGM:もっとアップテンポで掻き立てられるようなBGM」・17:08「神様馬のBGMもう少しカッコよく！もう少し神様ぽさを混ぜて！」
 #   ・神様馬の BGM：新しい 曲（tc_bgm_divine2.m4a）を まん中の 1回り だけ くり返す（LOOPS）・前の 曲は アプリに 入れない・新しい 曲が ない ときだけ 前の 曲
 #   ・音の ファイル：長さ＝1回り＋前後 0.5秒・前後の つづきは 同じ 音・大きさ
+#   まさちゃん 11/24 01:16「トレーニングセンターの神様馬のBGM、これのリピートにして！」（第4.214版）
+#   ・神様馬の BGM は まさちゃんの 曲（tc_bgm_divine3.m4a：60秒の くり返し・kisekae/tc/snd/bgm_divine3.py）・まん中の 1回り（60秒）を くり返す・
+#     アプリと 同じ 鳴らし方で くり返しても つなぎ目に プツが ない・前の 2つの 曲は アプリに 入れない・新しい 曲が ない ときだけ 前の 曲（第4.171版の 曲を その 1回りで）
 #   python3 test_bgm.py   （ios/tc_assets/ が ない とき（CI）は 形 だけ 確かめる）
 import math, os, re, shutil, subprocess, sys, time
 import numpy as np
@@ -18,7 +21,8 @@ subprocess.run(['python3', 'build_pwa.py', os.path.join(SRV, 'TENGEL')], check=T
 subprocess.run(['python3', 'build_pwa.py', os.path.join(SRV, 'APP')], check=True, stdout=subprocess.DEVNULL, env=dict({k: v for k, v in os.environ.items() if k != 'TENGEL_TEST'}, TARGET='app'))
 from assets_dir import adir, superseded
 TCA = adir('tc_assets'); HAVE = os.path.isdir(TCA) and len(os.listdir(TCA)) > 100
-DIV_F, DIV_OLD = 'tc_bgm_divine2.m4a', 'tc_bgm_divine.m4a'
+DIV_F, DIV_OLD, DIV_OLDER = 'tc_bgm_divine3.m4a', 'tc_bgm_divine2.m4a', 'tc_bgm_divine.m4a'      # まさちゃんの 曲（第4.214版）・第4.171版の 曲・はじめの 曲
+DIV_SRC = os.path.join(W, 'ios', 'tc_src', 'TENGER_BGM_App_Loop_ブォなし.wav'); DIV_GAIN = 10 ** (-5.0 / 20)      # もとの 曲（リポジトリに 入れない）・アプリ用に 小さく した ぶん
 BGM_ALL = ['bgm_tengel.m4a'] + [f'bgm_tengel{i}.m4a' for i in range(2, 10)]            # 作った 稿（第1稿〜第9稿）：どれも アプリには 入れない（もとの フォルダに 残す）
 HAVE_DIV = HAVE and os.path.exists(os.path.join(TCA, DIV_F))
 pth = os.path.join(SRV, 'APP', 'index.html'); html = open(pth, encoding='utf8').read()
@@ -40,7 +44,8 @@ FAKE = open(os.path.join(W, 'test_tc.py'), encoding='utf8').read().split('FAKE =
 # 消音スイッチの きまり（navigator.audioSession）の にせもの：iOS 16.4 から ある。Chromium には ない ＝ 入れない ページは「古い iOS」の 形
 ASFAKE = "(() => { let t = 'auto'; window.__asLog = []; try { Object.defineProperty(navigator, 'audioSession', { configurable: true, value: { get type() { return t; }, set type(v) { t = v; window.__asLog.push(v); } } }); } catch (e) { /* なし */ } })();"
 PRE = 0.5
-DLEN = 32 * 4 * 60 / 156
+DLEN = 60.0                    # まさちゃんの 曲の 1回り（秒）
+DLEN_OLD = 32 * 4 * 60 / 156   # 第4.171版の 曲の 1回り（32小節・156 BPM）
 READY = "() => !!document.querySelector('#tcFab .fabi') && !!window.TengelWallet"      # アプリが 立ち上がった 印
 NOBGM = "() => ({ api: typeof window.TengelBgm, card: !!document.getElementById('setBgm'), files: performance.getEntriesByType('resource').filter(e => /bgm_tengel/.test(e.name)).length, saved: localStorage.getItem('tengel.bgm') })"
 
@@ -88,12 +93,13 @@ try:
     check('bgm.js' not in bp and 'bgmCard' not in sh and 'setBgm' not in sh and 'BGM' not in man and os.path.exists(os.path.join(W, 'bgm.js')),
           'ビルド（build_pwa.py）は bgm.js を 入れない・src.html に 設定の 札の コードは ない・説明書に「BGM」の 行は ない（bgm.js の ファイルは もどす とき の ために 残して ある）')
     ta = open(os.path.join(W, 'tc', 'tc_app.js'), encoding='utf8').read()
-    check(f"divine: '{DIV_F}'" in ta and "divine: { pre: 0.5, len: 32 * 4 * 60 / 156 }" in ta and f"AMB_OLD = {{ divine: '{DIV_OLD}' }}" in ta,
-          '神様馬の フィールドの BGM は 新しい 曲（tc_bgm_divine2.m4a）・まん中の 1回り（32小節・156 BPM）だけを くり返す・新しい 曲が ない とき だけ 前の 曲')
-    old = superseded('tc_assets', [DIV_F, DIV_OLD, 'tc_bgm_abyss.m4a'] + BGM_ALL + ['tc_rt_boom.mp4'])
-    check(old == {DIV_OLD} | set(BGM_ALL) and superseded('tc_assets', BGM_ALL[:1]) == set(BGM_ALL[:1]) and superseded('tc_assets', ['bgm_tengel12.m4a', 'tc_bgm_abyss.m4a']) == {'bgm_tengel12.m4a'}
-          and superseded('tc_assets', [DIV_OLD, 'tc_bgm_abyss.m4a']) == set(),
-          f'アプリに 入れない 音：テンゲルBGM は どの 稿も（{len(BGM_ALL)}こ）・神様馬の 前の BGM は 新しい 曲が ある とき だけ（ない ときは 前の 曲を 入れる）')
+    check(f"divine: '{DIV_F}'" in ta and "divine: { pre: 0.5, len: 60 } };" in ta and f"AMB_OLD = {{ divine: '{DIV_OLD}' }}" in ta and "LOOPS_OLD = { divine: { pre: 0.5, len: 32 * 4 * 60 / 156 } }" in ta
+          and "const L = fb ? LOOPS_OLD[aim] : LOOPS[aim];" in ta,
+          '神様馬の フィールドの BGM は まさちゃんの 曲（tc_bgm_divine3.m4a）・まん中の 1回り（60秒）だけを くり返す・新しい 曲が ない とき だけ 前の 曲（第4.171版の 曲を その 1回りで）')
+    old = superseded('tc_assets', [DIV_F, DIV_OLD, DIV_OLDER, 'tc_bgm_abyss.m4a'] + BGM_ALL + ['tc_rt_boom.mp4'])
+    check(old == {DIV_OLD, DIV_OLDER} | set(BGM_ALL) and superseded('tc_assets', BGM_ALL[:1]) == set(BGM_ALL[:1]) and superseded('tc_assets', ['bgm_tengel12.m4a', 'tc_bgm_abyss.m4a']) == {'bgm_tengel12.m4a'}
+          and superseded('tc_assets', [DIV_OLD, DIV_OLDER, 'tc_bgm_abyss.m4a']) == {DIV_OLDER} and superseded('tc_assets', [DIV_OLDER, 'tc_bgm_abyss.m4a']) == set(),
+          f'アプリに 入れない 音：テンゲルBGM は どの 稿も（{len(BGM_ALL)}こ）・神様馬の 前の BGM（2つ）は 新しい 曲が ある とき だけ（ない ときは 1つ 前の 曲を 入れる）')
     mst = os.path.join(W, 'ios', 'tc_assets')
     if HAVE and 'lite' in TCA:
         check(not [f for f in os.listdir(TCA) if f.startswith('bgm_tengel')] and (not os.path.isdir(mst) or all(os.path.exists(os.path.join(mst, f)) for f in BGM_ALL)),
@@ -102,12 +108,22 @@ try:
     check("in ('webp', 'json', 'bin', 'm4a', 'mp4'))" in bi, 'アプリには 同じ フォルダ（ios/tc_assets）の 音（m4a）と 爆発の 動画（mp4）も 入る')
     if HAVE_DIV:
         sr, y = wav(os.path.join(TCA, DIV_F)); dur = len(y) / sr; rms = db(math.sqrt(float(np.mean(y ** 2)))); pk = db(float(np.abs(y).max())); sm_ = seam(y, sr, DLEN, PRE)
-        check(abs(dur - (DLEN + 2 * PRE)) < 0.08 and sm_ > 0.9, f'神様馬の BGM の ファイル：長さ {dur:.2f}秒＝1回り {DLEN:.2f}秒（32小節・156 BPM）＋前後 0.5秒・前後の つづきは 同じ 音（似かた {sm_:.3f}）')
+        check(abs(dur - (DLEN + 2 * PRE)) < 0.08 and sm_ > 0.99, f'神様馬の BGM の ファイル：長さ {dur:.2f}秒＝1回り {DLEN:.2f}秒（まさちゃんの 曲）＋前後 0.5秒・前後の つづきは 同じ 音（似かた {sm_:.3f}）')
         check(-31 <= rms <= -25 and pk <= -11, f'神様馬の BGM の 大きさ：全体 {rms:.1f}dB・山 {pk:.1f}dB（お世話の 音〈山 −15dB ぐらい〉が うもれない）')
         k = int(sr * DLEN / 32); bars = [db(math.sqrt(float(np.mean(y[int(PRE * sr) + i * k:int(PRE * sr) + (i + 1) * k] ** 2)))) for i in range(32)]
-        check(max(bars) - min(bars) <= 6 and min(bars) > -35, f'神様馬の BGM：小節ごとの 大きさは そろって いる（{min(bars):.0f}〜{max(bars):.0f}dB）')
-        check(os.path.exists(os.path.join(TCA, 'tc_bgm_abyss.m4a')) and not os.path.exists(os.path.join(TCA, DIV_OLD)) if 'lite' in TCA else True, 'アプリに 入れる フォルダ（軽い 版）に 前の 神様馬の BGM は ない')
-    else: print('  ⚠️ 神様馬の BGM の ファイル（ios/tc_assets/tc_bgm_divine2.m4a）が ない')
+        check(max(bars) - min(bars) <= 6 and min(bars) > -35, f'神様馬の BGM：1回りを 32こに 分けた 大きさは そろって いる（{min(bars):.0f}〜{max(bars):.0f}dB）')
+        check(os.path.exists(os.path.join(TCA, 'tc_bgm_abyss.m4a')) and not os.path.exists(os.path.join(TCA, DIV_OLD)) and not os.path.exists(os.path.join(TCA, DIV_OLDER)) if 'lite' in TCA else True, 'アプリに 入れる フォルダ（軽い 版）に 前の 神様馬の BGM（2つ）は ない')
+        if os.path.exists(DIV_SRC):      # もとの 曲（まさちゃんの ファイル）が 手元に ある とき：アプリの 音は その 曲 そのまま（小さく した だけ・前後に つづきを 足した だけ）
+            from scipy.io import wavfile as _wf
+            sr0, x16 = _wf.read(DIV_SRC); x0 = x16.astype(np.float64) / 32768 * DIV_GAIN; p0 = int(PRE * sr)
+            a = y[p0 + 5 * sr:p0 + 55 * sr].mean(1); bst = (-2, 0)
+            for off in range(-2400, 2401, 8):
+                b_ = x0[5 * sr + off:55 * sr + off].mean(1); c = float(np.dot(a, b_) / (np.linalg.norm(a) * np.linalg.norm(b_) + 1e-12))
+                if c > bst[0]: bst = (c, off)
+            lv = db(math.sqrt(float(np.mean(y[p0:p0 + len(x0)] ** 2)))) - db(math.sqrt(float(np.mean(x0 ** 2))))
+            check(sr0 == sr and len(x0) == int(DLEN * sr) and bst[0] > 0.995 and abs(lv) < 0.5, f'アプリの 音は まさちゃんの 曲（60.000秒）そのまま（似かた {bst[0]:.4f}・ずれ {bst[1]}サンプル・大きさは もとの 曲 −5.0dB から {lv:+.2f}dB）')
+        else: print('  （もとの 曲 ios/tc_src/ が ない：アプリの 音と もとの 曲の くらべは とばす）')
+    else: print(f'  ⚠️ 神様馬の BGM の ファイル（ios/tc_assets/{DIV_F}）が ない')
 
     with sync_playwright() as p:
         b = p.chromium.launch(args=['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'])
@@ -134,19 +150,30 @@ try:
             pg.evaluate("() => { TCApp._snd.field('divine'); }"); pg.wait_for_function("() => TCApp._snd.bed === 'divine'", timeout=15000); pg.wait_for_timeout(300)
             dv = pg.evaluate("() => { const S = TCApp._snd, fs = performance.getEntriesByType('resource').map(e => e.name.split('/').pop().split('?')[0]).filter(n => /^tc_bgm_divine/.test(n)); return { bed: S.bed, loop: S.loop, len: S.LOOPS.divine.len, pre: S.LOOPS.divine.pre, files: fs }; }")
             check(dv['bed'] == 'divine' and dv['files'] == [DIV_F] and abs(dv['len'] - DLEN) < 1e-6 and dv['loop'] and abs(dv['loop'][0] - 0.25) < 1e-6 and abs(dv['loop'][1] - (0.25 + DLEN)) < 1e-6,
-                  f'神様馬の フィールド：新しい 曲（{dv["files"]}）を まん中の 1回り だけ くり返す（{dv["loop"][0]:.2f}〜{dv["loop"][1]:.2f}秒・前の 曲は 読まない）')
+                  f'神様馬の フィールド：まさちゃんの 曲（{dv["files"]}）を まん中の 1回り（60秒）だけ くり返す（{dv["loop"][0]:.2f}〜{dv["loop"][1]:.2f}秒・前の 曲は 読まない）')
+            # 第4.214版：アプリと 同じ 鳴らし方（はじめは 0.5秒の 所から・0.25〜60.25秒を くり返す）で 2回り ぶん 鳴らして、つなぎ目（59.75秒・119.75秒）と 曲の おわり → 頭（60秒・120秒）に プツ・段が ないか。
+            #   曲がり方（となりの 3つの サンプルの 2回の 差）が、曲の ふだんの 値（5〜55秒の 99.9%）より 小さい ＝ つなぎ目は ほかの 所と 同じ なめらかさ
+            lp = pg.evaluate("""async (a) => { const [f, len, pre] = a, sr = 44100, ab = await (await fetch(f)).arrayBuffer(), oc = new OfflineAudioContext(2, Math.round(sr * (len * 2 + 3)), sr), buf = await oc.decodeAudioData(ab);
+              const s = oc.createBufferSource(); s.buffer = buf; s.loop = true; s.loopStart = pre / 2; s.loopEnd = pre / 2 + len; s.connect(oc.destination); s.start(0, pre);
+              const out = await oc.startRendering(), L = out.getChannelData(0), R = out.getChannelData(1), d2 = i => Math.abs(L[i + 1] - 2 * L[i] + L[i - 1]) + Math.abs(R[i + 1] - 2 * R[i] + R[i - 1]);
+              const base = []; for (let i = 5 * sr; i < 55 * sr; i++) base.push(d2(i)); base.sort((x, y) => x - y);
+              const at = t => { const c = Math.round(t * sr); let m = 0; for (let i = c - 400; i < c + 400; i++) m = Math.max(m, d2(i)); return m * 32768; };
+              let rm = 0; for (let i = Math.round(118 * sr); i < Math.round(122 * sr); i++) rm += L[i] * L[i]; 
+              return { dur: buf.duration, p999: base[Math.floor(base.length * 0.999)] * 32768, max: base[base.length - 1] * 32768, seams: [len - pre / 2, 2 * len - pre / 2, len, 2 * len].map(at), rms: Math.sqrt(rm / (4 * sr)) }; }""", [DIV_F, DLEN, PRE])
+            check(abs(lp['dur'] - (DLEN + 2 * PRE)) < 0.08 and max(lp['seams']) < lp['p999'] and lp['rms'] > 0.005,
+                  f'くり返しの つなぎ目（アプリと 同じ 鳴らし方で 2回り）：プツ・段 なし（曲がり方 つなぎ目 {[round(v) for v in lp["seams"][:2]]}・曲の おわり → 頭 {[round(v) for v in lp["seams"][2:]]} ／ ふだん 99.9% {lp["p999"]:.0f}・最大 {lp["max"]:.0f}）・2回り目も 鳴って いる')
             pg.evaluate("() => { TCApp._snd.field('morning'); }"); pg.wait_for_function("() => TCApp._snd.bed === 'morning'", timeout=15000)
             lm = pg.evaluate("() => TCApp._snd.loop")
             check(lm == [0, 0] and not errs, f'ほかの フィールドの 音は いままで どおり（ファイルの はじめから おわりまでを くり返す：{lm}）')
             ctx.close()
             # 新しい 曲が ない（前の 素材の フォルダで 作った アプリ）→ 前の 曲を そのまま くり返す
             ctx = mk(True); pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
-            pg.route('**/' + DIV_F, lambda r: r.abort()); pg.route('**/' + DIV_OLD, lambda r: r.fulfill(path=os.path.join(TCA, 'tc_bgm_abyss.m4a'), content_type='audio/mp4'))
+            pg.route('**/' + DIV_F, lambda r: r.abort()); pg.route('**/' + DIV_OLD, lambda r: r.fulfill(path=os.path.join(TCA, 'tc_bgm_abyss.m4a'), content_type='audio/mp4'))      # 前の 曲の かわりに 60秒の 音（長さ だけ 見る）
             pg.goto(APP); pg.wait_for_function(READY, timeout=30000); gate(pg)
             pg.locator('#tcFab .fabi').click(); pg.wait_for_function("() => document.querySelector('#tcOv.on') && window.TCApp && TCApp._snd && TCApp._snd.ac", timeout=60000); pg.wait_for_timeout(1500)
             pg.evaluate("() => { TCApp._snd.field('divine'); }"); pg.wait_for_function("() => TCApp._snd.bed === 'divine'", timeout=15000)
             lo = pg.evaluate("() => TCApp._snd.loop")
-            check(lo == [0, 0] and not errs, f'新しい 曲の ファイルが ない とき：前の 曲（tc_bgm_divine.m4a）を はじめから おわりまで くり返す（{lo}）')
+            check(lo and abs(lo[0] - 0.25) < 1e-6 and abs(lo[1] - (0.25 + DLEN_OLD)) < 1e-6 and not errs, f'新しい 曲の ファイルが ない とき：前の 曲（{DIV_OLD}）を その 曲の 1回り（32小節・156 BPM）で くり返す（{lo}）')
             ctx.close()
         print('■ Web版')
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, locale='ja-JP', timezone_id='Asia/Tokyo'); ctx.add_init_script(ASFAKE)

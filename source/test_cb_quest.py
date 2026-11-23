@@ -2,7 +2,7 @@
 #   ・メニューの「⚔️ 決戦調査」→ マップ（エリア 1 だけ 開いて いる・ほかは 鍵）→ エリアを タップ → その 場に ふきだし（まさちゃん 16:47：開いて いる →「決戦調査に 行く」／「もどる」・鍵／討伐済み → わけ と「もどる」・マップは 見えた まま）
 #   ・フィールド：セリフ（字が 1つずつ・タップで ぜんぶ → 次へ）→ テロップ「レベル○の 敵 出現！」→ 敵（蹄の 線が フィールドの 決めた 高さ）→ 名前 →「タップで バトル開始！」
 #   ・バトル：上は 敵HP ゲージ（盾の 中に 顔・名前・HP のこま：赤い 帯は 枠の 中に ぴったり〈角も 枠と 同じ 形〉）・「ターン」は 出ない・相手の 名前は 敵の 短い 名前・BGM は 決戦調査の 曲
-#   ・第4.210版：フィールドの 音（まさちゃんの 音：エリアの BGM・タップ〈行〉ごとの 効果音・前の 行と 同じ 音は つづく・Lv3 の ③は 0.8秒 あと・Lv12 の ③は 止まらない）・ほかの 音は 鳴らない・
+#   ・第4.210版：フィールドの 音（まさちゃんの 音：エリアの BGM・タップ〈行〉ごとの 効果音・前の 行と 同じ 音は つづく・Lv3 の ③は 0.8秒 あと・Lv12 の ③は 4タップ目では 止まらない）・ほかの 音は 鳴らない・
 #     マップへ・アプリが うしろへ・効果音 オフ で 止まる・敵の 出方は transform と opacity だけ（カクカク しない）
 #   ・勝ち → HP が へる（あいだの 窓「第2戦へ」）→ 討伐（勝利の 演出 3段階・バトルコイン GET）→ マップ（次の エリアが 開く・討伐の はんこ）
 #   ・同点 → 同じ 戦を やり直し（HP は そのまま）／負け → 調査 失敗（もう 一度 → HP は 満タン）／とちゅうで やめる → マップ（ミッションの 連勝 0・いつもの 負けには 数えない）
@@ -246,10 +246,12 @@ try:
         say = data[0][0]
         check(not pg.locator('#cbOv .qsay .who').count(), 'セリフの 窓に「あなた」の 札は 出さない（セリフに 話す 人が 入って いる）')
         pg.wait_for_timeout(300)
-        tw = pg.evaluate("() => { const p = document.querySelector('#cbOv .qsay p'); return [(p.querySelector('.sh') || p).textContent.length, CBApp._t.quest.scene.typing]; }")
-        check(0 < tw[0] < len(say[0]) and tw[1], f'セリフは 字が 1つずつ 出る（{tw[0]}字 ／ {len(say[0])}字）')
+        tw = pg.evaluate("() => { const p = document.querySelector('#cbOv .qsay p'), S = CBApp._t.quest.scene; return [S.shown, S.typing, p.textContent, p.childNodes.length, getComputedStyle(p).clipPath, S.cut]; }")
+        check(0 < tw[0] < len(say[0]) and tw[1] and tw[2] == say[0] and tw[3] == 1 and tw[4].startswith('polygon') and tw[5],
+              f'セリフは 字が 1つずつ 出る（{tw[0]}字 ／ {len(say[0])}字。第4.214版：行 ぜんぶを はじめに 置いて、見える 所を 広げる）')
         pg.locator('#cbOv .qfw').click(); pg.wait_for_timeout(60)
-        check(pg.locator('#cbOv .qsay p').inner_text() == say[0] and q(pg)['scene']['i'] == 0, 'とちゅうで タップ → その 行が すぐ ぜんぶ 出る（次へは まだ）')
+        tw2 = pg.evaluate("() => { const p = document.querySelector('#cbOv .qsay p'), S = CBApp._t.quest.scene; return [S.shown, S.typing, getComputedStyle(p).clipPath]; }")
+        check(pg.locator('#cbOv .qsay p').inner_text() == say[0] and q(pg)['scene']['i'] == 0 and tw2 == [len(say[0]), False, 'none'], 'とちゅうで タップ → その 行が すぐ ぜんぶ 出る（次へは まだ）')
         fs = pg.evaluate("() => parseFloat(getComputedStyle(document.querySelector('#cbOv .qsay p')).fontSize)")
         check(fs >= 17, f'セリフの 字は 読みやすい 大きさ（{fs}px）')
         en0 = pg.evaluate("() => [getComputedStyle(document.querySelector('#cbOv .qfld .qe')).opacity, !!document.querySelector('#cbOv .qtel.on'), CBApp._t.quest.scene.rv]")
@@ -706,7 +708,7 @@ try:
                         bg = pg.evaluate("() => CBApp._t.bgm")
                         if isinstance(bl, int): L0, L1, off = 0.25, 0.25 + bl / 44100, 0.5
                         else: L0, L1, off = bl[0] / 44100, (bl[1] / 44100 if bl[1] else bg['dur']), 0
-                        if not (bg['file'] == f'cb_q_bgm{lv:02d}.mp3' and bg['loop'] and abs(bg['loop'][0] - L0) < 1e-6 and abs(bg['loop'][1] - L1) < 1e-6 and abs(bg['off'] - off) < 1e-6 and abs(bg['vol'] - 0.45) < 1e-9 and bg['trk'] == 'field' and bg['dur'] >= L1 - 1e-6):
+                        if not (bg['file'] == f'cb_q_bgm{lv:02d}.mp3' and bg['loop'] and abs(bg['loop'][0] - L0) < 1e-6 and abs(bg['loop'][1] - L1) < 1e-6 and abs(bg['off'] - off) < 1e-6 and abs(bg['vol'] - (0.8 if lv == 12 else 0.45)) < 1e-9 and bg['trk'] == 'field' and bg['dur'] >= L1 - 1e-6):
                             badb.append(f'Lv{lv} {bg["file"]} {bg["loop"]} {bg["off"]} {bg["vol"]} {bg["dur"]}')
                         dec.append(pg.evaluate("() => [...document.querySelectorAll('#cbOv .qfld img')].every(i => i.complete && i.naturalWidth > 0) && document.querySelectorAll('#cbOv .qfld .qe img').length === 2"))
                     elif q(pg)['track'] != 'field': badb.append(f'Lv{lv} track {q(pg)["track"]}')
@@ -747,7 +749,7 @@ try:
         print('■ フィールドの 音（第4.210版・まさちゃん 11/21〜22 の 音：エリアの BGM・タップの 効果音）')
         check(not badq, f'12 エリア：タップ（行）ごとに 決めた 効果音（{qplays}回）・前の 行と 同じ 音は 鳴らし直さず つづく・ほかの 音（進める タップ・magic・appear）は 鳴らない・「← マップ」で ぜんぶ 止まる（0.15秒）・BGM は いつもの 曲へ {badq[:3]}')
         if HAVE:
-            check(not badb, f'12 エリアの BGM：cb_q_bgm01〜12.mp3・決めた くり返しの 所（前後 0.5秒の 形／頭から 鳴らして ls〜le）・頭から 鳴る・大きさ 0.45 {badb[:3]}')
+            check(not badb, f'12 エリアの BGM：cb_q_bgm01〜12.mp3・決めた くり返しの 所（前後 0.5秒の 形／頭から 鳴らして ls〜le）・頭から 鳴る・大きさ 0.45（第4.214版：Lv12 だけ 0.8＝まさちゃん 11/24「Lv12のBGMの大きさあげて！」）{badb[:3]}')
             check(not badt, f'効果音の 鳴る 時刻：行が 出た とき（Lv3 の ③は 0.8秒 あと）{badt[:3]}')
             check(all(dec) and len(dec) == 12, f'フィールドの 絵（背景・敵 2まい）は 出る 前に 読めて いる（12 エリア）')
         else:
@@ -758,7 +760,7 @@ try:
               f'なめらか：敵が 出る ときの 動きは 大きさ（transform）と 透明度（opacity）だけ（光って ぼやけた 絵は 先に 作って うすく する：qein・qeg・qdu）・フィールドの ほかの 動きも 同じ（{names}）{bada[:2]}')
         q2 = pg.evaluate("() => { const e = document.querySelector('#cbOv .qfld .qe .q2'); return e ? getComputedStyle(e).filter : ''; }")
         check('blur' in q2 and 'brightness' in q2, f'敵の 光る 絵（.q2）は 明るさ・ぼかしを 先に つけて おく（{q2}）')
-        # Lv12：③は 4タップ目でも バトル開始でも 止まらない・BGM は 決戦調査の 曲 → やめる（マップへ）で 止まる
+        # Lv12：③は 4タップ目では 止まらない・「タップで バトル開始！」で 止まる（第4.214版：前の 版は バトルでも つづいて いた）・BGM は 決戦調査の 曲
         pg.evaluate("() => { CBApp._t.state.q.clr = 11; CBApp._t.save(); CBApp._t.qApi.tkf(); }"); pg.wait_for_timeout(200)      # 切符を 満タンに（マップが 出る）
         pg.locator('#cbOv .qnd[data-lv="12"]').click(); pg.wait_for_timeout(120); pg.evaluate("() => { CBApp._sl = []; }"); pg.locator('#cbOv .qpo [data-cb=qgo]').click()
         for i in range(4):
@@ -772,15 +774,82 @@ try:
         pg.wait_for_function("() => CBApp._t.screen === 'game' && CBApp._t.view && CBApp._t.view.can.set", timeout=20000); idle(pg)
         k5 = pg.evaluate("() => ({ q: CBApp._t.qsnd, sl: CBApp._sl.slice(), trk: CBApp._t.quest.track })")
         if HAVE:
-            check(k4['kept'] == ['cb_q_se12c.mp3'] and k5['q']['kept'] == ['cb_q_se12c.mp3'] and not [e for e in k5['sl'] if e[0] == 'cut'] and k5['trk'] == 'quest',
-                  f'Lv12：③（19秒）は 4タップ目でも「タップで バトル開始！」でも 止まらない（まさちゃん 11/21「4タップ目は3タップ目の音消せなくして！タップしても！」）・BGM は 決戦調査の 曲 {k4["kept"]} {k5["q"]["kept"]} {k5["sl"]} {k5["trk"]}')
+            check(k4['kept'] == ['cb_q_se12c.mp3'] and not k5['q']['kept'] and not k5['q']['cur'] and [e for e in k5['sl'] if e[0] == 'cut'] == [['cut', 'cb_q_se12c.mp3', 0.05]] and k5['trk'] == 'quest',
+                  f'Lv12：③（19秒）は 4タップ目では 止まらない（まさちゃん 11/21「4タップ目は3タップ目の音消せなくして！タップしても！」）・「タップで バトル開始！」で すぐ 止まる（0.05秒：まさちゃん 11/24 00:26）・BGM は 決戦調査の 曲 {k4["kept"]} {k5["q"]["kept"]} {k5["sl"]} {k5["trk"]}')
         else:
             check(k5['trk'] == 'quest' and not k5['q']['kept'], 'Lv12：バトル開始 → BGM は 決戦調査の 曲（音の ファイルが ない ビルド）')
         pg.evaluate("() => { CBApp._sl = []; }")
         pg.locator('#cbOv .cbtop [data-cb=quit]').click(); pg.wait_for_timeout(80); pg.locator('#cbOv .cbmod [data-cb=quitgo]').click(); pg.wait_for_timeout(300)
         if scr(pg) != 'qmap': pg.locator('#cbOv .cbmod [data-cb=qmapgo]').click(); pg.wait_for_timeout(200)
         k6 = pg.evaluate("() => ({ q: CBApp._t.qsnd, sl: CBApp._sl.slice(), trk: CBApp._t.quest.track })")
-        check(scr(pg) == 'qmap' and not k6['q']['kept'] and not k6['q']['cur'] and k6['trk'] == 'main' and (not HAVE or ['cut', 'cb_q_se12c.mp3', 0.15] in k6['sl']), f'やめる → マップ：止まらない 音も 止まる・BGM は いつもの 曲 {k6["sl"]} {k6["trk"]}')
+        check(scr(pg) == 'qmap' and not k6['q']['kept'] and not k6['q']['cur'] and k6['trk'] == 'main' and not [e for e in k6['sl'] if e[0] == 'play'], f'やめる → マップ：フィールドの 効果音は 鳴って いない・BGM は いつもの 曲 {k6["sl"]} {k6["trk"]}')
+        # 第4.214版（まさちゃん 11/24 00:26「カードバトル、タップ早く押して、バトルに入ってからも、3タップ目の効果音が入ってしまっているから、全部確認してそういったことが起きないようにして！」）
+        #   12 エリア ぜんぶで、タップを 速く 押して バトルに 入る（0.04秒 ごと・0.2秒 ごと）→ バトルに 入ってから：
+        #     ・フィールドの 効果音が 新しく 鳴りはじめない（遅らせた 音＝Lv3 の ③ も）・0.5秒 あとには 1つも 鳴って いない（タップで 止まらない 音＝Lv12 の ③ も）
+        #   見方：音の 出口（AudioBufferSourceNode）を 見はって、フィールドで 鳴らした 音が「鳴って いて・つながって いて・音量が 0 で ない」かを 0.05秒 ごとに 見る
+        print('■ 早押し：バトルに 入ってからは フィールドの 効果音は 鳴らない（第4.214版・まさちゃん 11/24 00:26）')
+        if HAVE:
+            pg.evaluate("""() => { if (window.__probe) return; window.__probe = 1; window.__fld = [];
+              const P = AudioBufferSourceNode.prototype, st = P.start, sp = P.stop, cn = AudioNode.prototype.connect, dc = AudioNode.prototype.disconnect;
+              AudioNode.prototype.connect = function (d) { if (this instanceof AudioBufferSourceNode && d instanceof GainNode) this.__g = d; return cn.apply(this, arguments); };
+              AudioNode.prototype.disconnect = function () { if (this instanceof AudioBufferSourceNode) this.__off = true; return dc.apply(this, arguments); };
+              P.start = function (when) { const T = window.CBApp && CBApp._t, Q = T && T.quest.scene; this.__when = Math.max(when || 0, this.context.currentTime); window.__ac = this.context;
+                if (!this.loop && T && T.screen === 'qf' && Q && Q.i >= 0 && Q.step !== 'go') window.__fld.push(this);
+                this.addEventListener('ended', () => { this.__end = true; }); return st.apply(this, arguments); };
+              P.stop = function (when) { this.__stop = Math.max(when || 0, this.context.currentTime); return sp.apply(this, arguments); };
+              window.__aud = () => window.__fld.filter(s => { const n = s.context.currentTime, g = s.__g ? s.__g.gain.value : 1; return !s.__end && !s.__off && n >= s.__when && (s.__stop == null || n < s.__stop) && n < s.__when + s.buffer.duration && g > 0.02; })
+                .map(s => ({ d: +s.buffer.duration.toFixed(2), g: +(s.__g ? s.__g.gain.value : 1).toFixed(3), when: s.__when }));
+            }""")
+            FAST = """async gap => {
+              const T = CBApp._t, fw = document.querySelector('#cbOv .qfw'), sleep = ms => new Promise(r => setTimeout(r, ms)), ac = () => window.__ac.currentTime;
+              window.__fld.length = 0; CBApp._sl = [];
+              let taps = 0; while (T.screen !== 'game' && taps < 80) { fw.click(); taps += 1; if (T.screen === 'game') break; await sleep(gap); }
+              const t0 = ac(), n0 = CBApp._sl.length, before = window.__aud().length, smp = [];
+              for (let k = 0; k < 85; k++) { await sleep(k < 30 ? 20 : 50); const a = window.__aud(); if (a.length) smp.push({ t: +(ac() - t0).toFixed(3), a: a.map(x => ({ d: x.d, g: x.g, late: x.when > t0 + 0.001 })) }); }      // 0.6秒 までは 0.02秒 ごと・その あと 2.75秒 は 0.05秒 ごと
+              return { taps, t0, before, made: window.__fld.length, smp, after: CBApp._sl.slice(n0), all: CBApp._sl.slice(), q: T.qsnd, scr: T.screen, trk: T.quest.track, got: window.__got ? window.__got.slice() : [] };
+            }"""
+            badf = []; seenf = []; ran = 0
+            GAPS = (40, 200, 450, 900)      # タップの 速さ（ミリ秒 ごと）：連打・早押し・少し 早め・ふつう（Lv3 の ③〈0.8秒 あと〉が 鳴りはじめた あとに バトルに 入る）
+            for gap in GAPS:
+                for lv in range(1, 13):
+                    pg.evaluate(f"() => {{ CBApp._t.state.q.clr = {lv - 1}; CBApp._t.save(); CBApp._t.qApi.tkf(); CBApp._t.speed(1); }}"); pg.wait_for_timeout(150)
+                    if scr(pg) != 'qmap': pg.evaluate("() => { CBApp._t.menu(); }"); pg.wait_for_timeout(100); pg.locator('#cbOv .cbmenu [data-cb=quest]').click(); pg.wait_for_timeout(200)
+                    pg.locator(f'#cbOv .qnd[data-lv="{lv}"]').click(); pg.wait_for_timeout(120); pg.locator('#cbOv .qpo [data-cb=qgo]').click()
+                    pg.wait_for_function("() => CBApp._t.quest.scene && CBApp._t.quest.scene.i === 0 && !CBApp._t.quest.scene.typing", timeout=15000); pg.wait_for_timeout(450)      # 1行目が 出て、効果音も ほどけて いる
+                    r = pg.evaluate(FAST, gap); ran += 1; pg.evaluate("() => CBApp._t.speed(0.03)")
+                    late = [x for x in r['smp'] if any(a['late'] for a in x['a'])]; tail = [x for x in r['smp'] if x['t'] > 0.12]
+                    plays = [e for e in r['after'] if e[0] == 'play']
+                    seenf.append(f'Lv{lv}/{gap}ms：{r["made"]}こ 鳴らした・バトルの 時 {r["before"]}こ 鳴って いた')
+                    if r['scr'] != 'game' or late or tail or plays or r['q']['cur'] or r['q']['kept'] or r['trk'] != 'quest':
+                        badf.append(f'Lv{lv}（{gap}ms ごと）：画面 {r["scr"]}・あとから 鳴りはじめた {late[:2]}・0.12秒 あとも 鳴って いる {tail[:2]}・鳴らした {plays}・のこり {r["q"]["cur"]} {r["q"]["kept"]}・{r["trk"]}')
+                    idle(pg)
+                    pg.locator('#cbOv .cbtop [data-cb=quit]').click(); pg.wait_for_timeout(80); pg.locator('#cbOv .cbmod [data-cb=quitgo]').click(); pg.wait_for_timeout(250)
+                    if scr(pg) != 'qmap' and pg.locator('#cbOv .cbmod [data-cb=qmapgo]').count(): pg.locator('#cbOv .cbmod [data-cb=qmapgo]').click(); pg.wait_for_timeout(200)
+            check(not badf and ran == 12 * len(GAPS), f'12 エリア × 4つの 速さ（0.04秒・0.2秒・0.45秒・0.9秒 ごとに タップ）：バトルに 入ってから フィールドの 効果音は 新しく 鳴りはじめない・0.12秒 あとには 1つも 鳴って いない（{len(seenf)}回）{badf[:4]}')
+            l3 = [x for x in seenf if x.startswith('Lv3/')] + [x for x in seenf if x.startswith('Lv12/')]
+            print('     ' + '／'.join(l3))
+            # 音の 読みこみが おそい とき（はじめて 入る エリア・重い とき）：効果音が ほどける 前に バトルに 入った → あとから ほどけても 鳴らさない（12 エリア）
+            pg.evaluate("""() => { if (window.__slowOn) return; window.__slowOn = 1; window.__got = []; const of = window.fetch;
+              window.fetch = function (u) { const a = arguments, me = this; if (!window.__slow || !/cb_q_se\\d\\d[abc]\\.mp3/.test(String(u))) return of.apply(me, a);
+                return new Promise(r => setTimeout(r, window.__slow)).then(() => of.apply(me, a)).then(x => { window.__got.push([String(u).split('/').pop(), window.__ac ? +window.__ac.currentTime.toFixed(3) : 0]); return x; }); }; }""")
+            bads = []; rans = 0; lates = []
+            for lv in range(1, 13):
+                pg.evaluate(f"() => {{ CBApp._t.state.q.clr = {lv - 1}; CBApp._t.save(); CBApp._t.qApi.tkf(); CBApp._t.speed(1); window.__slow = 3200; window.__got.length = 0; }}"); pg.wait_for_timeout(150)
+                if scr(pg) != 'qmap': pg.evaluate("() => { CBApp._t.menu(); }"); pg.wait_for_timeout(100); pg.locator('#cbOv .cbmenu [data-cb=quest]').click(); pg.wait_for_timeout(200)
+                pg.locator(f'#cbOv .qnd[data-lv="{lv}"]').click(); pg.wait_for_timeout(120); pg.locator('#cbOv .qpo [data-cb=qgo]').click()
+                pg.wait_for_function("() => CBApp._t.quest.scene && CBApp._t.quest.scene.i === 0", timeout=15000)      # 1行目が 出た すぐ（効果音は まだ とどいて いない）
+                r = pg.evaluate(FAST, 40); rans += 1; pg.evaluate("() => { CBApp._t.speed(0.03); window.__slow = 0; }")
+                plays = [e for e in r['all'] if e[0] == 'play']; lt = [g for g in r['got'] if g[1] > r['t0']]
+                lates.append(len(lt))
+                if r['scr'] != 'game' or r['smp'] or plays or r['made'] or r['q']['cur'] or r['q']['kept'] or r['trk'] != 'quest' or not lt:
+                    bads.append(f'Lv{lv}：画面 {r["scr"]}・鳴って いる {r["smp"][:2]}・鳴らした {plays}・作った 音 {r["made"]}・のこり {r["q"]["cur"]} {r["q"]["kept"]}・{r["trk"]}・バトルの あとに とどいた 音 {lt}')
+                idle(pg)
+                pg.locator('#cbOv .cbtop [data-cb=quit]').click(); pg.wait_for_timeout(80); pg.locator('#cbOv .cbmod [data-cb=quitgo]').click(); pg.wait_for_timeout(250)
+                if scr(pg) != 'qmap' and pg.locator('#cbOv .cbmod [data-cb=qmapgo]').count(): pg.locator('#cbOv .cbmod [data-cb=qmapgo]').click(); pg.wait_for_timeout(200)
+            check(not bads and rans == 12, f'音の 読みこみが おそい とき（効果音が とどく 前に 連打で バトルへ）：あとから とどいても 1つも 鳴らさない（12 エリア・バトルの あとに とどいた 音 {lates}）{bads[:3]}')
+            pg.evaluate("() => { CBApp._t.speed(0.03); CBApp._sl = []; }")
+        else:
+            print('  （音の ファイルが ない ビルド：とばす）')
         # アプリが うしろへ → 効果音は 止まる（もどっても 鳴らし直さない）／効果音 オフ → 鳴らさない（読まない）／BGM オフ → フィールドの BGM も 鳴らない
         pg.evaluate("() => { CBApp._t.state.q.clr = 5; CBApp._t.save(); CBApp._sl = []; }")
         pg.locator('#cbOv [data-cb=qx]').click(); pg.wait_for_timeout(100); pg.locator('#cbOv .cbmenu [data-cb=quest]').click(); pg.wait_for_timeout(200)
@@ -814,40 +883,89 @@ try:
         if scr(pg) == 'qmap': pg.locator('#cbOv [data-cb=qx]').click(); pg.wait_for_timeout(100)
         pg.evaluate("() => { const T = CBApp._t; if (T.screen !== 'menu') T.menu(); }"); pg.wait_for_timeout(100)
 
-        print('■ セリフの 字は 行の はしで とばない（第4.208版・まさちゃん 11/20 01:42「決戦調査のセリフが、文字の段が変わる時に、文字がガタガタ段が変わってるから！おかしくならないように改善して！」）')
+        print('■ セリフの 字は 動かない・窓の 高さは かわらない（第4.208版・まさちゃん 11/20 01:42「決戦調査のセリフが、文字の段が変わる時に、文字がガタガタ段が変わってるから！おかしくならないように改善して！」・'
+              '第4.214版・11/24 00:00「セリフの文字が、戻ったり、行が変わる時にカタカタしたり枠の大きさが変わったりする！」＝書いて くれた 21こ の タップ ぜんぶ）')
+        # 第4.214版：行 ぜんぶを はじめに 1つの テキストで 置いて、中身は かえない（＝折り返しは かわらない）。見える 所（clip-path）だけ 広がる。
+        #   見る もの：字を 出して いる 間、p の 中身が 1回も 書きかわらない・字の 場所が 動かない・窓の 高さと 上の はしが 同じ・見えて いるのは はじめの n 字 だけ（切りぬきの 右の はし＝n 字目の 右）・おわったら 切りぬき なし
         WATCH = """() => new Promise(res => {
-          const p = document.querySelector('#cbOv .qsay p'), box = document.querySelector('#cbOv .qsay'), rec = {}; let h0 = null, b0 = null;
-          const at = k => { const w = document.createTreeWalker(p, NodeFilter.SHOW_TEXT); let n, o = k;
-            while ((n = w.nextNode())) { if (o < n.length) { const r = document.createRange(); r.setStart(n, o); r.setEnd(n, o + 1); const b = r.getBoundingClientRect(), q = p.getBoundingClientRect(); return [b.left - q.left, b.top - q.top]; } o -= n.length; }
-            return null; };
+          const p = document.querySelector('#cbOv .qsay p'), box = document.querySelector('#cbOv .qsay'), S = () => CBApp._t.quest.scene;
+          let muts = 0; const mo = new MutationObserver(l => { muts += l.length; }); mo.observe(p, { childList: true, characterData: true, subtree: true });
+          const tn = p.firstChild, full = p.textContent, N = full.length, q0 = p.getBoundingClientRect();
+          const at = k => { const r = document.createRange(); r.setStart(tn, k); r.setEnd(tn, k + 1); const b = r.getBoundingClientRect(), q = p.getBoundingClientRect(); return [b.left - q.left, b.top - q.top, b.right - q.left, b.bottom - q.top]; };      // p の 左上から（窓が 出る 動きの とちゅうでも 同じ）
+          const pos0 = []; for (let k = 0; k < N; k++) pos0.push(at(k));
+          const h0 = q0.height, b0 = box.getBoundingClientRect().top, bh0 = box.getBoundingClientRect().height; const bad = []; let seen = 0, steps = 0;
           const tick = () => {
-            const sh = p.querySelector('.sh'), shown = sh ? sh.textContent.length : p.textContent.length;
-            if (shown > 0 && h0 === null) { h0 = p.getBoundingClientRect().height; b0 = box.getBoundingClientRect().top; }
-            for (let k = 0; k < shown; k++) if (!(k in rec)) rec[k] = at(k);
-            if (CBApp._t.quest.scene.typing) return setTimeout(tick, 6);
-            const moved = []; for (const k in rec) { const f = at(+k); if (!f || !rec[k] || Math.abs(f[0] - rec[k][0]) > 0.5 || Math.abs(f[1] - rec[k][1]) > 0.5) moved.push(+k); }
-            res({ n: Object.keys(rec).length, len: p.textContent.length, moved, h0, h1: p.getBoundingClientRect().height, b0, b1: box.getBoundingClientRect().top,
-                  lines: Math.round(p.getBoundingClientRect().height / parseFloat(getComputedStyle(p).lineHeight)), hd: !!p.querySelector('.hd') && getComputedStyle(p.querySelector('.hd')).visibility });
+            const s = S(), n = s.shown, cp = getComputedStyle(p).clipPath;
+            if (p.childNodes.length !== 1 || p.firstChild !== tn || p.textContent !== full) bad.push('中身が かわった');
+            if (Math.abs(p.getBoundingClientRect().height - h0) > 0.01 || Math.abs(box.getBoundingClientRect().height - bh0) > 0.01) bad.push('高さ ' + h0 + '→' + p.getBoundingClientRect().height);
+            if (n > 0 && n < N) {
+              steps += 1; seen = Math.max(seen, n);
+              const m = cp.match(/-?[0-9.]+px/g);
+              if (!cp.startsWith('polygon') || !m) bad.push('切りぬき ' + cp);
+              else {
+                const v = m.map(parseFloat), six = v.length === 12, x = six ? v[6] : v[2], yTop = six ? v[7] : v[1], yBot = six ? v[9] : v[5], c = pos0[n - 1], d = pos0[n];
+                if (Math.abs(x - c[2]) > 1.01) bad.push(n + '字目の 右 ' + c[2].toFixed(1) + ' ≠ 切りぬき ' + x);
+                if (!(yTop <= c[1] + 1 && yBot >= c[3] - 1)) bad.push(n + '字目の 行が 切りぬきに 入って いない');
+                if (d[1] < c[3] - 2 && d[0] < x - 1) bad.push((n + 1) + '字目（まだ）が 見える');                 // 同じ 行の 次の 字は 切りぬきの 右
+                if (d[1] >= c[3] - 2 && d[1] < yBot - 1) bad.push((n + 1) + '字目（次の 行・まだ）が 見える');      // 次の 行の 字は 切りぬきの 下
+              }
+            }
+            if (s.typing) return setTimeout(tick, 5);
+            mo.disconnect();
+            const moved = []; for (let k = 0; k < N; k++) { const f = at(k); if (Math.abs(f[0] - pos0[k][0]) > 0.01 || Math.abs(f[1] - pos0[k][1]) > 0.01) moved.push(k); }
+            const lines = new Set(pos0.map(v => Math.round(v[1]))).size;
+            res({ n: N, seen, steps, muts, moved, bad: bad.slice(0, 4), h0, h1: p.getBoundingClientRect().height, b0, b1: box.getBoundingClientRect().top, lines, end: getComputedStyle(p).clipPath, shown: S().shown, one: p.childNodes.length === 1 && p.firstChild.nodeType === 3 });
           };
           tick();
         })"""
-        bad_w = []; seen_w = []
-        for lv, li in ((12, 2), (5, 2), (7, 1), (6, 2), (11, 2), (9, 1)):
-            pg.evaluate(f"() => {{ CBApp._t.state.q.clr = {lv - 1}; CBApp._t.save(); }}")
+        MASA = ((3, 1), (3, 2), (4, 1), (6, 0), (6, 2), (7, 0), (7, 1), (7, 2), (8, 2), (9, 0), (9, 2), (10, 1), (10, 2), (11, 0), (11, 1), (11, 2), (12, 1), (12, 2))      # まさちゃんが 書いて くれた Lv・タップ（0 から）＋ 下で Lv5 の 3行目・Lv12 の 4行目
+        bad_w = []; seen_w = []; multi = 0
+        by_lv = {}
+        for lv, li in MASA + ((5, 2), (12, 3), (1, 1)): by_lv.setdefault(lv, []).append(li)
+        for lv in sorted(by_lv):
+            want = sorted(by_lv[lv])
+            pg.evaluate(f"() => {{ CBApp._t.state.q.clr = {lv - 1}; CBApp._t.save(); CBApp._t.speed({1 if 0 in want else 0.03}); }}")      # 1行目を 見る ときは はじめから ふつうの 速さ（1字 34ミリ秒）
             if scr(pg) == 'qmap': pg.locator('#cbOv [data-cb=qx]').click(); pg.wait_for_timeout(100)
             elif scr(pg) != 'menu': pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(100)
             pg.locator('#cbOv .cbmenu [data-cb=quest]').click(); pg.wait_for_timeout(200)
             pg.locator(f'#cbOv .qnd[data-lv="{lv}"]').click(); pg.wait_for_timeout(120); pg.locator('#cbOv .qpo [data-cb=qgo]').click()
-            for i in range(li):
-                pg.wait_for_function(f"() => CBApp._t.quest.scene.i === {i} && !CBApp._t.quest.scene.typing", timeout=10000)
-                if i == li - 1: pg.evaluate("() => CBApp._t.speed(1)"); pg.wait_for_timeout(700)      # この 行は 字を ふつうの 速さで（1字 34ミリ秒）・窓が 出る 動きが おわって から
-                pg.locator('#cbOv .qfw').click()
-            w = pg.evaluate(WATCH); pg.evaluate("() => CBApp._t.speed(0.03)")
-            seen_w.append(f'Lv{lv} {li + 1}行目 {w["lines"]}段')
-            if w['moved'] or w['n'] != w['len'] or abs(w['h0'] - w['h1']) > 0.5 or abs(w['b0'] - w['b1']) > 0.5 or w['lines'] < 2 or w['hd'] != 'hidden':
-                bad_w.append(f"Lv{lv} {li + 1}行目：動いた 字 {w['moved'][:6]}・{w['n']}/{w['len']}字・高さ {w['h0']:.1f}→{w['h1']:.1f}・窓 {w['b0']:.1f}→{w['b1']:.1f}・{w['lines']}段・{w['hd']}")
+            cur = -1                                                    # ぜんぶ 出おわった 行
+            for i in want:
+                while cur < i - 1:                                      # 見ない 行は 速く 進める
+                    if cur >= 0: pg.locator('#cbOv .qfw').click()
+                    pg.wait_for_function(f"() => CBApp._t.quest.scene.i === {cur + 1} && !CBApp._t.quest.scene.typing", timeout=10000); cur += 1
+                if i == 0:
+                    pg.wait_for_function("() => CBApp._t.quest.scene.i === 0", timeout=10000)
+                else:
+                    pg.evaluate("() => CBApp._t.speed(1)"); pg.wait_for_timeout(420)      # この 行は 字を ふつうの 速さで（1字 34ミリ秒）・窓が 出る 動きが おわって から
+                    pg.locator('#cbOv .qfw').click()
+                    pg.wait_for_function(f"() => CBApp._t.quest.scene.i === {i}", timeout=10000)
+                w = pg.evaluate(WATCH); pg.evaluate("() => CBApp._t.speed(0.03)"); cur = i
+                seen_w.append(f'Lv{lv}-{i + 1}：{w["lines"]}段'); multi += w['lines'] >= 2
+                if (w['moved'] or w['muts'] or w['bad'] or abs(w['h0'] - w['h1']) > 0.01 or (i > 0 and abs(w['b0'] - w['b1']) > 0.01) or w['end'] != 'none' or w['shown'] != w['n'] or not w['one']      # 1行目は 窓が 下から 出て くる 動きの とちゅう（上の はしは 見ない）
+                        or w['steps'] < 3 or w['seen'] < w['n'] * 0.5):
+                    bad_w.append(f"Lv{lv} {i + 1}行目：動いた 字 {w['moved'][:6]}・書きかえ {w['muts']}回・{w['bad']}・高さ {w['h0']:.1f}→{w['h1']:.1f}・窓 {w['b0']:.1f}→{w['b1']:.1f}・おわり {w['end']}・見た {w['seen']}/{w['n']}字（{w['steps']}回）")
             pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(150)
-        check(not bad_w, f'セリフの 字は 出た 場所から 動かない（行の はしで 次の 段へ とばない）・窓の 高さは はじめから さいごまで 同じ・まだの 字は 見えない（{"・".join(seen_w)}）{bad_w[:3]}')
+        check(not bad_w and len(seen_w) == 21 and multi >= 15, f'セリフの 字は 出た 場所から 動かない（中身を 1回も 書きかえない・行は ふえない）・窓の 高さは はじめから さいごまで 同じ・見えるのは 出た 字 だけ（{"・".join(seen_w)}）{bad_w[:3]}')
+        # 画面の 幅が かわった（たて・横）とき：字の 場所を はかり直す（出た 字の 数は そのまま）
+        pg.evaluate("() => { CBApp._t.state.q.clr = 11; CBApp._t.save(); CBApp._t.speed(0.03); }")
+        pg.locator('#cbOv .cbmenu [data-cb=quest]').click(); pg.wait_for_timeout(200)
+        pg.locator('#cbOv .qnd[data-lv="12"]').click(); pg.wait_for_timeout(120); pg.locator('#cbOv .qpo [data-cb=qgo]').click()
+        for i in range(2):
+            pg.wait_for_function(f"() => CBApp._t.quest.scene.i === {i} && !CBApp._t.quest.scene.typing", timeout=10000)
+            if i == 1: pg.evaluate("() => CBApp._t.speed(6)"); pg.wait_for_timeout(300)
+            pg.locator('#cbOv .qfw').click()
+        pg.wait_for_function("() => CBApp._t.quest.scene.i === 2 && CBApp._t.quest.scene.shown >= 6", timeout=10000)
+        RS = """() => { const p = document.querySelector('#cbOv .qsay p'), S = CBApp._t.quest.scene, n = S.shown, r = document.createRange(); r.setStart(p.firstChild, n - 1); r.setEnd(p.firstChild, n);
+          const b = r.getBoundingClientRect(), q = p.getBoundingClientRect(), m = getComputedStyle(p).clipPath.match(/-?[0-9.]+px/g).map(parseFloat); return { n, right: b.right - q.left, x: m.length === 12 ? m[6] : m[2], w: q.width, typing: S.typing }; }"""
+        r0 = pg.evaluate(RS)
+        vp0 = pg.viewport_size; pg.set_viewport_size({'width': 700, 'height': 390}); pg.wait_for_timeout(250)
+        r1 = pg.evaluate(RS)
+        pg.set_viewport_size(vp0); pg.wait_for_timeout(250)
+        r2 = pg.evaluate(RS)
+        check(abs(r0['x'] - r0['right']) <= 1.01 and abs(r1['x'] - r1['right']) <= 1.01 and abs(r2['x'] - r2['right']) <= 1.01 and r1['w'] > r0['w'] + 100 and r0['typing'] and r2['typing'],
+              f'画面の 幅が かわっても、見える 所は 出た 字に 合う（幅 {r0["w"]:.0f} → {r1["w"]:.0f} → {r2["w"]:.0f}・切りぬきの 右 {r0["x"]:.1f}／{r1["x"]:.1f}／{r2["x"]:.1f}）')
+        pg.evaluate("() => { CBApp._t.speed(0.03); CBApp._t.menu(); }"); pg.wait_for_timeout(150)
         pg.evaluate("() => { CBApp._t.state.q.clr = 0; CBApp._t.save(); }")
 
         print('■ あそび方・エラー')

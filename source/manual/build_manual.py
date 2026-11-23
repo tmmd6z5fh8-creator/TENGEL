@@ -165,6 +165,20 @@ def _app_target():
     m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m); return m
 
 
+# 第4.214版（まさちゃん 2026/11/24 01:37「説明書のテンゲル3の3の文字が間違ってる、正しくは「Ⅲ」ね！」）：App Store版の 説明書の「Ⅲ」は 3本の棒
+#   （アプリの 上の「テンゲルⅢ」と 同じ 字の 形：src.html の --font-mark＝まさちゃんの 指定 2026/10/23。説明書の 字の 形〈Dela Gothic One・BIZ UDPGothic〉の Ⅲ は 上下に 横棒が つく）。
+#   出る 所：上の 帯の 題・表紙の 大きい 題・本文。Web版の 説明書は 1バイトも かえない（App Store版 だけに 足す）
+RN_CSS = ("\n.rn{font-family:'Hiragino Sans','Yu Gothic',sans-serif;font-style:normal;font-weight:inherit}"
+          "\n.hero h1 .rn{font-weight:800}")
+RN_JS = ("$('#tbTitle').textContent = IN_APP ? 'テンゲルⅢ 説明書' : '';",
+         "$('#tbTitle').innerHTML = IN_APP ? 'テンゲル<em class=\"rn\">Ⅲ</em> 説明書' : '';")
+
+
+def rn_wrap(h):
+    """タグの 外の 字に ある Ⅲ を <em class="rn">Ⅲ</em> に（タグの 中の 字〈alt・aria-label など〉は そのまま）"""
+    return ''.join(p if p.startswith('<') else p.replace('Ⅲ', '<em class="rn">Ⅲ</em>') for p in re.split(r'(<[^>]*>)', h))
+
+
 def build(mode, out, app_ver='2026.10.12-4', mother=None):
     """説明書を作る。返り値：(使った画像のファイル名, 説明書の画像の版)
     mother：アプリに入れるマザーデータ（第4.123版から 説明書には 使わない：テンゲルデータの 数は 出さない）"""
@@ -268,6 +282,10 @@ def build(mode, out, app_ver='2026.10.12-4', mother=None):
 
     css = open(D + '/manual.css', encoding='utf-8').read() + SHOT_CSS
     js = open(D + '/manual.js', encoding='utf-8').read()
+    if app:      # 第4.214版：Ⅲ は 3本の棒（上の RN_CSS の 説明）
+        css += RN_CSS
+        assert js.count(RN_JS[0]) == 1, '上の 帯の 題を 入れる 行が 見つからない（manual.js）'
+        js = js.replace(RN_JS[0], RN_JS[1])
     items_js = json.dumps([{k: it[k] for k in ('id', 't', 'd', 'kw')} for it in items], ensure_ascii=False)
     in_app = mode in ('pwa', 'app')
     start = ('<li><a href="#input"><span class="n">1</span><b>レースを判定する</b><small>オッズを入れるだけ</small></a></li>\n'
@@ -325,6 +343,9 @@ def build(mode, out, app_ver='2026.10.12-4', mother=None):
 {js}
 </script>
 '''
+    if app:      # 第4.214版：本文と 表紙の Ⅲ（スクリプトより 前の 所 だけ）
+        _a, _b = body.split('<script>', 1); assert 'Ⅲ' in _a
+        body = rn_wrap(_a) + '<script>' + _b
     os.makedirs(out, exist_ok=True)
     os.makedirs(os.path.join(out, imgdir), exist_ok=True)
     for f in sorted(imgs):

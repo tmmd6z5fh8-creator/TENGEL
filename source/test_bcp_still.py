@@ -1,10 +1,11 @@
 # 結果ボードカスタム（第4.150版・まさちゃん 2026/11/11 02:36「結果カスタムボードの動き全部無くして！ボードを持つ馬も含めて！その代わり、画質あげて！」）：動かない・絵は もとの 画質
 #   python3 test_bcp_still.py   （ios/bcp_assets/ が ある とき だけ。ない とき（CI）は「絵が ない」と 出して おわる）
 #   （第4.145版〜第4.149版の test_bcp_parts.py＝部品を 重ねて 動かす 出し方の テスト の かわり）
-#   ・アプリに 入れる 絵：見本 14＋止まった 絵 59＋前の 絵 35＝108まい だけ（動く 絵の 部品は 入れない）・軽い 版（ios/lite）も もとと 同じ 中身（軽く しない）・止まった 絵は 1170×2532
-#   ・59段 × 控えめ／通常：止まった 絵（と 前の 絵）だけで 出る・いつも 止まった 形（.bcst）・キャラの 入れもの／光と 雲／動きの CSS は ない・絵に 動きが ついて いない・
+#   第4.214版（まさちゃん 2026/11/24 00:13「結果ボードカスタム 消す物 ・出世馬結果ボード ・結果ボードを廻る ・隠蔽工作」）：絵の ボードは 14こ → 11こ（59段 → 44段）
+#   ・アプリに 入れる 絵：見本 11＋止まった 絵 44＋前の 絵 31＝86まい だけ（第4.213版までは 14＋59＋35＝108。動く 絵の 部品は 入れない・消した 3こ の 絵も 入れない）・軽い 版（ios/lite）も もとと 同じ 中身（軽く しない）・止まった 絵は 1170×2532
+#   ・44段 × 控えめ／通常：止まった 絵（と 前の 絵）だけで 出る・いつも 止まった 形（.bcst）・キャラの 入れもの／光と 雲／動きの CSS は ない・絵に 動きが ついて いない・
 #     絵は ボードが 出はじめる 前には 見えない
-#   ・結果の 字（見出し・行）と「とじる」が 出おわった あとの 画面は 1秒 たっても 1点も かわらない（通常の 演出でも）・ボードを持つ馬（15）も 止まった まま
+#   ・結果の 字（見出し・行）と「とじる」が 出おわった あとの 画面は 1秒 たっても 1点も かわらない（通常の 演出でも）・ボードを持つ馬（12）も 止まった まま
 #   ・画質：3倍の 画面で、絵は もとの 絵（ios/bcp_assets の WebP）と 同じ 画素（ボードと「とじる」と 前の 絵の 所を のぞく）
 #   ・絵が おそい：読める まで 絵を 出さない（背景 だけ 先に 出ない・ほかの 絵も かくさない）→ そろったら いっしょに 出る
 #   ・背景の 絵が 読めない → いつもの ボード／前の 絵 だけ 読めない → 背景 だけで 出る／いつまでも こない → 8秒で いつもの ボード
@@ -29,7 +30,7 @@ srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory'
 SPEC = {'r': 9, 'n': 14, 'ranks': {str(i): i for i in range(1, 15)},
         'rows': [{'t': '3連単', 'state': '的中', 'hits': [[11, 8, 2]], 'n': 18}, {'t': '馬単', 'state': '的中', 'hits': [[11, 8]], 'n': 9}, {'t': 'ワイド', 'state': '不的中', 'hits': [], 'n': 6}]}
 MISS = dict(SPEC, rows=[dict(x, state='不的中', hits=[]) for x in SPEC['rows']])
-STAGES = [(iid, kind, n, name) for iid, kind, st in _bcp.ITEMS for n, name in st]          # 59段
+STAGES = [(iid, kind, n, name) for iid, kind, st in _bcp.ITEMS for n, name in st]          # 44段（第4.214版）
 BG = lambda nm: _bcp.pics(nm)[0]          # 背景の 絵の 名前（第4.153版：出世馬の ほかは ボードの 中を ぬり直した 絵 bcp_<名前>_bl.webp）
 BY = {name: (iid, kind, n) for iid, kind, n, name in STAGES}
 MOVING = {f for n in _bcp.MOTION for f in _bcp.motion_files(n)}                            # 動く 絵の 部品（もう アプリに 入れない）
@@ -70,9 +71,10 @@ sizes = {Image.open(os.path.join(BCP_DIR, BG(nm))).size for _i, _k, _n, nm in ST
 fgs = [f for f in fl if f.endswith('_fg.webp')]
 fg_ok = all(Image.open(os.path.join(BCP_DIR, f)).mode == 'RGBA' and Image.open(os.path.join(BCP_DIR, f)).size == (1170, 2532) for f in fgs)
 tot = sum(os.path.getsize(os.path.join(BCP_DIR, f)) for f in fl)
-check(len(fl) == len(set(fl)) == 108 and sum(1 for f in fl if f.startswith('bcp_t_')) == 14 and all(BG(nm) in fl for _i, _k, _n, nm in STAGES) and sum(1 for f in fl if f.endswith('_bl.webp')) == 52 and not any(f'bcp_{nm}.webp' in fl for _i, _k, _n, nm in STAGES if _bcp.blank(nm)) and len(fgs) == 35 and not (set(fl) & MOVING) and len(MOVING) > 300
+check(len(fl) == len(set(fl)) == 86 and len(STAGES) == 44 and sum(1 for f in fl if f.startswith('bcp_t_')) == 11 and all(BG(nm) in fl for _i, _k, _n, nm in STAGES) and sum(1 for f in fl if f.endswith('_bl.webp')) == 44 and not any(f'bcp_{nm}.webp' in fl for _i, _k, _n, nm in STAGES if _bcp.blank(nm)) and len(fgs) == 31 and not (set(fl) & MOVING) and len(MOVING) > 300
+      and not [f for f in fl if f.startswith(('bcp_ring', 'bcp_shusse', 'bcp_miss3', 'bcp_t_ring', 'bcp_t_climb', 'bcp_t_cover'))] and not (set(nm for _i, _k, _n, nm in STAGES) & set(_bcp.GONE))
       and _bcp.stills_out() == [] and all('mo' not in d for d in _bcp.data()['d'].values()) and same and sizes == {(1170, 2532)} and fg_ok,
-      f'アプリに 入れる 絵は 108まい（見本 14・止まった 絵 59〈ボードの 中を ぬり直した 絵 52・出世馬の 3D の 絵 7〉・前の 絵 35：{tot / 1e6:.2f}MB）・動く 絵の 部品（{len(MOVING)}まい）と 動きの データは 入れない・'
+      f'アプリに 入れる 絵は 86まい（見本 11・止まった 絵 44〈どれも ボードの 中を ぬり直した 絵〉・前の 絵 31：{tot / 1e6:.2f}MB）・消した 3こ（結果ボードを廻る・出世馬・隠蔽作戦）の 絵は 入れない・動く 絵の 部品（{len(MOVING)}まい）と 動きの データは 入れない・'
       f'中身は もとの 絵（ios/bcp_assets）と 同じ＝軽く して いない・止まった 絵と 前の 絵は 1170×2532（{sizes}）')
 
 try:
@@ -107,7 +109,7 @@ try:
         def snap(pg):
             return np.asarray(Image.open(io.BytesIO(pg.screenshot(clip={'x': 0, 'y': 0, 'width': 390, 'height': 844}))).convert('RGB')).astype(np.int16)
 
-        # ---- 1) 59段 ぜんぶ（控えめ と 通常）----
+        # ---- 1) 44段 ぜんぶ（控えめ と 通常）----
         ctx, pg, errs, bad, req = page()
         t0 = time.time(); ng = []
         for iid, kind, n, name in STAGES:
@@ -120,13 +122,13 @@ try:
                 if not ok: ng.append((name, 'calm' if calm else 'go', s and {k: v for k, v in s.items() if k != 'srcs'}, pr))
                 close(pg)
         check(not ng and not errs and not bad and not (set(req) & MOVING) and set(req) <= set(fl),
-              f'59段 × 控えめ／通常：止まった 絵（と 前の 絵）だけで 出る・いつも 止まった 形（.bcst）・キャラの 入れもの／光と 雲／動きの CSS は ない・絵に 動きが ついて いない・'
+              f'{len(STAGES)}段 × 控えめ／通常：止まった 絵（と 前の 絵）だけで 出る・いつも 止まった 形（.bcst）・キャラの 入れもの／光と 雲／動きの CSS は ない・絵に 動きが ついて いない・'
               f'ボードが 出はじめる 前には 絵が 見えない・エラーなし（{time.time() - t0:.0f}秒・読んだ 絵 {len(set(req))}こ・だめ {ng[:3]}・{errs[:2]}・{bad[:3]}）')
 
         # ---- 2) 出た あとの 画面は かわらない（通常の 演出・1秒 おいて 2まい）：絵の ボード 8こ と ボードを持つ馬 ----
         #   結果の 字（見出し・行）と「とじる」が 順に 出るのは いつもの ボードと 同じ（結果ボードカスタムの 動きでは ない）。それが おわった あと、画面は 1点も 動かない
         res2 = []
-        for name in ('ring1', 'toast2', 'race3', 'trophy4', 'carry2', 'bouquet3', 'miss1', 'miss4_3'):
+        for name in ('selfie1', 'toast2', 'race3', 'trophy4', 'carry2', 'bouquet3', 'miss1', 'miss4_3'):      # 第4.214版：消した ring1 の かわりに selfie1
             show(pg, name, False); ready(pg); pg.wait_for_timeout(2400); a = snap(pg); pg.wait_for_timeout(1100); c = snap(pg); close(pg)      # 2.4秒：見出し・行・「とじる」が 出おわる（いつもの ボードと 同じ 出方）
             res2.append((name, int(np.abs(a - c).max())))
         TF = "() => [...document.querySelectorAll('#fxOv .hb .bcx, #fxOv .hb .rb')].map(e => getComputedStyle(e).transform + '|' + getComputedStyle(e).opacity).join(';')"
@@ -142,13 +144,13 @@ try:
         # ---- 3) 画質：3倍の 画面で、絵は もとの 絵と 同じ 画素（ボード・「とじる」・前の 絵の 所を のぞく）----
         ctx, pg, errs3, bad, req = page(3)
         res3 = []
-        for name in ('ring2', 'selfie1', 'stamp3', 'miss2_2', 'shusse8_3d'):
+        for name in ('toast2', 'selfie1', 'stamp3', 'miss2_2', 'carry4'):      # 第4.214版：消した ring2・shusse8_3d の かわりに toast2・carry4（「とじる」の 色を 持つ 絵）
             show(pg, name, False); ready(pg); pg.wait_for_timeout(2400); shot = snap(pg)
             box = pg.evaluate("() => { const r = e => { const b = e.getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; }; return { rb: r(document.querySelector('#fxOv .hb .rb')), close: r(document.querySelector('#fxOv .close')) }; }")
             close(pg)
             src = np.asarray(Image.open(os.path.join(MD, BG(name))).convert('RGB')).astype(np.int16)
             keep = np.ones(src.shape[:2], bool)
-            for (x0, y0, x1, y1), m in ((box['rb'], 12), (box['close'], 132)):      # 「とじる」は まわりの 光（box-shadow：出世馬 など）も のぞく
+            for (x0, y0, x1, y1), m in ((box['rb'], 12), (box['close'], 132)):      # 「とじる」は まわりの 光（box-shadow：馬が運ぶ結果ボード など）も のぞく
                 keep[max(0, int(y0 * 3) - m):int(y1 * 3) + m, max(0, int(x0 * 3) - m):int(x1 * 3) + m] = False
             fgp = os.path.join(MD, f'bcp_{name}_fg.webp')
             if os.path.exists(fgp) and _bcp.cfg(name).get('fg'): keep &= np.asarray(Image.open(fgp).convert('RGBA'))[..., 3] == 0

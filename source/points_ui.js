@@ -6,7 +6,7 @@
 //  ・第4.212版（まさちゃん 2026/11/23）：値段は ぜんぶ points.js の COST から 出す（画面の 文も）・おもちゃ（お世話チャレンジ・TENGERカードバトル）の 解放（toy）・
 //    古い 履歴を まとめる（points.js の compact：3年より 前は 自動・「古い台帳をリセットする」は old_reset.js から）
 //  ・第4.91版：結果ボードカスタム（買い切り 2,200円・非消耗型）。買ったら 台帳に tx-<取引> の unlock（what＝board）。買った あとに 読み込んだ レースの 数（board.reads）で
-//    15こを 順に 解放（points.js の BOARD：第4.113版で 16こ・6レースごと → 第4.120版で 15こ。第4.121版：1〜14 は まさちゃんの 絵の ボード・15 は「ボードを持つ馬」）。
+//    12こを 順に 解放（points.js の BOARD：第4.113版で 16こ・6レースごと → 第4.120版で 15こ → 第4.214版で 12こ。1〜11 は まさちゃんの 絵の ボード・12 は「ボードを持つ馬」）。
 //    第4.113版：的中の とき（board.selHit）・ハズレの とき（board.selMiss）で べつべつに 1つずつ 使う（前の 1つの board.sel は 両方へ うつす）。
 //    連続的中の 数（board.streak：結果を 決めた レースごと・同じ レースは 1回）は 数えて おく（第4.113版：出世馬は 消した ので いまは どの 飾りも 使わない）
 //    第4.121版：まさちゃんの 絵の ボード（1〜14）は 連続的中の 数（streak）と 続けて ハズレた 数（board.mstreak：ハズレで +1・的中で 0）で 絵が かわる
@@ -682,7 +682,7 @@
     return `<div class="msrow${m.claimable ? ' can' : ''}" data-mid="${esc(m.id)}"><div><div class="mn">${esc(m.label)}　<span class="muted" style="font-weight:400">${pts(m.reward)}</span></div><div class="md">${md}</div><div class="bar"><i style="width:${w}%"></i></div></div>`
       + `<div>${m.claimable ? `<button class="btn primary" type="button" data-pt="claim" data-id="${m.id}">受け取る</button>` : m.claimed ? '<span class="chip">✓</span>' : ''}</div></div>`;
   }
-  // 結果ボードカスタムの ミッション（第4.114版・第4.120版で さいごを 15こに）：解放した 番号の 数（3・6・9・12・15こ）→ ポイント
+  // 結果ボードカスタムの ミッション（第4.114版・第4.120版で さいごを 15こに・第4.214版で 12こ まで）：解放した 番号の 数（3・6・9・12こ）→ ポイント
   function boardRowsHtml() {
     const n = boardMissionN(), owned = !!W && P.boardOwned(W.events), ms = P.boardMissions(n, W ? W.events : []);
     let h = `<p class="hint" style="margin:0 0 4px">設定の「結果ボードカスタム」で 解放した 数（買った 後に 読み込んだ レースの 数で 番号の 順に 解放）で ポイントが もらえるよ。今 <b>${n}個</b>${owned ? '' : '（結果ボードカスタムを 買うと 進むよ）'}</p><div>`;

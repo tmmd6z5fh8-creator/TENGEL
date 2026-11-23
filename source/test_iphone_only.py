@@ -126,15 +126,17 @@ if r.returncode == 0:
     hbx_py = _hbx(open(os.path.join(W, 'kisekae', 'r3d', 'fx', 'board_horse_parts.py'), encoding='utf8').read(), r'HBX = dict\((.*?)\)\n')
     check(bool(hbx_js) and hbx_js == hbx_py and len(hbx_js) == 11 and all(v in html for v in ('bcx_hb_head.webp', 'bcx_hb_fore.webp', 'bcx_hb_hind.webp', 'bcx_hb_tail.webp', 'bcx_hb_eye.webp')) and 'bcECarry' in html,
           f'結果ボードカスタム 16「ボードを持つ馬」：部品の 四角が 絵を 作る 道具と 同じ（{hbx_js}）・絵の 名前と 登場の 動き（bcECarry）が 入って いる（第4.108版）')
+    # 第4.214版（まさちゃん 2026/11/24 00:13「結果ボードカスタム 消す物 ・出世馬結果ボード ・結果ボードを廻る ・隠蔽工作」）：絵の ボードは 11こ（44段・絵 86まい）。消した 3こ の 絵は アプリに 入れない
     # 第4.121版：まさちゃんの 絵の ボード 14こ（window.__BCP：kisekae/bcp/bcp_app.py）。絵（bcp_*.webp）は 手元の ios/bcp_assets/ から Resources/ へ（リポジトリには 入れない・CI は なし）
     sys.path.insert(0, os.path.join(W, 'kisekae', 'bcp')); import bcp_app as _bcp
     BCPJ = _json.JSONDecoder().raw_decode(html.split('window.__BCP=')[1])[0] if 'window.__BCP=' in html else {}
     bfiles = _bcp.files(); bhave = [f for f in bfiles if f in res]; bdir = os.path.join(W, 'ios', 'bcp_assets')
-    check(len(BCPJ.get('items', {})) == 14 and len(BCPJ.get('d', {})) == 59 and html.index('window.__BCP=') < html.index('window.TengelBoard = {')
-          and [i for i, _, _ in _bcp.ITEMS] == ['ring', 'toast', 'race', 'snap', 'seal', 'cup', 'hoist', 'bloom', 'climb', 'rain', 'next', 'cover', 'wait', 'pen']
-          and [len(BCPJ['items'][i]['st']) for i in ('ring', 'climb', 'rain')] == [4, 7, 4] and BCPJ['items']['climb']['st'][-1] == [24, 'shusse24_3d'] and 't' not in BCPJ['items']['climb'] and BCPJ.get('thumb') == 'bcp_t_{}_b.webp' and len(bfiles) == 14 + 59 + 35 and len(bfiles) == len(set(bfiles))
+    check(len(BCPJ.get('items', {})) == 11 and len(BCPJ.get('d', {})) == 44 and html.index('window.__BCP=') < html.index('window.TengelBoard = {')
+          and [i for i, _, _ in _bcp.ITEMS] == ['toast', 'race', 'snap', 'seal', 'cup', 'hoist', 'bloom', 'rain', 'next', 'wait', 'pen']
+          and [len(BCPJ['items'][i]['st']) for i in ('toast', 'hoist', 'rain')] == [4, 4, 4] and BCPJ['items']['hoist']['st'][-1] == [4, 'carry4'] and not ({'ring', 'climb', 'cover'} & set(BCPJ['items'])) and not (set(_bcp.GONE) & set(BCPJ['d']))
+          and BCPJ.get('thumb') == 'bcp_t_{}_b.webp' and len(bfiles) == 11 + 44 + 31 and len(bfiles) == len(set(bfiles))
           and len(bhave) in (0, len(bfiles)) and (not os.path.isdir(bdir) or len(bhave) == len(bfiles)) and not any(f.endswith('.png') for f in bhave),
-          f'第4.121版：アプリの画面に 絵の ボード 14こ（段 59・出世馬は 1〜24連勝の 7段）・絵 {len(bhave)}/{len(bfiles)}こ（見本 14＋止まった 絵 59＋前の 絵 35：第4.150版・手元に あれば ぜんぶ・CI は なし）')
+          f'第4.214版：アプリの画面に 絵の ボード 11こ（段 44：どれも 4段・消した 3こ〈結果ボードを廻る・出世馬・隠蔽作戦〉は ない）・絵 {len(bhave)}/{len(bfiles)}こ（見本 11＋止まった 絵 44＋前の 絵 31・手元に あれば ぜんぶ・CI は なし）')
     # 第4.150版（まさちゃん 2026/11/11 02:36「結果カスタムボードの動き全部無くして！ボードを持つ馬も含めて！その代わり、画質あげて！」）：絵の ボードは 動かない。
     #   アプリの データ（window.__BCP）に 動きの データ（mo）は ない・動く 絵の 部品（キャラなしの 背景・キャラ・光と 雲：346まい）は Resources に 入れない・
     #   59段 ぜんぶ 止まった 絵（bcp_<デザイン>.webp）と 前の 絵（_fg.webp：35段）を 入れる。絵は もとの 画質の まま（軽く しない：下の 第4.146版の 所）。
@@ -144,10 +146,10 @@ if r.returncode == 0:
     so = _bcp.stills_out()
     bsz = sum(os.path.getsize(os.path.join(bdir, f)) for f in bhave) if bhave else 0
     check(mo_d == [] and len(mo_f) == 346 and not (set(mo_f) & set(bfiles)) and not any(f in res for f in mo_f) and so == []
-          and all((BCPJ['d'][k].get('p') or f'bcp_{k}.webp') in bfiles for k in BCPJ['d']) and sum(1 for k in BCPJ['d'] if BCPJ['d'][k].get('p') == f'bcp_{k}_bl.webp') == 52 and 'D.p ||' in html and all((f'bcp_{k}_fg.webp' in bfiles) == bool(BCPJ['d'][k].get('fg')) for k in BCPJ['d']) and sum(1 for k in BCPJ['d'] if BCPJ['d'][k].get('fg')) == 35
-          and (not bhave or 16.2e6 < bsz < 17.3e6) and 'bcpld' in html and "decoding = 'sync'" in html and 'bcp_${name}.webp' in html and 'const st = true' in html,
-          f'第4.150版：絵の ボードは 動かない：動きの データ なし（{len(mo_d)}段）・動く 絵の 部品 {len(mo_f)}まいは アプリに 入れない・59段 ぜんぶ 止まった 絵と 前の 絵（35段）を 入れる・'
-          f'絵 ぜんぶで {bsz / 1e6:.1f}MB（もとの 画質の まま。第4.149版は 軽く した 部品で 約14.0MB）')
+          and all((BCPJ['d'][k].get('p') or f'bcp_{k}.webp') in bfiles for k in BCPJ['d']) and sum(1 for k in BCPJ['d'] if BCPJ['d'][k].get('p') == f'bcp_{k}_bl.webp') == 44 and 'D.p ||' in html and all((f'bcp_{k}_fg.webp' in bfiles) == bool(BCPJ['d'][k].get('fg')) for k in BCPJ['d']) and sum(1 for k in BCPJ['d'] if BCPJ['d'][k].get('fg')) == 31
+          and (not bhave or 12.6e6 < bsz < 13.8e6) and 'bcpld' in html and "decoding = 'sync'" in html and 'bcp_${name}.webp' in html and 'const st = true' in html,
+          f'第4.150版：絵の ボードは 動かない：動きの データ なし（{len(mo_d)}段）・動く 絵の 部品 {len(mo_f)}まいは アプリに 入れない・44段 ぜんぶ 止まった 絵と 前の 絵（31段）を 入れる・'
+          f'絵 ぜんぶで {bsz / 1e6:.1f}MB（もとの 画質の まま。第4.213版までは 14こ で 16.6MB・第4.149版は 軽く した 部品で 約14.0MB）')
     fxd = os.path.join(W, 'ios', 'fx_assets')
     if os.path.isdir(fxd) and all(os.path.exists(os.path.join(fxd, f)) for f in ASSET_FILES):
         sz = sum(os.path.getsize(os.path.join(fxd, f)) for f in ASSET_FILES)
@@ -194,17 +196,17 @@ if r.returncode == 0:
         sh_ok, sh_v, sh_bin = _sh2()
         same_sz = all(os.path.getsize(os.path.join(RES, f)) == e['size'] for _n, f, e in _all)
         keep_fl = [(n, f) for n, f, e in _all if re.fullmatch(r'tc_n_.+\.webp|fg\d+_(n|ns|m|ms)\.webp|bcp_.+\.webp', f)]
-        keep_ok = len(keep_fl) == 7 + 20 + 108 and all(e['how'] == 'copy' for n, f, e in _all if (n, f) in keep_fl) and all(_h(os.path.join(RES, f)) == _h(os.path.join(_ad.master(n), f)) for n, f in keep_fl)
+        keep_ok = len(keep_fl) == 7 + 20 + 86 and all(e['how'] == 'copy' for n, f, e in _all if (n, f) in keep_fl) and all(_h(os.path.join(RES, f)) == _h(os.path.join(_ad.master(n), f)) for n, f in keep_fl)
         how = {}
         for _n, f, e in _all: how[e['how']] = how.get(e['how'], 0) + 1
         src_ok = all(os.path.getsize(os.path.join(_ad.master(n), f)) == e['src'][0] for n, f, e in _all)      # もとは そのまま（大きさが 台帳と 同じ）
         # 第4.175版：ノーマルど的中の 動画は 極ど的中の 入りに 使う はじめの 180コマ だけ（kisekae/lite_assets.py の CUT）＝ 動画 4本で 約34.2MB（前は 約37.3MB）
         # 第4.195版：極ど的中の 動画は 顔の 場面を 新しい 馬に した sd_film5.mp4（軽い 版 11.7MB・前は 10.2MB）＝ 動画 4本で 約35.7MB
-        check(33.5e6 < p_films < 37.5e6 and _man['fx_assets']['files']['nd_film4.mp4']['p'] == 'crf24-slow-cut180' and _man['fx_assets']['files']['sfx_nd.m4a']['how'] == 'acut' and how.get('acut') == 1 and 16.2e6 < p_bcp < 17.3e6 and 7.0e6 < p_tcc < 8.2e6 and 3.5e6 < p_fgc < 4.5e6 and 1.6e6 < p_shelf < 2.4e6 and 0.25e6 < sh_bin < 0.4e6 and iz_ok and 3.9e6 < iz_save < 4.9e6 and sh_ok and ((199e6 < p_all < 211e6) if _pb_on else (196e6 < p_all < 208e6)) and same_sz and keep_ok and src_ok
+        check(33.5e6 < p_films < 37.5e6 and _man['fx_assets']['files']['nd_film4.mp4']['p'] == 'crf24-slow-cut180' and _man['fx_assets']['files']['sfx_nd.m4a']['how'] == 'acut' and how.get('acut') == 1 and 12.6e6 < p_bcp < 13.8e6 and 7.0e6 < p_tcc < 8.2e6 and 3.5e6 < p_fgc < 4.5e6 and 1.6e6 < p_shelf < 2.4e6 and 0.25e6 < sh_bin < 0.4e6 and iz_ok and 3.9e6 < iz_save < 4.9e6 and sh_ok and ((193e6 < p_all < 205e6) if _pb_on else (190e6 < p_all < 202e6)) and same_sz and keep_ok and src_ok
               and how.get('film') == 4 and how.get('webp', 0) + how.get('keep', 0) == 37 and how.get('idxz') == 7 and how.get('shelf', 0) == 0 and _ad.INFO not in res and all(_man[n]['params'] == {'crf': 24, 'preset': 'slow', 'tail': [[30, 23], [20, 22], [10, 21]], 'q': 75, 'method': 6, 'keep': 0.97} for n in _ad.NAMES)
               and all(_man['fx_assets']['files'][f]['p'].startswith('crf27-slow' if f == FILMS['gk_film'] else 'crf24-slow') for f in FILMS.values()),      # 第4.171版：のばして 作った 神様極的中 だけ CRF 27
               f'第4.146版：アプリに 入る のは 軽い 版（動画 4本 {p_films / 1e6:.1f}MB：もとは 70.7MB〈第4.171版：3倍の 動画。前は 26.6MB・もと 40.8MB／第4.162版：昇格の 動画を 外して 4本・超神様の 新しい 動画は 前と 同じ 10.9MB。前は 5本 31.0MB／第4.156版：CRF 29 → 24 に 上げた。第4.155版までは 18.5MB〉・結果ボードの 絵 {p_bcp / 1e6:.1f}MB：第4.150版から 止まった 絵を もとの 画質で・馬の 色 {p_tcc / 1e6:.1f}MB：前は 15.0MB・'
-              f'フィギュアの 色 {p_fgc / 1e6:.1f}MB（第4.176版：5体。前は 8体で 5.8MB）・棚の 絵 5まい {p_shelf / 1e6:.1f}MB（第4.201版：ブースは 5つ。7まいでは 2.8MB／第4.153版：貼り直した 形 fg_shelf2・頂点 {sh_v}・前の 棚 fg_shelf.* は 入れない／第4.151版は 劣化なし 6bit で 8.9MB）・形の 番号を 詰めて −{iz_save / 1e6:.2f}MB（7こ：第4.176版で フィギュアを 3体 外して 10 → 7・もどすと もとと 同じ）・中身 ぜんぶで {p_all / 1e6:.1f}MB：前は 191.6MB → 148.1MB → 第4.147版で 壁紙を 10枚 外して 約143MB → 第4.148版で PUSHボタンの 絵 31まいを 入れて 約145MB）→ 第4.150版で 結果ボードの 絵を もとの 画質に して 約148MB → 第4.153版で 棚を 貼り直して 約143MB → …… → 第4.162版で プレミアムど的中・超プレミアム神様的中の 絵と 音と 昇格の 動画を 外して 約149MB → 第4.166版で 壁紙 11こ の コマを 1秒に 30コマに して 約152MB → 第4.167版で のこりの 5こ（パドック・ナイター・大理石・ドット絵・浮世絵の 大波）も 30コマに して 約157.5MB → 第4.171版で 的中の 演出の 動画 3本を 3倍に・テンゲルBGM・ルーレットの 爆発の 動画を 入れて 約172MB → 第4.176版で 思い出フィギュアの デザインを 3つ 外して・カードバトルの 絵と 音を 入れて 約166MB → 第4.182版で カードバトルの デザイン（おもて 18種・うら 7種）を 入れて 約175MB → 第4.185版で プレイボード 7種を 入れて 約176MB → 第4.189版で カードパックの 絵（レア・超レア 18種 × 大・小 ＋ パックの 絵）を 入れて 約185MB → 第4.196版で 決戦調査の 絵と 音（マップ・フィールド 12・敵 12・HP ゲージ 14・BGM・効果音 7）を 入れて 約195MB → 第4.210版で 決戦調査の フィールドの 音〈まさちゃんの 音：BGM 12・効果音 25＝10.8MB〉を 入れて 約205.5MB）・でこぼこ／つや／結果ボードの 絵（{len(keep_fl)}こ）は もとと 同じ・台帳は 入れない（{how}）')
+              f'フィギュアの 色 {p_fgc / 1e6:.1f}MB（第4.176版：5体。前は 8体で 5.8MB）・棚の 絵 5まい {p_shelf / 1e6:.1f}MB（第4.201版：ブースは 5つ。7まいでは 2.8MB／第4.153版：貼り直した 形 fg_shelf2・頂点 {sh_v}・前の 棚 fg_shelf.* は 入れない／第4.151版は 劣化なし 6bit で 8.9MB）・形の 番号を 詰めて −{iz_save / 1e6:.2f}MB（7こ：第4.176版で フィギュアを 3体 外して 10 → 7・もどすと もとと 同じ）・中身 ぜんぶで {p_all / 1e6:.1f}MB：前は 191.6MB → 148.1MB → 第4.147版で 壁紙を 10枚 外して 約143MB → 第4.148版で PUSHボタンの 絵 31まいを 入れて 約145MB）→ 第4.150版で 結果ボードの 絵を もとの 画質に して 約148MB → 第4.153版で 棚を 貼り直して 約143MB → …… → 第4.162版で プレミアムど的中・超プレミアム神様的中の 絵と 音と 昇格の 動画を 外して 約149MB → 第4.166版で 壁紙 11こ の コマを 1秒に 30コマに して 約152MB → 第4.167版で のこりの 5こ（パドック・ナイター・大理石・ドット絵・浮世絵の 大波）も 30コマに して 約157.5MB → 第4.171版で 的中の 演出の 動画 3本を 3倍に・テンゲルBGM・ルーレットの 爆発の 動画を 入れて 約172MB → 第4.176版で 思い出フィギュアの デザインを 3つ 外して・カードバトルの 絵と 音を 入れて 約166MB → 第4.182版で カードバトルの デザイン（おもて 18種・うら 7種）を 入れて 約175MB → 第4.185版で プレイボード 7種を 入れて 約176MB → 第4.189版で カードパックの 絵（レア・超レア 18種 × 大・小 ＋ パックの 絵）を 入れて 約185MB → 第4.196版で 決戦調査の 絵と 音（マップ・フィールド 12・敵 12・HP ゲージ 14・BGM・効果音 7）を 入れて 約195MB → 第4.210版で 決戦調査の フィールドの 音〈まさちゃんの 音：BGM 12・効果音 25＝10.8MB〉を 入れて 約205.5MB → 第4.213版で フィールドの 音を 軽く して 約201MB → 第4.214版で 結果ボードの 絵を 3こ ぶん 外して 約198MB）・でこぼこ／つや／結果ボードの 絵（{len(keep_fl)}こ）は もとと 同じ・台帳は 入れない（{how}）')
         # 第4.161版（まさちゃん 11/12 18:00「神様馬、赤丸の位置から動く変なパーツが飛び出てる／幻の馬は…立髪の毛の色がブラック…身体の表面…ボヤけて…全て改善して！」・19:47「幻の馬、肩幅狭くして！」）：
         #   神様馬・幻の馬の 形は 直した 新しい 形（tc_horse_bk_<名前>2.json＋.bin：kisekae/tc/horse_fix.py）。前の 形は アプリに 入れない（もとの フォルダには 残す）
         import json as _j161
@@ -233,29 +235,18 @@ if r.returncode == 0:
               f'第4.168版：2段目の 大きさの 馬は たてがみを 直した 絵 5まい（{_sz([f for f in _n168 if f.endswith(".webp") and f in res]) / 1e6:.2f}MB）と その 名前 5つが 入って いる・前の 絵と 名前 10こは 入って いない（もとの フォルダには ある）・'
               f'ルーレットの BGM（{_sz(["tc_bgm_roulette.m4a"]) / 1e3 if "tc_bgm_roulette.m4a" in res else 0:.0f}KB・もとと 同じ 中身）・ログインボーナス（第4.212版：500〜3,000P）・トークン 1こ 100P（6つの 組）・抽選の 上限（10回・5回）・ノーマルの ピン 1.2倍・「← もどる」・'
               f'かけらの 光の輪を 消す きまり・右の ボタンを 画面に 止める きまりが 入って いる')
-        # 第4.153版（まさちゃん 11/11 13:59「出世馬の結果ボードカスタム3Dに絵を入れ替えて！」・14:23「ボードは何も書いていないように編集して！」）：
-        #   出世馬の 7段は 3D の 絵（bcp_shusseN_3d.webp：kisekae/bcp/shusse3d.py）。ボードの 中は 何も 書いて いない（まん中が ほぼ 1色）・板の 四すみと 字の 置き方は 前の 絵と 同じ・前の 絵（bcp_shusseN.webp）は アプリに 入れない（もとの フォルダには 残す）
+        # 第4.214版（まさちゃん 11/24 00:13）：消した 3こ（結果ボードを廻る＝ring1〜4・出世馬結果ボード＝shusse1・2・3・4・8・16・24_3d・隠蔽作戦＝miss3・miss3_2〜4）の 絵と 見本は アプリに 入れない。
+        #   もとの フォルダ（ios/bcp_assets：マスター）には のこす（消さない・上書きしない：もどす ときは kisekae/bcp/bcp_app.py の ITEMS に 行を もどす だけ）
+        #   （第4.153版〜第4.213版は ここで 出世馬の 3D の 絵 7まい を 見て いた：kisekae/bcp/shusse3d.py）
         sys.path.insert(0, os.path.join(W, 'kisekae', 'bcp')) if os.path.join(W, 'kisekae', 'bcp') not in sys.path else None
         import bcp_app as _B3
-        def _sh3():
-            from PIL import Image as _I
-            import numpy as _np
-            out = []
-            for n in (1, 2, 3, 4, 8, 16, 24):
-                f = f'bcp_shusse{n}_3d.webp'
-                if f not in res or f'bcp_shusse{n}.webp' in res or not os.path.isfile(os.path.join(_ad.master('bcp_assets'), f'bcp_shusse{n}.webp')): return None
-                d3, d0 = _B3.design(f'shusse{n}_3d'), _B3.design(f'shusse{n}')
-                im = _I.open(os.path.join(RES, f)); a = _np.asarray(im.convert('RGB'), _np.float32); q = _np.array(d3['q']) * 3
-                x0, y0, x1, y1 = q[:, 0].min(), q[:, 1].min(), q[:, 0].max(), q[:, 1].max()
-                c = a[int(y0 + (y1 - y0) * 0.14):int(y1 - (y1 - y0) * 0.14), int(x0 + (x1 - x0) * 0.18):int(x1 - (x1 - x0) * 0.18)].mean(2)
-                old = _np.asarray(_I.open(os.path.join(_ad.master('bcp_assets'), f'bcp_shusse{n}.webp')).convert('RGB'), _np.float32)
-                out.append((im.size == (1170, 2532), d3['q'] == d0['q'] and d3['hp'] == d0['hp'] and d3['L'] == d0['L'], float(c.std()), float(_np.percentile(c, 99.9)), float(_np.abs(a - old).mean())))
-            return out
-        s3 = _sh3()
-        check(s3 is not None and all(o[0] and o[1] and o[2] < 8 and o[3] < 75 and o[4] > 4 for o in s3) and 'bcp_t_climb_b.webp' in res and 'bcp_t_climb.webp' not in res and 'bcp_t_climb3d.webp' not in res,
-              f'第4.153版：出世馬の 7段は 3D の 絵（1170×2532・板の 四すみと 字の 置き方は 前と 同じ）・ボードの 中は 何も 書いて いない（まん中の 明るさの ばらつき {max(o[2] for o in s3) if s3 else -1:.1f}・いちばん 明るい 所 {max(o[3] for o in s3) if s3 else -1:.0f}/255）・前の 絵と 見本は 入れない・見本は bcp_t_climb_b.webp')
+        _gone = [f for f in res if f.startswith(('bcp_ring', 'bcp_shusse', 'bcp_miss3', 'bcp_t_ring', 'bcp_t_climb', 'bcp_t_cover'))]
+        _gm = [f for n in _B3.GONE for f in (f'bcp_{n}_bl.webp' if not n.startswith('shusse') else f'bcp_{n}.webp',)] + ['bcp_t_ring_b.webp', 'bcp_t_climb_b.webp', 'bcp_t_cover_b.webp']
+        _md = _ad.master('bcp_assets')
+        check(_gone == [] and len(_B3.GONE) == 15 and all(os.path.isfile(os.path.join(_md, f)) for f in _gm) and not [f for f in os.listdir(_ad.adir('bcp_assets')) if f in _gm],
+              f'第4.214版：消した 3こ の 絵（{len(_B3.GONE)}段）と 見本は アプリに 入って いない（{len(_gone)}まい）・軽い 版の フォルダにも ない・もとの フォルダには のこって いる（{len(_gm)}まい：消して いない）')
         # 第4.153版（まさちゃん 11/11 15:39「他の結果ボードカスタムのボードも、綺麗に何も書いていないようにして！的中スタンプボードの…的中スタンプは消さなくていいよ！」）：
-        #   出世馬の ほかの 52段は ボードの 中を ぬり直した 絵（bcp_<デザイン>_bl.webp：kisekae/bcp/bcp_blank.py）。前の 絵（bcp_<デザイン>.webp）は アプリに 入れない（もとの フォルダには 残す）。
+        #   （第4.214版：絵の ボードは 44段 ぜんぶが ぬり直した 絵）出世馬の ほかの 52段は ボードの 中を ぬり直した 絵（bcp_<デザイン>_bl.webp：kisekae/bcp/bcp_blank.py）。前の 絵（bcp_<デザイン>.webp）は アプリに 入れない（もとの フォルダには 残す）。
         #   板の 紺の 所の「なめらかな 面からの ずれ」の ばらつきが 前より 小さい（52まい ぜんぶ）・パネルの 段だけ だった 板（廻る・祝杯・馬レース・トロフィー・馬が運ぶ・花束・結果待ち）は ほぼ 1色。
         #   スタンプ：鎖の 帯に 色の 点が ない・ハンコの 所は 前の 絵と 同じ。前の 絵（キャラ）の 所は 1点も かわらない
         def _bl():
@@ -289,10 +280,10 @@ if r.returncode == 0:
                         sb = _box(0.1, 0.05, 0.3, 0.3); stampd.append(float(_np.abs(a - o).max(2)[sb].mean()))                                                                      # ハンコの まん中
             return rat, simple, fgd, chain, stampd
         bl = _bl()
-        check(bl is not None and len(bl[0]) == 52 and max(bl[0]) < 1.0 and sum(1 for r_ in bl[0] if r_ < 0.75) >= 40 and len(bl[1]) == 28 and max(bl[1]) < 1.8 and bl[2] < 6.0
+        check(bl is not None and len(bl[0]) == 44 and max(bl[0]) < 1.0 and sum(1 for r_ in bl[0] if r_ < 0.75) >= 36 and len(bl[1]) == 24 and max(bl[1]) < 1.8 and bl[2] < 6.0
               and len(bl[3]) == 4 and all(o_ > 0.05 and a_ < 0.004 for o_, a_ in bl[3]) and max(bl[4]) < 7.0,      # 色の 差 6・7 まで＝圧縮し直した 分（ぬり直したら 20 より 大きい）
-              f'第4.153版：ほかの 52段は ボードの 中を ぬり直した 絵（bcp_<デザイン>_bl.webp・前の 絵は 入れない）・板の ずれの ばらつきは 前の {min(bl[0]) if bl else 0:.2f}〜{max(bl[0]) if bl else 0:.2f}倍（0.75倍より 小さい もの {sum(1 for r_ in bl[0] if r_ < 0.75) if bl else 0}/52）・'
-              f'パネルの 段だけ だった 板 28まいは ほぼ 1色（ばらつき {max(bl[1]) if bl else -1:.2f} まで）・前の 絵（キャラ）の 所は かわらない（色の 差 {bl[2] if bl else -1:.2f}）・スタンプ：鎖が ない（色の こい 点 前 → 今：{bl[3] if bl else None}）・ハンコは そのまま（色の 差 {max(bl[4]) if bl else -1:.2f}）')
+              f'第4.153版：44段（第4.214版）は ボードの 中を ぬり直した 絵（bcp_<デザイン>_bl.webp・前の 絵は 入れない）・板の ずれの ばらつきは 前の {min(bl[0]) if bl else 0:.2f}〜{max(bl[0]) if bl else 0:.2f}倍（0.75倍より 小さい もの {sum(1 for r_ in bl[0] if r_ < 0.75) if bl else 0}/44）・'
+              f'パネルの 段だけ だった 板 24まいは ほぼ 1色（ばらつき {max(bl[1]) if bl else -1:.2f} まで）・前の 絵（キャラ）の 所は かわらない（色の 差 {bl[2] if bl else -1:.2f}）・スタンプ：鎖が ない（色の こい 点 前 → 今：{bl[3] if bl else None}）・ハンコは そのまま（色の 差 {max(bl[4]) if bl else -1:.2f}）')
         # 第4.152版（まさちゃん 11/11 09:43・10:13）：おそうじの 絵と 形（ゴミの 絵 4まい・3D の ほうき・3D の ちりとり：kisekae/tc/clean_assets.py）
         _cl = ['tc_trash1.webp', 'tc_trash2.webp', 'tc_trash3.webp', 'tc_trash4.webp', 'tc_prop_broom.json', 'tc_prop_broom.bin', 'tc_prop_broom_c.webp', 'tc_prop_broom_n.webp', 'tc_prop_pan.json', 'tc_prop_pan.bin', 'tc_prop_pan_c.webp']
         import json as _jc

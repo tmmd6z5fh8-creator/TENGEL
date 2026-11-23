@@ -100,6 +100,10 @@ def superseded(name, files):
         #   新しい 曲（tc_bgm_divine2.m4a：kisekae/tc/snd/bgm_tengel.py）。前の 曲（tc_bgm_divine.m4a）は もう 鳴らない ので 入れない（もとの フォルダには 残す）
         if 'tc_bgm_divine2.m4a' in files:
             old |= files & {'tc_bgm_divine.m4a'}
+        # 第4.214版（まさちゃん 2026/11/24 01:16「トレーニングセンターの神様馬のBGM、これのリピートにして！」）：神様馬の フィールドの BGM は まさちゃんの 曲
+        #   （tc_bgm_divine3.m4a：kisekae/tc/snd/bgm_divine3.py）。前の 2つの 曲（tc_bgm_divine2.m4a・tc_bgm_divine.m4a）は もう 鳴らない ので 入れない（もとの フォルダには 残す）
+        if 'tc_bgm_divine3.m4a' in files:
+            old |= files & {'tc_bgm_divine2.m4a', 'tc_bgm_divine.m4a'}
         # 第4.171版（17:49「テンゲルのBGMは、この動画の背景で流れているBGMが理想！」）：テンゲルBGM は 第2稿（bgm_tengel2.m4a：のどかな 村の ふんいき）。第1稿（bgm_tengel.m4a）は 入れない（もとの フォルダには 残す）
         #   → 18:49「BGMもっとゆっくりで、鳥の声や笛の音入れて！」：第3稿（bgm_tengel3.m4a）。第1稿・第2稿は 入れない
         #   → 19:09「一回、鳥の声と笛の音だけにしてみて！もっとゆったりで！」：第4稿（bgm_tengel4.m4a）。第1稿〜第3稿は 入れない

@@ -285,8 +285,8 @@ try:
               and rows == [['mission-fig-1', '思い出フィギュアを1つ完成させる 5,000P', '受け取れるよ！', True], ['mission-fig-5', '思い出フィギュアを5つ完成させる 5,000P', '受け取れるよ！', True], ['mission-fig-8', '思い出フィギュアを8つ完成させる 10,000P', '受け取れるよ！', True]],
               f'ミッションの 窓に「思い出フィギュアミッション」：1つ 5,000P・5つ 5,000P・8つ 10,000P（8個 作った → 3つとも 受け取れる）{rows}')
         msn = pg.locator('#msOv .msn').inner_text()
-        check(msn.replace('\n', '・') == '達成 3/35・受け取れるのが 4つ！' and pg.locator('#msHoldCard').is_visible() and '今 補充できるのは 22,000P' in pg.locator('#msHold').inner_text(),
-              f'上は「達成 3/35」（第4.147版：壁紙の 枚数の 2行が 減って 37 → 35）・受け取れる 数は 4つ（フィギュアの 3つ＋預かりポイントの 補充）（{msn!r}）')
+        check(msn.replace('\n', '・') == '達成 3/34・受け取れるのが 4つ！' and pg.locator('#msHoldCard').is_visible() and '今 補充できるのは 22,000P' in pg.locator('#msHold').inner_text(),
+              f'上は「達成 3/34」（第4.147版：壁紙の 枚数の 2行が 減って 37 → 35・第4.214版：結果ボードカスタムの「15こ解放」が なくなって 34）・受け取れる 数は 4つ（フィギュアの 3つ＋預かりポイントの 補充）（{msn!r}）')
         pg.locator('#msFig [data-pt=claim][data-id="mission-fig-1"]').click(); pg.wait_for_timeout(800)
         e1 = pg.evaluate("() => TengelWallet.events().filter(e => /^mission-fig-/.test(e.id)).map(e => e.id + ':' + e.amount + ':' + e.bucket).join()")
         check(pg.evaluate("() => TengelWallet.total()") == t0 + 5000 and e1 == 'mission-fig-1:5000:free', f'「1つ完成させる」を 受け取る → +5,000P（もらったP・{e1}）')

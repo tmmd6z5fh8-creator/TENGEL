@@ -115,7 +115,7 @@ const TCApp = (() => {
   const SND = (() => {
     let ac = null, master = null, bed = null, want = null, on = true;
     const cache = {};
-    const AMB = { morning: 'tc_amb_morning.m4a', evening: 'tc_amb_evening.m4a', night: 'tc_amb_night.m4a', abyss: 'tc_bgm_abyss.m4a', divine: 'tc_bgm_divine2.m4a', roulette: 'tc_bgm_roulette.m4a' };
+    const AMB = { morning: 'tc_amb_morning.m4a', evening: 'tc_amb_evening.m4a', night: 'tc_amb_night.m4a', abyss: 'tc_bgm_abyss.m4a', divine: 'tc_bgm_divine3.m4a', roulette: 'tc_bgm_roulette.m4a' };
     // 第4.168版（まさちゃん 2026/11/14 01:26「ルーレットに入った時にBGMを変える。フィールドBGMは重ねない。」）：ルーレットの 間は ルーレットの BGM だけ（bgm）。
     //   ・hold＝いま フィールドの 音の かわりに 鳴らす もの：null＝なし（フィールドの 音）・''＝音なし（プチュンの あと）・名前＝その BGM。hold が ある 間は field() は おぼえる だけ（重ねない）
     //   ・ルーレットの BGM の ファイルは、くり返す 1回り（8小節）の 前と うしろに 0.5秒ずつ 同じ 音の つづきが 入って いる（kisekae/tc/snd/export_app.py）→ まん中の 1回り だけを くり返す（LOOPS）。
@@ -124,9 +124,14 @@ const TCApp = (() => {
     //   17:08「神様馬のBGMもう少しカッコよく！もう少し神様ぽさを混ぜて！」）：神様馬の フィールドの BGM は 新しい 曲（tc_bgm_divine2.m4a：kisekae/tc/snd/bgm_tengel.py の divine2・
     //   ホ短調・156 BPM・32小節）。ルーレットの BGM と 同じ 形の ファイル（前後に 0.5秒の つづき）→ まん中の 1回り だけを くり返す（LOOPS）。
     //   曲の 頭は「降臨」の 和音（オルガン・合唱・鐘）なので、フィールドが かわる ときは すぐ 入れる（0.15秒：ゆっくり 入れると 頭の 和音が 聞こえない）。前の 音は 2秒で 消える。
-    //   新しい 曲の ファイルが ない（前の 素材の フォルダで 作った アプリ）とき だけ 前の 曲（AMB_OLD：60秒の ループ・LOOPS は 使わない）
-    const AMB_OLD = { divine: 'tc_bgm_divine.m4a' };
-    const LOOPS = { roulette: { pre: 0.5, len: 8 * 4 * 60 / 132 }, divine: { pre: 0.5, len: 32 * 4 * 60 / 156 } };
+    // 第4.214版（まさちゃん 2026/11/24 01:16「トレーニングセンターの神様馬のBGM、これのリピートにして！」）：神様馬の フィールドの BGM は まさちゃんの 曲
+    //   （tc_bgm_divine3.m4a：60秒の くり返しの 曲・姫が「ブォ」の 音を 消した もの：kisekae/tc/snd/bgm_divine3.py）。同じ 形の ファイル（前後に 0.5秒の つづき）→ まん中の 1回り（60秒）を くり返す。
+    //   大きさは ファイルに 入れて ある（もとの 曲 −5dB＝今までの 神様馬の BGM と 同じ くらい）。入り方・消え方は 今までと 同じ（すぐ 入れる 0.15秒・前の 音は 2秒で 消える）。
+    //   ルーレットの 間は 今までどおり BGM なし。
+    //   新しい 曲の ファイルが ない（前の 素材の フォルダで 作った アプリ）とき だけ 前の 曲（AMB_OLD：第4.171版の 曲 tc_bgm_divine2.m4a を その 曲の 1回り〈LOOPS_OLD〉で くり返す）
+    const AMB_OLD = { divine: 'tc_bgm_divine2.m4a' };
+    const LOOPS = { roulette: { pre: 0.5, len: 8 * 4 * 60 / 132 }, divine: { pre: 0.5, len: 60 } };
+    const LOOPS_OLD = { divine: { pre: 0.5, len: 32 * 4 * 60 / 156 } };
     let hold = null, aim = null;
     function buf(f) { if (!cache[f]) cache[f] = fetch(AP(f)).then(r => { if (!r.ok) throw new Error('no ' + f); return r.arrayBuffer(); }).then(b => new Promise((ok, ng) => { const q = ac.decodeAudioData(b, ok, ng); if (q && q.catch) q.catch(() => { }); })); return cache[f]; }
     function unlock() { try { if (!ac) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ac = new AC(); master = ac.createGain(); master.gain.value = on ? 1 : 0; master.connect(ac.destination); } if (ac.state === 'suspended') ac.resume(); } catch (e) { } }
@@ -139,7 +144,7 @@ const TCApp = (() => {
       try { b = await buf(f); } catch (e) { if (!AMB_OLD[aim]) return; try { b = await buf(AMB_OLD[aim]); fb = true; } catch (e2) { return; } }
       if (aim !== (name || '') || (bed && bed.name === aim)) return;
       const s = ac.createBufferSource(); s.buffer = b; s.loop = true;
-      const L = fb ? null : LOOPS[aim]; let off = 0;
+      const L = fb ? LOOPS_OLD[aim] : LOOPS[aim]; let off = 0;
       if (L && b.duration >= L.len + L.pre) { s.loopStart = L.pre / 2; s.loopEnd = L.pre / 2 + L.len; off = L.pre; }      // まん中の 1回り だけを くり返す・はじめは 1拍めから
       const g = ac.createGain(); g.gain.setValueAtTime(0, ac.currentTime); g.gain.linearRampToValueAtTime(1, ac.currentTime + fin);
       s.connect(g); g.connect(master); s.start(0, off); bed = { s, g, name: aim };

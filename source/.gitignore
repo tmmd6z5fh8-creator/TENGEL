@@ -30,6 +30,8 @@ ios/push_assets/
 ios/cb_assets/
 # いつもの（デフォルト）の 壁紙の もとの 絵（第4.176版：まさちゃんの 絵 ios/wall_src/default_tenger.jpg。アプリに 入れる 形は ios/kisekae_blobs/ に 作る：kisekae/default_wall.py）
 ios/wall_src/
+# 神様馬の BGM の もとの 曲（第4.214版：まさちゃんの 曲 ios/tc_src/TENGER_BGM_App_Loop_ブォなし.wav。アプリに 入れる 形＝ios/tc_assets/tc_bgm_divine3.m4a：kisekae/tc/snd/bgm_divine3.py）
+ios/tc_src/
 srv_cb/
 srv_pb/
 srv_band/

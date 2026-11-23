@@ -975,7 +975,6 @@ const CBApp = (() => {
 #cbOv .qsay{position:absolute;left:12px;right:12px;bottom:calc(var(--sab,env(safe-area-inset-bottom)) + 16px);z-index:3;min-height:112px;box-sizing:border-box;padding:18px 18px 24px;border-radius:16px;background:linear-gradient(180deg,rgba(30,19,9,.9),rgba(12,8,4,.94));border:2px solid #c9a35a;box-shadow:0 0 0 1px rgba(0,0,0,.6) inset,0 8px 20px rgba(0,0,0,.55);opacity:0;transform:translateY(14px);transition:opacity .3s,transform .3s;pointer-events:none}
 #cbOv .qsay.on{opacity:1;transform:none}
 #cbOv .qsay p{margin:0;font-size:18px;line-height:1.7;font-weight:700;color:#fff6e0;word-break:keep-all;overflow-wrap:anywhere}
-#cbOv .qsay p .hd{visibility:hidden}
 #cbOv .qsay .nx{position:absolute;right:16px;bottom:7px;font-style:normal;color:#ffd27a;font-size:13px;animation:qnx 1s ease-in-out infinite}
 @keyframes qnx{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
 #cbOv .qtap{position:absolute;left:50%;bottom:calc(var(--sab,env(safe-area-inset-bottom)) + 18px);z-index:3;transform:translateX(-50%);opacity:0;transition:opacity .4s;padding:8px 22px;border-radius:999px;background:linear-gradient(180deg,#ffe9a8,#e2a83e);color:#3a2206;font-size:16px;font-weight:800;white-space:nowrap;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.5)}
@@ -1123,6 +1122,7 @@ const CBApp = (() => {
     ov.addEventListener('click', onClick);
     document.addEventListener('visibilitychange', () => { if (ov.classList.contains('on')) { bgmSync(); if (document.hidden) qaStop(0.05, true); } });      // アプリが うしろに 行った・もどった：BGM を 止める・つづきから（第4.210版：フィールドの 効果音は 止める）
     window.addEventListener('resize', () => { if (ov.classList.contains('on')) { layout(); qMapLayout(); qFieldLayout(); } });
+    try { if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => { if (ov.classList.contains('on')) qsRefit(); }); } catch (e) { /* つかえない 端末 */ }      // 第4.214版：字の 形が あとから とどいた → セリフの 字の 場所を はかり直す
     if (window.ResizeObserver) new ResizeObserver(() => { if (ov.classList.contains('on')) layout(); }).observe(scr.game);
   }
   let screen = '';
@@ -2607,11 +2607,13 @@ const CBApp = (() => {
   //   まさちゃんが デモ（決戦調査の 音の デモ）で 聞いて 決めた 形の まま。音は まさちゃんが 送って くれた もの（姫は つなぎ目・切れ目・大きさ だけ 整えた）
   //   ファイル：cb_q_bgm01〜12.mp3（BGM）・cb_q_seNNa〜c.mp3（効果音 a・b・c）＝ kisekae/cb_qsnd.py が ios/cb_assets/ に 入れる（リポジトリには 入れない。ない ビルド〈CI〉は 鳴らない だけ）
   //   b：BGM の くり返し（len＝前と うしろに 0.5秒ずつ 同じ 音の つづき〈今までの BGM と 同じ 形〉／ls・le＝頭から 鳴らして ls〜le を くり返す〈le＝Infinity は ファイルの おわりまで〉：どれも 44100 で 割る サンプル）
-  //   s：効果音（d＝その 行が 出て d秒 あとに 鳴る〈Lv3 の ③：0.8秒〉・k＝タップで 止まらない〈Lv12 の ③：バトルが はじまっても つづく。フィールドに 入り直す・マップへ・閉じる で 止まる〉）
+  //   s：効果音（d＝その 行が 出て d秒 あとに 鳴る〈Lv3 の ③：0.8秒〉・k＝タップで 止まらない〈Lv12 の ③：4タップ目の セリフに 進んでも つづく。「タップで バトル開始！」で 止まる＝第4.214版。前の 版は バトルが はじまっても つづいて いた〉）
   //   t：セリフの 行（タップ）ごとに 鳴らす 効果音の 番号（null＝なし〈BGM だけ〉）。前の 行と 同じ 番号＝鳴らし直さず そのまま つづく（もう 終わって いても 鳴らし直さない）
-  //   鳴らし方：行が 出たら 前の 効果音を 止める（0.05秒で 小さく：k の 音は 止めない）→ その 行の 音。「タップで バトル開始！」→ 効果音を 止める（0.4秒：k の 音は つづく）→ 決戦調査の BGM（今までの まま）
+  //   鳴らし方：行が 出たら 前の 効果音を 止める（0.05秒で 小さく：k の 音は 止めない）→ その 行の 音。「タップで バトル開始！」→ 効果音を ぜんぶ 止める（0.05秒＝行が かわる ときと 同じ 速さ：k の 音も。まだ 鳴りはじめて いない 音は 鳴らさない。第4.213版 までは 0.4秒で 小さく して いて、k の 音は つづいた）→ 決戦調査の BGM（今までの まま）
   //   フィールドでは ほかの 音（セリフを 進める タップの 音・敵が 出る ときの magic・appear）は 鳴らさない（まさちゃんの 効果音と 重ならない：デモと 同じ）
   //   大きさ：BGM 0.45（決戦調査の BGM 0.40 と ならぶ）・効果音 0.9（デモと 同じ わりあい）。設定の BGM・効果音の オン／オフに したがう
+  //     第4.214版（まさちゃん 11/24 00:00「Lv12のBGMの大きさあげて！」）：Lv12 の BGM だけ 0.8（b.vol：＋5dB）。Lv12 の 曲は 低い 音が 多い
+  //     （ファイルの 大きさは ほかと 同じ −21 LUFS だが、iPhone の スピーカーで 出る 300Hz より 上は −27.3 LUFS：ほかの 曲の まん中 −22.6 より 4.7dB 小さい）
   const QS_SR = 44100;
   const QSND = [
     { b: { ls: 132300, le: 438795 }, s: [{}], t: [null, 0] },                                  // Lv1：2タップ目 ①
@@ -2625,9 +2627,9 @@ const CBApp = (() => {
     { b: { ls: 0, le: Infinity }, s: [{}, {}], t: [null, 0, 1] },                              // Lv9：2 ①・3 ②
     { b: { ls: 371971, le: 587387 }, s: [{}, {}], t: [null, 0, 1] },                           // Lv10：2 ①・3 ②
     { b: { len: 1904321 }, s: [{}, {}], t: [0, 0, 1] },                                        // Lv11：1 ①（2 も つづく）・3 ②
-    { b: { len: 1839784 }, s: [{}, {}, { k: true }], t: [0, 1, 2, null] }                      // Lv12：1 ①・2 ②・3 ③（4タップ目・バトルでも 止まらない）
+    { b: { len: 1839784, vol: 0.8 }, s: [{}, {}, { k: true }], t: [0, 1, 2, null] }            // Lv12：1 ①・2 ②・3 ③（4タップ目でも 止まらない・バトルに 入ると 止まる）・BGM は 大きめ（0.8）
   ];
-  const QBG = QSND.map((x, i) => Object.assign({ file: `cb_q_bgm${qp2(i + 1)}.mp3`, vol: 0.45, fin: 0.6, fout: 0.6 },
+  const QBG = QSND.map((x, i) => Object.assign({ file: `cb_q_bgm${qp2(i + 1)}.mp3`, vol: x.b.vol || 0.45, fin: 0.6, fout: 0.6 },
     x.b.len != null ? { pre: 0.5, len: x.b.len / QS_SR } : { ls: x.b.ls / QS_SR, le: x.b.le / QS_SR, at: 0 }));
   const qaFile = (lv, k) => `cb_q_se${qp2(lv)}${['a', 'b', 'c'][k]}.mp3`;      // a・b・c は 字で 書く（app_unused.py が 名前の 組み立てを 読める）
   const qa = { lv: 0, buf: {}, cur: null, kept: [] };      // 読んだ 効果音（いまの エリアの ぶん だけ：ほどいた 音）・いま 鳴って いる 音・タップで 止まらない 音（k）
@@ -2653,24 +2655,36 @@ const CBApp = (() => {
     qaStop(0.05);
     if (k == null || !seOn()) return;
     const c = actx(); if (!c) return;
-    const x = A.s[k], f = qaFile(lv, k), me = { f: f, keep: !!x.k, s: null, g: null, at: c.currentTime + (x.d || 0), dead: false };
+    const x = A.s[k], f = qaFile(lv, k), me = { f: f, keep: !!x.k, s: null, g: null, at: c.currentTime + (x.d || 0), t0: 0, dead: false };
     qa.cur = me;
     (qa.lv === lv && qa.buf[f] ? qa.buf[f] : qaLoad(lv).then(() => qa.buf[f])).then(b => {
-      if (me.dead || !b || !seOn()) return;
+      if (me.dead || !b || !seOn() || !qs || qs.lv !== lv || qs.step === 'go' || screen !== 'qf') return;      // 第4.214版：フィールドの セリフ・敵の 場面の 間 だけ 鳴らしはじめる（読むのが おくれて、もう バトルに 入って いたら 鳴らさない）
       try {
         const s = c.createBufferSource(), g = c.createGain(); s.buffer = b; g.gain.value = 0.9; s.connect(g); g.connect(c.destination);
         s.onended = () => { if (qa.cur === me) qa.cur = null; qa.kept = qa.kept.filter(z => z !== me); try { s.disconnect(); g.disconnect(); } catch (e) { /* なし */ } };
-        s.start(Math.max(c.currentTime, me.at)); me.s = s; me.g = g; qaLog('play', f, i, x.d || 0, me.keep);
+        me.t0 = Math.max(c.currentTime, me.at); s.start(me.t0); me.s = s; me.g = g; qaLog('play', f, i, x.d || 0, me.keep);
       } catch (e) { /* なし */ }
     });
   }
-  // 効果音を 止める（fade 秒で 小さく）：ふつうは いまの 音 だけ（k の 音は 止めずに のこす）・all＝k の 音も ぜんぶ（フィールドに 入り直す・マップへ・閉じる・アプリが うしろへ・効果音 オフ）
+  // 効果音を 止める（fade 秒で 小さく）：ふつうは いまの 音 だけ（k の 音は 止めずに のこす）・all＝k の 音も ぜんぶ（バトルに 入る〈第4.214版〉・フィールドに 入り直す・マップへ・閉じる・アプリが うしろへ・効果音 オフ）
+  //   第4.214版（まさちゃん 11/24 00:26「タップ早く押して、バトルに入ってからも、3タップ目の効果音が入ってしまっているから、全部確認してそういったことが起きないようにして！」）：
+  //     ・まだ 鳴りはじめて いない 音（遅らせた 音＝Lv3 の ③ は 0.8秒 あと）は、1つも 鳴らさずに やめる（前は「小さく して いく」間に 鳴りはじめて、頭 だけ 聞こえる ことが あった）
+  //     ・バトルに 入る ときは、タップで 止まらない 音（Lv12 の ③）も 止める（qBattle：all）
+  //     ・バトルに 入る ときの 止め方は 0.05秒（前は 0.4秒：早く 押すと、鳴りはじめた ばかりの ③ が バトルの 画面で 0.4秒 聞こえた）
   function qaStop(fade, all) {
     const c = snd.ac, f = fade == null ? 0.05 : fade;
     const cut = o => {
       o.dead = true; if (!o.s || !c) return;
+      const n = c.currentTime;
+      if (n < o.t0) {      // まだ 鳴りはじめて いない：音量を 0 に して つなぎを 外す（この あと 鳴りはじめても 聞こえない）
+        qaLog('drop', o.f);
+        try { o.g.gain.cancelScheduledValues(n); o.g.gain.setValueAtTime(0, n); o.g.gain.value = 0; } catch (e) { /* なし */ }
+        try { o.s.onended = null; o.s.stop(); } catch (e) { /* なし */ }
+        try { o.s.disconnect(); o.g.disconnect(); } catch (e) { /* なし */ }
+        return;
+      }
       qaLog('cut', o.f, f);
-      try { const n = c.currentTime; o.g.gain.cancelScheduledValues(n); o.g.gain.setValueAtTime(o.g.gain.value, n); o.g.gain.linearRampToValueAtTime(0, n + f); o.s.stop(n + f + 0.02); }
+      try { o.g.gain.cancelScheduledValues(n); o.g.gain.setValueAtTime(o.g.gain.value, n); o.g.gain.linearRampToValueAtTime(0, n + f); o.s.stop(n + f + 0.02); }
       catch (e) { try { o.s.stop(); } catch (e2) { /* もう 止まって いる */ } }
     };
     if (qa.cur) { if (qa.cur.keep && !all) qa.kept.push(qa.cur); else cut(qa.cur); qa.cur = null; }
@@ -2678,7 +2692,7 @@ const CBApp = (() => {
   }
   let qRun = null;              // いまの 調査：{ lv, won（何連勝したか）, m（はじめた 月）, gu（第4.197版：この 調査で 使った 決戦宝石）}。対戦の 画面が 決戦調査の 形に なる
   let lostQ = false;            // 前の 決戦調査の 戦が とちゅうで 終わった（メニューで 1回 知らせる）
-  let qs = null;                // フィールドの 場面：{ lv, step：'say'｜'en'｜'go', i：セリフの 番号, tw：字を 出して いる とちゅう, rv：敵（0＝まだ・1＝出る とちゅう・2＝出た：第4.200版） }
+  let qs = null;                // フィールドの 場面：{ lv, step：'say'｜'en'｜'go', i：セリフの 番号, tw：字を 出して いる とちゅう, rv：敵（0＝まだ・1＝出る とちゅう・2＝出た：第4.200版）, sy：いまの 行（第4.214版：{ t：字, n：見せた 数, m：字の 場所 }） }
   let qNew = 0;                 // マップで「開いた」動きを 見せる レベル（倒した すぐ あと）
   let qPop = 0;                 // マップで ふきだしを 出して いる レベル（0＝なし）
   const qRoll = () => { const k = monthKey(); if (k <= st.q.m) return false; st.q = { m: k, clr: 0 }; save(); return true; };      // 月が 進んだら リセット（第4.191版の ミッションと 同じ）
@@ -2847,7 +2861,7 @@ const CBApp = (() => {
     $('.qfld', f).classList.remove('en');
     $('.qtel', f).classList.remove('on'); $('.qtel', f).innerHTML = `<div class="bd"><b class="gold">レベル${lv}の 敵 出現！</b><small>${lv <= st.q.clr ? `${q.w}連勝して もう 一度 討伐しよう！` : `${q.w}連勝して バトルコインを ${q.c}枚 手に入れよう！`}</small></div>`;
     $('.qnm', f).classList.remove('on'); $('.qnm', f).textContent = q.n;
-    $('.qtap', f).classList.remove('on'); $('.qsay', f).classList.remove('on'); $('.qsay p', f).textContent = '';
+    $('.qtap', f).classList.remove('on'); $('.qsay', f).classList.remove('on'); $('.qsay p', f).textContent = ''; $('.qsay p', f).style.webkitClipPath = ''; $('.qsay p', f).style.clipPath = '';
     f.classList.remove('in'); show('qf'); qFieldLayout(); bgmTrack('field', lv);      // 第4.210版：フィールドは その エリアの BGM（頭から）。バトルで 決戦調査の BGM（前の 版は フィールドでは 止めて いた）
     void f.offsetWidth; f.classList.add('in');
     { const im = new Image(); im.src = qHL(lv); }      // バトルの ゲージの 絵・決戦調査の BGM を 先に 読んで おく（セリフの あいだに）
@@ -2862,26 +2876,78 @@ const CBApp = (() => {
     if (!r.width || !r.height) return;
     const w = Math.max(r.width, r.height * 941 / 1672), h = w * 1672 / 941;
     fl.style.width = w + 'px'; fl.style.height = h + 'px'; fl.style.left = ((r.width - w) / 2) + 'px'; fl.style.top = ((r.height - h) / 2) + 'px';
+    qsRefit();      // 第4.214版：画面の 大きさが かわった（たて・横）→ セリフの 字の 場所を はかり直す
   }
   // セリフ i を 出す（字を 1つずつ：タップで すぐ ぜんぶ）
+  //   第4.214版（まさちゃん 11/24 00:00「セリフの文字が、戻ったり、行が変わる時にカタカタしたり枠の大きさが変わったりする！おかしくならないように改善して！」）：
+  //     行 ぜんぶを はじめに 1つの かたまり（1つの テキスト）で 置いて、その あとは 中身を 1字も かえない ＝ 折り返しは はじめに 決まった まま（字は 動かない・行は ふえない・窓の 高さも かわらない）。
+  //     「1つずつ 出る」のは、見える 所を 広げて いく だけ（clip-path：字の 場所を はじめに はかって〈qsMeasure〉、n 字目の 右の はしまで 見せる〈qsClip〉）。
+  //     第4.208版は「出た 字（.sh）」「まだの 字（.hd：見えない）」の 2つに 分けて、さかい目を 1字ずつ 動かして いた ＝ iPhone では さかい目で 折り返しが かわる ことが あった
+  //     （ことばの とちゅうで 折り返さない 決まり〈word-break:keep-all〉が さかい目では きかない：字が 前の 行に 出て から 次の 行へ もどる・行が ふえたり へったり して 窓の 高さが かわる）
   function qLine(i) {
     const q = QUEST[qs.lv - 1], p = $('.qsay p', scr.qf), t = q.say[i];
     qs.i = i; $('.qsay', scr.qf).classList.add('on');
     if (qs.tw) unlater(qs.tw);
     p.style.fontSize = t.length > 54 ? '15px' : t.length > 36 ? '16px' : '';      // 第4.200版：長い 行は 字を 少し 小さく（窓が 3〜4行 まで：敵に かかりすぎない）
-    let n = 0; p.innerHTML = '<span class="sh"></span><span class="hd"></span>';      // 第4.208版：行 ぜんぶを はじめに 置く（.hd＝まだの 字：場所は とるが 見えない）→ 字が 行の はしで とばない・窓の 高さも かわらない
-    const sh = p.firstChild, hd = p.lastChild; hd.textContent = t;
-    const step = () => { if (!qs || qs.i !== i) return; n += 1; sh.textContent = t.slice(0, n); hd.textContent = t.slice(n); if (n < t.length) qs.tw = later(step, 34 * SPEED); else qs.tw = null; };
-    step();
+    p.textContent = t;                      // 行 ぜんぶ（この あとは かえない）
+    qs.sy = { t: t, n: 0, m: null };        // n＝見せた 字の 数・m＝字の 場所（はかった もの）
+    qsMeasure();
+    if (!qs.sy.m) qs.sy.n = t.length;       // はかれない（とても 古い 端末 など）：はじめから ぜんぶ 見せる
+    qsClip(); qs.tw = null;
+    const step = () => { if (!qs || qs.i !== i || !qs.sy || qs.sy.t !== t) return; qs.sy.n += 1; qsClip(); if (qs.sy.n < t.length) qs.tw = later(step, 34 * SPEED); else qs.tw = null; };
+    if (qs.sy.n < t.length) step();
     qaPlay(i);                          // 第4.210版：この 行の 効果音（前の 音は 止める：まさちゃんの デモの まま）
     if (i === q.en - 1) qReveal();      // 第4.200版：この 行で 敵が 出る（セリフの 窓は その まま）
+  }
+  // セリフの 字の 場所を はかる（.qsay p の 中は 1つの テキスト）→ qs.sy.m＝{ L：字ごとの 行・X：字ごとの 右の はし・Y：行ごとの 下の さかい・W：幅 }（px：p の 左上から）。はかれない ときは null
+  function qsMeasure() {
+    const sy = qs && qs.sy; if (!sy) return;
+    sy.m = null;
+    try {
+      const p = $('.qsay p', scr.qf), tn = p.firstChild, pr = p.getBoundingClientRect();
+      if (!tn || tn.nodeType !== 3 || tn.length !== sy.t.length || !pr.width || !pr.height || !p.offsetWidth) return;
+      const k0 = pr.width / p.offsetWidth, rg = document.createRange(), n = sy.t.length, L = [], X = [], top = [], bot = [];      // k0：画面が 引きのばされて いる とき（transform）の 倍
+      for (let k = 0; k < n; k++) {
+        rg.setStart(tn, k); rg.setEnd(tn, k + 1);
+        const rs = rg.getClientRects(), r = rs.length ? rs[rs.length - 1] : null;
+        if (r && r.height > 0) {
+          if (!top.length || r.top > top[top.length - 1] + r.height / 2) { top.push(r.top); bot.push(r.bottom); }      // 次の 行に 入った
+          L.push(top.length - 1); X.push((r.right - pr.left) / k0);
+        } else { L.push(Math.max(0, top.length - 1)); X.push(k > 0 && L[k - 1] === Math.max(0, top.length - 1) ? X[k - 1] : 0); }      // 場所の ない 字（行の はしで 消える 空白 など）：前の 字と 同じ 所
+      }
+      if (!top.length) return;
+      const Y = top.map((v, l) => (l + 1 < top.length ? ((bot[l] + top[l + 1]) / 2 - pr.top) / k0 : p.offsetHeight + 8));
+      sy.m = { L: L, X: X, Y: Y, W: p.offsetWidth, H: p.offsetHeight };
+    } catch (e) { sy.m = null; }
+  }
+  // セリフが 出て いる 間に 字の 場所が かわった かも しれない とき（画面の 大きさ・字の 形が あとから とどいた）：はかり直して 見せる 所を 合わせる
+  function qsRefit() {
+    if (screen !== 'qf' || !qs || !qs.sy || qs.step !== 'say') return;
+    qsMeasure(); if (!qs.sy.m) qs.sy.n = qs.sy.t.length; qsClip();
+  }
+  // 見せる 所：はじめの n 字（前の 行は ぜんぶ・今の 行は n 字目の 右の はし まで）。ぜんぶ 出たら 切りぬきを やめる
+  function qsClip() {
+    const sy = qs && qs.sy; if (!sy) return;
+    const p = $('.qsay p', scr.qf), n = sy.n, B = 8, f = v => v.toFixed(2) + 'px';
+    if (sy.m && n < sy.t.length && (p.offsetWidth !== sy.m.W || p.offsetHeight !== sy.m.H)) { qsMeasure(); if (!sy.m) sy.n = sy.t.length; }      // 窓の 大きさが はかった ときと ちがう：はかり直す（ふつうは 起きない）
+    const m = sy.m;
+    let c = 'none';
+    if (m && n < sy.t.length) {
+      if (n <= 0) c = 'inset(0 100% 100% 0)';
+      else {
+        const l = m.L[n - 1], x = f(m.X[n - 1] + 0.5), y1 = f(m.Y[l]);
+        c = l === 0 ? `polygon(${f(-B)} ${f(-B)}, ${x} ${f(-B)}, ${x} ${y1}, ${f(-B)} ${y1})`
+          : `polygon(${f(-B)} ${f(-B)}, ${f(m.W + B)} ${f(-B)}, ${f(m.W + B)} ${f(m.Y[l - 1])}, ${x} ${f(m.Y[l - 1])}, ${x} ${y1}, ${f(-B)} ${y1})`;
+      }
+    }
+    p.style.webkitClipPath = c; p.style.clipPath = c;
   }
   function qTap() {
     if (!qs || screen !== 'qf') return;
     const q = QUEST[qs.lv - 1];
     if (qs.step === 'say') {
       if (qs.i < 0) return qLine(0);
-      if (qs.tw) { unlater(qs.tw); qs.tw = null; $('.qsay p', scr.qf).textContent = q.say[qs.i]; return; }      // 字の とちゅう → すぐ ぜんぶ（効果音は その まま）
+      if (qs.tw) { unlater(qs.tw); qs.tw = null; if (qs.sy) { qs.sy.n = qs.sy.t.length; qsClip(); } return; }      // 字の とちゅう → すぐ ぜんぶ（効果音は その まま。第4.214版：中身は かえない＝見える 所を ぜんぶに する だけ）
       if (qs.i + 1 < q.say.length) return qLine(qs.i + 1);      // 第4.210版：進める タップの 音は 鳴らさない（エリアの 効果音と 重ならない）
       return qEnd();
     }
@@ -2914,7 +2980,7 @@ const CBApp = (() => {
     if (!qs || qs.step !== 'en') return;
     if (qGone()) { qs = null; return; }      // 第4.206版：フィールドに いる 間に 月が 進んだ ＝ 切符は 使わない
     if (!qtUse()) { qs = null; showQMap(); qtModal(true); return; }      // 挑戦の はじめ（1戦目）で 切符 1枚（行く 前に 0枚では ない ことを たしかめて いる ので ふつうは ない）
-    const lv = qs.lv; qs.step = 'go'; se('tap'); qaStop(0.4);      // 第4.210版：効果音は 0.4秒で 止める（タップで 止まらない 音〈Lv12 の ③〉は つづく）
+    const lv = qs.lv; qs.step = 'go'; se('tap'); qaStop(0.05, true);     // 第4.214版：フィールドの 効果音は ここで すぐ 止める（0.05秒：前は 0.4秒）・タップで 止まらない 音〈Lv12 の ③〉も（バトルに 入ってからは フィールドの 効果音は 鳴らない）
     qRun = { lv: lv, won: 0, m: st.q.m, gu: [] };
     startMatch(CBNet.cpu(CBApp._rng || undefined, CBApp._think || undefined, qOpt(lv, 1)));
     bgmTrack('quest');
@@ -3086,7 +3152,7 @@ const CBApp = (() => {
     _t: {      // テスト・見本の 写真 用
       get view() { return V; }, get screen() { return screen; }, get match() { return match; }, get mode() { return mode; }, get state() { return st; }, get ended() { return ended; },
       get idle() { return !pumping && !queue.length && !busy && !lock; }, get ask() { return askOn(); }, say, get sets() { return { bgm: bgmOn(), se: seOn(), raw: { bgm: st.bgm, se: st.se }, as: AS }; },
-      qopt: (lv, n) => qOpt(lv, n), qApi, qtPaint: () => qtPaint(), qGu: a => { if (qRun) qRun.gu = a.slice(); }, qmsWin: r => qmsWin(r), get qt() { return st ? Object.assign({ left: qtLeft() }, qtNow()) : null; }, get quest() { return { run: qRun ? Object.assign({}, qRun) : null, st: st ? Object.assign({}, st.q) : null, scene: qs ? { lv: qs.lv, step: qs.step, i: qs.i, typing: !!qs.tw, rv: qs.rv || 0 } : null, data: QUEST, open: st ? qOpen() : 0, track: bg.trk }; },      // 第4.196版：決戦調査
+      qopt: (lv, n) => qOpt(lv, n), qApi, qtPaint: () => qtPaint(), qGu: a => { if (qRun) qRun.gu = a.slice(); }, qmsWin: r => qmsWin(r), get qt() { return st ? Object.assign({ left: qtLeft() }, qtNow()) : null; }, get quest() { return { run: qRun ? Object.assign({}, qRun) : null, st: st ? Object.assign({}, st.q) : null, scene: qs ? { lv: qs.lv, step: qs.step, i: qs.i, typing: !!qs.tw, rv: qs.rv || 0, shown: qs.sy ? qs.sy.n : 0, len: qs.sy ? qs.sy.t.length : 0, cut: !!(qs.sy && qs.sy.m) } : null, data: QUEST, open: st ? qOpen() : 0, track: bg.trk }; },      // 第4.196版：決戦調査
       get bgm() { return { on: !!bg.cur, want: bg.want, have: !!bg.buf, gone: bg.gone, pos: bgmPos(), len: BGM.len, pre: BGM.pre, vol: BGM.vol, file: BGM.file, loop: bg.cur ? [bg.cur.s.loopStart, bg.cur.s.loopEnd] : null, ctx: snd.ac ? snd.ac.state : null, off: bg.cur ? bg.cur.off : null, dur: bg.buf ? bg.buf.duration : null, trk: bg.trk }; },
       get qsnd() { return { lv: qa.lv, cur: qa.cur ? { f: qa.cur.f, keep: qa.cur.keep, on: !!qa.cur.s } : null, kept: qa.kept.map(o => o.f), have: Object.keys(qa.buf), data: QSND, bgs: QBG }; },      // 第4.210版：フィールドの 音
       get mySets() { return mySets; }, setMySets: n => { mySets = Math.max(0, Math.floor(+n || 0)); },      // 第4.211版：この 対戦で 自分が セットした 数

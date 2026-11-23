@@ -4,7 +4,8 @@
 #     1/60秒ずつ（その 時に ある アニメーションは 今の 時刻から 進める）写して kisekae/flash_px.py で 数える（1秒に 4回 以上 光る 点が 画面の 10% を こえる 1秒が ない こと）。
 #     絵（ios/fx_assets/bcx_hb_*.webp）が なければ SVG の 馬
 #   第4.113版：出世馬 8連続（幻の 馬・暗い 雷：rise8）は 出世馬と いっしょに 消した
-#   第4.121版：まさちゃんの 絵の ボード（pic）：的中（結果ボードを廻る 3連勝）・デカ的中（4連勝：ふわっと 明るく 出る）・ハズレ（二人でしょんぼり 2回目）。
+#   第4.214版：「結果ボードを廻る」を 消した → 絵の ボードは「馬達の祝杯」（toast）で 見る
+#   第4.121版：まさちゃんの 絵の ボード（pic）：的中（結果ボードを廻る 3連勝 → 第4.214版：馬達の祝杯 3連勝）・デカ的中（4連勝：ふわっと 明るく 出る）・ハズレ（二人でしょんぼり 2回目）。
 #     「▶ 見る」の すぐ あと から 3秒（ボードの 登場 → 絵ごと ふわっと → ほかの 絵を かくす → 行と 見出しの 動き）。絵（ios/bcp_assets）が なければ いつもの ボード
 #   第4.145版：置く 絵は アプリに 入れる もの だけ（bcp_app.files()）。部品を 重ねる 絵は 部品が そろって から 出る（出た あとの 点めつを 数える）
 #   第4.150版（まさちゃん 2026/11/11 02:36「結果カスタムボードの動き全部無くして！ボードを持つ馬も含めて！」）：結果ボードカスタムは 動かない。
@@ -85,7 +86,7 @@ try:
             if not ok: fails.append('carry flash: ' + (rr.stderr[-300:] if rr.returncode else bad))
         if 'pic' in CASES:
             MISS = dict(SPEC, rows=[dict(x, state='不的中', hits=[]) for x in SPEC['rows']])
-            for kind, iid, n_ in (('hit', 'ring', 3), ('big', 'ring', 4), ('miss', 'rain', 2)):
+            for kind, iid, n_ in (('hit', 'toast', 3), ('big', 'toast', 4), ('miss', 'rain', 2)):
                 OUT = os.path.join(W, 't5', 'fx_frames', f'bcx_pic_{kind}')
                 pg.evaluate("([s, k, id, n]) => TengelFx.preview(s, k, { item: id, streak: n })", [MISS if kind == 'miss' else SPEC, kind, iid, n_])
                 pg.evaluate(SETUP22)
