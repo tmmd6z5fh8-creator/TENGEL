@@ -1163,7 +1163,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBNet;
 const CBApp = (() => {
   'use strict';
   const R = CBRules, SK = 'tengel.cb';
-  const REWARD = { win: 1, every: 5, bonus: 3 };
+  
+  
+  
+  
+  
+  const TK_BONUS = [[3, 1], [5, 2]];
+  const tkBonus = streak => TK_BONUS.reduce((a, t) => a + (streak > 0 && streak % t[0] === 0 ? t[1] : 0), 0);
   
   const COIN = { win: 2, bonus: [[3, 6], [5, 10]], day: 2, day7: 10, max: 9999 };
   const coinBonus = streak => COIN.bonus.reduce((a, t) => a + (streak > 0 && streak % t[0] === 0 ? t[1] : 0), 0);      
@@ -1245,14 +1251,15 @@ const CBApp = (() => {
 
   
   let st = null;
-  const DEF = () => ({ v: 1, streak: 0, win: 0, lose: 0, draw: 0, owe: 0, bgm: null, se: null, coin: 0, stake: null, backs: [], faces: [], back: '', face: {}, boards: [], board: '', ms: null, gifts: [], pkh: [], packs: 0, q: null, rg: null });      
+  const DEF = () => ({ v: 1, streak: 0, win: 0, lose: 0, draw: 0, bgm: null, se: null, coin: 0, stake: null, backs: [], faces: [], back: '', face: {}, boards: [], board: '', ms: null, gifts: [], pkh: [], packs: 0, q: null, rg: null });      
   let lostStake = 0;                                   
   let lostMs = '';                                     
   let lostLive = -1;                                   
   let giftGot = 0, giftFull = false;                   
   function load() {
     try { const s = JSON.parse(localStorage.getItem(SK) || 'null'); st = Object.assign(DEF(), s && s.v === 1 ? s : {}); } catch (e) { st = DEF(); }
-    ['streak', 'win', 'lose', 'draw', 'owe'].forEach(k => { st[k] = Math.max(0, Math.floor(+st[k] || 0)); });
+    ['streak', 'win', 'lose', 'draw'].forEach(k => { st[k] = Math.max(0, Math.floor(+st[k] || 0)); });
+    delete st.owe;      
     ['bgm', 'se'].forEach(k => { st[k] = st[k] === true || st[k] === false ? st[k] : null; });      
     delete st.fx;                                      
     st.coin = Math.max(0, Math.min(COIN.max, Math.floor(+st.coin || 0)));      
@@ -1336,36 +1343,22 @@ const CBApp = (() => {
     QMS.forEach(t => t[1].forEach(w => { const k = `g${t[0]}w${w[0]}`; if (r.won >= w[0] && left >= t[0] && got.indexOf(k) < 0) { got.push(k); out.push({ k: 'q', g: t[0], n: w[0], c: w[1] }); } }));
     return out;
   }
-  const rewardFor = streak => (streak > 0 && streak % REWARD.every === 0 ? REWARD.bonus : REWARD.win);
-  
-  
-  
-  
-  async function pay() {
-    if (!(st.owe > 0) || typeof window.TCGift !== 'function' || window.__cbPayBusy) return null;
-    const want = st.owe; let r = null;
-    window.__cbPayBusy = true;
-    try { r = await window.TCGift(want); } catch (e) { r = null; } finally { window.__cbPayBusy = false; }
-    if (!r) return null;                               
-    st.owe = Math.max(0, st.owe - want); save();       
-    return { want: want, add: r.add, stock: r.stock, max: r.max };
-  }
   
   
   
   
   async function settle(res) {
     if (qRun) return qSettle(res);                     
-    let got = 0, coin = 0, cb = 0, pot = null, ms = []; const cpu = !!match && match.kind === 'cpu', k = st.stake, mk = msKind(match);
+    let coin = 0, cb = 0, tk = 0, pot = null, ms = []; const cpu = !!match && match.kind === 'cpu', k = st.stake, mk = msKind(match);
     st.ms.live = '';
-    if (res === 'win') { st.win += 1; st.streak += 1; got = rewardFor(st.streak); st.owe += got; if (cpu) { coin = COIN.win; cb = coinBonus(st.streak); } ms = msWin(mk); }
+    if (res === 'win') { st.win += 1; st.streak += 1; if (cpu) { coin = COIN.win; cb = coinBonus(st.streak); tk = tkBonus(st.streak); } ms = msWin(mk); }
     else if (res === 'lose') { st.lose += 1; st.streak = 0; msRoll(); st.ms[mk] = 0; }
     else { st.draw += 1; msRoll(); }
     if (k) { pot = { e: k.e, w: k.w, add: res === 'win' ? k.w : res === 'draw' ? k.e : 0 }; st.stake = null; }
     const msc = ms.reduce((a, x) => a + x.c, 0), want = coin + cb + (pot ? pot.add : 0) + msc, c0 = st.coin; addCoin(want);
     save();
-    const p = got ? await pay() : null;
-    return { res: res, got: got, pay: p, streak: st.streak, coin: coin, cb: cb, pot: pot, coins: st.coin, full: st.coin - c0 < want, ms: ms, msc: msc, mk: mk, mst: st.ms[mk] };
+    const tkGot = tk ? qtAdd(tk) : 0;      
+    return { res: res, cpu: cpu, streak: st.streak, coin: coin, cb: cb, tk: tk, tkGot: tkGot, tks: tk ? qtNow().n : 0, pot: pot, coins: st.coin, full: st.coin - c0 < want, ms: ms, msc: msc, mk: mk, mst: st.ms[mk] };
   }
   
   function msLive() { if (!match) return; msRoll(); st.ms.live = qRun ? 'qc' : msKind(match); save(); }      
@@ -1674,13 +1667,8 @@ const CBApp = (() => {
 #cbOv .cbend h3{font-size:40px;line-height:1.15}
 #cbOv .cbend .sc{font-family:"Dela Gothic One","Hiragino Sans",sans-serif;font-size:26px;color:#ffe9a8;letter-spacing:.08em}
 #cbOv .cbend .sc small{font-family:"BIZ UDPGothic","Hiragino Sans",sans-serif;font-size:12px;color:#d9c08c;letter-spacing:0;display:block}
-#cbOv .cbend .gift{min-height:248px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:14px;line-height:1.6;color:#fff1cf}
+#cbOv .cbend .gift{min-height:204px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:14px;line-height:1.6;color:#fff1cf}
 #cbOv .cbend .gift b{color:#ffe07a;font-size:17px}
-#cbOv .cbget{display:inline-flex;align-items:center;gap:14px;box-sizing:border-box;min-width:250px;padding:11px 24px 12px 18px;border-radius:22px;border:2.5px solid #ffd76a;background:linear-gradient(180deg,#5a3a12 0%,#3a240a 55%,#2a1806 100%);box-shadow:0 0 0 1.5px rgba(60,30,0,.7),0 0 22px rgba(255,210,90,.6),inset 0 1px 0 rgba(255,240,190,.35),inset 0 0 14px rgba(255,200,80,.22);animation:cbget .55s cubic-bezier(.3,1.5,.5,1) both}
-#cbOv .cbget .tk{flex:none;font-style:normal;font-size:42px;line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.55))}
-#cbOv .cbget .tx{display:block;text-align:left}
-#cbOv .cbget small{display:block;font-size:13.5px;font-weight:700;line-height:1.3;color:#ffe9b0}
-#cbOv .cbend .gift .cbget .n{display:block;font-size:31px;line-height:1.15;letter-spacing:.03em}
 @keyframes cbget{from{transform:scale(.5);opacity:0}to{transform:none;opacity:1}}
 #cbOv .cbtoast{position:absolute;left:50%;top:calc(var(--sat,env(safe-area-inset-top)) + 54px);z-index:9;transform:translate(-50%,-8px);width:max-content;max-width:86%;box-sizing:border-box;padding:9px 16px;border-radius:16px;background:rgba(20,12,6,.94);border:1.5px solid #c9a35a;color:#fff1cf;font-size:13.5px;font-weight:700;line-height:1.5;text-align:center;white-space:pre-line;box-shadow:0 6px 16px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
 #cbOv .cbtoast.on{opacity:1;transform:translate(-50%,0)}
@@ -1729,6 +1717,7 @@ const CBApp = (() => {
 #cbOv .cbmod .cbhave b{color:#ffe07a;font-size:16px}#cbOv .cbmod .cbhave strong{color:#ffb38a}
 #cbOv .cbmod.cbjoin{background:rgba(8,5,2,.93)}
 #cbOv .cbend .gift .cbcl b{color:#ffe07a;font-size:15.5px}
+#cbOv .cbend .gift .cbtkl{font-size:13.5px;color:#ffe9a8}
 #cbOv .cbdz{padding-left:0;padding-right:0}
 #cbOv .cbdz .hd{flex:none;height:48px;display:flex;align-items:center;gap:8px;padding:0 12px}
 #cbOv .cbdz .hd b{flex:1;text-align:center;font-size:17px;color:#ffe9a8;margin-right:64px}
@@ -2106,7 +2095,7 @@ const CBApp = (() => {
 @media (prefers-reduced-motion: reduce){#cbOv .cbgem .g.can::before{animation:none;opacity:.85}#cbOv .cbgem .g.pop img{animation:none}#cbOv .cbhand .cbc.gone{animation:none;opacity:0}}
 @media (max-height:720px){#cbOv .cbmenu .lg{width:min(44vw,168px)}#cbOv .cbmenu{gap:8px}}
 @media (max-height:760px){#cbOv .cbmenu .lg{width:min(36vw,132px)}#cbOv .cbmenu{gap:6px}#cbOv .cbmenu .btns{gap:8px}#cbOv .cbmenu .rec{margin:0}}      /* 第4.196版：決戦調査の ボタンが ふえた ぶん */
-@media (prefers-reduced-motion: reduce){#cbOv .cbglow.on{animation:none}#cbOv .cbhand .cbc.new{animation:none}#cbOv .cbflip .in{transition:none}#cbOv .cbget{animation:none}#cbOv .cbend .gift .cbmsn,#cbOv .cbend .gift .cbsbn,#cbOv .qvic .gift .cbmsn{animation:none}#cbOv .cbfire{animation:none;opacity:.88}#cbOv .cbuse,#cbOv .cbuse.on{transform:translate(-50%,-50%);transition:opacity .22s}}
+@media (prefers-reduced-motion: reduce){#cbOv .cbglow.on{animation:none}#cbOv .cbhand .cbc.new{animation:none}#cbOv .cbflip .in{transition:none}#cbOv .cbend .gift .cbmsn,#cbOv .cbend .gift .cbsbn,#cbOv .qvic .gift .cbmsn{animation:none}#cbOv .cbfire{animation:none;opacity:.88}#cbOv .cbuse,#cbOv .cbuse.on{transform:translate(-50%,-50%);transition:opacity .22s}}
 `;
   let ov = null, built = false, scr = {}, flyEl = null, modEl = null, toastEl = null, banEl = null, useEl = null;
   const $ = (s, r) => (r || ov).querySelector(s);
@@ -2221,7 +2210,7 @@ const CBApp = (() => {
     closeMod(); show('menu'); msRoll();
     const tot = st.win + st.lose + st.draw;
     $('.rec', scr.menu).innerHTML = (tot ? `<b>${st.win}</b>勝 <b>${st.lose}</b>敗 <b>${st.draw}</b>分` + (st.streak > 0 ? `　今 <b>${st.streak}</b>連勝！` : '') + '<br>' : '')
-      + `勝つと お世話トークン <b>${REWARD.win}</b>個・<b>${REWARD.every}</b>連勝 ごとに <b>${REWARD.bonus}</b>個`;
+      + `コンピュータに ${TK_BONUS.map(t => `<b>${t[0]}</b>連勝 ごとに 調査隊切符 <b>${t[1]}</b>枚`).join('・')}`;
     $('.cbcoinl', scr.menu).innerHTML = `${COINI}<span>バトルコイン <b>${st.coin}</b>枚</span><small>${coinHow()}<br>${coinDay()}</small>`;
     $('[data-cb=ms] .msn', scr.menu).textContent = `今月 ${msDone()}／${MS_ALL} 達成`;      
     qRoll(); $('[data-cb=quest] .qsn', scr.menu).textContent = st.q.clr >= QN ? `今月は 全部 討伐！（${QN}／${QN}）` : `今月 ${st.q.clr}／${QN} 討伐・次は レベル${qOpen()}`;      
@@ -2237,7 +2226,6 @@ const CBApp = (() => {
     if (tw.length) toast(tw.join('\n'), (lw.length ? 3.6 + (lw.length - 1) * 1.2 : 2.4) + (tw.length - (lw.length ? 1 : 0)) * 1.2);
     const can = !!(window.__NATIVE && window.TengelNative);
     scr.menu.querySelectorAll('[data-cb=host],[data-cb=join]').forEach(b => { b.disabled = !can; });
-    pay().then(p => { if (p && p.add > 0 && screen === 'menu') toast(`🎟 前の 対戦の ご褒美\nお世話トークン ${p.add}個を 受け取ったよ`, 3.2); });
   }
 
   
@@ -2266,7 +2254,7 @@ const CBApp = (() => {
       + '<ul><li>手札の 数は、手札の 効果（6・7・3）は <b>セットする 前</b>の 手札で、5 の 効果は <b>セットした あと</b>の 手札で 数えるよ（セットした カードは 手札に 入らない）</li><li>効果が 出る 順番：<b>① ターンの 始め</b>（<b>6</b> → 神様馬・幻の馬）→ <b>② セット</b>（手札の 効果 7・3 は セットの 前）→ <b>③ 効果タイム</b>（<b>5 → 4</b>：セットした カードの 効果。4 は 一番 後）</li><li>効果は <b>1つ 終わってから 次の 効果</b>を 聞くよ（前の 効果で 変わった 手札で 決められる。例：7 で 引いた 後の 手札で、セットする カードを 選ぶ・5 で 捨てる カードを 選ぶ）</li><li>最後の ターンに 神様馬・幻の馬で 勝った ときは、次の ターンが ない ので 効果は ないよ</li></ul>'
       + '<h4>見た カード・見られた カード</h4><ul><li>効果で 見た 相手の カードは、相手の 手札に ある 間 表で 見えるよ</li><li>相手に 見られた 自分の カードには 目の 印が 付くよ</li><li>セットした カードは <b>裏</b>（4 の 効果で 見せる か、オープン するまで）。相手の 手札は いつも <b>本当の 手札</b>の まま 見えるよ（見た カードを 相手が セットしたら、その カードは 相手の 手札から 消える）</li></ul>'
       + '<h4>捨て札</h4><ul><li>ボードの「<b>捨て札</b>」を タップすると、捨て札を 見られるよ</li><li><b>終わった ターンの 捨て札</b>（2人が 出した カード）と、<b>効果で 捨てた カード</b>に 分けて 出るよ</li></ul>'
-      + `<h4>ご褒美</h4><ul><li>勝つと <b>お世話トークン ${REWARD.win}個</b></li><li><b>${REWARD.every}連勝</b> ごとに <b>${REWARD.bonus}個</b>（負けると 連勝は 0 に 戻るよ。同点は そのまま）</li><li>お世話トークンは 25個 まで。対戦の 途中で やめた・アプリを 閉じた ときも 負けに なるよ</li></ul>`
+      + `<h4>ご褒美</h4><ul><li>コンピュータに 勝つと <b>バトルコイン</b>（下の「バトルコイン」）</li><li>コンピュータに ${TK_BONUS.map(t => `<b>${t[0]}連勝 ごとに 調査隊切符 ${t[1]}枚</b>`).join('・')}（${TK_BONUS.reduce((a, t) => a * t[0], 1)}連勝 など、両方の ときは 両方。調査隊切符は ${QT.max}枚 まで）</li><li>負けると 連勝は 0 に 戻るよ。同点は そのまま。対戦の 途中で やめた・アプリを 閉じた ときも 負けに なるよ</li></ul>`
       + `<h4>バトルコイン</h4><ul><li><b>コンピュータに 勝つと ${COIN.win}枚</b> もらえるよ。連勝すると ボーナス：${COIN.bonus.map(t => `<b>${t[0]}連勝 ごとに ＋${t[1]}枚</b>`).join('・')}（${COIN.bonus.reduce((a, t) => a * t[0], 1)}連勝 など、両方の ときは 両方）</li>`
       + `<li><b>毎日の ログインボーナス</b>でも <b>${COIN.day}枚</b>（<b>7日目は ＋${COIN.day7}枚</b>）もらえるよ。<b>買う ことは できない</b>よ</li>`
       + '<li>友達と 対戦する 部屋を 作る とき、<b>参加コイン</b>と <b>勝者の 獲得コイン</b>（参加コインの 2倍 まで）を 決められるよ</li><li>部屋に 入る 人は、同じ 数の 参加コインを 持って いないと 入れないよ</li>'
@@ -2283,7 +2271,7 @@ const CBApp = (() => {
       + '<li>討伐すると <b>次の エリアが 開く</b>よ。負けたら その エリアを <b>1戦目から やり直し</b>。同点は <b>同じ 戦を やり直し</b>（HP は そのまま）</li>'
       + '<li>強い 敵は、決まった 戦で <b>手札に 必ず 強い カード</b>を 持って いるよ（その 戦の 始めに 知らせるよ）</li>'
       + '<li>討伐した エリアにも <b>もう 一度 調査に 行ける</b>よ。<b>討伐の バトルコインは 毎月 1回目 だけ</b>（2回目からは なし）</li>'
-      + '<li>もらえるのは 討伐の バトルコインと、<b>決戦調査ミッション</b>（決戦宝石を 残して 連続勝利）の バトルコイン。いつもの 勝ち負け・連勝・お世話トークン・いつもの ミッションには 数えないよ</li>'
+      + '<li>もらえるのは 討伐の バトルコインと、<b>決戦調査ミッション</b>（決戦宝石を 残して 連続勝利）の バトルコイン。いつもの 勝ち負け・連勝（調査隊切符の ボーナス）・いつもの ミッションには 数えないよ</li>'
       + '<li>戦の 途中で やめる・アプリを 閉じると 調査 失敗。<b>毎月 1日に リセット</b>（討伐した エリアも 最初から）</li>'
       + `<li>${TKI}<b>調査隊切符</b>：エリアに <b>挑戦する とき 1枚</b>（1戦目の はじめ）。<b>連勝中は 使わない</b>（「第○戦へ」・同点の やり直し）。負けて「もう 一度 挑戦」する とき・次の エリアに 行く とき（例：レベル3 → レベル4）は また 1枚。<b>${QTM()}分で 1枚</b> たまって、<b>${QT.max}枚 まで</b>。0枚の ときは 挑戦 できないよ（マップの 上の ゲージで 枚数と 次の 1枚 までの 時間が わかるよ）</li></ul>`
       + `<h4>決戦宝石</h4><ul><li><b>決戦調査では いつも 使えるよ</b>：1つの 調査（連勝が 続く 間）で <b>5つ 1回ずつ（合計 5個）</b>。負けて 1戦目から やり直すと また 5つ</li>`
@@ -3545,28 +3533,26 @@ const CBApp = (() => {
     const no = gameNo, r = await (ends.shift() || settle(x.res)), g = $('.cbend .gift');      
     if (!g || no !== gameNo) return;
     
-    
-    const get = (n, bonus) => `<div class="cbget" role="status" aria-label="お世話トークン ${n}個 GET"><i class="tk" aria-hidden="true">🎟</i><span class="tx"><small>${bonus ? `${REWARD.every}連勝 ボーナス！ ` : ''}お世話トークン</small><b class="n gold">＋${n}個 GET！</b></span></div>`;
     let h = '';
     if (x.res === 'win') {
-      const p = r.pay, bonus = r.got > REWARD.win;
-      if (p && p.add > 0) h = get(p.add, bonus) + `<div>今 ${p.stock}こ／${p.max}個${p.add < p.want ? `（${p.max}個 まで なので ${p.add}個 だけ）` : ''}</div>`;
-      else if (p) h = `<div>お世話トークンが いっぱい（${p.max}個）なので、今回は もらえなかったよ</div>`;
-      else h = get(r.got, bonus) + '<div>次に ここを 開いた ときに 渡すね</div>';
-      h += `<div><b>${r.streak}連勝中！</b>` + (r.streak % REWARD.every ? `　あと ${REWARD.every - r.streak % REWARD.every}勝で ${REWARD.bonus}個` : '') + '</div>';
+      const nx = r.cpu ? Math.min.apply(null, TK_BONUS.map(t => t[0] - r.streak % t[0])) : 0;
+      h = `<div><b>${r.streak}連勝中！</b>` + (r.cpu ? `　あと ${nx}勝で 調査隊切符` : '') + '</div>';
     } else if (x.res === 'lose') h = '<div>連勝は 0 に 戻ったよ。もう 1回 やって みよう！</div>';
     else h = `<div>${st.streak > 0 ? `同点なので 連勝（${st.streak}連勝）は そのまま` : '同点！ もう 1回 やって みよう！'}</div>`;
     
     
     const now = `（今 ${r.coins}枚${r.full ? `：${COIN.max}枚 まで` : ''}）`;
     
-    if (r.cb) h += `<div class="cbsbn" role="status" aria-label="${r.streak}連勝 ボーナス バトルコイン ${r.cb}枚"><i aria-hidden="true">🔥</i><span>${r.streak}連勝 ボーナス！</span>${COINI}<b>＋${r.cb}枚</b></div>`;
+    
+    
+    if (r.cb || r.tkGot) h += `<div class="cbsbn" role="status" aria-label="${r.streak}連勝 ボーナス${r.cb ? ` バトルコイン ${r.cb}枚` : ''}${r.tkGot ? ` 調査隊切符 ${r.tkGot}枚` : ''}"><i aria-hidden="true">🔥</i><span>${r.streak}連勝 ボーナス！</span>${r.cb ? `${COINI}<b>＋${r.cb}枚</b>` : ''}${r.tkGot ? `${TKI}<b>＋${r.tkGot}枚</b>` : ''}</div>`;
+    if (r.tk) h += `<div class="cbtkl">${TKI}` + (r.tkGot ? `調査隊切符 今 ${r.tks}枚` + (r.tkGot < r.tk ? `（${QT.max}枚 まで なので ${r.tkGot}枚 だけ）` : '') : `調査隊切符は いっぱい（${QT.max}枚）なので、今回は 増えなかったよ`) + '</div>';
     h += r.ms.map(m => `<div class="cbmsn" role="status" aria-label="ミッション達成 ${m.n}連勝 バトルコイン ${m.c}枚"><i aria-hidden="true">🎯</i><span>ミッション達成！</span><b>${m.n}連勝</b>${COINI}<b>＋${m.c}枚</b></div>`).join('');
     if (r.pot) h += `<div class="cbcl">${COINI}${x.res === 'win' ? `<b>バトルコイン ＋${r.pot.w}枚</b>` : x.res === 'draw' ? `同点：参加コイン ${r.pot.e}枚 戻ったよ` : `参加コイン ${r.pot.e}枚は 戻らないよ`}${now}</div>`;
     else if (r.coin) h += `<div class="cbcl">${COINI}<b>バトルコイン ＋${r.coin}枚</b>${now}</div>`;      
     else if (r.ms.length) h += `<div class="cbcl">${COINI}バトルコイン${now}</div>`;      
     g.innerHTML = h;
-    if (g.querySelector('.cbget') || g.querySelector('.cbmsn') || g.querySelector('.cbsbn')) se('magic', 0.7);
+    if (g.querySelector('.cbmsn') || g.querySelector('.cbsbn')) se('magic', 0.7);
     
     const k = match && match.stake;
     if (k && k.e > 0 && st.coin < k.e) { const ab = $('.cbend [data-cb=again]'), g2 = $('.cbend .gift2'); if (ab) ab.disabled = true; if (g2) g2.textContent = `バトルコインが 足りない ので、もう 1回は できないよ`; }
@@ -3737,6 +3723,7 @@ const CBApp = (() => {
     if (k > 0) { s.n = Math.min(QT.max, s.n + k); s.at = s.n >= QT.max ? t : s.at + k * QT.ms; save(); }
     return s;
   }
+  function qtAdd(k) { const s = qtNow(), n0 = s.n; s.n = Math.min(QT.max, s.n + Math.max(0, Math.floor(+k || 0))); if (s.n !== n0) save(); return s.n - n0; }      
   const qtLeft = () => { const s = qtNow(); return s.n >= QT.max ? 0 : Math.max(0, QT.ms - (qtT() - s.at)); };      
   function qtUse() { const s = qtNow(); if (s.n < 1) return false; if (s.n >= QT.max) s.at = qtT(); s.n -= 1; save(); return true; }      
   const mmss = ms => { const x = Math.ceil(ms / 1000); return `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}`; };
@@ -4111,7 +4098,7 @@ const CBApp = (() => {
   
   document.addEventListener('tengel:cbgift', () => { if (!st || !takeGift()) return; if (ov && ov.classList.contains('on') && screen === 'menu' && !modOn()) showMenu(); });
   return {
-    open, close, REWARD, rewardFor, COIN, coinFor, coinBonus, MS, PACK, FACES, _rng: null, _randInt: null, _think: null, _link: null, _opt: null, _room: null, _guard: null, _as: null, _now: null, _sl: null,      
+    open, close, TK_BONUS, tkBonus, COIN, coinFor, coinBonus, MS, PACK, FACES, _rng: null, _randInt: null, _think: null, _link: null, _opt: null, _room: null, _guard: null, _as: null, _now: null, _sl: null,      
     _t: {      
       get view() { return V; }, get screen() { return screen; }, get match() { return match; }, get mode() { return mode; }, get state() { return st; }, get ended() { return ended; },
       get idle() { return !pumping && !queue.length && !busy && !lock; }, get ask() { return askOn(); }, say, get sets() { return { bgm: bgmOn(), se: seOn(), raw: { bgm: st.bgm, se: st.se }, as: AS }; },
@@ -4119,7 +4106,7 @@ const CBApp = (() => {
       get bgm() { return { on: !!bg.cur, want: bg.want, have: !!bg.buf, gone: bg.gone, pos: bgmPos(), len: BGM.len, pre: BGM.pre, vol: BGM.vol, file: BGM.file, loop: bg.cur ? [bg.cur.s.loopStart, bg.cur.s.loopEnd] : null, ctx: snd.ac ? snd.ac.state : null, off: bg.cur ? bg.cur.off : null, dur: bg.buf ? bg.buf.duration : null, trk: bg.trk }; },
       get qsnd() { return { lv: qa.lv, cur: qa.cur ? { f: qa.cur.f, keep: qa.cur.keep, on: !!qa.cur.s } : null, kept: qa.kept.map(o => o.f), have: Object.keys(qa.buf), data: QSND, bgs: QBG }; },      
       get mySets() { return mySets; }, setMySets: n => { mySets = Math.max(0, Math.floor(+n || 0)); },      
-      setSet, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, pay, load, save, takeGift, modOn, pkDraw, pkPool, pkGroup, randInt, get pk() { return pk; }, dz: t => showDz(t), dzApi, msKey: () => monthKey(), msRoll, ms: tab => showMs(tab), pic
+      setSet, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, load, save, takeGift, modOn, pkDraw, pkPool, pkGroup, randInt, get pk() { return pk; }, dz: t => showDz(t), dzApi, msKey: () => monthKey(), msRoll, ms: tab => showMs(tab), pic
     }
   };
 })();

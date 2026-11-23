@@ -122,6 +122,8 @@ CBPY='
 # 第4.185版：設定は BGM・効果音 だけ（エフェクトは なくした）・プレイボードは いつもの 絵（cb_board.webp）
 # 第4.202版：決着したら 試合終了（early＝おわった ターン：捨て札は その ターンの 数 × 2 以上）・手札の 効果（7 の 3まい・3）は セットの 前に 聞く（自動の 対戦は「使わない」）
 # 第4.196版：メニューに「⚔️ 決戦調査」（ボタンは 9こ：戻る・コンピュータと 対戦・決戦調査・部屋を 作る・部屋に 入る・遊び方・設定・ミッション・デザインカスタム）
+# 第4.212版：勝っても お世話トークンは もらえない（トレーニングセンターの 部品を 読まない＝tokens は None・state に owe は ない）・
+#   TENGERカードバトルは おもちゃ（3,000P で 解放）：解放の 前は 丸い ボタンに 🔒・押すと 解放の 窓（カードバトルは 開かない・本体も 読まない）→「やめる」→ 解放ずみに して 開く
 import json, sys
 o = json.load(open(sys.argv[1])).get("cb") or {}
 rm = o.get("room") or {}; rb = o.get("roomBad") or {}; st = o.get("start") or {}; au = o.get("auto") or {}; s = o.get("state") or {}
@@ -129,13 +131,17 @@ fd = o.get("fd") or []
 ok = (o.get("fab") or [])[:4] == ["tcFab", "oshiFab", "cbFab", "figFab"] and (o.get("col") is True or o.get("g2") is True) and len(fd) == 4 and len(set(fd)) == 1 and 36 <= fd[0] <= 66 and o.get("clear") is True and o.get("api") == "object" and rm.get("ok") is True and rm.get("state") == "idle" and rb.get("ok") is False and rb.get("why") == "room" \
      and o.get("open") is True and len(o.get("menu") or []) == 9 and o.get("roomBtn") == [True, True] and st.get("hand") == 7 and st.get("op") in (6, 7) and st.get("deck") == 16 and st.get("turn") == 1 and st.get("turns") == 5 and au.get("ended") is True \
      and o.get("res") in ("win", "lose", "draw") and (o.get("discard") or 0) >= 2 * ((o.get("early") or 0) or 5) and bool(o.get("gift")) and (s.get("win", 0) + s.get("lose", 0) + s.get("draw", 0)) == 1 and o.get("closed") is True \
-     and (o.get("res") != "win" or o.get("tokens") == 6) and ("バトルコイン %d" % (2 * (o.get("gift0") or 0))) in (o.get("coinl") or "") and o.get("coin0") == 2 * (o.get("gift0") or 0) \
+     and o.get("tokens") is None and "owe" not in s and ("バトルコイン %d" % (2 * (o.get("gift0") or 0))) in (o.get("coinl") or "") and o.get("coin0") == 2 * (o.get("gift0") or 0) \
      and s.get("coin") == (2 if o.get("res") == "win" else 0) + 2 * len(s.get("gifts") or []) and len(s.get("gifts") or []) <= 1
 se = o.get("sets") or {}; bg = o.get("bgm") or {}; fire = o.get("fire") or []
 ok2 = se.get("fx") is False and isinstance(se.get("se"), bool) and isinstance(se.get("bgm"), bool) and bg.get("on") is False and abs((bg.get("len") or 0) - 80.53) < 0.02 and len(fire) == 2 and all(f.startswith("cbfire ") for f in fire) \
       and o.get("gear") == "bgm,se" and o.get("fxBtn") is False and o.get("board") == ["cb_board.webp", False] and not o.get("setsErr")
 print("fab %s column %s 2x2 %s icon %s clear-of-kise %s (view %s kise %s fabs %s) room-api %s bad-room %s open %s start %s played %s res %s wins %s discard %s early %s tokens %s closed %s coin %s->%s gifts %s -> %s" % ((o.get("fab") or [])[:4], o.get("col"), o.get("g2"), fd[:1], o.get("clear"), o.get("view"), o.get("kise"), o.get("fabRect"), rm, rb.get("why"), o.get("open"), st, au.get("kinds"), o.get("res"), o.get("wins"), o.get("discard"), o.get("early"), o.get("tokens"), o.get("closed"), o.get("coin0"), s.get("coin"), len(s.get("gifts") or []), "OK" if ok else "CHECK " + json.dumps(o, ensure_ascii=False)[:400]))
 print("   card battle settings: sets %s bgm %s fire %s gear %s fx-button %s board %s err %s -> %s" % (se, bg, fire, o.get("gear"), o.get("fxBtn"), o.get("board"), o.get("setsErr"), "OK" if ok2 else "CHECK"))
+ty = o.get("toy") or {}; af = ty.get("after") or {}
+ok3 = ty.get("locked") is True and ty.get("lock") is True and "3,000P" in (ty.get("ask") or "") and "TENGERカードバトル" in (ty.get("ask") or "") and ty.get("btn") in ("go,no", "buy,no") and ty.get("cbOpen") is False and ty.get("bundle") is False \
+      and af == {"ov": False, "cb": False} and ty.get("opened") == [True] and ty.get("lock2") is False and not o.get("toyErr")
+print("   card battle toy: locked %s badge %s points %s ask-buttons %s opened-before-unlock %s after-cancel %s unlocked %s badge-after %s err %s -> %s" % (ty.get("locked"), ty.get("lock"), ty.get("total"), ty.get("btn"), ty.get("cbOpen"), af, ty.get("opened"), ty.get("lock2"), o.get("toyErr"), "OK" if ok3 else "CHECK " + json.dumps(ty, ensure_ascii=False)[:300]))
 '
 # 第4.177版：お世話の 札の「描く 命令を 書きとめる 役」（tc/tc_care.js の REC）を 本物の WebKit で：16コマ（描く 8〈はじめの 2コマ・場面が かわった 3コマ・中身の かわる 紙の 2コマ・かくれた あとの 1コマ〉・同じ 絵で 描かない 6・かくれて いて 描かない 2）・
 #   じかに 描いた 紙と 1画素も ちがわない（くらべた 14コマ・べつの 紙との 見くらべも 0）・読んだ 値（線の 太さ 2・こさ 0.375）
@@ -179,7 +185,7 @@ phase() {
 }
 applog() { xcrun simctl spawn "$1" log show --last 15m --style compact --predicate 'process CONTAINS "テンゲル" OR (process CONTAINS "WebContent" AND eventMessage CONTAINS[c] "error")' 2>/dev/null | tail -400 > "$OUT/$2-log.txt"; }
 
-P1="gate-first main rsv-ov fx-push fx-board fx-fz-push fx-fz-result fx-sgd-still fx-sd fx-sd-board fx-gk fx-gk-board board-carry board-carry-slip board-carry-miss ks-judge ks-push ks-board ks-set ks-conf ks-tengel ks-pack ks-pack-wall points settings backup about rec numpad manual-ov manual-ov-item cb-menu cb-game cb-end report-1 manual manual-item report-manual back report-back"
+P1="gate-first main rsv-ov fx-push fx-board fx-fz-push fx-fz-result fx-sgd-still fx-sd fx-sd-board fx-gk fx-gk-board board-carry board-carry-slip board-carry-miss ks-judge ks-push ks-board ks-set ks-conf ks-tengel ks-pack ks-pack-wall points settings backup about rec numpad manual-ov manual-ov-item cb-toy cb-menu cb-game cb-end report-1 manual manual-item report-manual back report-back"
 # 4) iPhone
 if [ -n "$IPHONE" ]; then
   xcrun simctl boot "$IPHONE" > /dev/null 2>&1; xcrun simctl bootstatus "$IPHONE" -b > /dev/null 2>&1
@@ -204,6 +210,17 @@ print("tengel-bgm api %s card %s (none expected) h264 %s -> %s" % (o.get("has"),
 ' "$OUT/iphone-report-1.json" 2>&1)"
   fi
   [ -f "$OUT/iphone-report-1.json" ] && say "   card battle: $(python3 -c "$CBPY" "$OUT/iphone-report-1.json" 2>&1)"
+  # 第4.212版：値段（初回 5,000P・読み込み 400P・5連も 1レース 400P・マザーデータの 枠 23,000P・おもちゃ 3,000P）・Pカスタムの「おもちゃを購入」（2つ）・
+  #   設定の「古い台帳をリセットする」の カード（バックアップの すぐ 下・注意書き）・まとめて 消す 口（TengelLocal.delBets）が 本物の アプリの 画面に ある
+  [ -f "$OUT/iphone-report-1.json" ] && say "   v212: $(python3 -c '
+import json, sys
+r = json.load(open(sys.argv[1])); v = r.get("v212") or {}; c = v.get("cost") or {}
+toys = [[t.get("id"), t.get("name")] for t in (v.get("toys") or [])]
+old = v.get("old") or ""
+ok = c.get("gift") == 5000 and c.get("read") == 400 and c.get("w5") == 400 and c.get("slot") == 23000 and c.get("toy") == 3000 and toys == [["drop", "お世話チャレンジ"], ["cb", "TENGERカードバトル"]] and v.get("toyItems") == 2 \
+     and "古い台帳をリセットする" in old and "3年たった記録と履歴は、自動でリセットされるよ" in old and v.get("oldAfterBackup") is True and v.get("oldApi") == "object" and v.get("delBets") == "function" and not v.get("error")
+print("cost %s toys %s toy-items %s old-card %s after-backup %s api %s delBets %s auto-line %s -> %s" % (c, [t[0] for t in toys], v.get("toyItems"), bool(old), v.get("oldAfterBackup"), v.get("oldApi"), v.get("delBets"), ((v.get("oldState") or {}).get("f") or {}).get("line"), "OK" if ok else "CHECK " + json.dumps(v, ensure_ascii=False)[:300]))
+' "$OUT/iphone-report-1.json" 2>&1)"
   [ -f "$OUT/iphone-report-1.json" ] && say "   care recorder: $(python3 -c "$RECPY" "$OUT/iphone-report-1.json" 2>&1)"
   phase "$IPHONE" iphone 2 700 report-2
   # 第4.191版：時計の 番人：アプリの 時計（Clock.swift）が 届く・電源を 入れてからの 時間が 進む・アプリを 開き直しても 起動の 番号（boot）と 端末の 番号（dev）は 同じ・
@@ -218,9 +235,14 @@ js = c1.get("js") or [0, 0]; s1 = c1.get("st") or {}; s2 = c2.get("st") or {}
 wall = isinstance(a.get("wall"), (int, float)) and js[0] - 2000 <= a["wall"] <= js[1] + 2000
 mono = isinstance(a.get("mono"), (int, float)) and a["mono"] > 0 and isinstance(b.get("mono"), (int, float)) and 300 <= b["mono"] - a["mono"] <= 5000 and isinstance(d.get("mono"), (int, float)) and d["mono"] > b["mono"]
 ids = (bool(a.get("dev")) or kc) and a.get("dev") == b.get("dev") == d.get("dev") and a.get("proc") == b.get("proc") and d.get("proc") != a.get("proc") and a.get("boot") == b.get("boot") == d.get("boot")
-web = c1.get("has") and c1.get("how") in ("first", "ok") and c2.get("how") == "ok" and s1.get("dev") == s2.get("dev") == a.get("dev") and abs(c2.get("diff") or 0) < 5000
+web = c1.get("has") and c1.get("how") in ("first", "ok", "net") and c2.get("how") in ("ok", "net") and s1.get("dev") == s2.get("dev") == a.get("dev") and abs(c2.get("diff") or 0) < 5000
 ok = wall and mono and ids and web
 print("wall %s mono %s(+%s ms) boot %s dev %s proc %s->%s web %s/%s diff %s -> %s" % (wall, mono, round((b.get("mono") or 0) - (a.get("mono") or 0)), "yes" if a.get("boot") else "empty", "yes" if a.get("dev") else ("none (keychain -34018 in simulator)" if kc else "NO"), str(a.get("proc"))[:4], str(d.get("proc"))[:4], c1.get("how"), c2.get("how"), c2.get("diff"), "OK" if ok else "CHECK"))
+# 第4.212版：インターネットの 時刻（Clock.swift の net）：返事が 届く・Mac の 時計と 15秒 より ずれて いない・Webの 画面は たしかめずみ（u=0・nv あり）。1回目・2回目の 起動の どちらも
+n1 = c1.get("net") or {}; n2 = c2.get("net") or {}
+okn = all(n.get("ok") is True and isinstance(n.get("rt"), (int, float)) and 0 <= n["rt"] < 8000 for n in (n1, n2)) and all(isinstance(x.get("netDiff"), (int, float)) and abs(x["netDiff"]) < 15000 for x in (c1, c2)) \
+      and c1.get("sure") is True and c2.get("sure") is True and (s2.get("u") or 0) == 0 and (s2.get("nv") or 0) > 0
+print("   clock net: ok %s/%s why %s/%s rt %s/%s ms diff %s/%s ms sure %s/%s -> %s" % (n1.get("ok"), n2.get("ok"), n1.get("why") or n1.get("error") or "", n2.get("why") or n2.get("error") or "", round(n1.get("rt") or 0), round(n2.get("rt") or 0), c1.get("netDiff"), c2.get("netDiff"), c1.get("sure"), c2.get("sure"), "OK" if okn else "CHECK"))
 ' "$OUT/iphone-report-1.json" "$OUT/iphone-report-2.json" 2>&1)"
   fi
   phase "$IPHONE" iphone 3 700 offer restored report-3 report-link

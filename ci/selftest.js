@@ -76,8 +76,25 @@
     var t0 = Date.now(), a = await TengelNative.call('clock', {}).catch(function (e) { return { error: String(e) }; }), t1 = Date.now();
     await sleep(400);
     var b = await TengelNative.call('clock', {}).catch(function (e) { return { error: String(e) }; });
+    // 第4.212版：インターネットの 時刻（Clock.swift の net：App Store の lookup の 返事の 日付）。net.t は 聞いた ときの 時刻・rt は 行って 帰る までの 時間
+    var n = await TengelNative.call('clock', { net: 1 }).catch(function (e) { return { error: String(e) }; }), tn = Date.now();
     var C = window.TengelClock; if (C) await C.sync();
-    return { a: a, b: b, js: [t0, t1], has: !!C, how: C ? C.how() : null, st: C ? C.state() : null, diff: C ? Math.round(C.now() - Date.now()) : null };
+    return { a: a, b: b, js: [t0, t1], has: !!C, how: C ? C.how() : null, st: C ? C.state() : null, diff: C ? Math.round(C.now() - Date.now()) : null,
+      net: n && n.net ? n.net : (n && n.error ? { error: n.error } : null), netDiff: n && n.net && n.net.ok ? Math.round(n.net.t - tn) : null, sure: C && typeof C.sure === 'function' ? C.sure() : null };
+  }
+  // 第4.212版：おもちゃ（TENGERカードバトル・お世話チャレンジ：1つ 3,000P で 解放）を 0P で 解放した ことに する（台帳に しるしを 足して 入れ直す：アプリの 自動バックアップから 戻す 口と 同じ。
+  //   シミュレーターは キーチェーンが 使えなくて 初回プレゼントが 入らない ことが ある ので、ポイントは 使わない）
+  async function openToys(ids) {
+    var W = window.TengelWallet; if (!W || !W.toy) return null;
+    await W.ready;
+    var s = W.snapshot(); if (!s) return null;
+    var n = 0, add = 0; s.events.forEach(function (ev) { if (ev && +ev.n > n) n = +ev.n; });
+    ids.forEach(function (id) {
+      if (s.events.some(function (ev) { return ev && ev.id === 'unlock-toy:' + id; })) return;
+      s.events.push({ id: 'unlock-toy:' + id, kind: 'unlock', bucket: '', amount: 0, at: new Date().toISOString(), what: 'toy:' + id, device: 'selftest', use: { paid_sub: 0, paid_pack: 0, free: 0 }, n: ++n }); add++;
+    });
+    if (add) { await W.restore(s); document.dispatchEvent(new CustomEvent('tengel:wallet')); }
+    return ids.map(function (id) { return W.toy.has(id); });
   }
   // ポイント（App Store版）：残高・できごと・キーチェーンのしるし・拡大の状態
   async function wallet() {
@@ -412,6 +429,12 @@
     var sc = document.querySelector('#sdCheck'); if (sc) sc.click();
     await sleep(4000);
     var ptc = document.querySelector('#setPoints'); if (ptc) { ptc.scrollIntoView({ block: 'start' }); await sleep(500); await mark('points'); }
+    // 第4.212版：値段（財布の 表）・おもちゃ・古い 台帳の リセットの カード
+    try {
+      var Wv = window.TengelWallet, oc = document.querySelector('#setOld'), bkc = document.querySelector('#setBackup');
+      R.v212 = { cost: Wv ? Wv.COST : null, toys: Wv && Wv.toy ? Wv.toy.list() : null, toyItems: document.querySelectorAll('#setCustom .ptitem[data-key^="toy:"]').length, old: oc ? oc.innerText.slice(0, 400) : null, oldAfterBackup: !!(oc && bkc && bkc.nextElementSibling === oc),
+        oldApi: typeof window.TengelOld, oldState: window.TengelOld ? window.TengelOld.state() : null, hist: Wv && Wv.old ? Wv.old.rows() : null, delBets: typeof (window.TengelLocal || {}).delBets };
+    } catch (e) { R.v212 = { error: String(e) }; }
     R.settings = { points: ptc ? ptc.innerText.slice(0, 600) : null, custom: (document.querySelector('#setCustom') || {}).innerText || null, mission: (document.querySelector('#setMission') || {}).innerText || null, update: up ? up.innerText : null, data: (document.querySelector('#setData') || {}).innerText || null };
     await mark('settings');
     var bk = document.querySelector('#setBackup'); if (bk) bk.scrollIntoView({ block: 'start' }); await sleep(600);
@@ -480,6 +503,23 @@
       if (!window.TengelCB) return out;
       out.room = await TengelNative.call('room', { op: 'state' }).catch(function (e) { return { error: String(e && (e.message || e)) }; });
       out.roomBad = await TengelNative.call('room', { op: 'join', room: '12a4' }).catch(function (e) { return { error: String(e && (e.message || e)) }; });
+      // 第4.212版：TENGERカードバトルは おもちゃ（3,000P で 解放）。まだ 解放して いない → 丸い ボタンに 🔒・押すと 解放の 窓（カードバトルは 開かない）→「やめる」。
+      //   その あと 解放ずみに して（openToys：ポイントは 使わない）開く
+      try {
+        var fabE = document.querySelector('#cbFab');
+        out.toy = { locked: window.TengelCB.locked(), lock: !!(fabE && fabE.classList.contains('lock')), total: window.TengelWallet ? window.TengelWallet.total() : null };
+        var opening = window.TengelCB.open();
+        var tv = await waitFor(function () { return document.querySelector('#toyOv'); }, 8000);
+        out.toy.ask = tv ? tv.innerText.replace(/\s+/g, ' ').slice(0, 140) : null;
+        out.toy.btn = tv ? Array.prototype.map.call(tv.querySelectorAll('[data-toy]'), function (b) { return b.getAttribute('data-toy'); }).join() : null;
+        out.toy.cbOpen = !!document.querySelector('#cbOv.on'); out.toy.bundle = !!window.CBApp;
+        await mark('cb-toy');
+        var nb = tv && tv.querySelector('[data-toy=no]'); if (nb) nb.click();
+        await Promise.race([opening, sleep(3000)]); await sleep(200);
+        out.toy.after = { ov: !!document.querySelector('#toyOv'), cb: !!document.querySelector('#cbOv.on') };
+        out.toy.opened = await openToys(['cb']);
+        out.toy.lock2 = !!(fabE && fabE.classList.contains('lock'));
+      } catch (e) { out.toyErr = String(e && (e.message || e)); await openToys(['cb']).catch(function () {}); }
       await window.TengelCB.open();
       out.open = !!(await waitFor(function () { return window.CBApp && document.querySelector('#cbOv.on'); }, 20000));
       if (!out.open) return out;
@@ -747,6 +787,7 @@
     await waitFor(function () { return window.TengelCB && document.querySelector('#cbFab'); }, 20000);
     R.api = typeof window.TengelCB;
     if (!window.TengelCB) { report(String(PH), R); return; }
+    R.toy = await openToys(['cb']).catch(function (e) { return String(e); });      // 第4.212版：TENGERカードバトルは おもちゃ（3,000P で 解放）→ 解放ずみに して 開く
     await window.TengelCB.open();
     R.open = !!(await waitFor(function () { return window.CBApp && document.querySelector('#cbOv.on'); }, 20000));
     if (!R.open) { report(String(PH), R); return; }

@@ -2109,7 +2109,7 @@ const TCCare = (() => {
         g.strokeStyle = '#e0a21f'; g.lineWidth = 4; g.strokeRect(-w / 2 + 3, -h / 2 + 3, w - 6, h - 6);
         if (dpIcon && dpIcon.naturalWidth) { const ih = h - 20, iw = ih * dpIcon.naturalWidth / dpIcon.naturalHeight; g.drawImage(dpIcon, -w / 2 + 12, -ih / 2, iw, ih); }
         label('お世話', 46, -44, 31, '#7a4520'); label('チャレンジ', 46, -6, 31, '#7a4520');
-        label('玉を 落とす', 46, 44, 24, '#c2362b');
+        { const lk = O.dropLock ? +O.dropLock() || 0 : 0; S.dpLock = lk; label(lk ? `🔒 解放 ${lk.toLocaleString('ja-JP')}P` : '玉を 落とす', 46, 44, lk ? 22 : 24, '#c2362b'); }      
         g.restore();
       }
     }
@@ -3359,7 +3359,9 @@ const TCGuide = (() => {
       <p class="note">トークン1つがお世話1回（馬の育ちやミッションの回数も、押した回数分数えるよ）</p>`],
     
     
+    
     ['玉', '#e2574c', DP.name, `<p>・PUSHが出たとき、左下の<b>「お世話チャレンジ」</b>を押すと、<b>玉を落とす台</b>で抽選できるよ</p>
+      <p data-dp="toy">・はじめに<b>3,000Pで解放</b>すると遊べるよ（入口の<b>「🔒 解放 3,000P」</b>を押すか、設定タブの「Pカスタム」の「おもちゃを購入」から。1回解放すれば、ずっと遊べるよ。PUSHの抽選は、解放しなくてもできるよ）</p>
       <p>・<b>「玉を落とす」</b>を押すたびに<b>トークンを1つ</b>使って、玉が1こ落ちる（1回で<b>${DP.balls}個</b>まで。トークンが${DP.balls}個ないときは、ある分だけ）</p>
       <p>・当たりやすさは<b>PUSHとまったく同じ</b>（下の表のとおり。どのコップに入っても同じ）</p>
       <p>・玉がコップに入ったとき、当たっていれば 真ん中の<b>「馬バレ」</b>が光るよ。色で中身が分かる（青から虹へ、光が大きくなる）</p>
@@ -6325,6 +6327,20 @@ const TCApp = (() => {
       return prizeFx(z);
     },
   };
+  
+  
+  
+  
+  const toyW = () => { try { const w = window.TengelWallet; return w && w.on && w.toy ? w.toy : null; } catch (e) { return null; } };
+  const dropLocked = () => { const t = toyW(); return !!t && !t.has('drop'); };
+  const toyCost = () => { const t = toyW(); return (t && +t.cost) || 3000; };
+  let toyAsking = false;
+  function dropTap() {
+    const t = toyW();
+    if (!t || t.has('drop')) { dropOpen(false); return; }
+    if (toyAsking) return; toyAsking = true;
+    Promise.resolve(t.ask('drop')).then(ok => { toyAsking = false; if (ok) dropOpen(false); }, () => { toyAsking = false; });
+  }
   async function dropOpen(resume) {
     if (dropping || busy || resetting || !built || !dropOk() || !TCCare.on) return false;
     dropping = true; busy = true; TCCare.roulette(true);      
@@ -6609,7 +6625,7 @@ const TCApp = (() => {
       lottery, onPrize, onEvent: onCareEvent, banTop: 290, dropX: 726, hiX: 580, hiY: 204, points: walletTotal, onHelp: () => { if (window.TCGuide) TCGuide.open(stage, { anim: true }); },
       onBuy: () => { if (!window.TCBuy || !buyShow()) return false; TCBuy.open(stage, BUY); return true; },      
       stockMax: TOKEN_MAX, bulk: !!st.bulk, onBulk: v => { st.bulk = !!v; touch(); save(); }, onPush: on => { st.push = !!on; touch(); save(); },
-      dropOk, onDrop: () => { dropOpen(false); },      
+      dropOk, onDrop: () => { dropTap(); }, dropLock: () => (dropLocked() ? toyCost() : 0),      
       lotFree: () => !busy && !resetting && !panelOpen() && !st.pend, drawLeft });      
     const S = TCCare.S; S.heart = S.heartShow = st.heart || 0; S.stock = S.stockShow = st.stock; S.high = st.high || 0; S.fav = st.fav.kind;
     if (st.push) { if (st.stock >= 1) TCCare.pushShow(clock() + 0.9); else { st.push = false; touch(); } }      
@@ -6644,20 +6660,16 @@ const TCApp = (() => {
     back: () => { if (!st) load(); st.tickets = (st.tickets || 0) + 1; save(); if (ov) paintHead(); return true; } };      
   
   
-  
   const tokens = {
-    give: n => {
+    now: () => {
       if (!st) load();
-      n = Math.max(0, Math.floor(+n || 0));
       stockNow(); const got = accrue(tnow());
       if (got > 0) stockSet(st.stock, got);
-      const add = Math.min(n, Math.max(0, TOKEN_MAX - st.stock));
-      if (add > 0) stockSet(st.stock + add, add);
       save();
-      return { add, stock: st.stock, max: TOKEN_MAX };
+      return { stock: st.stock, max: TOKEN_MAX };
     }
   };
-  return { open, close, tickets, tokens, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, _t: { dropOpen, dropResume, dropTone, dropOk, dropLeft, DROP, prep, buyShow, recoverBuy, PACKS, ZONE, GEKI, GEKI_SE, DROP_SE, zoneV, zoneRoll, gov: GOV, get hidN() { return hidN; }, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, drawMax, drawLeft, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, visitDraws: Object.assign({}, VISIT_DRAWS), capWait: CAP_WAIT, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      
+  return { open, close, tickets, tokens, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, _t: { dropOpen, dropResume, dropTone, dropOk, dropLeft, dropTap, dropLocked, DROP, prep, buyShow, recoverBuy, PACKS, ZONE, GEKI, GEKI_SE, DROP_SE, zoneV, zoneRoll, gov: GOV, get hidN() { return hidN; }, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, drawMax, drawLeft, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, visitDraws: Object.assign({}, VISIT_DRAWS), capWait: CAP_WAIT, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      
 })();
 
 ;window.TCField = TCField; window.TCCare = TCCare; window.TCGuide = TCGuide; window.TCBuy = TCBuy; window.TCDrop = TCDrop; window.TCApp = TCApp;
