@@ -11681,7 +11681,7 @@ window.__BCP={"items":{"ring":{"k":"hit","st":[[1,"ring1"],[2,"ring2"],[3,"ring3
   if (auto) {
     if (document.readyState === 'complete') boot(); else window.addEventListener('load', boot, { once: true });
     document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
-    document.addEventListener('tengel:clock', function (e) { if (e && e.detail && e.detail.how === 'net' && !document.hidden) check(); });      
+    document.addEventListener('tengel:clock', function (e) { if (e && e.detail && e.detail.how === 'net' && !document.hidden) whenClear(check); });      
     setInterval(function () { if (!document.hidden) check(); }, 60000);
   }
   window.TengelLogin = { BONUS: BONUS.slice(), CB: BONUS.map(function (x, i) { return cbCoins(i); }), check: check, state: state, close: close, shown: function () { return shown; }, next: testNext };
@@ -11741,6 +11741,8 @@ window.__BCP={"items":{"ring":{"k":"hit","st":[[1,"ring1"],[2,"ring2"],[3,"ring3
   
   function pending(st) { var f = st && st.f; if (!f) return []; return bets().filter(function (b) { var d = dateOf(b); return d && d < f.line && !keeps(b) && stampOf(b) < f.at; }); }
   function after() { try { if (typeof window.syncNotify === 'function') window.syncNotify(); } catch (e) {   } paint(); }
+  
+  function whenClear(fn) { var tries = 0, go = function () { if (document.documentElement.classList.contains('gateon') && tries++ < 400) { setTimeout(go, 300); return; } fn(); }; go(); }
 
   
   
@@ -11767,7 +11769,7 @@ window.__BCP={"items":{"ring":{"k":"hit","st":[[1,"ring1"],[2,"ring2"],[3,"ring3
           st.f = null; changed = true;
           if (ids.length) p = TL.delBets(ids).then(function (n) {
             st.last = { at: now, n: n, line: line };
-            if (n > 0) toast('3年たった記録 ' + num(n) + '件を消したよ（思い出のレースは残っているよ）', 5200);
+            if (n > 0) whenClear(function () { toast('3年たった記録 ' + num(n) + '件を消したよ（思い出のレースは残っているよ）', 5200); });      
           });
         }
         else if (list.length !== st.f.n) { st.f.n = list.length; changed = true; }       
