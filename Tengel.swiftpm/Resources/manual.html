@@ -254,6 +254,8 @@ code{font-family:var(--font-num);font-size:.92em;color:var(--gold-hi);background
 .shot.has-mk .mk{left:2px;margin-left:0}
 .shot.has-mk .mk::after{content:"";position:absolute;left:23px;top:10px;width:6px;height:2px;border-radius:1px;background:var(--gold)}
 
+.rn{font-family:'Hiragino Sans','Yu Gothic',sans-serif;font-style:normal;font-weight:inherit}
+.hero h1 .rn{font-weight:800}
 </style></head><body>
 <div class="topbar" id="topbar" hidden><div class="wrap">
 <button class="back" id="back" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>目次</button>
@@ -268,9 +270,9 @@ code{font-family:var(--font-num);font-size:.92em;color:var(--gold-hi);background
 <img class="banner" src="manual/banner.webp" width="1200" height="655" alt="TENGER テンゲル　独自の統計・オッズ分析による競馬検討支援システム">
 <div class="hero-text">
 <p class="eyebrow">アプリの使い方</p>
-<h1><span class="gold">テンゲルⅢ</span> 説明書</h1>
+<h1><span class="gold">テンゲル<em class="rn">Ⅲ</em></span> 説明書</h1>
 <p class="lead">知りたい項目を押すと、その説明が出るよ。画面の写真に番号を付けて、順番に読めるようにしてあるよ。</p>
-<ul class="meta"><li>アプリ 2026.11.23-2</li><li>テンゲルデータ入り</li></ul>
+<ul class="meta"><li>アプリ 2026.11.24-1</li><li>テンゲルデータ入り</li></ul>
 </div>
 </header>
 
@@ -297,7 +299,7 @@ code{font-family:var(--font-num);font-size:.92em;color:var(--gold-hi);background
 </main>
 
 <main id="page" class="wrap" hidden>
-<section class="item" id="s-about" data-id="about" hidden aria-labelledby="h-about"><p class="eyebrow">初めに</p><h2 id="h-about">このアプリでできること</h2><div class="gist"><span>一言で</span><p>オッズを入れるだけで、テンゲルⅢの判定が全部出るアプリだよ。買った馬券の結果と収支も残せるよ。</p></div>
+<section class="item" id="s-about" data-id="about" hidden aria-labelledby="h-about"><p class="eyebrow">初めに</p><h2 id="h-about">このアプリでできること</h2><div class="gist"><span>一言で</span><p>オッズを入れるだけで、テンゲル<em class="rn">Ⅲ</em>の判定が全部出るアプリだよ。買った馬券の結果と収支も残せるよ。</p></div>
 
 <h3>画面の5つのタブ</h3>
 <figure class="shot"><div class="shot-in"><img src="manual/s_tabbar.webp" width="390" height="62" alt="画面の下の5つのタブ（判定・単勝5連勝・記録・実測・回収・設定）" loading="lazy" decoding="async"></div></figure>
@@ -882,12 +884,12 @@ code{font-family:var(--font-num);font-size:.92em;color:var(--gold-hi);background
 </tbody></table></div>
 
 <h3>ミッション（結果ボードカスタムの解放の数でもらう）</h3>
-<p><span class="ui">結果ボードカスタム</span>を買った後に読み込んだレースの数で解放した番号の数（準備中の番号も数えるよ。カードの「解放 ○/15」と同じ）でポイントがもらえるよ。</p>
+<p><span class="ui">結果ボードカスタム</span>を買った後に読み込んだレースの数で解放した番号の数（準備中の番号も数えるよ。カードの「解放 ○/12」と同じ）でポイントがもらえるよ。</p>
 <div class="tbl fit"><table>
 <thead><tr><th>解放した数</th><th>もらえるP</th></tr></thead>
 <tbody>
 <tr><td>3 / 6 / 9</td><td>500 / 800 / 1,100</td></tr>
-<tr><td>12 / 15</td><td>1,400 / 1,600</td></tr>
+<tr><td>12</td><td>1,400</td></tr>
 </tbody></table></div>
 <h3>ミッション（トレーニングセンター・思い出フィギュアでもらう）</h3>
 <div class="tbl fit"><table>
@@ -977,33 +979,32 @@ code{font-family:var(--font-num);font-size:.92em;color:var(--gold-hi);background
 </ul>
 
 <h3>結果ボードカスタム（買い切り 1,500円）</h3>
-<p>設定タブの<span class="ui">結果ボードカスタム</span>で、<b>結果のボード</b>（的中・ハズレの結果）を<b>絵のボード</b>や馬の飾りに変えられるよ。一覧は<b>的中ボード</b>（10種）と<b>ハズレボード</b>（6種）に分かれていて、それぞれ<b>1つずつ</b>付けられるよ（<b>付けない</b>＝いつものボード）。<b>どの壁紙でも使える</b>よ。</p>
+<p>設定タブの<span class="ui">結果ボードカスタム</span>で、<b>結果のボード</b>（的中・ハズレの結果）を<b>絵のボード</b>や馬の飾りに変えられるよ。一覧は<b>的中ボード</b>（8種）と<b>ハズレボード</b>（5種）に分かれていて、それぞれ<b>1つずつ</b>付けられるよ（<b>付けない</b>＝いつものボード）。<b>どの壁紙でも使える</b>よ。</p>
 <ul class="dots">
 <li><span class="ui alt">1,500円で買う</span>で買えるよ（App内課金・1回買えばずっと）。<span class="ui alt">購入を復元</span>で、入れ直したときや他の端末でも戻せるよ。壁紙パックもまだなら、カードの中に<b>お得パック</b>（2つのセット・2,200円）も出るよ</li>
-<li>買った後に<b>400Pを使って読み込んだレースの数</b>で、1〜15を<b>番号の順に</b>1つずつ解放するよ（<b>6レースごと</b>・全部で90レース）。読み直し（0P）と単勝5連勝の読み込みは数えないよ。飾りを解放すると画面の上にお知らせが出るよ（まだ何も付けていない的中ボード・ハズレボードには、解放した飾りをそのまま付けるよ）</li>
+<li>買った後に<b>400Pを使って読み込んだレースの数</b>で、1〜12を<b>番号の順に</b>1つずつ解放するよ（<b>6レースごと</b>・全部で72レース）。読み直し（0P）と単勝5連勝の読み込みは数えないよ。飾りを解放すると画面の上にお知らせが出るよ（まだ何も付けていない的中ボード・ハズレボードには、解放した飾りをそのまま付けるよ）</li>
 <li><b>的中ボード</b>・<b>ハズレボード</b>の見出しに、今付けているものが出るよ（<span class="ui alt">付けない</span>でいつものボード）。タイルの<span class="ui alt">付ける</span>を押すと、その結果のときに使うものが変わるよ（<span class="ui alt">✓ 付けている</span>をもう一度押しても、付けない）。的中ボードは、デカ的中やど的中などの的中ぜんぶに使うよ</li>
-<li>的中ボードだけ・ハズレボードだけ付けることもできるよ（もう片方は<span class="ui alt">付けない</span>）。15「ボードを持つ馬」は、どちらの一覧にも出るよ</li>
+<li>的中ボードだけ・ハズレボードだけ付けることもできるよ（もう片方は<span class="ui alt">付けない</span>）。12「ボードを持つ馬」は、どちらの一覧にも出るよ</li>
 <li><span class="ui alt">▶ 見る</span>で、試しに結果のボードを出せるよ（買う前・解放する前でも見られるよ。絵のボードは押すたびに次の絵。的中ボードの一覧では的中、ハズレボードの一覧ではハズレの結果で出るよ）</li>
-<li><b>1〜14は絵のボード</b>だよ（1〜9は的中ボード・10〜14はハズレボード）。画面いっぱいの絵の中のボードに、そのレースの結果が出るよ。<b>的中は続けて当てた数（連勝）</b>、<b>ハズレは続けてハズレた数</b>で絵が変わるよ（下の表）。連続の数は、結果が初めて決まったレースごとに数えるよ（同じレースは1回・中止や全部返還は数えない）</li>
-<li>結果ボードカスタムの絵と飾りは<b>動かない</b>よ（絵のボードは止まった絵・15「ボードを持つ馬」は、ボードを持ったまま止まっているよ）</li>
+<li><b>1〜11は絵のボード</b>だよ（1〜7は的中ボード・8〜11はハズレボード）。画面いっぱいの絵の中のボードに、そのレースの結果が出るよ。<b>的中は続けて当てた数（連勝）</b>、<b>ハズレは続けてハズレた数</b>で絵が変わるよ（下の表）。連続の数は、結果が初めて決まったレースごとに数えるよ（同じレースは1回・中止や全部返還は数えない）</li>
+<li>結果ボードカスタムの絵と飾りは<b>動かない</b>よ（絵のボードは止まった絵・12「ボードを持つ馬」は、ボードを持ったまま止まっているよ）</li>
 <li>飾りは、ボードの数字と見出しには重ならないよ。<span class="ui alt">閉じる</span>の場所も動かないよ（絵のボードでは、閉じるの色が絵に合わせて変わることがあるよ）</li>
-<li>解放した数（3・6・9・12・15個）で、ミッションのポイントがもらえるよ（「ポイント・Pカスタム・ミッション」の説明）</li>
+<li>解放した数（3・6・9・12個）で、ミッションのポイントがもらえるよ（「ポイント・Pカスタム・ミッション」の説明）</li>
 <li><b>アプリを消すと、解放の進み具合は0に戻るよ</b>（買ったことは<span class="ui alt">購入を復元</span>で戻せるよ）。返金があったときは使えなくなるよ</li>
 </ul>
 <div class="tbl fit"><table>
 <thead><tr><th>読み込んだレース</th><th>解放するもの</th></tr></thead>
 <tbody>
-<tr><td>6・12・18・24・30</td><td>1 結果ボードを廻る・2 馬達の祝杯・3 馬レース結果ボード・4 自撮り結果ボード・5 スタンプ結果ボード（的中）</td></tr>
-<tr><td>36・42・48・54</td><td>6 トロフィー結果ボード・7 馬が運ぶ結果ボード・8 花束結果ボード・9 出世馬結果ボード（的中）</td></tr>
-<tr><td>60・66・72・78・84</td><td>10 二人でしょんぼり・11 次…！・12 隠蔽作戦・13 ボード結果待ち・14 書き換え参戦（ハズレ）</td></tr>
-<tr><td>90</td><td>15 ボードを持つ馬（的中・ハズレ）</td></tr>
+<tr><td>6・12・18・24</td><td>1 馬達の祝杯・2 馬レース結果ボード・3 自撮り結果ボード・4 スタンプ結果ボード（的中）</td></tr>
+<tr><td>30・36・42</td><td>5 トロフィー結果ボード・6 馬が運ぶ結果ボード・7 花束結果ボード（的中）</td></tr>
+<tr><td>48・54・60・66</td><td>8 二人でしょんぼり・9 次…！・10 ボード結果待ち・11 書き換え参戦（ハズレ）</td></tr>
+<tr><td>72</td><td>12 ボードを持つ馬（的中・ハズレ）</td></tr>
 </tbody></table></div>
 <div class="tbl fit"><table>
 <thead><tr><th>絵のボード</th><th>絵が変わる数</th></tr></thead>
 <tbody>
-<tr><td>1〜8（的中）</td><td>1連勝・2連勝・3連勝・4連勝から上</td></tr>
-<tr><td>9 出世馬結果ボード（的中）</td><td>1・2・3・4・8・16・24連勝から上（間の数は1つ前の絵）</td></tr>
-<tr><td>10〜14（ハズレ）</td><td>1回目・2回目・3回目・4回目から上（続けてハズレた数）</td></tr>
+<tr><td>1〜7（的中）</td><td>1連勝・2連勝・3連勝・4連勝から上</td></tr>
+<tr><td>8〜11（ハズレ）</td><td>1回目・2回目・3回目・4回目から上（続けてハズレた数）</td></tr>
 </tbody></table></div><nav class="pager" aria-label="前後の項目"><a class="prev" href="#points"><small>‹ 前の項目</small><b>ポイント・Pカスタム・ミッション</b></a><a class="next" href="#zones"><small>次の項目 ›</small><b>買い目編集</b></a></nav><div class="tomenu"><a href="#menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>目次に戻る</a></div></section><section class="item" id="s-zones" data-id="zones" hidden aria-labelledby="h-zones"><p class="eyebrow">設定</p><h2 id="h-zones">買い目編集</h2><div class="gist"><span>一言で</span><p>区分ごとに、馬単の1着→2着と3連単の3着を変えられるよ。初めは初期の買い目だよ。</p></div>
 
 <div class="withlegend">
@@ -1113,7 +1114,7 @@ code{font-family:var(--font-num);font-size:.92em;color:var(--gold-hi);background
 <details><summary>TENGERカードバトル・お世話チャレンジに 🔒 が付いている</summary><div class="a">1つ 3,000P で解放すると遊べるよ。ボタンを押して<span class="ui alt">解放する</span>を選ぶか、設定 →「Pカスタム」の「おもちゃを購入」から解放してね。</div></details>
 <details><summary>テンゲルデータがおかしい</summary><div class="a">判定に使えない形になっていたら、アプリを開いたときに自動で、アプリに入っているデータに戻るよ。設定 →「データの更新」で新しいデータを入れ直すこともできるよ。</div></details>
 </div>
-<p>それでも直らないときは、設定 →「このアプリについて」のお問い合わせ先に、画面のスクショを添えて連絡してね。</p><nav class="pager" aria-label="前後の項目"><a class="prev" href="#update"><small>‹ 前の項目</small><b>アップデート（新しい版・データ）</b></a><a class="next" href="#glossary"><small>次の項目 ›</small><b>用語集</b></a></nav><div class="tomenu"><a href="#menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>目次に戻る</a></div></section><section class="item" id="s-glossary" data-id="glossary" hidden aria-labelledby="h-glossary"><p class="eyebrow">困ったとき・言葉</p><h2 id="h-glossary">用語集</h2><div class="gist"><span>一言で</span><p>アプリに出てくる言葉の意味だよ。ルールは「テンゲルシステムⅢ」のとおり。</p></div>
+<p>それでも直らないときは、設定 →「このアプリについて」のお問い合わせ先に、画面のスクショを添えて連絡してね。</p><nav class="pager" aria-label="前後の項目"><a class="prev" href="#update"><small>‹ 前の項目</small><b>アップデート（新しい版・データ）</b></a><a class="next" href="#glossary"><small>次の項目 ›</small><b>用語集</b></a></nav><div class="tomenu"><a href="#menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>目次に戻る</a></div></section><section class="item" id="s-glossary" data-id="glossary" hidden aria-labelledby="h-glossary"><p class="eyebrow">困ったとき・言葉</p><h2 id="h-glossary">用語集</h2><div class="gist"><span>一言で</span><p>アプリに出てくる言葉の意味だよ。ルールは「テンゲルシステム<em class="rn">Ⅲ</em>」のとおり。</p></div>
 
 <h3>ゾーン（単勝の人気順）</h3>
 <div class="ladder" role="img" aria-label="人気は1〜3番人気、中穴は4〜6、大穴は7〜9、超大穴は10〜12、13番人気より下は対象外">
@@ -1196,7 +1197,7 @@ code{font-family:var(--font-num);font-size:.92em;color:var(--gold-hi);background
       if (toApp) toApp.hidden = !IN_APP;
       if (closeApp) closeApp.hidden = true;
       if (emblem) emblem.hidden = false;
-      $('#tbTitle').textContent = IN_APP ? 'テンゲルⅢ 説明書' : '';
+      $('#tbTitle').innerHTML = IN_APP ? 'テンゲル<em class="rn">Ⅲ</em> 説明書' : '';
       document.title = 'テンゲルⅢ 説明書';
       if (wasItem) requestAnimationFrame(() => window.scrollTo(0, homeY));
       return;

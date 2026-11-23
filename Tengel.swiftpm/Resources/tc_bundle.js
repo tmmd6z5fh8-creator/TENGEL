@@ -5896,7 +5896,7 @@ const TCApp = (() => {
   const SND = (() => {
     let ac = null, master = null, bed = null, want = null, on = true;
     const cache = {};
-    const AMB = { morning: 'tc_amb_morning.m4a', evening: 'tc_amb_evening.m4a', night: 'tc_amb_night.m4a', abyss: 'tc_bgm_abyss.m4a', divine: 'tc_bgm_divine2.m4a', roulette: 'tc_bgm_roulette.m4a' };
+    const AMB = { morning: 'tc_amb_morning.m4a', evening: 'tc_amb_evening.m4a', night: 'tc_amb_night.m4a', abyss: 'tc_bgm_abyss.m4a', divine: 'tc_bgm_divine3.m4a', roulette: 'tc_bgm_roulette.m4a' };
     
     
     
@@ -5906,8 +5906,13 @@ const TCApp = (() => {
     
     
     
-    const AMB_OLD = { divine: 'tc_bgm_divine.m4a' };
-    const LOOPS = { roulette: { pre: 0.5, len: 8 * 4 * 60 / 132 }, divine: { pre: 0.5, len: 32 * 4 * 60 / 156 } };
+    
+    
+    
+    
+    const AMB_OLD = { divine: 'tc_bgm_divine2.m4a' };
+    const LOOPS = { roulette: { pre: 0.5, len: 8 * 4 * 60 / 132 }, divine: { pre: 0.5, len: 60 } };
+    const LOOPS_OLD = { divine: { pre: 0.5, len: 32 * 4 * 60 / 156 } };
     let hold = null, aim = null;
     function buf(f) { if (!cache[f]) cache[f] = fetch(AP(f)).then(r => { if (!r.ok) throw new Error('no ' + f); return r.arrayBuffer(); }).then(b => new Promise((ok, ng) => { const q = ac.decodeAudioData(b, ok, ng); if (q && q.catch) q.catch(() => { }); })); return cache[f]; }
     function unlock() { try { if (!ac) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ac = new AC(); master = ac.createGain(); master.gain.value = on ? 1 : 0; master.connect(ac.destination); } if (ac.state === 'suspended') ac.resume(); } catch (e) { } }
@@ -5920,7 +5925,7 @@ const TCApp = (() => {
       try { b = await buf(f); } catch (e) { if (!AMB_OLD[aim]) return; try { b = await buf(AMB_OLD[aim]); fb = true; } catch (e2) { return; } }
       if (aim !== (name || '') || (bed && bed.name === aim)) return;
       const s = ac.createBufferSource(); s.buffer = b; s.loop = true;
-      const L = fb ? null : LOOPS[aim]; let off = 0;
+      const L = fb ? LOOPS_OLD[aim] : LOOPS[aim]; let off = 0;
       if (L && b.duration >= L.len + L.pre) { s.loopStart = L.pre / 2; s.loopEnd = L.pre / 2 + L.len; off = L.pre; }      
       const g = ac.createGain(); g.gain.setValueAtTime(0, ac.currentTime); g.gain.linearRampToValueAtTime(1, ac.currentTime + fin);
       s.connect(g); g.connect(master); s.start(0, off); bed = { s, g, name: aim };

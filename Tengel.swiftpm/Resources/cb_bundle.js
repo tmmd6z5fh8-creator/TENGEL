@@ -1991,7 +1991,6 @@ const CBApp = (() => {
 #cbOv .qsay{position:absolute;left:12px;right:12px;bottom:calc(var(--sab,env(safe-area-inset-bottom)) + 16px);z-index:3;min-height:112px;box-sizing:border-box;padding:18px 18px 24px;border-radius:16px;background:linear-gradient(180deg,rgba(30,19,9,.9),rgba(12,8,4,.94));border:2px solid #c9a35a;box-shadow:0 0 0 1px rgba(0,0,0,.6) inset,0 8px 20px rgba(0,0,0,.55);opacity:0;transform:translateY(14px);transition:opacity .3s,transform .3s;pointer-events:none}
 #cbOv .qsay.on{opacity:1;transform:none}
 #cbOv .qsay p{margin:0;font-size:18px;line-height:1.7;font-weight:700;color:#fff6e0;word-break:keep-all;overflow-wrap:anywhere}
-#cbOv .qsay p .hd{visibility:hidden}
 #cbOv .qsay .nx{position:absolute;right:16px;bottom:7px;font-style:normal;color:#ffd27a;font-size:13px;animation:qnx 1s ease-in-out infinite}
 @keyframes qnx{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
 #cbOv .qtap{position:absolute;left:50%;bottom:calc(var(--sab,env(safe-area-inset-bottom)) + 18px);z-index:3;transform:translateX(-50%);opacity:0;transition:opacity .4s;padding:8px 22px;border-radius:999px;background:linear-gradient(180deg,#ffe9a8,#e2a83e);color:#3a2206;font-size:16px;font-weight:800;white-space:nowrap;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.5)}
@@ -2139,6 +2138,7 @@ const CBApp = (() => {
     ov.addEventListener('click', onClick);
     document.addEventListener('visibilitychange', () => { if (ov.classList.contains('on')) { bgmSync(); if (document.hidden) qaStop(0.05, true); } });      
     window.addEventListener('resize', () => { if (ov.classList.contains('on')) { layout(); qMapLayout(); qFieldLayout(); } });
+    try { if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => { if (ov.classList.contains('on')) qsRefit(); }); } catch (e) {   }      
     if (window.ResizeObserver) new ResizeObserver(() => { if (ov.classList.contains('on')) layout(); }).observe(scr.game);
   }
   let screen = '';
@@ -3628,6 +3628,8 @@ const CBApp = (() => {
   
   
   
+  
+  
   const QS_SR = 44100;
   const QSND = [
     { b: { ls: 132300, le: 438795 }, s: [{}], t: [null, 0] },                                  
@@ -3641,9 +3643,9 @@ const CBApp = (() => {
     { b: { ls: 0, le: Infinity }, s: [{}, {}], t: [null, 0, 1] },                              
     { b: { ls: 371971, le: 587387 }, s: [{}, {}], t: [null, 0, 1] },                           
     { b: { len: 1904321 }, s: [{}, {}], t: [0, 0, 1] },                                        
-    { b: { len: 1839784 }, s: [{}, {}, { k: true }], t: [0, 1, 2, null] }                      
+    { b: { len: 1839784, vol: 0.8 }, s: [{}, {}, { k: true }], t: [0, 1, 2, null] }            
   ];
-  const QBG = QSND.map((x, i) => Object.assign({ file: `cb_q_bgm${qp2(i + 1)}.mp3`, vol: 0.45, fin: 0.6, fout: 0.6 },
+  const QBG = QSND.map((x, i) => Object.assign({ file: `cb_q_bgm${qp2(i + 1)}.mp3`, vol: x.b.vol || 0.45, fin: 0.6, fout: 0.6 },
     x.b.len != null ? { pre: 0.5, len: x.b.len / QS_SR } : { ls: x.b.ls / QS_SR, le: x.b.le / QS_SR, at: 0 }));
   const qaFile = (lv, k) => `cb_q_se${qp2(lv)}${['a', 'b', 'c'][k]}.mp3`;      
   const qa = { lv: 0, buf: {}, cur: null, kept: [] };      
@@ -3669,24 +3671,36 @@ const CBApp = (() => {
     qaStop(0.05);
     if (k == null || !seOn()) return;
     const c = actx(); if (!c) return;
-    const x = A.s[k], f = qaFile(lv, k), me = { f: f, keep: !!x.k, s: null, g: null, at: c.currentTime + (x.d || 0), dead: false };
+    const x = A.s[k], f = qaFile(lv, k), me = { f: f, keep: !!x.k, s: null, g: null, at: c.currentTime + (x.d || 0), t0: 0, dead: false };
     qa.cur = me;
     (qa.lv === lv && qa.buf[f] ? qa.buf[f] : qaLoad(lv).then(() => qa.buf[f])).then(b => {
-      if (me.dead || !b || !seOn()) return;
+      if (me.dead || !b || !seOn() || !qs || qs.lv !== lv || qs.step === 'go' || screen !== 'qf') return;      
       try {
         const s = c.createBufferSource(), g = c.createGain(); s.buffer = b; g.gain.value = 0.9; s.connect(g); g.connect(c.destination);
         s.onended = () => { if (qa.cur === me) qa.cur = null; qa.kept = qa.kept.filter(z => z !== me); try { s.disconnect(); g.disconnect(); } catch (e) {   } };
-        s.start(Math.max(c.currentTime, me.at)); me.s = s; me.g = g; qaLog('play', f, i, x.d || 0, me.keep);
+        me.t0 = Math.max(c.currentTime, me.at); s.start(me.t0); me.s = s; me.g = g; qaLog('play', f, i, x.d || 0, me.keep);
       } catch (e) {   }
     });
   }
+  
+  
+  
+  
   
   function qaStop(fade, all) {
     const c = snd.ac, f = fade == null ? 0.05 : fade;
     const cut = o => {
       o.dead = true; if (!o.s || !c) return;
+      const n = c.currentTime;
+      if (n < o.t0) {      
+        qaLog('drop', o.f);
+        try { o.g.gain.cancelScheduledValues(n); o.g.gain.setValueAtTime(0, n); o.g.gain.value = 0; } catch (e) {   }
+        try { o.s.onended = null; o.s.stop(); } catch (e) {   }
+        try { o.s.disconnect(); o.g.disconnect(); } catch (e) {   }
+        return;
+      }
       qaLog('cut', o.f, f);
-      try { const n = c.currentTime; o.g.gain.cancelScheduledValues(n); o.g.gain.setValueAtTime(o.g.gain.value, n); o.g.gain.linearRampToValueAtTime(0, n + f); o.s.stop(n + f + 0.02); }
+      try { o.g.gain.cancelScheduledValues(n); o.g.gain.setValueAtTime(o.g.gain.value, n); o.g.gain.linearRampToValueAtTime(0, n + f); o.s.stop(n + f + 0.02); }
       catch (e) { try { o.s.stop(); } catch (e2) {   } }
     };
     if (qa.cur) { if (qa.cur.keep && !all) qa.kept.push(qa.cur); else cut(qa.cur); qa.cur = null; }
@@ -3863,7 +3877,7 @@ const CBApp = (() => {
     $('.qfld', f).classList.remove('en');
     $('.qtel', f).classList.remove('on'); $('.qtel', f).innerHTML = `<div class="bd"><b class="gold">レベル${lv}の 敵 出現！</b><small>${lv <= st.q.clr ? `${q.w}連勝して もう 一度 討伐しよう！` : `${q.w}連勝して バトルコインを ${q.c}枚 手に入れよう！`}</small></div>`;
     $('.qnm', f).classList.remove('on'); $('.qnm', f).textContent = q.n;
-    $('.qtap', f).classList.remove('on'); $('.qsay', f).classList.remove('on'); $('.qsay p', f).textContent = '';
+    $('.qtap', f).classList.remove('on'); $('.qsay', f).classList.remove('on'); $('.qsay p', f).textContent = ''; $('.qsay p', f).style.webkitClipPath = ''; $('.qsay p', f).style.clipPath = '';
     f.classList.remove('in'); show('qf'); qFieldLayout(); bgmTrack('field', lv);      
     void f.offsetWidth; f.classList.add('in');
     { const im = new Image(); im.src = qHL(lv); }      
@@ -3878,26 +3892,78 @@ const CBApp = (() => {
     if (!r.width || !r.height) return;
     const w = Math.max(r.width, r.height * 941 / 1672), h = w * 1672 / 941;
     fl.style.width = w + 'px'; fl.style.height = h + 'px'; fl.style.left = ((r.width - w) / 2) + 'px'; fl.style.top = ((r.height - h) / 2) + 'px';
+    qsRefit();      
   }
+  
+  
+  
+  
+  
   
   function qLine(i) {
     const q = QUEST[qs.lv - 1], p = $('.qsay p', scr.qf), t = q.say[i];
     qs.i = i; $('.qsay', scr.qf).classList.add('on');
     if (qs.tw) unlater(qs.tw);
     p.style.fontSize = t.length > 54 ? '15px' : t.length > 36 ? '16px' : '';      
-    let n = 0; p.innerHTML = '<span class="sh"></span><span class="hd"></span>';      
-    const sh = p.firstChild, hd = p.lastChild; hd.textContent = t;
-    const step = () => { if (!qs || qs.i !== i) return; n += 1; sh.textContent = t.slice(0, n); hd.textContent = t.slice(n); if (n < t.length) qs.tw = later(step, 34 * SPEED); else qs.tw = null; };
-    step();
+    p.textContent = t;                      
+    qs.sy = { t: t, n: 0, m: null };        
+    qsMeasure();
+    if (!qs.sy.m) qs.sy.n = t.length;       
+    qsClip(); qs.tw = null;
+    const step = () => { if (!qs || qs.i !== i || !qs.sy || qs.sy.t !== t) return; qs.sy.n += 1; qsClip(); if (qs.sy.n < t.length) qs.tw = later(step, 34 * SPEED); else qs.tw = null; };
+    if (qs.sy.n < t.length) step();
     qaPlay(i);                          
     if (i === q.en - 1) qReveal();      
+  }
+  
+  function qsMeasure() {
+    const sy = qs && qs.sy; if (!sy) return;
+    sy.m = null;
+    try {
+      const p = $('.qsay p', scr.qf), tn = p.firstChild, pr = p.getBoundingClientRect();
+      if (!tn || tn.nodeType !== 3 || tn.length !== sy.t.length || !pr.width || !pr.height || !p.offsetWidth) return;
+      const k0 = pr.width / p.offsetWidth, rg = document.createRange(), n = sy.t.length, L = [], X = [], top = [], bot = [];      
+      for (let k = 0; k < n; k++) {
+        rg.setStart(tn, k); rg.setEnd(tn, k + 1);
+        const rs = rg.getClientRects(), r = rs.length ? rs[rs.length - 1] : null;
+        if (r && r.height > 0) {
+          if (!top.length || r.top > top[top.length - 1] + r.height / 2) { top.push(r.top); bot.push(r.bottom); }      
+          L.push(top.length - 1); X.push((r.right - pr.left) / k0);
+        } else { L.push(Math.max(0, top.length - 1)); X.push(k > 0 && L[k - 1] === Math.max(0, top.length - 1) ? X[k - 1] : 0); }      
+      }
+      if (!top.length) return;
+      const Y = top.map((v, l) => (l + 1 < top.length ? ((bot[l] + top[l + 1]) / 2 - pr.top) / k0 : p.offsetHeight + 8));
+      sy.m = { L: L, X: X, Y: Y, W: p.offsetWidth, H: p.offsetHeight };
+    } catch (e) { sy.m = null; }
+  }
+  
+  function qsRefit() {
+    if (screen !== 'qf' || !qs || !qs.sy || qs.step !== 'say') return;
+    qsMeasure(); if (!qs.sy.m) qs.sy.n = qs.sy.t.length; qsClip();
+  }
+  
+  function qsClip() {
+    const sy = qs && qs.sy; if (!sy) return;
+    const p = $('.qsay p', scr.qf), n = sy.n, B = 8, f = v => v.toFixed(2) + 'px';
+    if (sy.m && n < sy.t.length && (p.offsetWidth !== sy.m.W || p.offsetHeight !== sy.m.H)) { qsMeasure(); if (!sy.m) sy.n = sy.t.length; }      
+    const m = sy.m;
+    let c = 'none';
+    if (m && n < sy.t.length) {
+      if (n <= 0) c = 'inset(0 100% 100% 0)';
+      else {
+        const l = m.L[n - 1], x = f(m.X[n - 1] + 0.5), y1 = f(m.Y[l]);
+        c = l === 0 ? `polygon(${f(-B)} ${f(-B)}, ${x} ${f(-B)}, ${x} ${y1}, ${f(-B)} ${y1})`
+          : `polygon(${f(-B)} ${f(-B)}, ${f(m.W + B)} ${f(-B)}, ${f(m.W + B)} ${f(m.Y[l - 1])}, ${x} ${f(m.Y[l - 1])}, ${x} ${y1}, ${f(-B)} ${y1})`;
+      }
+    }
+    p.style.webkitClipPath = c; p.style.clipPath = c;
   }
   function qTap() {
     if (!qs || screen !== 'qf') return;
     const q = QUEST[qs.lv - 1];
     if (qs.step === 'say') {
       if (qs.i < 0) return qLine(0);
-      if (qs.tw) { unlater(qs.tw); qs.tw = null; $('.qsay p', scr.qf).textContent = q.say[qs.i]; return; }      
+      if (qs.tw) { unlater(qs.tw); qs.tw = null; if (qs.sy) { qs.sy.n = qs.sy.t.length; qsClip(); } return; }      
       if (qs.i + 1 < q.say.length) return qLine(qs.i + 1);      
       return qEnd();
     }
@@ -3930,7 +3996,7 @@ const CBApp = (() => {
     if (!qs || qs.step !== 'en') return;
     if (qGone()) { qs = null; return; }      
     if (!qtUse()) { qs = null; showQMap(); qtModal(true); return; }      
-    const lv = qs.lv; qs.step = 'go'; se('tap'); qaStop(0.4);      
+    const lv = qs.lv; qs.step = 'go'; se('tap'); qaStop(0.05, true);     
     qRun = { lv: lv, won: 0, m: st.q.m, gu: [] };
     startMatch(CBNet.cpu(CBApp._rng || undefined, CBApp._think || undefined, qOpt(lv, 1)));
     bgmTrack('quest');
@@ -4102,7 +4168,7 @@ const CBApp = (() => {
     _t: {      
       get view() { return V; }, get screen() { return screen; }, get match() { return match; }, get mode() { return mode; }, get state() { return st; }, get ended() { return ended; },
       get idle() { return !pumping && !queue.length && !busy && !lock; }, get ask() { return askOn(); }, say, get sets() { return { bgm: bgmOn(), se: seOn(), raw: { bgm: st.bgm, se: st.se }, as: AS }; },
-      qopt: (lv, n) => qOpt(lv, n), qApi, qtPaint: () => qtPaint(), qGu: a => { if (qRun) qRun.gu = a.slice(); }, qmsWin: r => qmsWin(r), get qt() { return st ? Object.assign({ left: qtLeft() }, qtNow()) : null; }, get quest() { return { run: qRun ? Object.assign({}, qRun) : null, st: st ? Object.assign({}, st.q) : null, scene: qs ? { lv: qs.lv, step: qs.step, i: qs.i, typing: !!qs.tw, rv: qs.rv || 0 } : null, data: QUEST, open: st ? qOpen() : 0, track: bg.trk }; },      
+      qopt: (lv, n) => qOpt(lv, n), qApi, qtPaint: () => qtPaint(), qGu: a => { if (qRun) qRun.gu = a.slice(); }, qmsWin: r => qmsWin(r), get qt() { return st ? Object.assign({ left: qtLeft() }, qtNow()) : null; }, get quest() { return { run: qRun ? Object.assign({}, qRun) : null, st: st ? Object.assign({}, st.q) : null, scene: qs ? { lv: qs.lv, step: qs.step, i: qs.i, typing: !!qs.tw, rv: qs.rv || 0, shown: qs.sy ? qs.sy.n : 0, len: qs.sy ? qs.sy.t.length : 0, cut: !!(qs.sy && qs.sy.m) } : null, data: QUEST, open: st ? qOpen() : 0, track: bg.trk }; },      
       get bgm() { return { on: !!bg.cur, want: bg.want, have: !!bg.buf, gone: bg.gone, pos: bgmPos(), len: BGM.len, pre: BGM.pre, vol: BGM.vol, file: BGM.file, loop: bg.cur ? [bg.cur.s.loopStart, bg.cur.s.loopEnd] : null, ctx: snd.ac ? snd.ac.state : null, off: bg.cur ? bg.cur.off : null, dur: bg.buf ? bg.buf.duration : null, trk: bg.trk }; },
       get qsnd() { return { lv: qa.lv, cur: qa.cur ? { f: qa.cur.f, keep: qa.cur.keep, on: !!qa.cur.s } : null, kept: qa.kept.map(o => o.f), have: Object.keys(qa.buf), data: QSND, bgs: QBG }; },      
       get mySets() { return mySets; }, setMySets: n => { mySets = Math.max(0, Math.floor(+n || 0)); },      
