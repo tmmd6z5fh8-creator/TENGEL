@@ -233,11 +233,14 @@ kc = "-34018" in str(((r1.get("wallet") or {}).get("gift") or {}).get("error") o
 a, b, d = c1.get("a") or {}, c1.get("b") or {}, c2.get("a") or {}
 js = c1.get("js") or [0, 0]; s1 = c1.get("st") or {}; s2 = c2.get("st") or {}
 wall = isinstance(a.get("wall"), (int, float)) and js[0] - 2000 <= a["wall"] <= js[1] + 2000
-mono = isinstance(a.get("mono"), (int, float)) and a["mono"] > 0 and isinstance(b.get("mono"), (int, float)) and 300 <= b["mono"] - a["mono"] <= 5000 and isinstance(d.get("mono"), (int, float)) and d["mono"] > b["mono"]
+# 第4.213版：2回の 読み（a・b）の あいだは、Mac が おそいと 5秒を こえる（run 182 の macOS 26：5.28秒＝アプリの 時計は wall も mono も 同じ だけ 進んで いた）→ 上限は 60秒に して、
+#   かわりに「電源を 入れてからの 時間（mono）が 時計（wall）と 同じ だけ 進む（差 0.2秒 まで）」を 見る（Mac の 速さに よらない）
+dm = (b.get("mono") or 0) - (a.get("mono") or 0); dw = (b.get("wall") or 0) - (a.get("wall") or 0)
+mono = isinstance(a.get("mono"), (int, float)) and a["mono"] > 0 and isinstance(b.get("mono"), (int, float)) and 300 <= dm <= 60000 and abs(dm - dw) <= 200 and isinstance(d.get("mono"), (int, float)) and d["mono"] > b["mono"]
 ids = (bool(a.get("dev")) or kc) and a.get("dev") == b.get("dev") == d.get("dev") and a.get("proc") == b.get("proc") and d.get("proc") != a.get("proc") and a.get("boot") == b.get("boot") == d.get("boot")
 web = c1.get("has") and c1.get("how") in ("first", "ok", "net") and c2.get("how") in ("ok", "net") and s1.get("dev") == s2.get("dev") == a.get("dev") and abs(c2.get("diff") or 0) < 5000
 ok = wall and mono and ids and web
-print("wall %s mono %s(+%s ms) boot %s dev %s proc %s->%s web %s/%s diff %s -> %s" % (wall, mono, round((b.get("mono") or 0) - (a.get("mono") or 0)), "yes" if a.get("boot") else "empty", "yes" if a.get("dev") else ("none (keychain -34018 in simulator)" if kc else "NO"), str(a.get("proc"))[:4], str(d.get("proc"))[:4], c1.get("how"), c2.get("how"), c2.get("diff"), "OK" if ok else "CHECK"))
+print("wall %s mono %s(+%s ms, wall %+d ms) boot %s dev %s proc %s->%s web %s/%s diff %s -> %s" % (wall, mono, round(dm), round(dm - dw), "yes" if a.get("boot") else "empty", "yes" if a.get("dev") else ("none (keychain -34018 in simulator)" if kc else "NO"), str(a.get("proc"))[:4], str(d.get("proc"))[:4], c1.get("how"), c2.get("how"), c2.get("diff"), "OK" if ok else "CHECK"))
 # 第4.212版：インターネットの 時刻（Clock.swift の net）：返事が 届く・Mac の 時計と 15秒 より ずれて いない・Webの 画面は たしかめずみ（u=0・nv あり）。1回目・2回目の 起動の どちらも
 n1 = c1.get("net") or {}; n2 = c2.get("net") or {}
 okn = all(n.get("ok") is True and isinstance(n.get("rt"), (int, float)) and 0 <= n["rt"] < 8000 for n in (n1, n2)) and all(isinstance(x.get("netDiff"), (int, float)) and abs(x["netDiff"]) < 15000 for x in (c1, c2)) \
