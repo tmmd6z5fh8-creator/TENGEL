@@ -6,15 +6,25 @@
 #     10,821,949 → 9,883,489 B（−938,460 B）。もとの ファイル（デモと 同じ バイト：256kbps／192kbps の 決まった 大きさの コマ）は ios/cb_assets/src/qsnd/ に のこす（上書きしない・消さない）。
 #     音を 作り直す 方（VBR の V0 で −4.25MB）は 波形が 少し かわる（差 −22〜−62dB）ので、やって いない（まさちゃんが 聞いて 決めて から）。
 #     もとに もどす ときは PACK = False に して 入れ直す（デモと 同じ バイトに なる）。
+#   第4.213版（まさちゃん 2026/11/23 18:12「音の聞いてて変わらないから軽くして！」）：30こ を 軽い 音（もとの 音を ほどいて LAME の V0 で 包み直した もの：LIGHT）に 入れかえる。
+#     まさちゃんが 聞きくらべの ページ（kisekae/qsnd_ab/）で 今の 音と 聞きくらべて 決めた ファイル その もの（同じ バイト：下の V0 の 表の SHA-256）。
+#     ほどいた 長さ・位置は もとと 同じ（ずれ 0 サンプル・はじめの フレームの おくれの 数も 同じ）→ くり返しの 所（cb_app.js の QSND）は そのまま。大きさの 差は ±0.07dB の 中。
+#     のこりの 7こ（軽く しても zip の 中で 10KB も へらない 6こ・軽い 音の 方が 大きく なる 1こ）は 第4.212版の まま（つめものを ぬいた だけ：音は もとと 同じ サンプル）。
+#     37こ：9,883,489 → 6,595,878 B（−3,287,611 B）。軽い 音の ファイルは ios/cb_assets/src/qsnd_v0/ に のこす（まさちゃんが 聞いた バイト：上書きしない・消さない）。
+#       そこに ない ときは もとの ファイルから ffmpeg（libmp3lame）で 作り直して、SHA-256 が 表と 同じ ときだけ 使う（ちがう ときは 止まる：聞いて いない 音を 入れない）。
+#     第4.212版の 形に もどす ときは LIGHT = False に して 入れ直す（もとの ファイルは ios/cb_assets/src/qsnd/ に のこって いる）。
 #   python3 kisekae/cb_qsnd.py [<もとの snd フォルダ>]  … ios/cb_assets/ に アプリの 名前（cb_q_bgm01.mp3・cb_q_se01a.mp3 …）で 入れる（もと・できた ものを SHA-256 で 確かめる）。
 #                                                        フォルダを 書かない ときは ios/cb_assets/src/qsnd/（もとの ファイルは ここにも 写して おく）
 #   python3 kisekae/cb_qsnd.py --check                … ios/cb_assets/ の 音が 決めた もの と 同じか
+#   python3 kisekae/cb_qsnd.py --light-check          … この パソコンの ffmpeg で もとの ファイルから 軽い 音を 作り直すと、表と 同じ バイトに なるか（何も 入れかえない）
 #   鳴らし方（くり返しの 所・何タップ目に どの 音・遅らせる 秒・タップで 止まらない 音）は cb/cb_app.js の QSND（この 表と 同じ 並び：効果音 a・b・c ＝ 0・1・2）
-import hashlib, os, shutil, sys
+import hashlib, os, shutil, subprocess, sys, tempfile
 H = os.path.dirname(os.path.abspath(__file__)); W = os.path.dirname(H)
 OUT = os.path.join(W, 'ios', 'cb_assets')
 KEEP = os.path.join(OUT, 'src', 'qsnd')      # もとの ファイル（まさちゃんが デモで 聞いて 決めた バイト）を のこす 所
 PACK = True                                  # アプリには つめものを ぬいた ものを 入れる（False：もとの バイトの まま）
+LITE = os.path.join(OUT, 'src', 'qsnd_v0')   # 軽い 音（まさちゃんが 聞きくらべて 決めた バイト）を のこす 所（アプリの 名前で）
+LIGHT = True                                 # 下の V0 の 表の 音は 軽い 音を 入れる（False：第4.212版の 形＝ぜんぶ つめものを ぬいた だけ）
 # レベル ごと：[BGM の もと, [効果音の もと（a・b・c の 順）]]。もと＝デモの ファイルの 名前・(大きさ, SHA-256 の はじめ 16字)・つめものを ぬいた あとの (大きさ, SHA-256 の はじめ 16字)
 SRC = [
     (('1_bgm.mp3', 336919, 'a4d409556d34e92f', 334038, '59413ef0e06c5126'), [('1_se1.mp3', 21986, '15c91f841b5d9e29', 21435, '28c6a67f79af7c26')]),
@@ -30,6 +40,17 @@ SRC = [
     (('11_bgm.mp3', 1416089, '0d9f30076cbe5bea', 1412023, 'e60fe73c2271972a'), [('11_se1b.mp3', 239534, 'ea364057fb892d3f', 192602, '28be1c7c38bdc7c4'), ('11_se2.mp3', 215084, 'e0bdc7c11a03d034', 151309, '43c1874e2baa9102')]),
     (('12_bgm.mp3', 1369278, 'fb8519813e016357', 1358744, '2f3b2331a36d3968'), [('12_1.mp3', 242669, 'ca25f710f65e0240', 233827, 'fc2d49bef144f6bf'), ('12_2.mp3', 62737, '83c5f65db22dd38a', 61862, '429c679325d175b2'), ('12_3.mp3', 458336, 'ad33917594225463', 424833, '97ddd5e5ee5bf4d4')]),
 ]
+# 軽い 音（第4.213版）：アプリの 名前 → (大きさ, SHA-256 の はじめ 16字)。聞きくらべの ページで まさちゃんが 聞いた ファイルと 同じ。ここに ない 7こ は 今の まま
+V0 = {
+    'cb_q_bgm01.mp3': (183843, '2c68dedd7bdcb3b9'), 'cb_q_bgm02.mp3': (222933, '57c0ff4409ec894e'), 'cb_q_bgm03.mp3': (154405, 'b5e1707412cf97e7'), 'cb_q_bgm04.mp3': (265333, 'f246147e566fdcec'),
+    'cb_q_bgm05.mp3': (164163, 'ef723f46d0276db0'), 'cb_q_bgm06.mp3': (174553, '9d42bb873d7b89c6'), 'cb_q_bgm07.mp3': (148455, '35ba67e2166f3699'), 'cb_q_bgm08.mp3': (155929, '2a0eaf8a9bdb40ec'),
+    'cb_q_bgm09.mp3': (144243, '1efe98684058d2fa'), 'cb_q_bgm10.mp3': (169217, '10a38a4b7ed03307'), 'cb_q_bgm11.mp3': (839189, '974e89a6d449c033'), 'cb_q_bgm12.mp3': (777241, 'ee69851231586f31'),
+    'cb_q_se02a.mp3': (175635, '06b5f8cd64a825d8'), 'cb_q_se03c.mp3': (96671, 'd011d04f99f6c37d'), 'cb_q_se04b.mp3': (106287, '455b3199790f1b7b'), 'cb_q_se04c.mp3': (132802, '8b03f93d22ec3157'),
+    'cb_q_se05a.mp3': (72930, 'db8c79b7eb08cb46'), 'cb_q_se05b.mp3': (41526, '654b0ad26f4a3782'), 'cb_q_se06a.mp3': (132970, '6ff9442a7f241636'), 'cb_q_se07a.mp3': (210901, 'd456bd8778ce8dc2'),
+    'cb_q_se08a.mp3': (164349, 'e0d46b2cc23fae57'), 'cb_q_se09a.mp3': (160440, '38e0c285165d40a7'), 'cb_q_se09b.mp3': (109767, 'fa6b5373030519c9'), 'cb_q_se10a.mp3': (104582, '1bea0816d0e4759a'),
+    'cb_q_se10b.mp3': (159411, '4895b6bc4100da7c'), 'cb_q_se11a.mp3': (126079, 'db8afd9036091f86'), 'cb_q_se11b.mp3': (100079, 'b58a81fdc42e93a6'), 'cb_q_se12a.mp3': (157417, '04be3f5cd52524ea'),
+    'cb_q_se12b.mp3': (44637, '6f29fb1ab34b10ed'), 'cb_q_se12c.mp3': (340994, 'ce4615b08b2ccd72'),
+}
 
 
 def bgm(lv):
@@ -49,9 +70,14 @@ def table():
     return out
 
 
+def light(name):
+    """その 音を 軽い 音で 入れるか"""
+    return LIGHT and name in V0
+
+
 def plan():
-    """[(アプリの 名前, もとの 名前, アプリに 入る 大きさ, アプリに 入る SHA-256 の はじめ 16字)]（PACK：つめものを ぬいた もの）"""
-    return [(t[0], t[1]) + (t[4:6] if PACK else t[2:4]) for t in table()]
+    """[(アプリの 名前, もとの 名前, アプリに 入る 大きさ, アプリに 入る SHA-256 の はじめ 16字)]（LIGHT：表の 音は 軽い 音／PACK：ほかは つめものを ぬいた もの）"""
+    return [(t[0], t[1]) + (V0[t[0]] if light(t[0]) else t[4:6] if PACK else t[2:4]) for t in table()]
 
 
 def files():
@@ -72,15 +98,40 @@ def stale():
     return ''
 
 
+def remake(src, dst):
+    """もとの MP3 を ほどいて V0 で 包み直す（聞きくらべの ページの 軽い 音と 同じ 作り方：同じ チャンネルの 数・44.1kHz・頭の しるし〈Xing〉つき）"""
+    ch = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'stream=channels', '-of', 'csv=p=0', src], check=True, stdout=subprocess.PIPE).stdout.decode().strip()
+    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', src, '-map', '0:a:0', '-map_metadata', '-1', '-c:a', 'libmp3lame', '-q:a', '0', '-ac', ch, '-ar', '44100', '-write_xing', '1', dst], check=True)
+
+
+def same(p, size, h):
+    return os.path.isfile(p) and os.path.getsize(p) == size and sig(p) == h
+
+
+def kind():
+    n = sum(1 for t in table() if light(t[0]))
+    return f'（軽い 音 {n}こ ＋ つめものを ぬいた {len(table()) - n}こ）' if n else '（つめものを ぬいた 形）' if PACK else '（もとの バイト）'
+
+
 def main():
     if '--check' in sys.argv:
         w = stale(); n = sum(os.path.isfile(os.path.join(OUT, p[0])) for p in plan())
-        print('cb_assets の フィールドの 音 →', f'{n}／{len(plan())}こ', '・ちがう：' + w if w else '・決めた もの と 同じ' + ('（つめものを ぬいた 形）' if PACK else '（もとの バイト）')); sys.exit(1 if w or n != len(plan()) else 0)
+        print('cb_assets の フィールドの 音 →', f'{n}／{len(plan())}こ', '・ちがう：' + w if w else '・決めた もの と 同じ' + kind()); sys.exit(1 if w or n != len(plan()) else 0)
+    if '--light-check' in sys.argv:
+        bad = []
+        with tempfile.TemporaryDirectory() as tmp:
+            for name, src, size, h, _ps, _ph in table():
+                if name not in V0: continue
+                p = os.path.join(KEEP, src)
+                if not same(p, size, h): sys.exit(f'※ もとの {src} が ない か ちがう（{KEEP}）')
+                q = os.path.join(tmp, name); remake(p, q)
+                if not same(q, *V0[name]): bad.append(name)
+        print(f'軽い 音を 作り直した：{len(V0)}こ →', '表と 同じ バイト' if not bad else 'ちがう：' + ' '.join(bad)); sys.exit(1 if bad else 0)
     d = sys.argv[1] if len(sys.argv) > 1 else KEEP
     if not os.path.isdir(d):
         sys.exit('使い方：python3 kisekae/cb_qsnd.py <もとの snd フォルダ>（書かない ときは ios/cb_assets/src/qsnd/）')
     import mp3_repack
-    os.makedirs(OUT, exist_ok=True); os.makedirs(KEEP, exist_ok=True); tot = 0; tot0 = 0
+    os.makedirs(OUT, exist_ok=True); os.makedirs(KEEP, exist_ok=True); tot = 0; tot0 = 0; made = 0
     for name, src, size, h, psize, ph in table():
         p = os.path.join(d, src)
         if not os.path.isfile(p) or os.path.getsize(p) != size or sig(p) != h:
@@ -95,8 +146,19 @@ def main():
                 sys.exit(f'※ {src} の つめものを ぬいた ものが 決めた もの と ちがう（{w or "大きさ・SHA-256"}）')
         else:
             b = a
+        if light(name):                                             # 軽い 音：のこして ある ファイル（まさちゃんが 聞いた バイト）。ない ときは 作り直して、表と 同じ ときだけ 使う
+            os.makedirs(LITE, exist_ok=True); lp = os.path.join(LITE, name)
+            if not same(lp, *V0[name]):
+                if os.path.isfile(lp):
+                    sys.exit(f'※ {lp} が 決めた もの と ちがう（まさちゃんが 聞いた 軽い 音を 置いてね。上書きは しない）')
+                with tempfile.TemporaryDirectory() as tmp:
+                    q = os.path.join(tmp, name); remake(p, q)
+                    if not same(q, *V0[name]):
+                        sys.exit(f'※ {name} の 軽い 音を 作り直したら 決めた もの と ちがった（ffmpeg の 版が ちがう？ まさちゃんが 聞いた ファイルを {LITE} に 置いてね）')
+                    shutil.copyfile(q, lp); made += 1
+            b = open(lp, 'rb').read()
         open(os.path.join(OUT, name), 'wb').write(b); tot += len(b)
-    print(f'入れた：{len(table())}こ・{tot / 1e6:.2f}MB' + (f'（もと {tot0 / 1e6:.2f}MB から つめものを ぬいた：音の データは 同じ）' if PACK else '（もとの バイト）') + f' → {OUT}')
+    print(f'入れた：{len(table())}こ・{tot / 1e6:.2f}MB' + kind() + f'・もと {tot0 / 1e6:.2f}MB' + (f'・軽い 音を 作り直した {made}こ' if made else '') + f' → {OUT}')
 
 
 if __name__ == '__main__':
