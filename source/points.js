@@ -26,7 +26,14 @@
   var BUNDLE = { product: 'jp.tengel.app.bundle1', parts: ['wallpack', 'board'] };
   var PACKS = ['jp.tengel.app.points500', 'jp.tengel.app.points1000', 'jp.tengel.app.points2000', 'jp.tengel.app.points4000'];
   var SUBS = ['jp.tengel.app.sub2000', 'jp.tengel.app.sub4400', 'jp.tengel.app.sub9200'];
-  var COST = { gift: 1500, read: 200, w5: 200, type: 500, slot: 15000 };
+  // 第4.212版（まさちゃん 2026/11/23 10:12「①レースの一回の読み込みを400Pに変更 ②初回プレゼントを5000Pにする … ⑤おもちゃを購入を追加 パチンコとテンゲルカードバトルとポイント解放型にして、3000Pで解放にする！
+  //   ⑥マザーボードも1個解放に23000Pにして！ ⑦単勝5連勝も、1レースごとに400P消費するようにして！」・答え「1つずつ 3,000P」）：
+  //   初回プレゼント 1,500 → 5,000P・読み込み 200 → 400P・5連の 予想は 1つの 予想で 200P → 1レースごとに 400P（読み込みと 同じ：points_ui.js の readCharge）・
+  //   マザーデータの 枠 15,000 → 23,000P・おもちゃ（お世話チャレンジ・TENGERカードバトル）の 解放 1つ 3,000P（toy）
+  var COST = { gift: 5000, read: 400, w5: 400, type: 500, slot: 23000, toy: 3000 };
+  // 第4.212版：おもちゃ（Pカスタムで 解放する 遊び）。解放の しるしは unlock-toy:<id>。drop＝お世話チャレンジ（トレーニングセンターの 玉を 落とす 台：tc/tc_app.js）・cb＝TENGERカードバトル（cb/cb_launch.js）
+  var TOYS = [['drop', 'お世話チャレンジ'], ['cb', 'TENGERカードバトル']];
+  function toyName(id) { for (var i = 0; i < TOYS.length; i++) if (TOYS[i][0] === id) return TOYS[i][1]; return ''; }
   // 第4.139版（まさちゃん 2026/11/10 11:46「ポイントの上限は、99999までにして！」）：もてる ポイント（合計）の 上限。
   //   こえる 買い物（パック・サブスクを はじめる）は 買う 前に 止める・ミッションは 入る ように なるまで 受け取りを 待つ（points_ui.js）。
   //   上限でも 届く もの（サブスクの 更新・あとから 届いた 取引・トレーニングセンターの 当たり）の こえた ぶんは 消さずに あずかる（下の「あずかりポイント」）
@@ -171,8 +178,17 @@
   // 返り値：{ total, paid_sub, paid_pack, free, lots:[{id, product, at, expires, points, remain, expired}], lost（期限切れで消えたP）, nextExpire（いちばん近い期限）, paidIn（買ったPの合計）, freeIn, used }
   function balance(events, now) {
     var t = now ? tms(iso(now)) : Date.now();
-    var lots = [], pack = 0, free = 0, used = { paid_sub: 0, paid_pack: 0, free: 0 }, paidIn = 0, freeIn = 0;
+    var lots = [], pack = 0, free = 0, used = { paid_sub: 0, paid_pack: 0, free: 0 }, paidIn = 0, freeIn = 0, lost0 = 0;
     sorted(events).forEach(function (e) {
+      if (e.cd) return;                                   // 第4.212版：まとめた 行（carry）に もう 入って いる できごと（しるし だけ のこした：下の「古い 履歴を まとめる」）
+      if (e.kind === 'carry') {                           // 第4.212版：古い 履歴の まとめ（その ときの 残高・サブスクの のこり・合計の 数字）。ここから 先を たどる
+        pack += Math.max(0, +e.pack || 0); free += Math.max(0, +e.free || 0); paidIn += Math.max(0, +e.paidIn || 0); freeIn += Math.max(0, +e.freeIn || 0); lost0 += Math.max(0, +e.lost || 0);
+        var cu = e.used || {}; BUCKETS.forEach(function (b) { used[b] += Math.max(0, +cu[b] || 0); });
+        (Array.isArray(e.lots) ? e.lots : []).forEach(function (L) {
+          if (L && +L.remain > 0 && tms(L.expires)) lots.push({ id: String(L.id || ''), tx: L.tx || '', product: L.product || '', at: L.at, expires: L.expires, points: Math.max(+L.points || 0, +L.remain), remain: +L.remain });
+        });
+        return;
+      }
       var amt = +e.amount || 0;
       if (e.kind === 'sub' && amt > 0) {
         lots.push({ id: e.id, tx: e.tx || '', product: e.product || '', at: e.at, expires: e.expires || addDays(e.at, SUB_DAYS), points: amt, remain: amt });
@@ -197,7 +213,7 @@
         free = Math.max(0, free - u.free); used.free += u.free;
       }
     });
-    var sub = 0, lost = 0, next = null;
+    var sub = 0, lost = lost0, next = null;
     lots.forEach(function (L) {
       L.expired = tms(L.expires) <= t;
       if (L.expired) lost += L.remain;
@@ -301,7 +317,7 @@
     var at = iso(now), day = at.slice(0, 10), dev = device || 'x', base = 'spend-' + dev + '-' + day;
     var list = stamp((events || []).slice()), top = null;
     list.forEach(function (e) { if (e && (!top || +e.n > +top.n)) top = e; });
-    var cur = top && top.kind === 'spend' && String(top.id).indexOf(base) === 0 ? top : null;
+    var cur = top && top.kind === 'spend' && !top.cd && String(top.id).indexOf(base) === 0 ? top : null;      // 第4.212版：まとめた 行に 入った しるし（cd）には 足さない（balance が とばす ので 使った ぶんが 消えて しまう）
     if (cur && P.balance.lots.some(function (L) { var x = tms(L.expires); return x > tms(cur.at) && x <= tms(at); })) cur = null;
     if (cur) {
       var u = useOf(cur); BUCKETS.forEach(function (b) { u[b] += P.use[b]; });
@@ -327,6 +343,60 @@
   }
   function unlocked(events, key) { var id = 'unlock-' + key; return (events || []).some(function (e) { return e && e.id === id; }); }
   function has(events, id) { return (events || []).some(function (e) { return e && e.id === id; }); }
+
+  // ---- 古い 履歴を まとめる（第4.212版・まさちゃん 2026/11/23 10:14「古い台帳は、3年おきにリセットされるようにして！注意書も入れて！」・答え「両方」「いつも直近3年分を残す」・
+  //      10:26〜10:30「3年経ってなくても、古い台帳をリセットする、ができる項目を追加して … 古い台帳の2年分、1年分、全て、を選べるようにして！」）----
+  //   できごとは 1件ずつ ふえて、残高は 毎回 はじめから たどる ので、長く 使う ほど 保存が 重く なる（トレーニングセンターの 小さな 当たり・毎日の ログインボーナス・読み込み）。
+  //   → cut（時刻）より 前の できごと（書いた 順の 頭から つづいて いる ぶん）を、その ときの 状態を 持った 1行（kind:'carry'）に する：
+  //     ・carry＝{ pack・free（その ときの 残高）, lots（サブスクの のこり：期限・取引の 番号つき）, paidIn・freeIn・used（合計の 数字）, from・at（まとめた 期間）, cnt（まとめた 行の 数）, logins（ログインボーナスの 数） }
+  //     ・残高は かわらない：balance は carry から 先を たどる（頭の ぶんを たどった あとの 状態と 同じ 所から）
+  //     ・あとで 見る しるし（解放・ミッションの 受け取り・買った 取引・初回プレゼント・返した しるし など）は 消さない：できごとは その まま のこして cd:1（balance は とばす＝2回 数えない）
+  //       ＝ 解放した もの（unlocked・owned・wallCount）・受け取った ミッション・同じ 取引を 2回 足さない（txEvent）・返金（refundEvent）は 今まで どおり
+  //     ・消す のは、あとで 見ない 履歴 だけ（carryDrop）：読み込み などの「使った」（spend）・トレーニングセンターの 当たり（tc-）・ログインボーナス（login-<日付>）・
+  //       チケットを ポイントに 変えた（tkp-）・お世話トークンを 買った（unlock-tctok:）
+  //     ・消す のは cut の 40日 より 前の もの（CARRY_GRACE）：新しい ものは しるし（cd:1）で のこして、次に まとめる ときに 消す。
+  //       同じ id を もう 1回 足さない ため（当たりを わたす 途中で 閉じた ときの やり直し・買った トークンを わたす やり直し・今日の ログインボーナス）。
+  //       ログインボーナスは、消した 中で いちばん 新しい 日付（carry.lastLogin）も おぼえる：その 日 までの login-<日付> は もう 受け取った（merged）
+  //   返り値：{ events（新しい 一覧）, merged（まとめた 行の 数）, dropped（消した 行の 数）, from, to } ／ まとめる ものが なければ null
+  var CARRY_GRACE = 40 * DAY;
+  function carryDrop(e) { var id = String((e && e.id) || ''); return !!e && (e.kind === 'spend' || /^(login-\d{4}-\d\d-\d\d$|tc-|tkp-|unlock-tctok:)/.test(id)); }
+  function compact(events, cut) {
+    var c = cut instanceof Date ? cut.getTime() : typeof cut === 'number' ? cut : Date.parse(cut), es = sorted(events), k = 0, fresh = 0, stale = 0;
+    if (!isFinite(c) || !(c > 0)) return null;
+    var oldEnough = function (e) { return carryDrop(e) && tms(e.last || e.at) < c - CARRY_GRACE; };
+    while (k < es.length) {
+      var e0 = es[k];
+      if (e0.kind !== 'carry' && !e0.cd) { var a0 = tms(e0.at); if (!(a0 > 0 && a0 < c)) break; fresh++; }
+      else if (e0.cd && oldEnough(e0)) stale++;        // 前に しるしで のこした もの：もう 消せる
+      k++;
+    }
+    if (!fresh && !stale) return null;
+    var pre = es.slice(0, k), rest = es.slice(k), old = null, keep = [], drop = 0, logins = 0, lastLogin = '', from = '', to = '', nmax = 0;
+    var B = balance(pre, new Date(c));                 // 頭の ぶんを たどった あとの 状態（cut の とき）
+    pre.forEach(function (e) {
+      if (+e.n > nmax) nmax = +e.n;
+      if (e.kind === 'carry') { old = e; return; }
+      if (!e.cd) {
+        if (!from || tms(e.at) < tms(from)) from = e.at;
+        if (!to || tms(e.last || e.at) > tms(to)) to = e.last || e.at;
+      }
+      if (oldEnough(e)) { drop++; var m = /^login-(\d{4}-\d\d-\d\d)$/.exec(String(e.id)); if (m) { logins++; if (m[1] > lastLogin) lastLogin = m[1]; } }
+      else keep.push(e.cd ? e : Object.assign({}, e, { cd: 1 }));
+    });
+    if (old && old.from && (!from || tms(old.from) < tms(from))) from = old.from;
+    if (old && old.at && (!to || tms(old.at) > tms(to))) to = old.at;
+    if (old && typeof old.lastLogin === 'string' && old.lastLogin > lastLogin) lastLogin = old.lastLogin;
+    var carry = { id: 'carry', kind: 'carry', bucket: '', amount: 0, at: to, from: from, n: nmax,
+      cnt: Math.max(0, Math.round(+(old && old.cnt) || 0)) + fresh, logins: Math.max(0, Math.round(+(old && old.logins) || 0)) + logins, lastLogin: lastLogin,
+      pack: B.paid_pack, free: B.free, paidIn: B.paidIn, freeIn: B.freeIn, used: { paid_sub: B.used.paid_sub, paid_pack: B.used.paid_pack, free: B.used.free }, lost: Math.max(0, +(old && old.lost) || 0),
+      // サブスクの のこり（期限が 切れた ぶんも：あとで その 取引が 返金に なった とき「期限が 切れて 消えた P」から 外す ため。のこりが 0 の ものは 持たない）
+      lots: B.lots.filter(function (L) { return L.remain > 0; }).map(function (L) { return { id: L.id, tx: L.tx, product: L.product, at: L.at, expires: L.expires, points: L.points, remain: L.remain }; }) };
+    return { events: keep.concat([carry], rest), merged: fresh, dropped: drop, from: from, to: to };
+  }
+  // まとめた 行（ない ときは null）・まとめた ログインボーナスの 数（login_bonus.js が 何日目かを 数え直す とき）
+  function carryOf(events) { var c = null; (events || []).forEach(function (e) { if (e && e.kind === 'carry') c = e; }); return c; }
+  // その id は まとめた 行に 入って いる（もう 受け取った）か：ログインボーナス（login-<日付>）は、まとめた 中で いちばん 新しい 日付 まで
+  function merged(events, id) { var c = carryOf(events), m = /^login-(\d{4}-\d\d-\d\d)$/.exec(String(id || '')); return !!(c && m && typeof c.lastLogin === 'string' && c.lastLogin && m[1] <= c.lastLogin); }
 
   // ---- 結果ボードカスタム（第4.91版）----
   // 買った（取引の できごと tx-… の unlock・what＝board／wallpack）か。返金（refund-<取引>）が あれば 買って いない
@@ -533,6 +603,7 @@
 
   var API = { PRODUCTS: PRODUCTS, PACKS: PACKS, SUBS: SUBS, COST: COST, SUB_DAYS: SUB_DAYS, MISSIONS: MISSIONS, FREE_TYPES: FREE_TYPES, UNLOCK_TYPES: UNLOCK_TYPES, ALL_TYPES: ALL_TYPES,
     balance: balance, plan: plan, txEvent: txEvent, refundEvent: refundEvent, giftEvent: giftEvent, missionEvent: missionEvent, spend: spend, unlock: unlock, unlocked: unlocked, has: has,
+    TOYS: TOYS, toyName: toyName, compact: compact, carryOf: carryOf, carryDrop: carryDrop, merged: merged, CARRY_GRACE: CARRY_GRACE,
     BOARD: BOARD, BOARD_NEED: BOARD_NEED, BOARD_ITEMS: BOARD_ITEMS, boardOwned: boardOwned, boardUnlocked: boardUnlocked, boardNext: boardNext, boardNextReady: boardNextReady, boardFits: boardFits,
     boardSlot: boardSlot, boardKnown: boardKnown, boardSel: boardSel, boardActive: boardActive, boardOpen: boardOpen, owned: owned,
     BUNDLE: BUNDLE, bundleOwned: bundleOwned, bundleOffer: bundleOffer, BOARD_MISSIONS: BOARD_MISSIONS, WALLP_MISSIONS: WALLP_MISSIONS, WALL_TOTAL: WALL_TOTAL,

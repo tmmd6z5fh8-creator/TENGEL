@@ -13,6 +13,7 @@
 #   光の 点めつは test_tc_geki_flash.py（PUSH：コマを 写すので 時間が かかる）と test_tc_drop_flash.py（馬バレの 丸）
 import json, os, re, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
+from toys_for_test import open_toys      # 第4.212版：おもちゃ（TENGERカードバトル・お世話チャレンジ）を 0P で 解放した ことに する（テスト用）
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 SRV = os.path.join(W, 'srv_tc'); PORT = 8814; APP = f'http://localhost:{PORT}/APP/'; TESTB = f'http://localhost:{PORT}/TEST/'
 SHOT = os.environ.get('SHOT')          # 画面を 写す フォルダ（見る 用）
@@ -86,6 +87,7 @@ RECS = "() => { const a = window.__rec.slice(); window.__rec.length = 0; return 
 
 def open_tc(pg, url, wait_drop=True):
     pg.goto(url); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(600)
+    open_toys(pg, ('drop',))      # 第4.212版：お世話チャレンジは おもちゃ（3,000P で 解放）→ 解放ずみに する
     pg.evaluate("() => document.querySelectorAll('.tabbar button')[2].click()"); pg.wait_for_timeout(300)
     pg.locator('#tcFab').click()
     pg.wait_for_function("() => window.TCApp && TCApp.state && window.TCCare && TCCare.on && !document.querySelector('#tcOv .tcld')", timeout=90000); pg.wait_for_timeout(1000)

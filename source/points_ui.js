@@ -2,7 +2,9 @@
 // 台帳の計算は points.js（TengelPoints）。ここは保存（アプリの中＝IndexedDB の meta 'wallet'・自動バックアップにも入る）と画面。
 //  ・アプリを消すと台帳も消える（5章）。キーチェーンには「しるし」だけ：初回プレゼント（gift-first）・サブスクのPを足した取引（granted-sub）
 //  ・App内課金（StoreKit 2）はアプリ（Store.swift）。台帳に書けたら finish をお願いする
-//  ・読み込み（画像の読み取り）1レース 200P。同じレースの読み直しは 0P（11.4）。5連の予想（5レースまとめて）200P
+//  ・読み込み（画像の読み取り）1レース 400P（第4.212版：200P → 400P）。同じレースの読み直しは 0P（11.4）。5連の予想も 1レースごとに 400P（第4.212版：前は 5レースまとめて 200P）
+//  ・第4.212版（まさちゃん 2026/11/23）：値段は ぜんぶ points.js の COST から 出す（画面の 文も）・おもちゃ（お世話チャレンジ・TENGERカードバトル）の 解放（toy）・
+//    古い 履歴を まとめる（points.js の compact：3年より 前は 自動・「古い台帳をリセットする」は old_reset.js から）
 //  ・第4.91版：結果ボードカスタム（買い切り 2,200円・非消耗型）。買ったら 台帳に tx-<取引> の unlock（what＝board）。買った あとに 読み込んだ レースの 数（board.reads）で
 //    15こを 順に 解放（points.js の BOARD：第4.113版で 16こ・6レースごと → 第4.120版で 15こ。第4.121版：1〜14 は まさちゃんの 絵の ボード・15 は「ボードを持つ馬」）。
 //    第4.113版：的中の とき（board.selHit）・ハズレの とき（board.selMiss）で べつべつに 1つずつ 使う（前の 1つの board.sel は 両方へ うつす）。
@@ -148,7 +150,7 @@
     const s = await marker('set', 'gift-first', g.at);
     W.gift = { marked: !!s.ok, state: 'given', note: s.ok ? '' : (s.error || '') };
     await save();
-    toast('🎁 はじめまして！1,500P をプレゼントしたよ。1レースの読み込みに 200P 使うよ', 4600);
+    toast(`🎁 はじめまして！${pts(P.COST.gift)} をプレゼントしたよ。1レースの読み込みに ${pts(P.COST.read)} 使うよ`, 4600);
   }
 
   // ---------- App内課金 ----------
@@ -249,7 +251,7 @@
     W.events = next; return true;
   }
   function keepPaid() { if (W.paid.length > 400) W.paid = W.paid.slice(-300); }
-  // 返り値：{ ok, charged, free: 'session'|'same'|'w5'|null, pid } か { ok:false, need, have }
+  // 返り値：{ ok, charged, free: 'session'|'same'|null, pid } か { ok:false, need, have }
   async function readCharge(o) {
     await walletReady;
     const form = o.form || {}, d = o.ocr || {};
@@ -257,25 +259,27 @@
     const sameAsForm = (!d.r || !form.r || +d.r === +form.r) && (!d.date || !form.date || d.date === form.date) && (!d.venue || !form.venue || P.vnorm(d.venue) === P.vnorm(form.venue));
     const race = { date: d.date || form.date || '', venue: String(d.venue || form.venue || ''), r: +(d.r || form.r) || 0, rname: d.rname || (sameAsForm ? form.rname : '') || '', start: d.start || (sameAsForm ? form.start : '') || '', dist: +(d.dist || form.dist) || 0 };
     const stamp = e => { Object.assign(e, { date: e.date || race.date, venue: e.venue || race.venue, r: e.r || race.r, rname: e.rname || race.rname, start: e.start || race.start, dist: e.dist || race.dist, last: new Date().toISOString() }); };
-    if (o.w5) {
-      const key = 'w5:' + (o.w5.date || 'x'), hit = W.paid.find(e => e.w5 === key);
-      if (hit) { stamp(hit); await save(); return { ok: true, charged: false, free: 'w5', pid: hit.pid }; }
-      if (!charge(P.COST.w5, '5連の予想の読み込み ' + dayOf(o.w5.date))) return { ok: false, need: P.COST.w5, have: total() };
-      const e = { pid: newId(), w5: key, at: new Date().toISOString() }; stamp(e); W.paid.push(e); keepPaid(); await save();
-      return { ok: true, charged: true, free: null, pid: e.pid };
-    }
+    // 第4.212版（まさちゃん 2026/11/23 10:12「⑦単勝5連勝も、1レースごとに400P消費するようにして！」）：5連の 予想も 1レースごとに（ふつうの 読み込みと 同じ 400P・同じ 見分け方）。
+    //   前は 1つの 予想（同じ 日）で 200P ＝ その 日は 5連の 入力の 中なら 何レース 読んでも 0P だった（paid の w5＝'w5:<日付>'：もう 使わない。前の 版の ぶんは 見ない）。
+    //   ・5連の ○レース目（o.w5.n：1〜5。アプリを 作る ときに src.html の 呼び出しに 足す：app_target.py）は、ふつうの 入力の「読み込みの しるし（pid）」の かわりに、
+    //     その ○レース目に 入れた 読み込み（paid の ws＝'w5:<日付>:<何レース目>'）を おぼえる。同じ レースの 読み直しは 0P・別の レースを 入れたら 400P（しるしは 新しい 読み込みへ）
+    //   ・読み込み（paid）は ふつうの 読み込みと 同じ もの ＝ 同じ レースは どちらで 読んでも 1回 だけ 400P（先に ふつうに 読んだ レースを 5連に 入れても、その 逆でも 0P）
+    //   ・5連の 入力の 中の 読み込みは 今まで どおり 壁紙パック・結果ボードカスタムの 数には 数えない
+    const slot = o.w5 ? 'w5:' + (o.w5.date || 'x') + ':' + Math.max(0, Math.min(9, Math.round(+o.w5.n || 0))) : '';
+    const pid0 = slot ? ((W.paid.find(e => e && e.ws === slot) || {}).pid || '') : (form.pid || '');
+    const tag = e => { if (!slot) return; W.paid.forEach(x => { if (x && x !== e && x.ws === slot) delete x.ws; }); e.ws = slot; };
     // 第4.140版（まさちゃん 11/10 14:22「きびしくする（人気の並びが前とぜんぜん違ったら200P。同じレースの読み直しは0Pのまま）これで！」）：
-    //   読み直し（0P）は、読んだ 単勝の 表（o.rows）が 前に 読んだ 表（paid の fp）と「ぜんぜん ちがう」（P.fpDiff）と 別の レース＝200P。
+    //   読み直し（0P）は、読んだ 単勝の 表（o.rows）が 前に 読んだ 表（paid の fp）と「ぜんぜん ちがう」（P.fpDiff）と 別の レース＝400P（第4.212版：200P → 400P）。
     //   前は 画像に 日付・R が 写って いないと 入力の 日付・R で 同じ レースと 見て いた ので、切り取った 画像なら 別の レースも 0P で 読めた。
     //   ・くらべられない とき（どちらかに 単勝の 表が ない・頭数が 少ない）は 前と 同じ（入力の 日付・R で 見る）
     //   ・別の レースと して 読んだ 読み込みには nk（レースが まだ わからない）。日付・R で さがす ときは 出さない（その 入力の 読み込みの しるし pid で だけ 見つかる）。
     //     入力の 日付・R を 直して 同じ 画像を 読み直す か、記録を 保存する（countRace）と、その レースの 読み込みに なる
     const fp = P.raceFp(o.rows);
     const judged = e => !!(e.fp && fp), bodyDiff = e => judged(e) && P.fpDiff(e.fp, fp);
-    const free = async (e, how) => { stamp(e); if (fp) e.fp = fp; await save(); return { ok: true, charged: false, free: how, pid: e.pid }; };
+    const free = async (e, how) => { stamp(e); if (fp) e.fp = fp; tag(e); await save(); return { ok: true, charged: false, free: how, pid: e.pid }; };
     let diff = false;
-    if (form.pid) {
-      const cur = W.paid.find(e => e.pid === form.pid);
+    if (pid0) {
+      const cur = W.paid.find(e => e.pid === pid0);
       if (cur && !cur.w5) {
         const keyOK = !race.r || P.sameRace(cur, race) || !cur.r;
         if (keyOK && !bodyDiff(cur)) return free(cur, 'session');
@@ -288,17 +292,18 @@
         if (keyOK) diff = true;
       }
     }
-    const sameKey = W.paid.filter(e => e && !e.w5 && !e.nk && e.pid !== form.pid && P.sameRace(e, race)).reverse();      // 新しい 順
+    const sameKey = W.paid.filter(e => e && !e.w5 && !e.nk && e.pid !== pid0 && P.sameRace(e, race)).reverse();      // 新しい 順
     const hit = sameKey.find(e => !bodyDiff(e));
     if (hit) return free(hit, 'same');
     if (sameKey.length) diff = true;
-    if (!charge(P.COST.read, READ_WHAT(race))) return { ok: false, need: P.COST.read, have: total() };
-    const e = { pid: newId(), at: new Date().toISOString() }; stamp(e); if (fp) e.fp = fp; if (diff) e.nk = 1; W.paid.push(e); keepPaid();
-    const bu = boardRead(), pk = packRead();
+    const cost = slot ? P.COST.w5 : P.COST.read;
+    if (!charge(cost, slot ? ('5連の予想の' + READ_WHAT(race)).trim() : READ_WHAT(race))) return { ok: false, need: cost, have: total() };
+    const e = { pid: newId(), at: new Date().toISOString() }; stamp(e); if (fp) e.fp = fp; if (diff) e.nk = 1; W.paid.push(e); keepPaid(); tag(e);
+    const bu = slot ? null : boardRead(), pk = slot ? 0 : packRead();
     await save();
     if (bu) boardEmit('unlock', { item: bu.id, no: bu.no });
     if (pk) packEmit('unlock', { no: pk });
-    return { ok: true, charged: true, free: null, pid: e.pid, diff };      // diff＝同じ 日付・R の 読み込みは あったが、中身が ぜんぜん ちがった（別の レースと して 200P）
+    return { ok: true, charged: true, free: null, pid: e.pid, diff };      // diff＝同じ 日付・R の 読み込みは あったが、中身が ぜんぜん ちがった（別の レースと して 400P）
   }
 
   // ---------- 結果ボードカスタム（第4.91版）----------
@@ -444,6 +449,7 @@
     await walletReady;
     // 第4.139版（念のため）：券種・マザーデータの 枠の 値段は 表（points.js の COST）から。画面に 書いて ある 数字（data-cost）は 使わない
     if (/^type:/.test(key)) cost = P.COST.type; else if (/^slot:/.test(key)) cost = P.COST.slot;
+    else if (/^toy:/.test(key)) { if (!P.toyName(key.slice(4))) return false; cost = P.COST.toy; }      // 第4.212版：おもちゃ（決まった 2つ だけ・値段は 表から）
     cost = Math.max(0, Math.round(+cost || 0));
     ensure(cost);
     const next = P.unlock(W.events, key, cost, device(), NOW());
@@ -502,7 +508,7 @@
     if (hd) h += `<p class="ptnote pthold">預かりポイント：<b>${pts(hd)}</b>（上限を 超えて 届いた 分。使って 減ったら、画面の上の「ミッション」で 補充できるよ）</p>`;
     if (lots.length) h += `<p class="ptnote">サブスクポイント：${lots.map(L => `${yen(L.remain)}P は ${dayOf(L.expires)}まで`).join('・')}（届いた日から30日。次の月のPが届いても、期限までは使えるよ）</p>`;
     if (b.lost) h += `<p class="ptnote">期限が切れて消えたサブスクポイント：${yen(b.lost)}P</p>`;
-    if (W.gift && W.gift.state === 'already') h += '<p class="ptnote">初めてのプレゼント（1,500P）は、前にこのアプリを入れたときに受け取り済みだよ。</p>';
+    if (W.gift && W.gift.state === 'already') h += `<p class="ptnote">初めてのプレゼント（${pts(P.COST.gift)}）は、前にこのアプリを入れたときに受け取り済みだよ。</p>`;
     return h;
   }
   const price = id => { const p = (products || []).find(x => x.id === id); return p ? p.price : `${yen(P.PRODUCTS[id].yen)}円`; };
@@ -527,20 +533,23 @@
     const b = bal(), ui = paintPoints.ui || (paintPoints.ui = { show: '' });
     let h = balanceHtml(b);
     h += `<div class="row" style="margin-top:10px"><button class="btn primary" type="button" data-pt="show" data-v="buy" aria-pressed="${ui.show === 'buy'}">ポイントを買う</button><button class="btn" type="button" data-pt="show" data-v="sub" aria-pressed="${ui.show === 'sub'}">サブスク</button><button class="btn ghost" type="button" data-pt="show" data-v="hist" aria-pressed="${ui.show === 'hist'}">詳しく</button></div>`;
-    h += `<p class="hint">1レースの読み込み（画像の読み取りから判定まで）に <b>200P</b> 使うよ。同じレースを読み直すときは 0P。買ったポイントから先に使うよ（サブスクポイント → 購入ポイント → 獲得ポイント）。</p>`;
+    h += `<p class="hint">1レースの読み込み（画像の読み取りから判定まで）に <b>${pts(P.COST.read)}</b> 使うよ。同じレースを読み直すときは 0P。買ったポイントから先に使うよ（サブスクポイント → 購入ポイント → 獲得ポイント）。</p>`;
     if (ui.show === 'buy') {
       h += packsHtml();
     } else if (ui.show === 'sub') {
       h += subsHtml();
     } else if (ui.show === 'hist') {
-      const ev = W.events.slice().sort((x, y) => Date.parse(y.last || y.at) - Date.parse(x.last || x.at)).slice(0, 60);
+      const ev = W.events.filter(e => e && !e.cd).sort((x, y) => (x.kind === 'carry') - (y.kind === 'carry') || Date.parse(y.last || y.at) - Date.parse(x.last || x.at)).slice(0, 60);      // 第4.212版：まとめた 行（carry）は いちばん 下・まとめた 行に 入った しるし（cd）は 出さない
+      const ymd = iso => { const d = new Date(iso); return isFinite(d.getTime()) ? `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}` : ''; };
+      const carryRow = e => `<li><span>${esc(ymd(e.at))} までの履歴（${yen(e.cnt)}行）は、1行にまとめたよ</span><span class="muted">—</span></li>`;
       // 第4.139版：あずかりポイントから 補充した ぶん（from:'hold'）・届いた ときに あずけた ぶん（held）も わかる ように
       const msLab = e => (/^(rel-)?back-(theme|fig):|^login-/.test(String(e.id)) ? '' : 'ミッション：') + (e.what || '');      // 第4.147版：外した 壁紙の ポイントを 返した ぶんは「ミッション：」を つけない（第4.168版：ログインボーナス login-<日付> も）
       const lab0 = e => e.kind === 'purchase' ? `${(P.PRODUCTS[e.product] || {}).name || 'パック'}を買った` : e.kind === 'sub' ? `${(P.PRODUCTS[e.product] || {}).name || 'サブスク'}（${dayOf(e.expires)}まで）` : msLab(e);
       const nm0 = e => e.kind === 'mission' ? msLab(e) : (P.PRODUCTS[e.product] || {}).name || (e.kind === 'sub' ? 'サブスク' : 'パック');
       const lab = e => e.from === 'hold' ? `預かりポイントから 補充（${lab0(e)}）` : e.held ? (+e.amount > 0 ? `${lab0(e)}（他に ${pts(e.held)} は 預かり）` : `${nm0(e)}（${pts(e.held)} は 預かり）`) : e.kind === 'purchase' ? `${(P.PRODUCTS[e.product] || {}).name || 'パック'}を買った` : e.kind === 'sub' ? `${(P.PRODUCTS[e.product] || {}).name || 'サブスク'}（${dayOf(e.expires)}まで）` : e.kind === 'gift' ? '初回プレゼント' : e.kind === 'mission' ? msLab(e) : e.kind === 'unlock' ? (/^(fig|tctok):/.test(String(e.what || '')) ? unlockName(e.what) : `解放：${unlockName(e.what)}`) : e.kind === 'refund' ? '返金' : (Array.isArray(e.what) ? e.what.slice(0, 3).join('・') + (e.what.length > 3 ? ` 他${e.what.length - 3 + (e.more || 0)}件` : '') : e.what || '使った');
-      h += `<ul class="pthist">${ev.map(e => `<li><span>${esc(dayOf(e.last || e.at))} ${esc(lab(e))}</span><span class="${+e.amount > 0 ? 'plus' : 'minus'}">${+e.amount > 0 ? '+' : ''}${yen(e.amount)}P</span></li>`).join('') || '<li><span class="muted">まだ何もないよ</span></li>'}</ul>`;
+      h += `<ul class="pthist">${ev.map(e => e.kind === 'carry' ? carryRow(e) : `<li><span>${esc(dayOf(e.last || e.at))} ${esc(lab(e))}</span><span class="${+e.amount > 0 ? 'plus' : 'minus'}">${+e.amount > 0 ? '+' : ''}${yen(e.amount)}P</span></li>`).join('') || '<li><span class="muted">まだ何もないよ</span></li>'}</ul>`;
       h += `<p class="ptnote">買ったポイント（購入＋サブスク）の残り ${yen(b.paid_pack + b.paid_sub)}P・使ったP ${yen(b.used.paid_sub + b.used.paid_pack + b.used.free)}P（うち買ったポイントから ${yen(b.used.paid_sub + b.used.paid_pack)}P）</p>`;
+      h += `<p class="ptnote">ポイントの履歴は、3年より前の分を自動で1行にまとめるよ（残高・解放したものは変わらないよ）。</p>`;
       h += `<div class="row" style="margin-top:8px"><button class="btn" type="button" data-pt="restore">購入を復元</button></div><p class="ptnote">「購入を復元」は、サブスクの状態をAppleと合わせるよ。もう足したPはもう一度足さないよ。</p>`;
     }
     h += `<div class="banner warn">⚠️ <b>アプリを消すと、ポイント・解放したもの・記録はすべて消えて、戻せません。</b>ポイントはこの端末の中だけに入っているよ（他の端末には同期しないよ）。</div>`;
@@ -554,7 +563,7 @@
     const ov = $('#ptOv'); if (!ov || !W) return;
     const b = bal();
     $('.msn', ov).textContent = `合計 ${pts(b.total)}`;
-    $('#ptBal', ov).innerHTML = balanceHtml(b) + `<p class="hint" style="margin:8px 0 0">1レースの読み込み（画像の読み取りから判定まで）に <b>200P</b> 使うよ。同じレースを読み直すときは 0P。買ったポイントから先に使うよ（サブスクポイント → 購入ポイント → 獲得ポイント）。</p>`;
+    $('#ptBal', ov).innerHTML = balanceHtml(b) + `<p class="hint" style="margin:8px 0 0">1レースの読み込み（画像の読み取りから判定まで）に <b>${pts(P.COST.read)}</b> 使うよ。同じレースを読み直すときは 0P。買ったポイントから先に使うよ（サブスクポイント → 購入ポイント → 獲得ポイント）。</p>`;
     $('#ptBuy', ov).innerHTML = packsHtml();
     $('#ptSub', ov).innerHTML = subsHtml();
   }
@@ -591,6 +600,7 @@
     if (k === 'wallpack') return '壁紙パック（買い切り）';
     if (k === 'bundle') return 'お得パック（壁紙パックと 結果ボードカスタム・買い切り）';
     if (k.startsWith('fig:')) { const it = W && W.figs ? W.figs.items.find(x => x.id === k.slice(4)) : null; return `思い出フィギュアを作った${it && it.info && it.info.race ? `（${it.info.race}）` : ''}`; }
+    if (k.startsWith('toy:')) return `おもちゃ「${P.toyName(k.slice(4)) || k.slice(4)}」`;      // 第4.212版
     if (k.startsWith('tctok:')) return `トレーニングセンターの お世話トークン ${Math.max(1, Math.round(+k.split(':')[1] || 1))}個を購入`;      // 第4.165版：お世話トークンを ポイントで 買った
     return k;
   }
@@ -598,19 +608,62 @@
     const box = $('#setCustom .ptbody'); if (!box || !W) return;
     const t = avail(), conf = paintCustom.conf || '';      // 第4.139版：あずかりポイントも 数える（足りなければ 使う ときに 補充する）
     const btn = (key, cost) => { const ok = t >= cost; return conf === key ? `<button class="btn primary" type="button" data-pt="unlock2" data-key="${esc(key)}" data-cost="${cost}">${pts(cost)}を使って解放する（今 ${pts(t)}）</button><button class="btn ghost" type="button" data-pt="unlock0">やめる</button>` : `<button class="btn ${ok ? 'primary' : ''}" type="button" data-pt="unlock1" data-key="${esc(key)}" data-cost="${cost}">${ok ? '解放する' : 'Pが足りない'}</button>`; };
-    let h = `<p class="hint" style="margin:0 0 6px"><b>Pカスタムで、自分だけのテンゲルを育てよう！</b></p><p class="hint" style="margin:0">ポイントで、使える券種とマザーデータの枠を増やせるよ。解放したものはずっと使えるよ（アプリを消すと消えるよ）。</p>`;
+    let h = `<p class="hint" style="margin:0 0 6px"><b>Pカスタムで、自分だけのテンゲルを育てよう！</b></p><p class="hint" style="margin:0">ポイントで、使える券種・マザーデータの枠・おもちゃを増やせるよ。解放したものはずっと使えるよ（アプリを消すと消えるよ）。</p>`;
     h += `<h3 style="margin:12px 0 6px">券種（記録・買い目の予約で選べるもの）</h3><p class="ptnote" style="margin:0">初めから：単勝・馬単・3連単</p><div class="ptlist">`;
     P.UNLOCK_TYPES.forEach(tp => { const key = 'type:' + tp, on = unlocked(key); h += `<div class="ptitem${on ? ' on' : ''}" data-key="${esc(key)}"><div><div class="pn">${esc(TYPE_NAMES[tp] || tp)}</div><div class="pd">${on ? '解放済み' : `1つ ${pts(P.COST.type)}`}</div></div><div class="row">${on ? '<span class="chip">使えるよ</span>' : btn(key, P.COST.type)}</div></div>`; });
     h += `</div><h3 style="margin:14px 0 6px">マザーデータの枠（自分のデータで参考的中率を出す）</h3><p class="ptnote" style="margin:0">テンゲルデータ（アプリに入っているデータ）とマザーデータ①は、初めから使えるよ。マザーデータ②・③を解放すると、Excelや判定したレースで自分だけのマザーデータをもっと作れるよ。</p><div class="ptlist">`;
     [3, 4].forEach(n => { const key = 'slot:' + n, on = slotUnlocked(n); h += `<div class="ptitem${on ? ' on' : ''}" data-key="${esc(key)}"><div><div class="pn">${esc(unlockName(key))}</div><div class="pd">${on ? '解放済み' : `1つ ${pts(P.COST.slot)}`}</div></div><div class="row">${on ? '<span class="chip">使えるよ</span>' : btn(key, P.COST.slot)}</div></div>`; });
+    // 第4.212版（まさちゃん 2026/11/23 10:12「⑤おもちゃを購入を追加 パチンコとテンゲルカードバトルとポイント解放型にして、3000Pで解放にする！」・答え「1つずつ 3,000P」）
+    h += `</div><h3 style="margin:14px 0 6px">おもちゃを購入（ポイントで解放する遊び）</h3><p class="ptnote" style="margin:0">解放すると、ずっと遊べるよ。カードバトルのボタンや、トレーニングセンターの中の入口を押したときにも解放できるよ。</p><div class="ptlist">`;
+    P.TOYS.forEach(ty => { const key = 'toy:' + ty[0], on = unlocked(key); h += `<div class="ptitem${on ? ' on' : ''}" data-key="${esc(key)}"><div><div class="pn">${esc(ty[1])}</div><div class="pd">${esc(TOY_DESC[ty[0]] || '')}${on ? '・解放済み' : `・1つ ${pts(P.COST.toy)}`}</div></div><div class="row">${on ? '<span class="chip">遊べるよ</span>' : btn(key, P.COST.toy)}</div></div>`; });
     h += '</div>';
     box.innerHTML = h;
+  }
+  const TOY_DESC = { drop: 'トレーニングセンターの台で、ボールを使って遊ぶ', cb: '馬のカードで5ターン勝負する' };
+  // おもちゃの 解放を 聞く 窓（第4.212版）：入口を 押した とき（カードバトルの 丸い ボタン：cb/cb_launch.js・お世話チャレンジの 入口：tc/tc_app.js）。
+  //   もう 解放して いれば すぐ true。「解放する」で ポイントを 使って 解放 → true。「やめる」・外を 押す・足りない → false（足りない ときは「ポイントを買う」）
+  let toyBusy = null;
+  function toyAsk(id) {
+    const name = P.toyName(id), key = 'toy:' + id;
+    if (!name) return Promise.resolve(false);
+    if (toyBusy) return toyBusy;
+    toyBusy = walletReady.then(() => new Promise(done => {
+      if (unlocked(key)) return done(true);
+      if (!$('#toyCss')) { const st = document.createElement('style'); st.id = 'toyCss'; st.textContent = '#toyOv{position:fixed;left:0;top:0;right:0;bottom:0;z-index:140;display:flex;align-items:center;justify-content:center;padding:calc(var(--sat,0px) + 16px) 16px calc(var(--sab,0px) + 16px);background:rgba(8,12,24,.56);-webkit-tap-highlight-color:transparent}'
+        + '#toyOv .toybox{width:100%;max-width:340px;box-sizing:border-box;background:var(--surface,#fff);color:var(--ink,#1b2333);border:1px solid var(--line,#d8d2c0);border-radius:14px;padding:18px 16px 16px;font-family:var(--font-body);font-size:14px;line-height:1.7;box-shadow:0 10px 36px rgba(0,0,0,.35)}'
+        + '#toyOv h2{margin:0 0 8px;font-size:17px;line-height:1.4}#toyOv p{margin:0 0 8px}#toyOv .toyhv{font-size:12.5px;color:var(--muted,#667)}#toyOv .toyng{color:var(--bad,#b3261e);font-weight:700}#toyOv .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}#toyOv .row .btn{flex:1 1 auto}'; document.head.appendChild(st); }
+      const old = $('#toyOv'); if (old) old.remove();
+      const ov = document.createElement('div'); ov.id = 'toyOv'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', `おもちゃ「${name}」の解放`);
+      const paint = () => {
+        const t = avail(), ok = t >= P.COST.toy;
+        ov.innerHTML = `<div class="toybox"><h2>🔒 ${esc(name)}</h2><p>おもちゃ「${esc(name)}」は、<b>${pts(P.COST.toy)}</b>で解放すると、ずっと遊べるよ。</p><p class="toyhv">今 ${pts(t)}</p>`
+          + (ok ? `<div class="row"><button class="btn primary" type="button" data-toy="go">${pts(P.COST.toy)}を使って解放する</button><button class="btn ghost" type="button" data-toy="no">やめる</button></div>`
+            : `<p class="toyng">ポイントが足りないよ（あと ${pts(P.COST.toy - t)}）</p><div class="row"><button class="btn primary" type="button" data-toy="buy">ポイントを買う</button><button class="btn ghost" type="button" data-toy="no">やめる</button></div>`) + '</div>';
+      };
+      let busy = false;
+      const close = v => { ov.remove(); done(v); };
+      ov.addEventListener('click', async e => {
+        const b = e.target.closest('[data-toy]');
+        if (!b) { if (e.target === ov && !busy) close(false); return; }
+        if (busy) return;
+        const a = b.dataset.toy;
+        if (a === 'no') return close(false);
+        if (a === 'buy') { close(false); openPoints(); const po = $('#ptOv'); if (po) po.style.zIndex = '150'; return; }      // トレーニングセンターの 上でも 見える ように 手前へ
+        busy = true; b.disabled = true; let ok = false;
+        try { ok = await unlock(key); } catch (x) { ok = false; }
+        busy = false;
+        if (ok) { paintCustom(); toast(`✅ おもちゃ「${name}」を解放したよ（残り ${pts(total())}）`, 3600); close(true); } else paint();
+      });
+      paint(); document.body.appendChild(ov);
+      try { const f = $('[data-toy=go],[data-toy=no]', ov); if (f) f.focus({ preventScroll: true }); } catch (x) { /* なし */ }
+    })).catch(() => false).then(v => { toyBusy = null; return !!v; });
+    return toyBusy;
   }
   // ポイントミッション（記録の数）の 行：いちばん 上は つぎの ミッション・その 下に 受け取れる／受け取りずみ
   function missionRowsHtml() {
     const n = countedN(), ms = P.missions(n, W.events);
     const next = ms.find(m => !m.done);
-    let h = `<p class="hint" style="margin:0 0 8px">200Pを使って判定して、結果を記録したレースの数でポイントがもらえるよ（同じレースは1回。Excelなどでまとめて入れた記録は数えないよ）。今 <b>${n}レース</b>${next ? `・次は ${next.n}レースで ${pts(next.reward)}` : ''}</p>`;
+    let h = `<p class="hint" style="margin:0 0 8px">${pts(P.COST.read)}を使って判定して、結果を記録したレースの数でポイントがもらえるよ（同じレースは1回。Excelなどでまとめて入れた記録は数えないよ）。今 <b>${n}レース</b>${next ? `・次は ${next.n}レースで ${pts(next.reward)}` : ''}</p>`;
     h += '<div>';
     ms.slice().reverse().forEach(m => { const w = Math.min(100, Math.round(n / m.n * 100)); h += `<div class="msrow${m.claimable ? ' can' : ''}" data-mid="${esc(m.id)}"><div><div class="mn">${esc(m.label)}　<span class="muted" style="font-weight:400">${pts(m.reward)}</span></div><div class="md">${m.claimed ? '受け取り済み' : m.done ? '受け取れるよ！' : `あと ${m.n - n}レース（${n}/${m.n}）`}</div><div class="bar"><i style="width:${w}%"></i></div></div><div>${m.claimable ? `<button class="btn primary" type="button" data-pt="claim" data-id="${m.id}">受け取る</button>` : m.claimed ? '<span class="chip">✓</span>' : ''}</div></div>`; });
     return h + '</div>';
@@ -712,7 +765,7 @@
       + '<div class="card setsec"><h2>結果ボードカスタムミッション</h2><div class="ptbody" id="msBoard"></div></div>'
       + '<div class="card setsec"><h2>トレーニングセンターミッション</h2><div class="ptbody" id="msTc"></div></div>'
       + '<div class="card setsec"><h2>思い出フィギュアミッション</h2><div class="ptbody" id="msFig"></div></div><div id="msRev"></div>'
-      + '<p class="hint" style="margin:0 0 6px">ポイントミッションは、200Pを使って判定して記録したレースの数（Excelなどでまとめて入れた記録は数えないよ）。見直し基準は、判定して着順を入れて、マザーデータにも入れたレースで進むよ。</p></div>';
+      + `<p class="hint" style="margin:0 0 6px">ポイントミッションは、${pts(P.COST.read)}を使って判定して記録したレースの数（Excelなどでまとめて入れた記録は数えないよ）。見直し基準は、判定して着順を入れて、マザーデータにも入れたレースで進むよ。</p></div>`;
     ov.addEventListener('click', e => { const c = e.target.closest('[data-ms]'); if (c && c.dataset.ms === 'close') { closeMissions(); return; } onClick(e); });
     msPrev = document.activeElement;
     document.documentElement.classList.add('mson'); document.body.appendChild(ov);
@@ -771,7 +824,7 @@
   function paintHint() {
     const el = $('#ocrHint'); if (!el || !W) return;
     if (!paintHint.base) paintHint.base = el.textContent;
-    el.textContent = `${paintHint.base}・1レース 200P（今 ${pts(total())}）`;
+    el.textContent = `${paintHint.base}・1レース ${pts(P.COST.read)}（今 ${pts(total())}）`;
   }
   function paintAll() { paintPoints(); paintCustom(); paintMission(); paintBadge(); paintHint(); topBar(); missionBtn(); dbPillLink(); paintMissionOv(); try { paintTestBoard(); } catch (e) { /* なし */ } alignLater(); }
   async function onClick(e) {
@@ -1201,17 +1254,37 @@
     try { await giftCheck(); } catch (e) { /* つぎに開いたとき */ }
     try { await testGift(); } catch (e) { /* テスト版だけ */ }
     goneBackSoon();                                  // 第4.147版：外した 壁紙の ポイント・チケットを 返す（1回 だけ）
+    autoCompact().catch(() => {});                   // 第4.212版：3年より 前の 履歴を 1行に まとめる
     pullTransactions().then(pullEntitlements).catch(() => {});
     refreshSubStatus().catch(() => {});
   }
+  // 第4.212版：古い 履歴を まとめる（points.js の compact）。自動＝3年より 前（時計の 番人で たしかめて から：iPhone の 日付を 進めても まとめない）・
+  //   「古い台帳をリセットする」（old_reset.js）＝えらんだ 所 まで。残高・解放した もの・受け取った ミッションは かわらない
+  const histRows = () => (W ? W.events.filter(e => e && !e.cd && e.kind !== 'carry') : []);
+  async function compactTo(cut) { await walletReady; const r = P.compact(W.events, cut); if (!r) return null; W.events = r.events; await save(); paintAll(); return { merged: r.merged, dropped: r.dropped, from: r.from, to: r.to }; }
+  async function autoCompact() {
+    await walletReady;
+    const c = window.TengelClock; if (c && c.ready && typeof c.ready.then === 'function') { try { await c.ready; } catch (e) { /* なし */ } }
+    const d = new Date(NOW()); d.setFullYear(d.getFullYear() - 3);
+    return compactTo(d.getTime());
+  }
+  const OLD = {
+    rows: () => histRows().length,                                                    // 履歴の 行の 数（まとめた 行・しるしは 数えない）
+    first: () => { let t = 0; histRows().forEach(e => { const x = Date.parse(e.at); if (x > 0 && (!t || x < t)) t = x; }); return t; },      // いちばん 古い 行の 時刻（ない ときは 0）
+    count: cut => histRows().filter(e => Date.parse(e.at) < +cut).length,              // その 時刻より 前の 行の 数
+    carry: () => { const c = W ? P.carryOf(W.events) : null; return c ? { at: c.at, from: c.from, cnt: c.cnt } : null; },
+    compact: compactTo, auto: autoCompact
+  };
   window.TengelWallet = {
     on: true, ready: walletReady, COST: P.COST,
+    toy: { has: id => unlocked('toy:' + id), ask: toyAsk, list: () => P.TOYS.map(t => ({ id: t[0], name: t[1], on: unlocked('toy:' + t[0]) })), cost: P.COST.toy },      // 第4.212版：おもちゃ
+    old: OLD,                                                                                                                                                            // 第4.212版：古い 履歴を まとめる
     balance: () => B(), total, events: () => (W ? W.events.slice() : []), countedN,
     readCharge, countRace, unlocked, typeLocked, slotUnlocked, unlock, claim, goSettings, lockZoom, gateOpen, gateClose, openMissions, closeMissions, openPoints, closePoints,
     // 第4.130版：トレーニングセンターの 当たり（お世話の ポイント・ルーレット）→ 獲得ポイント（無償）。id は 1回だけ
     //   第4.139版：上限（99,999P）を こえる ぶんは 消さずに あずかる（ミッションの 窓の「あずかりポイント」→ 使って あきが できたら 補充）
     grant: async (id, n, what) => {
-      await walletReady; if (!W || !id || !(n > 0) || P.has(W.events, id) || W.hold.some(h => h.id === String(id))) return false;
+      await walletReady; if (!W || !id || !(n > 0) || P.has(W.events, id) || P.merged(W.events, id) || W.hold.some(h => h.id === String(id))) return false;      // 第4.212版：merged＝まとめた 行に 入った ログインボーナスの 日付
       const c = credit(P.rowEvent({ id: String(id), reward: Math.round(n), label: String(what || 'トレーニングセンター') }, NOW())); await save(); paintAll();
       if (c.held) toast(`上限 ${pts(P.CAP)} なので、${pts(c.added + c.held)} の うち ${pts(c.held)} は 預かったよ（ミッションの 窓で 補充できるよ）`, 5200);
       return true;

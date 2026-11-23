@@ -312,7 +312,17 @@ final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
             reply(id, ok: true, value: Room.shared.handle(payload as? [String: Any] ?? [:]))
         case "clock":
             // 時計の 番人（第4.191版）：いまの 時刻と、設定で かえられない 時計（電源を 入れてからの 時間・起動の 番号：Clock.swift）。どこにも 送らない
-            reply(id, ok: true, value: Clock.sample())
+            // 第4.212版：net が ついて いたら、正しい 時刻を Apple の サーバーに 聞いて から 返す（電源を 入れ直した あと など：Clock.net）
+            if let p = payload as? [String: Any], let n = p["net"] as? NSNumber, n.boolValue {
+                Task { [weak self] in
+                    let net = await Clock.net()
+                    var value = Clock.sample()
+                    value["net"] = net.dictionary
+                    self?.reply(id, ok: true, value: value)
+                }
+            } else {
+                reply(id, ok: true, value: Clock.sample())
+            }
         case "unseal":
             // 「データの更新」の ファイルを 開く（iOS に 入って いる 暗号＝Apple CryptoKit の AES-GCM。アプリは 自分の 暗号の 計算を 持たない：DataSeal.swift）
             if let text = DataSeal.open(payload as? [String: Any] ?? [:]) {

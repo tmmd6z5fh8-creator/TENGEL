@@ -8,7 +8,7 @@ const D = (s) => new Date(s + 'T03:00:00Z').toISOString();
 const tx = (id, product, date) => ({ id, originalId: 'o' + id, product, date: D(date) });
 
 // 初回プレゼント
-let ev = [P.giftEvent(D('2026-11-01'))];
+let ev = [P.giftEvent(D('2026-11-01'), 1500)];
 let B = P.balance(ev, D('2026-11-01'));
 check(B.total === 1500 && B.free === 1500 && B.paid_pack === 0 && B.paid_sub === 0, '初回プレゼント 1,500P は無償の枠');
 // パックを買う → 同じ取引は2回足さない
@@ -57,7 +57,7 @@ check(B.paid_pack === 0 && P.refundEvent(ev4.concat([rf]), { id: '100' }) === nu
 let ev5 = P.unlock(ev4, 'type:複勝', P.COST.type, 'dev1', D('2026-12-07'));
 check(ev5 && P.unlocked(ev5, 'type:複勝') && !P.unlocked(ev5, 'type:馬連') && P.balance(ev5, D('2026-12-07')).total === P.balance(ev4, D('2026-12-07')).total - 500, '券種の解放（500P）・解放したものは unlocked');
 check(P.unlock(ev5, 'type:複勝', 500, 'dev1', D('2026-12-07')).length === ev5.length, '同じものは2回解放しない（Pも引かない）');
-check(P.unlock(ev5, 'slot:2', P.COST.slot, 'dev1', D('2026-12-07')) === null, 'マザーデータの解放（15,000P）は足りないので null');
+check(P.unlock(ev5, 'slot:2', P.COST.slot, 'dev1', D('2026-12-07')) === null, 'マザーデータの解放（23,000P）は足りないので null');
 // ミッション
 let ms = P.missions(7, []);
 check(ms.length === 1 && ms[0].n === 8 && !ms[0].done && !ms[0].claimable, '7レース：8レースのミッションがまだ');
@@ -79,7 +79,7 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
 // 壁紙のミッション（8.3・第4弾）：ポイントで解放した壁紙の枚数（帯は数えない）→ 5・10・15枚で帯の壁紙（第4.147版：壁紙を 10枚 外した ので 8・16・25 → 5・10・16。第4.160版：ネオンを 外した ので マスター帯 16 → 15）。受け取ると 0P の mission と unlock-theme:<帯>
 {
   const T0 = D('2026-11-05');
-  let ev = [P.giftEvent(T0)];
+  let ev = [P.giftEvent(T0, 1500)];
   for (const t of ['gold', 'news', 'ink', 'carousel']) ev = P.unlock(ev, 'theme:' + t, 0, 'd1', T0);
   check(P.wallCount(ev) === 4 && P.wallMissions(4, ev).map(m => m.claimable + '/' + m.done).join() === 'false/false,false/false,false/false' && P.wallMissions(4, ev)[0].label === 'シルバー帯の壁紙' && P.WALL_MISSIONS.map(m => m[0]).join() === '5,10,15'
     && P.WALL_MISSIONS.map(m => m[1]).join() === 'silver,golden,tengel', '4枚：まだ（5・10・15枚：第4.160版で マスター帯 16 → 15）');
@@ -94,15 +94,15 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
   check(P.unlock(ev, 'theme:silver', 0, 'd1', T0).length === ev.length, '同じ解放は2回足さない');
   // 前の 版（8・16・25枚：id は mission-wall-8／16／25）で 受け取った 人：帯を 持って いれば 受け取りずみ・前の mission-wall-16（ゴールド帯）は 新しい 16枚（マスター帯）と まざらない
   const mk0 = (id, what, amt) => ({ id, kind: id.indexOf('unlock-') === 0 ? 'unlock' : 'mission', bucket: id.indexOf('unlock-') === 0 ? '' : 'free', amount: amt || 0, at: new Date(T0).toISOString(), what });
-  const old = [P.giftEvent(T0), mk0('mission-wall-8', 'シルバー帯の壁紙'), mk0('unlock-theme:silver', 'theme:silver'), mk0('mission-wall-16', 'ゴールド帯の壁紙'), mk0('unlock-theme:golden', 'theme:golden')];
+  const old = [P.giftEvent(T0, 1500), mk0('mission-wall-8', 'シルバー帯の壁紙'), mk0('unlock-theme:silver', 'theme:silver'), mk0('mission-wall-16', 'ゴールド帯の壁紙'), mk0('unlock-theme:golden', 'theme:golden')];
   const om = P.wallMissions(15, old), om14 = P.wallMissions(14, old);
   check(om[0].claimed && !om[0].claimable && om[1].claimed && !om[1].claimable && !om[2].claimed && om[2].claimable && om[2].theme === 'tengel' && om[2].n === 15 && !om14[2].claimable && !om14[2].done,
     '前の 版で シルバー帯・ゴールド帯を 受け取った 人：どちらも 受け取りずみ の まま・15枚で マスター帯が 受け取れる（14枚では まだ・前の mission-wall-16 と まざらない）');
   const oe = old.concat(P.wallMissionEvents(om[2], 'd1', T0));
   check(P.unlocked(oe, 'theme:tengel') && new Set(oe.map(e => e.id)).size === oe.length && P.wallMissions(16, oe).every(m => m.claimed && !m.claimable) && P.balance(oe, T0).total === 1500, 'マスター帯を 受け取っても id は かぶらない・3つとも 受け取りずみ・ポイントは 変わらない');
   // 第4.160版：前の 版（16枚）で マスター帯を 受け取った 人は 受け取りずみ の まま（帯を 持って いる）・ネオンを ふくめて 15枚 だった 人は ネオンが へって 14枚 → まだ
-  const had = [P.giftEvent(T0), mk0('mission-wall-tengel', 'マスター帯の壁紙'), mk0('unlock-theme:tengel', 'theme:tengel')];
-  const neo = [P.giftEvent(T0)].concat(['gold', 'news', 'ink', 'carousel', 'stars', 'sunset', 'ranch', 'silks', 'pixel', 'fireworks', 'kids', 'cute', 'night', 'marble', 'neon'].map(t => mk0('unlock-theme:' + t, 'theme:' + t)));
+  const had = [P.giftEvent(T0, 1500), mk0('mission-wall-tengel', 'マスター帯の壁紙'), mk0('unlock-theme:tengel', 'theme:tengel')];
+  const neo = [P.giftEvent(T0, 1500)].concat(['gold', 'news', 'ink', 'carousel', 'stars', 'sunset', 'ranch', 'silks', 'pixel', 'fireworks', 'kids', 'cute', 'night', 'marble', 'neon'].map(t => mk0('unlock-theme:' + t, 'theme:' + t)));
   check(P.wallMissions(3, had)[2].claimed && !P.wallMissions(3, had)[2].claimable && P.wallCount(neo) === 14 && !P.wallMissions(P.wallCount(neo), neo)[2].claimable
     && P.wallMissions(P.wallCount(neo.concat([mk0('unlock-theme:chalk', 'theme:chalk')])), neo)[2].claimable,
     '第4.160版：前に マスター帯を 受け取った 人は 受け取りずみ の まま・ネオンは 数えない（ネオンを 入れて 15枚 → 14枚：まだ）・もう 1枚で 15枚 → マスター帯');
@@ -117,13 +117,13 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
     '外した 壁紙は 11枚（桜・海・紅葉・雪・お正月・クリスマス・ハロウィン・バレンタイン・ホワイトデー・七夕＋第4.160版の ネオン）・名前つき');
   // 第4.160版（まさちゃん 2026/11/12 14:31「壁紙のネオン消して！」）：ネオン（3,000P）を 解放して いた 人には 3,000P を 返す（チケットで 解放して いたら チケット＝0P）・枚数に 数えない
   {
-    const evn = [P.giftEvent(T0), P.rowEvent({ id: 'mission-rec-8', reward: 20000, label: 'x' }, T0), un('neon', 3000), un('pixel', 3000)];
+    const evn = [P.giftEvent(T0, 1500), P.rowEvent({ id: 'mission-rec-8', reward: 20000, label: 'x' }, T0), un('neon', 3000), un('pixel', 3000)];
     const gn = P.goneUnlocks(evn, []);
     check(P.wallCount(evn) === 1 && gn.length === 1 && gn[0].theme === 'neon' && gn[0].cost === 3000 && gn[0].id === 'back-theme:neon' && gn[0].name === 'ネオン'
-      && P.goneUnlocks(evn.concat([P.rowEvent({ id: 'back-theme:neon', reward: 3000, label: 'x' }, T0)]), []).length === 0 && P.goneUnlocks([P.giftEvent(T0), un('neon', 0)], [])[0].cost === 0,
+      && P.goneUnlocks(evn.concat([P.rowEvent({ id: 'back-theme:neon', reward: 3000, label: 'x' }, T0)]), []).length === 0 && P.goneUnlocks([P.giftEvent(T0, 1500), un('neon', 0)], [])[0].cost === 0,
       'ネオン：枚数に 数えない・使った 3,000P を 1回 だけ 返す（チケットで 解放して いたら 0P＝チケットを 返す）・ドットは そのまま');
   }
-  const ev = [P.giftEvent(T0), P.rowEvent({ id: 'mission-rec-8', reward: 20000, label: 'x' }, T0), un('sakura', 1000), un('xmas', 4000), un('gold', 2000), un('halloween', 0), un('news', 2000)];
+  const ev = [P.giftEvent(T0, 1500), P.rowEvent({ id: 'mission-rec-8', reward: 20000, label: 'x' }, T0), un('sakura', 1000), un('xmas', 4000), un('gold', 2000), un('halloween', 0), un('news', 2000)];
   check(P.wallCount(ev) === 2 && P.wallCount(ev, 3) === 5 && P.wallCountAll(ev, 3) === 5 && P.unlocked(ev, 'theme:sakura'), '外した 壁紙（桜・クリスマス・ハロウィン）は 枚数に 数えない（のこりの 2枚 ＋ パック 3枚 ＝ 5）・台帳の できごとは 消さない');
   const g = P.goneUnlocks(ev, []);
   check(g.length === 3 && g.map(x => x.theme + ':' + x.cost + ':' + x.id + ':' + x.name).join() === 'sakura:1000:back-theme:sakura:桜,xmas:4000:back-theme:xmas:クリスマス,halloween:0:back-theme:halloween:ハロウィン',
@@ -136,16 +136,16 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
   //   → 作って いた フィギュアを 外して、作った ときに 使った ポイントを 返す（1体に 1回 だけ＝back-fig:<フィギュアの id>）
   {
     const its = [{ id: 'fa', n: 2, cost: 22000 }, { id: 'fb', n: 6, cost: 32000 }, { id: 'fc', n: 1, cost: 22000 }, { id: 'fd', n: 6 }, { id: 'fe', n: 7, cost: 30000 }, { id: 'ff', n: 8, cost: 36000 }, null, { n: 2 }];
-    const gf = P.goneFigs(its, [P.giftEvent(T0)], []);
+    const gf = P.goneFigs(its, [P.giftEvent(T0, 1500)], []);
     check(P.figGone(2) && P.figGone(6) && P.figGone(7) && P.figGone('7') && [1, 3, 4, 5, 8, 0, 9].every(n => !P.figGone(n)) && Object.keys(P.FIG_GONE).join() === '2,6,7' && P.FIG_GONE[2].join() === 'ゴールデンスカラー,22000' && P.FIG_GONE[6].join() === '神様馬,32000' && P.FIG_GONE[7].join() === '幻の馬,30000',
       'なくした フィギュアの デザインは 番号 2（ゴールデンスカラー・22,000P）・番号 6（神様馬・32,000P）・番号 7（幻の馬・30,000P）だけ（番号 8 幻の馬＆神様馬は 残す）');
     check(gf.map(x => [x.id, x.n, x.name, x.cost, x.back, x.paid].join(':')).join() === 'fa:2:ゴールデンスカラー:22000:back-fig:fa:false,fb:6:神様馬:32000:back-fig:fb:false,fd:6:神様馬:32000:back-fig:fd:false,fe:7:幻の馬:30000:back-fig:fe:false',
       '返す ぶん：番号 2・6・7 の フィギュア だけ（使った P・書いて なければ 値段）。のこって いる デザイン（番号 1・8）は 返さない');
-    const gf2 = P.goneFigs(its, [P.giftEvent(T0), P.rowEvent({ id: 'back-fig:fa', reward: 22000, label: 'x' }, T0)], ['back-fig:fb']);
+    const gf2 = P.goneFigs(its, [P.giftEvent(T0, 1500), P.rowEvent({ id: 'back-fig:fa', reward: 22000, label: 'x' }, T0)], ['back-fig:fb']);
     check(gf2.map(x => x.id + ':' + x.paid).join() === 'fa:true,fb:true,fd:false,fe:false' && P.goneFigs([], [], []).length === 0 && P.goneFigs(null, null, null).length === 0,
       '返した もの（back-fig:<id>）・あずかりに 入って いる ものは もう 返さない（フィギュアは 外す ので 一覧には 出る＝paid）');
   }
-  check(P.goneUnlocks([], []).length === 0 && P.goneUnlocks(null).length === 0 && P.goneUnlocks([P.giftEvent(T0), un('gold', 2000)], []).length === 0
+  check(P.goneUnlocks([], []).length === 0 && P.goneUnlocks(null).length === 0 && P.goneUnlocks([P.giftEvent(T0, 1500), un('gold', 2000)], []).length === 0
     && P.goneUnlocks([un('sakura', 1000), un('sakura', 1000)], []).length === 1, '外した 壁紙を 解放して いなければ 何も 返さない・同じ 壁紙は 1回');
   const b0 = P.balance(ev, T0).total, back = P.rowEvent({ id: 'back-theme:xmas', reward: 4000, label: 'なくなった壁紙「クリスマス」のポイントを返した' }, T0);
   const b1 = P.balance(ev.concat([back]), T0);
@@ -181,7 +181,7 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
     && P.boardFits({ ready: true, when: 'miss' }, 'miss') && !P.boardFits({ ready: true, when: 'miss' }, 'hit') && P.boardFits({ ready: true, when: 'hit' }, 'hit') && !P.boardFits({ ready: true, when: 'hit' }, 'miss')
     && P.boardFits({ ready: true, when: 'big' }, 'hit') && !P.boardFits({ ready: true, when: 'big' }, 'miss') && P.boardSlot('miss') === 'miss' && ['hit', 'big', 'nd', 'sd', 'pc', 'sgd', 'spg', undefined].every(k => P.boardSlot(k) === 'hit'),
     '的中の 所（ハズレ いがいの 結果 ぜんぶ）・ハズレの 所に 使えるか：all＝両方・hit／big＝的中だけ（1〜9）・miss＝ハズレだけ（10〜14）・じゅんび中は どちらも だめ');
-  let ev = [P.giftEvent(T0)];
+  let ev = [P.giftEvent(T0, 1500)];
   check(!P.boardOwned(ev), '買う 前は 持って いない');
   const bt = P.txEvent(ev, tx('700', 'jp.tengel.app.boardcustom', '2026-11-06'));
   ev.push(bt);
@@ -232,7 +232,7 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
   const Pd = P.PRODUCTS['jp.tengel.app.wallpack1'];
   check(Pd && Pd.kind === 'unlock' && Pd.what === 'wallpack' && Pd.yen === 1500 && Pd.points === 0 && P.WALLPACK.product === 'jp.tengel.app.wallpack1' && P.WALLPACK.every === 5 && P.WALLPACK.n === 10, '商品：jp.tengel.app.wallpack1（買い切り・1,500円・5レースごと・10枚：第4.147版で 七夕を 外した）');
   check(P.PACKS.indexOf('jp.tengel.app.wallpack1') < 0 && P.SUBS.indexOf('jp.tengel.app.wallpack1') < 0, 'ポイントの パック・サブスクの 一覧には 入らない');
-  let ev = [P.giftEvent(T0)];
+  let ev = [P.giftEvent(T0, 1500)];
   check(!P.packOwned(ev) && !P.boardOwned(ev), '買う 前は 持って いない');
   const pt = P.txEvent(ev, tx('800', 'jp.tengel.app.wallpack1', '2026-11-10'));
   ev.push(pt);
@@ -261,7 +261,7 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
     '商品：jp.tengel.app.bundle1（買い切り・2,200円・what＝bundle・壁紙パックと 結果ボードカスタム）');
   check(P.PRODUCTS['jp.tengel.app.wallpack1'].yen === 1500 && P.PRODUCTS['jp.tengel.app.boardcustom'].yen === 1500 && P.PACKS.indexOf('jp.tengel.app.bundle1') < 0 && P.SUBS.indexOf('jp.tengel.app.bundle1') < 0,
     '単品は 1,500円ずつ（合わせて 3,000円 → お得パックは 2,200円）・ポイントの パック・サブスクの 一覧には 入らない');
-  let ev = [P.giftEvent(T0)];
+  let ev = [P.giftEvent(T0, 1500)];
   check(!P.bundleOwned(ev) && !P.packOwned(ev) && !P.boardOwned(ev) && P.bundleOffer(ev), '買う 前：どれも 持って いない → お得パックを 出す');
   const bt = P.txEvent(ev, tx('900', 'jp.tengel.app.bundle1', '2026-11-12'));
   ev.push(bt);
@@ -272,17 +272,17 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
   ev.push(rf);
   check(rf.id === 'refund-900' && rf.amount === 0 && !P.bundleOwned(ev) && !P.packOwned(ev) && !P.boardOwned(ev) && P.bundleOffer(ev), 'お得パックの 返金 → 2つとも 使えなくなる（お得パックを また 出す）');
   // 単品を 1つ 持って いれば お得パックは 出さない（残りの 単品だけ）・単品の 分は お得パックの 返金でも 残る
-  const ev2 = [P.giftEvent(T0), P.txEvent([], tx('800', 'jp.tengel.app.wallpack1', '2026-11-12'))];
+  const ev2 = [P.giftEvent(T0, 1500), P.txEvent([], tx('800', 'jp.tengel.app.wallpack1', '2026-11-12'))];
   check(P.packOwned(ev2) && !P.boardOwned(ev2) && !P.bundleOffer(ev2), '壁紙パックだけ 持って いる → お得パックは 出さない（結果ボードカスタムの 単品だけ）');
   const ev3 = ev2.concat([P.txEvent(ev2, tx('901', 'jp.tengel.app.bundle1', '2026-11-12'))]);
   const ev4 = ev3.concat([P.refundEvent(ev3, { id: '901', revokedAt: D('2026-11-13') })]);
   check(P.boardOwned(ev3) && P.packOwned(ev4) && !P.boardOwned(ev4) && !P.bundleOwned(ev4), 'お得パックを 返金しても、べつに 買った 壁紙パックは 残る');
   // ミッション：結果ボードカスタムの 解放の 数
   check(P.BOARD_MISSIONS.map(m => m.join(':')).join() === '3:500,6:800,9:1100,12:1400,15:1600', '結果ボードカスタムの ミッション：3こ 500P・6こ 800P・9こ 1,100P・12こ 1,400P・15こ 1,600P（第4.120版：16こ → 15こ）');
-  const bm = P.boardMissions(9, [P.giftEvent(T0)]);
+  const bm = P.boardMissions(9, [P.giftEvent(T0, 1500)]);
   check(bm.length === 5 && bm.map(m => m.id).join() === 'mission-board-3,mission-board-6,mission-board-9,mission-board-12,mission-board-15' && bm.map(m => m.claimable).join() === 'true,true,true,false,false'
     && bm[0].label === '結果ボードカスタム 3こ解放' && bm[0].reward === 500 && bm[2].done && !bm[3].done && bm[4].label === '結果ボードカスタム 15こ解放', '9こ 解放：3・6・9 が 受け取れる（12・15 は まだ）');
-  let evm = [P.giftEvent(T0)];
+  let evm = [P.giftEvent(T0, 1500)];
   const re = P.rowEvent(bm[0], T0); evm.push(re);
   const bal = P.balance(evm, T0), bm2 = P.boardMissions(9, evm);
   check(re.id === 'mission-board-3' && re.kind === 'mission' && re.bucket === 'free' && re.amount === 500 && re.what === '結果ボードカスタム 3こ解放' && bal.total === 2000 && bal.free === 2000 && bal.freeIn === 2000
@@ -300,7 +300,7 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
   check(P.WALLP_MISSIONS.map(m => m.join(':')).join() === '3:800,6:1200,9:1500,12:1800,15:2100,20:2500,25:2500,29:2500' && P.WALL_TOTAL === 29
     && P.WALLP_MISSIONS[P.WALLP_MISSIONS.length - 1][0] === P.WALL_TOTAL && P.WALLP_MISSIONS.reduce((a, m) => a + m[1], 0) === 14900,
     '壁紙の ミッション：3枚 800P・6枚 1,200P・9枚 1,500P・12枚 1,800P・15枚 2,100P・20・25・29枚 2,500P（29枚まで＝いま 解放できる 枚数・ぜんぶで 14,900P）');
-  const evw = [P.giftEvent(T0)].concat(['gold', 'news', 'ink'].map(t => ({ id: 'unlock-theme:' + t, kind: 'unlock', bucket: '', amount: -500, at: T0, use: { paid_sub: 0, paid_pack: 0, free: 500 }, what: 'theme:' + t })))
+  const evw = [P.giftEvent(T0, 1500)].concat(['gold', 'news', 'ink'].map(t => ({ id: 'unlock-theme:' + t, kind: 'unlock', bucket: '', amount: -500, at: T0, use: { paid_sub: 0, paid_pack: 0, free: 500 }, what: 'theme:' + t })))
     .concat(P.wallMissionEvents(P.wallMissions(5, [])[0], 'x', T0));
   check(P.wallCount(evw, 5) === 8 && P.wallCountAll(evw, 5) === 9 && P.wallCountAll(evw) === 4 && P.wallCountAll([], 0) === 0, '枚数：ポイントの 3枚 ＋ パックの 5枚 ＝ 8（帯の ミッション用）・帯の シルバーも 数えると 9（枚数の ミッション用）');
   const wm = P.wallpMissions(9, evw);
@@ -323,7 +323,7 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
 {
   const T0 = D('2026-11-10');
   check(P.FIG_MISSIONS.map(m => m.join(':')).join() === '1:5000,5:5000,8:10000', '思い出フィギュアの ミッション：1つ 5,000P・5つ 5,000P・8つ 10,000P');
-  let evf = [P.giftEvent(T0)];
+  let evf = [P.giftEvent(T0, 1500)];
   const f0 = P.figMissions(0, evf), f1 = P.figMissions(1, evf), f5 = P.figMissions(5, evf), f8 = P.figMissions(9, evf);
   check(f0.length === 3 && f0.every(m => !m.done && !m.claimable) && f0.map(m => m.id).join() === 'mission-fig-1,mission-fig-5,mission-fig-8'
     && f0.map(m => m.label).join() === '思い出フィギュアを1つ完成させる,思い出フィギュアを5つ完成させる,思い出フィギュアを8つ完成させる', '0こ：3つとも まだ（id は mission-fig-1・5・8・名前は「思い出フィギュアを○つ完成させる」）');
@@ -343,7 +343,7 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
   const T0 = D('2026-11-10'), T1 = D('2026-11-20'), T2 = D('2026-12-25');
   check(P.CAP === 99999 && P.room(0) === 99999 && P.room(1500) === 98499 && P.room(99999) === 0 && P.room(120000) === 0 && P.room(-5) === 99999, '上限は 99,999P・room＝あと 入る P（こえて いたら 0）');
   // 95,000P 持って いる 人に サブスク 9,200P が 届く → 4,999P だけ 入って 4,201P は あずかり
-  let ev = [P.giftEvent(T0), { id: 'g2', kind: 'gift', bucket: 'free', amount: 93500, at: T0 }];
+  let ev = [P.giftEvent(T0, 1500), { id: 'g2', kind: 'gift', bucket: 'free', amount: 93500, at: T0 }];
   check(P.balance(ev, T0).total === 95000, 'はじめ 95,000P');
   const se = P.txEvent(ev, tx('901', 'jp.tengel.app.sub9200', '2026-11-10'));
   const sp = P.holdSplit(se, P.room(P.balance(ev, T0).total));
@@ -395,13 +395,13 @@ check(P.findPaid([{ date: '2026-10-10', venue: '', r: 7, pid: 'p1' }, { date: '2
   const evr = ev.concat([rf]);
   check(P.balance(evr, T1).paid_sub === 0 && P.balance(evr, T1).lots.every(L => L.remain === 0), '返金の あと：その 取引の サブスクポイントは ぜんぶ 0（補充した lot も）');
   // 前の 版の 台帳（1つの 取引に できごと 1つ）は 今までどおり
-  let evo = [P.giftEvent(T0)]; evo.push(P.txEvent(evo, tx('950', 'jp.tengel.app.points1000', '2026-11-10'))); evo.push(P.txEvent(evo, tx('951', 'jp.tengel.app.sub2000', '2026-11-10')));
+  let evo = [P.giftEvent(T0, 1500)]; evo.push(P.txEvent(evo, tx('950', 'jp.tengel.app.points1000', '2026-11-10'))); evo.push(P.txEvent(evo, tx('951', 'jp.tengel.app.sub2000', '2026-11-10')));
   const rfo = P.refundEvent(evo, { id: '950' }), rfs = P.refundEvent(evo, { id: '951' });
   check(rfo.amount === -1000 && rfo.bucket === 'paid_pack' && rfs.amount === -2000 && P.balance(evo.concat([rfo, rfs]), T0).total === 1500, '前からの 返金（パック −1,000・サブスク −2,000）は 同じ');
   // トレーニングセンターの 当たり（獲得ポイント）も あずけられる・おかしな あずかりは 捨てる
   const ge = P.holdSplit(P.rowEvent({ id: 'tc-1', reward: 300, label: 'トレーニングセンターの お世話' }, T0), 100);
   check(ge.event.amount === 100 && ge.hold.kind === 'mission' && ge.hold.points === 200 && ge.hold.what === 'トレーニングセンターの お世話' && P.holdSum([ge.hold]).free === 200, '当たり 300P・あき 100P → 100P 入って 200P あずかり（獲得ポイント）');
-  const gr = P.holdRelease([P.giftEvent(T0)], [ge.hold], T0);
+  const gr = P.holdRelease([P.giftEvent(T0, 1500)], [ge.hold], T0);
   check(gr.moved === 200 && gr.events[1].kind === 'mission' && gr.events[1].bucket === 'free' && gr.events[1].id === 'rel-tc-1-1' && !gr.events[1].expires && P.balance(gr.events, T0).free === 1700, '補充すると 獲得ポイントに 入る（期限なし）');
   check(P.holdNorm([null, { id: '', kind: 'sub', points: 5 }, { id: 'a', kind: 'x', points: 5 }, { id: 'b', kind: 'sub', points: 0 }, { id: 'c', kind: 'sub', points: 12.4 }]).map(h => h.id + ':' + h.points).join() === 'c:12'
     && P.holdTotal(null) === 0 && P.holdNorm('x').length === 0, 'holdNorm：id・種類・P が そろった ものだけ（P は 整数に）');
@@ -541,6 +541,112 @@ console.log('読み直しの 見分け：読んだ 単勝の 表を くらべる
   // 相関の きょうかい：0.3 より 低く、同じ 数が 半分 より 少ない とき だけ 別
   const half = P.raceFp(B.map((h, i) => ({ no: h.no, tan: i < 6 ? A[i].tan : h.tan })));           // 半分は 前と 同じ 数
   check(P.fpShare(fa, half) === 0.5 && P.fpDiff(fa, half) === false, '同じ オッズが ちょうど 半分 → 同じ レースと 見る（半分 より 少ない とき だけ 別）');
+}
+// ---- 第4.212版：値段・おもちゃ・古い 履歴を まとめる（compact） ----
+{
+  check(P.COST.gift === 5000 && P.COST.read === 400 && P.COST.w5 === 400 && P.COST.slot === 23000 && P.COST.toy === 3000 && P.COST.type === 500,
+    '第4.212版の 値段：初回 5,000P・読み込み 400P・5連 1レース 400P・マザーデータ 23,000P・おもちゃ 3,000P（券種 500P は そのまま）');
+  const g = P.giftEvent(D('2026-11-23'));
+  check(g.amount === 5000 && g.id === 'gift-first' && P.balance([g], D('2026-11-23')).free === 5000, '初回プレゼントは 5,000P（無償の 枠）');
+  check(P.TOYS.length === 2 && P.TOYS[0][0] === 'drop' && P.TOYS[1][0] === 'cb' && P.toyName('cb') === 'TENGERカードバトル' && P.toyName('drop') === 'お世話チャレンジ' && P.toyName('x') === '',
+    'おもちゃ：お世話チャレンジ（drop）・TENGERカードバトル（cb）');
+  let ev = [g]; ev = P.unlock(ev, 'toy:cb', P.COST.toy, 'dev1', D('2026-11-23'));
+  check(!!ev && P.unlocked(ev, 'toy:cb') && !P.unlocked(ev, 'toy:drop') && P.balance(ev, D('2026-11-23')).total === 2000 && P.unlock(ev, 'toy:drop', P.COST.toy, 'dev1', D('2026-11-23')) === null,
+    'おもちゃの 解放：1つ 3,000P・足りなければ 解放 できない（5,000P では 1つ）');
+}
+{
+  // 決めた 流れ：3年より 前の できごと（読み込み・当たり・ログインボーナス・解放・ミッション・買った 取引・サブスク）を まとめる
+  const row = (id, n, at) => P.rowEvent({ id, reward: n, label: 'x' }, at);
+  const same = (a, b) => ['total', 'paid_sub', 'paid_pack', 'free', 'lost', 'paidIn', 'freeIn', 'nextExpire'].every(k => a[k] === b[k]) && ['paid_sub', 'paid_pack', 'free'].every(k => a.used[k] === b.used[k]);
+  let ev = [P.giftEvent(D('2023-01-01'), 1500)];
+  ev.push(P.txEvent(ev, tx('c1', 'jp.tengel.app.points4000', '2023-01-02')));
+  ev.push(P.txEvent(ev, tx('c2', 'jp.tengel.app.sub4400', '2023-01-03')));
+  ev = P.spend(ev, 400, '読み込み 1', 'dev1', D('2023-01-04'));
+  ev.push(row('login-2023-01-04', 500, D('2023-01-04'))); ev.push(row('login-2023-01-05', 500, D('2023-01-05')));
+  ev.push(row('tc-aaa-1', 10, D('2023-01-05'))); ev.push(row('tc-aaa-2', 300, D('2023-01-06'))); ev.push(row('tkp-x1', 7000, D('2023-01-06')));
+  ev = P.unlock(ev, 'type:複勝', P.COST.type, 'dev1', D('2023-01-07'));
+  ev = P.unlock(ev, 'theme:gold', 4500, 'dev1', D('2023-01-08'));
+  ev = P.unlock(ev, 'tctok:5:b1', 500, 'dev1', D('2023-01-09'));
+  ev = P.unlock(ev, 'toy:cb', 3000, 'dev1', D('2023-01-10'));
+  ev.push(P.rowEvent(P.missions(8, ev)[0], D('2023-02-01')));
+  ev = P.spend(ev, 800, '読み込み 2', 'dev1', D('2023-03-01'));
+  ev.push(P.txEvent(ev, tx('c3', 'jp.tengel.app.boardcustom', '2023-04-01')));
+  const nOld = ev.length;
+  // ここから 新しい できごと（まとめない）
+  ev.push(P.txEvent(ev, tx('c4', 'jp.tengel.app.sub2000', '2026-11-10')));
+  ev = P.spend(ev, 400, '読み込み 3', 'dev1', D('2026-11-12'));
+  ev.push(row('login-2026-11-12', 500, D('2026-11-12'))); ev.push(row('tc-bbb-1', 20, D('2026-11-13')));
+  P.stamp(ev);
+  const NOW = D('2026-11-23'), CUT = D('2023-11-23'), B0 = P.balance(ev, NOW);
+  const r = P.compact(ev, CUT), ce = r.events, c = P.carryOf(ce);
+  check(!!r && r.merged === nOld && ce.length < ev.length && !!c && c.kind === 'carry' && c.cnt === nOld && c.logins === 2 && r.dropped === 8, `3年より 前の ${nOld}行を 1行に：消したのは 読み込み 2・ログインボーナス 2・当たり 2・チケット 1・トークンの 購入 1（のこりは しるし）`);
+  check(same(P.balance(ce, NOW), B0) && same(P.balance(ce, D('2026-11-11')), P.balance(ev, D('2026-11-11'))) && same(P.balance(ce, D('2027-01-01')), P.balance(ev, D('2027-01-01'))), '残高・内わけ・期限・使った 合計は まとめる 前と 同じ（今・前・あと）');
+  check(P.unlocked(ce, 'type:複勝') && P.unlocked(ce, 'theme:gold') && P.unlocked(ce, 'toy:cb') && !P.unlocked(ce, 'toy:drop') && P.boardOwned(ce) && P.has(ce, 'gift-first') && P.has(ce, 'tx-c1') && P.has(ce, 'tx-c2') && P.has(ce, 'mission-rec-8')
+    && P.wallCount(ce, 0) === P.wallCount(ev, 0) && P.missions(8, ce)[0].claimed && P.txEvent(ce, tx('c1', 'jp.tengel.app.points4000', '2023-01-02')) === null,
+    '解放した もの・買い切り・受け取った ミッション・買った 取引の しるしは のこる（同じ 取引は 2回 足さない）');
+  check(!P.has(ce, 'login-2023-01-04') && !P.has(ce, 'tc-aaa-1') && !P.has(ce, 'tkp-x1') && !P.has(ce, 'unlock-tctok:5:b1') && !ce.some(e => e.kind === 'spend' && e.at < CUT) && P.has(ce, 'login-2026-11-12') && P.has(ce, 'tc-bbb-1')
+    && ce.filter(e => e.cd).every(e => e.at < CUT) && ce.filter(e => !e.cd && e.kind !== 'carry').every(e => e.at > CUT), '消える のは 古い 読み込み・当たり・ログインボーナス・チケット・トークンの 購入 だけ・新しい できごとは そのまま');
+  check(P.compact(ce, CUT) === null && P.compact(ev, D('2022-12-01')) === null && P.compact([], CUT) === null && P.compact(ev, 'x') === null, 'まとめる ものが ない ときは null（2回目・いちばん 古い ものより 前・空・おかしな 時刻）');
+  // まとめた あとも 同じ ように 使える：使う・解放・返金・サブスクの 期限
+  let a = ev.slice(), b = ce.slice();
+  a = P.spend(a, 400, '読み込み 4', 'dev1', NOW); b = P.spend(b, 400, '読み込み 4', 'dev1', NOW);
+  a = P.unlock(a, 'toy:drop', 3000, 'dev1', NOW); b = P.unlock(b, 'toy:drop', 3000, 'dev1', NOW);
+  check(!!a && !!b && same(P.balance(a, NOW), P.balance(b, NOW)) && P.unlocked(b, 'toy:drop'), 'まとめた あとの 読み込み・解放も 同じ 残高');
+  const rf = P.refundEvent(b, { id: 'c1', revokedAt: NOW }, NOW), rf0 = P.refundEvent(a, { id: 'c1', revokedAt: NOW }, NOW);
+  check(!!rf && !!rf0 && rf.amount === rf0.amount && rf.amount === -4000 && same(P.balance(a.concat([rf0]), NOW), P.balance(b.concat([rf]), NOW)), 'まとめた あとに 古い 取引が 返金に なっても 同じ（しるしに 金額が のこって いる）');
+  // 「全て」：今までを ぜんぶ まとめる（期限の 切れて いない サブスクの のこりは 持って いく）
+  const all = P.compact(ev, D('2026-11-23')), ae = all.events, ca = P.carryOf(ae);
+  check(all.merged === ev.length && ae.filter(e => !e.cd && e.kind !== 'carry').length === 0 && ca.lots.some(L => L.tx === 'c4') && ca.logins === 2 && ca.lastLogin === '2023-01-05' && P.has(ae, 'login-2026-11-12') && P.has(ae, 'tc-bbb-1') && same(P.balance(ae, NOW), B0)
+    && same(P.balance(ae, D('2026-12-20')), P.balance(ev, D('2026-12-20'))) && P.balance(ae, NOW).nextExpire === B0.nextExpire, '「全て」：ぜんぶ 1行に・サブスクの のこりと 期限は そのまま・期限が 切れた あとも 同じ（40日 より 新しい 当たり・ログインボーナスは しるしで のこる＝同じ id を もう 1回 足さない）');
+  const a2 = P.spend(ev.slice(), 1000, 'x', 'dev1', NOW), b2 = P.spend(ae.slice(), 1000, 'x', 'dev1', NOW);
+  check(same(P.balance(a2, NOW), P.balance(b2, NOW)) && P.balance(b2, NOW).paid_sub === B0.paid_sub - 1000, '「全て」の あとに 使う：サブスクの のこりから 先に 引く（前と 同じ）');
+  const again = P.compact(P.spend(ae.slice(), 400, 'y', 'dev1', D('2026-11-24')), D('2026-12-01'));
+  check(!!again && again.merged === 1 && P.carryOf(again.events).cnt === ev.length + 1 && P.carryOf(again.events).logins === 2 && again.events.filter(e => e.kind === 'carry').length === 1, 'もう 1回 まとめる：まとめの 行は 1つ・数は 足して いく');
+  const late = P.compact(again.events, D('2027-02-01')), cl = late && P.carryOf(late.events);
+  check(!!late && late.merged === 0 && late.dropped >= 3 && cl.logins === 3 && cl.lastLogin === '2026-11-12' && !P.has(late.events, 'login-2026-11-12') && !P.has(late.events, 'tc-bbb-1') && P.merged(late.events, 'login-2026-11-12') && P.merged(late.events, 'login-2023-01-04')
+    && !P.merged(late.events, 'login-2026-11-13') && !P.merged(late.events, 'tc-bbb-1') && !P.merged(ev, 'login-2023-01-04') && same(P.balance(late.events, D('2027-02-02')), P.balance(P.spend(ev.slice(), 400, 'y', 'dev1', D('2026-11-24')), D('2027-02-02'))),
+    '40日 たったら しるしも 消す：ログインボーナスは「いちばん 新しい 日付 まで 受け取った」と おぼえる（残高は 同じ）');
+  { let m = again.events.slice(); const n0 = m.length, t0 = P.balance(m, D('2026-11-24')).total; m = P.spend(m, 400, 'z', 'dev1', D('2026-11-24'));
+    check(m.length === n0 + 1 && P.balance(m, D('2026-11-24')).total === t0 - 400 && m.filter(e => e.kind === 'spend' && !e.cd).length === 1, 'まとめた あとの 同じ 日の 読み込み：しるし（まとめた 行に 入った「使った」）には 足さずに 新しい 1件（ちゃんと へる）'); }
+}
+{
+  // でたらめな 台帳で 総当たり：まとめる 前と 後で 残高が 同じ・その あとの 動きも 同じ
+  let seed = 20261123; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }, ri = n => Math.floor(rnd() * n);
+  const KEYS = ['total', 'paid_sub', 'paid_pack', 'free', 'lost', 'paidIn', 'freeIn', 'nextExpire'], eq = (x, y) => KEYS.every(k => x[k] === y[k]) && ['paid_sub', 'paid_pack', 'free'].every(k => x.used[k] === y.used[k]);
+  const packs = ['jp.tengel.app.points500', 'jp.tengel.app.points1000', 'jp.tengel.app.points4000'], subs = ['jp.tengel.app.sub2000', 'jp.tengel.app.sub4400'];
+  let bad = 0, runs = 0, cuts = 0, big = 0;
+  const step = (ev, t, k, id) => {      // 1つの 動き（同じ k・id なら 同じ 動き）→ 新しい 一覧
+    const at = new Date(t).toISOString();
+    if (k === 0) { const e = P.txEvent(ev, { id: 'p' + id, originalId: 'o' + id, product: packs[id % 3], date: at }); return e ? ev.concat([e]) : ev; }
+    if (k === 1) { const e = P.txEvent(ev, { id: 's' + id, originalId: 'o' + id, product: subs[id % 2], date: at }); return e ? ev.concat([e]) : ev; }
+    if (k === 2) return P.has(ev, 'tc-' + id) ? ev : ev.concat([P.rowEvent({ id: 'tc-' + id, reward: 10 + (id % 30) * 10, label: 't' }, at)]);
+    if (k === 3) { const d = 'login-' + at.slice(0, 10); return P.has(ev, d) || P.merged(ev, d) ? ev : ev.concat([P.rowEvent({ id: d, reward: 500, label: 'l' }, at)]); }
+    if (k === 4) return P.spend(ev, 400 * (1 + id % 3), 'r' + id, 'dv', at) || ev;
+    if (k === 5) return P.unlock(ev, ['type:複勝', 'theme:gold', 'toy:cb', 'toy:drop', 'slot:3', 'theme:ink'][id % 6], [500, 4500, 3000, 3000, 23000, 4500][id % 6], 'dv', at) || ev;
+    if (k === 6) return P.unlock(ev, 'tctok:1:' + id, 100, 'dv', at) || ev;
+    if (k === 7) { const tx0 = ev.filter(e => /^tx-[ps]/.test(e.id) && !P.has(ev, 'refund-' + e.tx)); if (!tx0.length) return ev; const o = tx0[id % tx0.length], e = P.refundEvent(ev, { id: o.tx, revokedAt: at }, at); return e ? ev.concat([e]) : ev; }
+    return ev;
+  };
+  const pick = () => { const x = rnd(); return x < 0.06 ? 0 : x < 0.10 ? 1 : x < 0.45 ? 2 : x < 0.60 ? 3 : x < 0.88 ? 4 : x < 0.94 ? 5 : x < 0.98 ? 6 : 7; };
+  for (let run = 0; run < 60; run++) {
+    let t = Date.UTC(2022, 0, 1, 3) + ri(200) * 86400000, ev = [P.giftEvent(t, 5000)]; const n = 40 + ri(260);
+    for (let i = 0; i < n; i++) { t += (1 + ri(6)) * 3600000 * (1 + ri(30)); ev = step(ev, t, pick(), run * 1000 + i); P.stamp(ev); }
+    const end = t; runs++; if (ev.length > 150) big++;
+    for (let q = 0; q < 6; q++) {
+      const cut = q === 5 ? end + 1000 : Date.UTC(2022, 0, 1) + rnd() * (end - Date.UTC(2022, 0, 1)), r = P.compact(ev, new Date(cut));
+      if (!r) continue; cuts++;
+      let a = ev.slice(), b = r.events.slice(), ok = true;
+      [end, end + 5 * 86400000, end + 40 * 86400000, cut].forEach(now => { if (now >= cut && !eq(P.balance(a, new Date(now)), P.balance(b, new Date(now)))) ok = false; });
+      const ids = ['type:複勝', 'theme:gold', 'toy:cb', 'toy:drop', 'slot:3', 'theme:ink'];
+      if (ids.some(k => P.unlocked(a, k) !== P.unlocked(b, k)) || P.wallCount(a, 0) !== P.wallCount(b, 0) || b.filter(e => e.kind === 'carry').length !== 1) ok = false;
+      let t2 = Math.max(end, cut);      // つづき：同じ 動きを 両方に
+      for (let i = 0; i < 40 && ok; i++) { t2 += (1 + ri(40)) * 3600000; const k = pick(), id = 900000 + run * 1000 + q * 50 + i; a = step(a, t2, k, id); b = step(b, t2, k, id); P.stamp(a); P.stamp(b); if (!eq(P.balance(a, new Date(t2)), P.balance(b, new Date(t2)))) ok = false; }
+      const r2 = P.compact(b, new Date(t2 + 1000));      // もう 1回 ぜんぶ まとめても 同じ
+      if (ok && r2 && !eq(P.balance(r2.events, new Date(t2 + 2000)), P.balance(a, new Date(t2 + 2000)))) ok = false;
+      if (!ok) bad++;
+    }
+  }
+  check(bad === 0 && runs === 60 && cuts > 200 && big > 10, `でたらめな 台帳 ${runs}こ・まとめ方 ${cuts}通り：残高・内わけ・期限・解放は まとめる 前と 同じ・その あとの 40手も 同じ（ちがい ${bad}）`);
 }
 console.log('結果：', fails.length ? fails.length + '件おかしい' : 'OK');
 process.exit(fails.length ? 1 : 0);

@@ -107,6 +107,13 @@ def login_close(pg):
     pg.wait_for_timeout(500); pg.locator('#lgOv [data-lg=ok]').click(); pg.wait_for_timeout(400); return True
 
 
+def nchk(pg):
+    """「新しい 版が あるか」を 見た しるし（tengel.nchk：開いて 少し あとに 書く）が 書かれる まで 待つ。
+    第4.212版：ログインボーナスの 窓が 出る 時刻が 少し かわって、しるしが 書かれる 前に 名前を くらべて しまう ことが あった（はじめて 開いた ときと 消した あとで そろえて くらべる）"""
+    try: pg.wait_for_function("() => localStorage.getItem('tengel.nchk') !== null", timeout=10000)
+    except Exception: pass
+
+
 # いまの ようす（財布・記録・設定・マザーデータの 名前・着せ替え・チケット・保存場所の 鍵・開いた ときの 画面・「戻す？」の 窓）
 STATE = """async () => {
   const W = window.TengelWallet, L = window.TengelLocal, K = window.TengelKisekae, R = window.TengelReset, g = document.getElementById('gate');
@@ -172,18 +179,18 @@ try:
         print('■ 使った 後の 形を 作る（テスト版）')
         boot(pg, APP, 10000); s0 = pg.evaluate(STATE)
         check(s0['first'] and s0['total'] == 10000 and s0['ev'] == ['gift-first', 'gift-test'] and s0['did'] is None and s0['hasReset'] and s0['bets'] == 0 and 'gift-first' in N.markers,
-              f'初めて 開いた：「始める」の 画面・10,000P（初回 1,500P＋テスト版 8,500P）・キーチェーンに 初回の 印・リセットは まだ 動いて いない（{s0["ev"]}）')
+              f'初めて 開いた：「始める」の 画面・10,000P（初回 5,000P＋テスト版 5,000P：第4.212版）・キーチェーンに 初回の 印・リセットは まだ 動いて いない（{s0["ev"]}）')
         gate(pg); l0 = login_close(pg)
-        F0 = pg.evaluate(FORMVALS); K0 = pg.evaluate("() => Object.keys(localStorage).sort()")      # はじめて 開いた ときの 判定タブの 入力・端末の おぼえの 名前（消した あとと くらべる）
+        nchk(pg); F0 = pg.evaluate(FORMVALS); K0 = pg.evaluate("() => Object.keys(localStorage).sort()")      # はじめて 開いた ときの 判定タブの 入力・端末の おぼえの 名前（消した あとと くらべる）
         pg.evaluate(SEED); pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(300)
         pg.locator('#setTest [data-test=pts]').click(); pg.wait_for_timeout(500)
         N.markers['granted-sub'] = '["tx-1"]'; N.items = [{'id': 'x1', 'at': 1, 'title': 't', 'body': 'b'}]
         pg.wait_for_timeout(2600)      # 自動バックアップ（保存の 1.5秒 あと）
         s1 = pg.evaluate(STATE); bk1 = json.loads(N.backup) if N.backup else {}
-        check(l0 and s1['total'] == 20200 and s1['bets'] == 2 and s1['notify'] is False and s1['names'].get('2') == '試しの データ' and s1['tickets'] == 2 and 'tengel.gateSeen' in s1['ls'] and 'tengel.login' in s1['ls'] and s1['ss'] == ['seeded']
-              and len(bk1.get('bets') or []) == 2, f'使った 形：20,200P（＋ログインボーナス 200P・テストの 10,000P）・記録 2件・設定・マザーデータの 名前・チケット 2枚・自動バックアップに 記録 2件（{s1["ls"]}）')
-        boot(pg, APP, 20200); s2 = pg.evaluate(STATE)
-        check(not s2['first'] and s2['total'] == 20200 and s2['bets'] == 2 and s2['did'] is None and not s2['restore'], '開き直しても そのまま（リセットは 押した とき だけ）・開いた ときの 画面は 短い 形')
+        check(l0 and s1['total'] == 20500 and s1['bets'] == 2 and s1['notify'] is False and s1['names'].get('2') == '試しの データ' and s1['tickets'] == 2 and 'tengel.gateSeen' in s1['ls'] and 'tengel.login' in s1['ls'] and s1['ss'] == ['seeded']
+              and len(bk1.get('bets') or []) == 2, f'使った 形：20,500P（＋ログインボーナス 500P・テストの 10,000P）・記録 2件・設定・マザーデータの 名前・チケット 2枚・自動バックアップに 記録 2件（{s1["ls"]}）')
+        boot(pg, APP, 20500); s2 = pg.evaluate(STATE)
+        check(not s2['first'] and s2['total'] == 20500 and s2['bets'] == 2 and s2['did'] is None and not s2['restore'], '開き直しても そのまま（リセットは 押した とき だけ）・開いた ときの 画面は 短い 形')
         gate(pg); pg.wait_for_timeout(600)
 
         print('■ 設定の「テスト版の道具」：全部 リセット')
@@ -205,14 +212,14 @@ try:
               and cf['role'] == 'alertdialog' and cf['modal'] == 'true' and cf['label'] == 'twTitle' and cf['fam'] == cf['cardFam'],
               f'窓：画面の 真ん中（{cf["w"]:.0f}×{cf["h"]:.0f}・はみ出さない）・うしろ（下の タブ・右下の 丸い ボタン・上の 帯）は 押せない・字は カードと 同じ {cf["fam"]}')
         s3 = pg.evaluate(STATE)
-        check(s3['total'] == 20200 and s3['bets'] == 2 and 'tengel.wipe' not in s3['ls'] and s3['ss'] == ['seeded'] and not pg.locator('#wipeCover').count(), '1回目の ボタン だけでは 何も 消えない（印も 置かない）')
+        check(s3['total'] == 20500 and s3['bets'] == 2 and 'tengel.wipe' not in s3['ls'] and s3['ss'] == ['seeded'] and not pg.locator('#wipeCover').count(), '1回目の ボタン だけでは 何も 消えない（印も 置かない）')
         pg.locator('#testWipe [data-test=wipeno]').click(); pg.wait_for_timeout(300)
         s4 = pg.evaluate(STATE)
-        check(not pg.locator('#testWipe').count() and s4['total'] == 20200 and s4['bets'] == 2 and 'tengel.wipe' not in s4['ls'] and N.markers.get('granted-sub') == '["tx-1"]' and len(json.loads(N.backup)['bets']) == 2, '「やめる」：窓を 閉じる・何も 消えない')
+        check(not pg.locator('#testWipe').count() and s4['total'] == 20500 and s4['bets'] == 2 and 'tengel.wipe' not in s4['ls'] and N.markers.get('granted-sub') == '["tx-1"]' and len(json.loads(N.backup)['bets']) == 2, '「やめる」：窓を 閉じる・何も 消えない')
         # うしろ（窓の 外）を 押す＝やめる。ただし 窓が 出て すぐ（0.7秒）は とじない（つづけて 2回 押した ゆびで すぐ 消えない）
         pg.evaluate("() => { document.querySelector('#setTest [data-test=wipe]').click(); document.getElementById('testWipe').click(); }"); pg.wait_for_timeout(200); o1 = pg.locator('#testWipe').count()
         pg.wait_for_timeout(700); pg.mouse.click(195, 30); pg.wait_for_timeout(300); o2 = pg.locator('#testWipe').count(); s4b = pg.evaluate(STATE)
-        check(o1 == 1 and o2 == 0 and s4b['total'] == 20200 and s4b['bets'] == 2 and 'tengel.wipe' not in s4b['ls'], '窓の 外を 押す＝やめる（出て すぐの 0.7秒は 閉じない）・何も 消えない')
+        check(o1 == 1 and o2 == 0 and s4b['total'] == 20500 and s4b['bets'] == 2 and 'tengel.wipe' not in s4b['ls'], '窓の 外を 押す＝やめる（出て すぐの 0.7秒は 閉じない）・何も 消えない')
 
         print('■ 「リセット する」→ 開き直して 全部 消す')
         # つづけて 2回 押した ゆび（窓が 出て すぐ「リセット する」に 当たる）では 動かない：出て から 0.7秒は 受けない
@@ -238,26 +245,26 @@ try:
               f'開き直した ページが アプリへ 初めに 送る 4つ：印 2つを 消す → 自動バックアップを 空に → お知らせを 消す（番号 0・この 後に 普通の お願い {len(msgs) - 4}個）')
         check(bool(nt) and nt['txt'] == '🧪 全部 リセットしたよ' and nt['inside'] and nt['z'] and nt['pe'] == 'none', f'上に 小さな 札「🧪 全部 リセットしたよ」（開いた ときの 画面より 上・押す じゃまに ならない）{nt}')
         check(s5['first'] and s5['gate'] and s5['total'] == 10000 and s5['ev'] == ['gift-first', 'gift-test'] and s5['gift'] and s5['gift'] != gift0 and N.markers.get('gift-first') == s5['gift'] and 'granted-sub' not in N.markers,
-              f'初めて 入れた ときと 同じ：「始める」の 画面・ちょうど 10,000P（初回の 1,500P を もう一度 もらう＋テスト版 8,500P）・キーチェーンの 印は 新しい 日時・サブスクの 印は なし（{s5["ev"]}）')
+              f'初めて 入れた ときと 同じ：「始める」の 画面・ちょうど 10,000P（初回の 5,000P を もう一度 もらう＋テスト版 5,000P）・キーチェーンの 印は 新しい 日時・サブスクの 印は なし（{s5["ev"]}）')
         check(s5['bets'] == 0 and s5['notify'] is None and s5['names'].get('2') != '試しの データ' and s5['names'] == s0['names'] and s5['active'] == s0['active'] and s5['races'] == s0['races'] and s5['memOnly'] == '' and s5['dbs'] in (None, ['tengel3']),
               f'保存場所（IndexedDB）：記録 0件・設定は なし・マザーデータは 初めの 形（{s5["races"]}走・名前 {s5["names"]}）・保存場所は 普通に 開けて いる')
         check('tengel.wipe' not in s5['ls'] and not [k for k in s5['ls'] if k in ('tengel.gateSeen', 'tengel.login', 'tengel.tc', 'tengel.oshi', 'tengel.form', 'tengel.kisekae')] and s5['ss'] == [] and s5['tickets'] == 0 and s5['theme'] == 'default'
               and s5['login']['n'] == 0 and s5['login']['last'] == '', f'端末の 覚え（localStorage・sessionStorage）は 空（残り {s5["ls"]}）・印も 消えた・チケット 0枚・着せ替えは「いつもの」・ログインボーナスは まだ 0回')
         check(not s5['restore'] and N.items == [] and 'granted-sub' not in N.markers, '「前の記録が見つかったよ」は 出ない・待たせて いた お知らせは 消えた')
         gate(pg); l5 = login_close(pg)
-        F1 = pg.evaluate(FORMVALS); K1 = pg.evaluate("() => Object.keys(localStorage).sort()")
+        nchk(pg); F1 = pg.evaluate(FORMVALS); K1 = pg.evaluate("() => Object.keys(localStorage).sort()")
         check(s5['ls'] == s0['ls'] and K1 == K0 and F1 == F0 and len(F0) >= 20 and 'tengel.gateSeen' in K1 and 'tengel.login' in K1,
-              f'初めて 開いた ときと 見くらべて 同じ：端末の 覚えの 名前（「始める」の 前 {s5["ls"]}・あと {K1}）・判定タブの 入力の 中身（{len(F0)}個）')
+              f'初めて 開いた ときと 見くらべて 同じ：端末の 覚えの 名前（「始める」の 前 {s5["ls"]}・あと {K1}）・判定タブの 入力の 中身（{len(F0)}個）' + ('' if s5['ls'] == s0['ls'] and K1 == K0 and F1 == F0 else f' ※ちがい：前 {s0["ls"]}／{K0}・入力 {[x for x in zip(F0, F1) if x[0] != x[1]][:3]}'))
         pg.wait_for_timeout(2600); s6 = pg.evaluate(STATE); bk6 = json.loads(N.backup)
-        check(l5 and s6['total'] == 10200 and s6['ev'] == ['gift-first', 'gift-test', 'login'] and s6['login']['n'] == 1 and not s6['restore'] and bk6.get('bets') == [] and bk6.get('auto') is True and 'reset' not in bk6
-              and len((bk6.get('wallet') or {}).get('events') or []) == 3, f'「始める」の あと：ログインボーナスは 1日目から（+200P＝10,200P）・自動バックアップは 新しい 形（記録 0件・台帳 3件）に 書き直される')
+        check(l5 and s6['total'] == 10500 and s6['ev'] == ['gift-first', 'gift-test', 'login'] and s6['login']['n'] == 1 and not s6['restore'] and bk6.get('bets') == [] and bk6.get('auto') is True and 'reset' not in bk6
+              and len((bk6.get('wallet') or {}).get('events') or []) == 3, f'「始める」の あと：ログインボーナスは 1日目から（+500P＝10,500P）・自動バックアップは 新しい 形（記録 0件・台帳 3件）に 書き直される')
         check(not errs and not dialogs, f'エラーなし・confirm()／alert() の 窓は 出ない（{errs[:2]}{dialogs}）')
 
         print('■ 印は 1回 だけ／消した あとも 普通に 使える')
         pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(300); pg.locator('#setTest [data-test=pts]').click(); pg.wait_for_timeout(600)
         pg.evaluate("() => TengelLocal.putSetting('notify', false)"); pg.wait_for_timeout(300)
-        boot(pg, APP, 20200); s7 = pg.evaluate(STATE)
-        check(s7['did'] is None and not s7['first'] and s7['total'] == 20200 and s7['notify'] is False and s7['login']['n'] == 1 and not s7['restore'] and not pg.locator('#wipeNote').count(),
+        boot(pg, APP, 20500); s7 = pg.evaluate(STATE)
+        check(s7['did'] is None and not s7['first'] and s7['total'] == 20500 and s7['notify'] is False and s7['login']['n'] == 1 and not s7['restore'] and not pg.locator('#wipeNote').count(),
               f'次に 開いた とき：もう 消えない（リセットは 1回 だけ）・消した 後に 足した 10,000P と 設定は 残る（{s7["total"]:,}P）')
         gate(pg); pg.wait_for_timeout(500)
 
@@ -294,7 +301,7 @@ try:
         boot(pe, APP, 10000); gate(pe); login_close(pe); pe.evaluate(SEED); pe.wait_for_timeout(500)
         pe.evaluate("() => { localStorage.setItem('tengel.wipe', '1'); }"); boot(pe, APP, 10000)
         x = pe.evaluate(STATE); nx = pe.evaluate("() => { const n = document.getElementById('wipeNote'); return n ? n.textContent : null; }"); shot(pe, 'reset_error')
-        check(x['did']['db'] == 'error' and 'tengel.wipe' not in x['ls'] and x['bets'] == 2 and x['memOnly'] == '' and x['total'] == 10200 and nx == '保存場所を 消せなかったよ。もう一度「全部 リセット」を 押してね' and not ee,
+        check(x['did']['db'] == 'error' and 'tengel.wipe' not in x['ls'] and x['bets'] == 2 and x['memOnly'] == '' and x['total'] == 10500 and nx == '保存場所を 消せなかったよ。もう一度「全部 リセット」を 押してね' and not ee,
               f'印を 外す（開く たびに くり返さない）・上に「{nx}」・アプリは 普通に 開く（記録 {x["bets"]}件は 残って いる）{ee[:2]}')
         ctxe.close()
 
@@ -339,12 +346,12 @@ try:
         print('■ App Store版：消す しかけが ない')
         N2 = Native(); ctx2 = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, locale='ja-JP', timezone_id='Asia/Tokyo'); N2.attach(ctx2)
         p2 = ctx2.new_page(); e2 = []; p2.on('pageerror', lambda e: e2.append(str(e)))
-        boot(p2, STORE, 1500); gate(p2); login_close(p2); p2.evaluate(SEED); p2.wait_for_timeout(2400)
+        boot(p2, STORE, 5000); gate(p2); login_close(p2); p2.evaluate(SEED); p2.wait_for_timeout(2400)
         p2.evaluate("() => { localStorage.setItem('tengel.wipe', '1'); sessionStorage.setItem('tengel.wipe', '1'); }")
-        n_log = len(N2.log); boot(p2, STORE, 1700); t1 = p2.evaluate(STATE); p2.click('.tabbar button[data-tab=set]'); p2.wait_for_timeout(300); t2 = p2.evaluate(STATE)
-        check(not t1['hasReset'] and t1['did'] is None and t1['total'] == 1700 and t1['bets'] == 2 and t1['notify'] is False and t1['tickets'] == 2 and 'tengel.wipe' in t1['ls'] and 'tengel.gateSeen' in t1['ls'] and not t1['first']
+        n_log = len(N2.log); boot(p2, STORE, 5500); t1 = p2.evaluate(STATE); p2.click('.tabbar button[data-tab=set]'); p2.wait_for_timeout(300); t2 = p2.evaluate(STATE)
+        check(not t1['hasReset'] and t1['did'] is None and t1['total'] == 5500 and t1['bets'] == 2 and t1['notify'] is False and t1['tickets'] == 2 and 'tengel.wipe' in t1['ls'] and 'tengel.gateSeen' in t1['ls'] and not t1['first']
               and not [x for x in N2.log[n_log:] if x[0] == 0 or (x[1] == 'marker' and x[2].get('op') == 'del')] and len(json.loads(N2.backup)['bets']) == 2,
-              f'印を 置いて 開き直しても 何も 消えない（1,700P・記録 2件・設定・チケット そのまま・アプリへ 消す お願いも 出さない）')
+              f'印を 置いて 開き直しても 何も 消えない（5,500P・記録 2件・設定・チケット そのまま・アプリへ 消す お願いも 出さない）')
         check(not t2['card'] and t2['wipeBtn'] == 0 and not p2.locator('#testWipe').count() and not e2, '設定に「テスト版の道具」も「全部 リセット」も 出ない')
         ctx2.close(); b.close()
 finally:

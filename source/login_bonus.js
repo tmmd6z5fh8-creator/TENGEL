@@ -24,7 +24,9 @@
 (function () {
   'use strict';
   if (!window.__NATIVE) return;
-  var KEY = 'tengel.login', BONUS = [200, 300, 400, 500, 600, 1000, 1300], DAYS = BONUS.length, NAME = 'ログインボーナス';
+  // 第4.212版（まさちゃん 2026/11/23 10:12「③毎日ログインボーナスポイント変更 １週間単位 １日目、500P ２日目、500P ３日目、1000P ４日目、1000P ５日目、1500P ６日目、1500P ７日目、3000P」）：
+  //   200・300・400・500・600・1000・1300P（1週間 4,300P）→ 500・500・1000・1000・1500・1500・3000P（1週間 9,000P）。バトルコインは そのまま
+  var KEY = 'tengel.login', BONUS = [500, 500, 1000, 1000, 1500, 1500, 3000], DAYS = BONUS.length, NAME = 'ログインボーナス';
   var CBK = 'tengel.cbgift', CBDAY = 2, CB7 = 10;      // 第4.188版：バトルコイン（毎日 2枚・7日目は ＋10枚）
   function cbCoins(day) { return CBDAY + (day === DAYS - 1 ? CB7 : 0); }
   // その 日の バトルコインを ためる（同じ id は 1回 だけ）→ カードバトルに 知らせる
@@ -46,7 +48,11 @@
   function fromWallet() {
     var n = 0, last = '';
     try {
-      (wallet().events() || []).forEach(function (e) { var m = /^login-(\d{4}-\d\d-\d\d)$/.exec(String((e && e.id) || '')); if (m) { n++; if (m[1] > last) last = m[1]; } });
+      (wallet().events() || []).forEach(function (e) {
+        var m = /^login-(\d{4}-\d\d-\d\d)$/.exec(String((e && e.id) || '')); if (m) { n++; if (m[1] > last) last = m[1]; }
+        // 第4.212版：古い 履歴を まとめた 行（points.js の compact）に 入った ログインボーナスの 数と、その 中で いちばん 新しい 日付
+        if (e && e.kind === 'carry') { n += Math.max(0, Math.round(+e.logins || 0)); if (typeof e.lastLogin === 'string' && /^\d{4}-\d\d-\d\d$/.test(e.lastLogin) && e.lastLogin > last) last = e.lastLogin; }
+      });
     } catch (e) { /* なし */ }
     return { v: 1, n: n, last: last };
   }
@@ -64,7 +70,10 @@
   function check() {
     var w = wallet(); if (!w || busy) return Promise.resolve(-1);
     busy = true;
-    return Promise.resolve(w.ready).then(function () { return window.TengelClock ? window.TengelClock.sync() : null; }).then(function () {      // 第4.191版：アプリの 時計で たしかめて から
+    return Promise.resolve(w.ready).then(function () {      // 第4.191版：アプリの 時計で たしかめて から。第4.212版：はじめの たしかめ（インターネットの 時刻を 少し 待つ：ready）が すんで から
+      var c = window.TengelClock; if (!c) return null;
+      return Promise.resolve(c.ready).then(function () { return c.sync(); }, function () { return c.sync(); });
+    }).then(function () {
       var s = state(), t = today(s);
       if (s.last && t <= s.last) return -1;                                  // 今日は もう もらった／時計が もどって いる
       var day = s.n % DAYS;
@@ -158,6 +167,7 @@
   if (auto) {
     if (document.readyState === 'complete') boot(); else window.addEventListener('load', boot, { once: true });
     document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
+    document.addEventListener('tengel:clock', function (e) { if (e && e.detail && e.detail.how === 'net' && !document.hidden) whenClear(check); });      // 第4.212版：インターネットの 時刻で たしかめた（電源を 入れ直した あと など）→ 日が かわって いたら もらえる。アプリを 開いた ときの 画面が 出て いる あいだは 待つ（はじめて 開いた ときも「始める」の あとに もらう：前の 版と 同じ 順）
     setInterval(function () { if (!document.hidden) check(); }, 60000);
   }
   window.TengelLogin = { BONUS: BONUS.slice(), CB: BONUS.map(function (x, i) { return cbCoins(i); }), check: check, state: state, close: close, shown: function () { return shown; }, next: testNext };

@@ -24,6 +24,7 @@
 #   python3 test_cb_flash.py [場面の 名前,…]   （時間が かかる ので ふだんの テストとは 別に 動かす。コマは t5/cb_frames/<場面>/ に 残す）
 import os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
+from toys_for_test import open_toys      # 第4.212版：おもちゃ（TENGERカードバトル・お世話チャレンジ）を 0P で 解放した ことに する（テスト用）
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W); sys.path.insert(0, os.path.join(W, 'kisekae'))
 SRV = os.path.join(W, 'srv_cbf'); PORT = 8814; APP = f'http://localhost:{PORT}/APP/'
 ONLY = sys.argv[1].split(',') if len(sys.argv) > 1 else None
@@ -110,6 +111,7 @@ try:
             ctx.add_init_script(FAKE)
             pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
             pg.goto(APP); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(5200)
+            open_toys(pg, ('cb',))      # 第4.212版：TENGERカードバトルは おもちゃ（3,000P で 解放）→ ここでは 解放ずみに する
             pg.locator('#cbFab .fabi').click(); pg.wait_for_function("() => !!window.CBApp && !!document.querySelector('#cbOv.on')", timeout=30000); pg.wait_for_timeout(600)
             pg.evaluate("() => { CBApp._guard = 0; }")      # 聞く 窓が 出て すぐでも 押せる（うっかり 押し 防止は test_cb.py で 見る）
             print('■ ' + ['ふつう', '「演出を控えめにする」（動きを へらす）', 'プレイボード『白亜の宮殿』'][calm])
@@ -154,11 +156,12 @@ try:
                 tap_play(pg, '1'); settle(pg, 0.8)
                 seg('eff3_open', 6.0, lambda: pg.evaluate(OPP, {'t': 'set', 'k': 7}))      # オープン（勝ち！）→ 片付け →「ターン 2」
                 tap_play(pg, '2'); settle(pg, 0.8)
-                if want('end_win'): run(pg, 'end_win' + tag, 9.0, pre=lambda: pg.evaluate(OPP, {'t': 'set', 'k': 6}))      # 2ターン目：2 と 6 → 勝ち → 2勝 0敗・のこり 1ターン → 帯「決着！」→ 結果「あなたの 勝ち！」→ GET の 札が ぽんと 出る
+                if want('end_win'): run(pg, 'end_win' + tag, 9.0, pre=lambda: pg.evaluate(OPP, {'t': 'set', 'k': 6}))      # 2ターン目：2 と 6 → 勝ち → 2勝 0敗・のこり 1ターン → 帯「決着！」→ 結果「あなたの 勝ち！」（第4.212版：お世話トークンの GET の 札は 出ない）
                 else: pg.evaluate(OPP, {'t': 'set', 'k': 6}); settle(pg, 9.0)
                 v2 = pg.evaluate("() => { const v = CBApp._t.view, b = document.querySelector('#cbOv .cbend .cbget'); return v ? [v.phase, v.res, v.my.wins, v.op.wins, v.early, b ? b.querySelector('.n').textContent : null] : null; }")
                 # 第4.193版：GET の 札は 第4.192版の 漢字（＋1こ → ＋1個）に そろえた 文（test_cb.py と 同じ）・第4.202版：2勝 0敗で のこり 1ターン → 決着（2ターン目で おわり）
-                check(a3 == '3 の 効果を 使う？' and h2 == '12334' and v2 == ['end', 'win', 2, 0, 2, '＋1個 GET！'], f'2つ目の 対戦も 場面の とおり（聞く 窓「{a3}」・交換の あとの 手札 {h2}・2勝 0勝で 2ターン目に 決着・GET の 札）{v2}')
+                no_tok = pg.evaluate("() => { const e = document.querySelector('#cbOv .cbend'); return !!e && e.textContent.indexOf('お世話トークン') < 0; }")      # 第4.212版：勝った ときの お世話トークン（GET の 札）は なくした
+                check(a3 == '3 の 効果を 使う？' and h2 == '12334' and v2 == ['end', 'win', 2, 0, 2, None] and no_tok, f'2つ目の 対戦も 場面の とおり（聞く 窓「{a3}」・交換の あとの 手札 {h2}・2勝 0勝で 2ターン目に 決着・第4.212版：お世話トークンの GET の 札は 出ない）{v2}')
             # ---- 3つ目の 対戦（第4.178版）：本番の 形（5ターン・手札 7まい）・夜の フィールド（火の あかりの ゆれ）・逆転勝利（自分 → 相手）----
             settle(pg, 1.0)
             pg.evaluate("() => { if (CBApp._t.screen !== 'menu') CBApp._t.menu(); CBApp._rng = () => 0.1; CBApp._opt = { hands: [['1', '1', '1', '2', '3', '6', '7'], ['m', '2', '2', '2', '4', '5', '6']] }; }"); pg.wait_for_timeout(100)

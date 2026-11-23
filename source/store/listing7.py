@@ -10,11 +10,13 @@ WEB = LEGAL['web']
 EULA = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/'   # Appleの標準の利用規約（自分の規約を作ったら差しかえる）
 
 # ---- ポイントとApp内課金（まさちゃんの指定。値段は税抜で決めたもの → 表示は税込＝×1.1） ----
-GIFT = 1500
-USE = [('レースの判定（画像の読み取りから記録まで）', '1レース200P'), ('単勝5連勝', '5レースまとめて200P'),
-       ('Pカスタム：記録できる券種を増やす', '1つ500P'), ('自分だけのマザーデータを作る', '1つ15,000P'),
-       ('着せ替え（壁紙）の解放', '1枚1,000〜7,000P'), ('トレーニングセンターのお世話トークン', '1個100P'),
-       ('思い出フィギュア', '1体22,000P（幻の馬＆神様馬は36,000P）')]      # 第4.193版：アプリの 中の 値段と 同じ（points.js の COST・TOKEN_PACKS・fig_app.js の PRICE）
+GIFT = 5000
+READ = 400      # 1レースの 読み込み（points.js の COST.read・COST.w5）
+USE = [('レースの判定（画像の読み取りから記録まで）', '1レース400P'), ('単勝5連勝', '1レースごとに400P'),
+       ('Pカスタム：記録できる券種を増やす', '1つ500P'), ('自分だけのマザーデータを作る', '1つ23,000P'),
+       ('おもちゃの解放（お世話チャレンジ・TENGERカードバトル）', '1つ3,000P'),
+       ('着せ替え（壁紙）の解放', '1枚4,500〜9,500P'), ('トレーニングセンターのお世話トークン', '1個100P'),
+       ('思い出フィギュア', '1体22,000P（幻の馬＆神様馬は36,000P）')]      # 第4.212版：アプリの 中の 値段と 同じ（points.js の COST・TOKEN_PACKS・kisekae/build_kisekae.py の PRICE・fig_app.js の PRICE）
 PACKS = [  # 製品ID・参照名・表示名・説明・ポイント・税抜
     ('jp.tengel.app.points500', 'ポイント500', '500ポイント', 'レースの判定などに使える500P', 500, 160),
     ('jp.tengel.app.points1000', 'ポイント1000', '1,000ポイント', 'レースの判定などに使える1,000P', 1000, 320),
@@ -31,13 +33,13 @@ yen = lambda y: f'{y:,}円'
 
 NAME = 'テンゲル｜競馬予想・オッズ判定'
 SUBTITLE = 'スクショで即判定。買い目と収支を記録'
-PROMO = ('【初回ダウンロードで1500Pプレゼント】オッズ・距離・馬場のスクショを入れるだけで、レースを3つの層に判定。'
+PROMO = ('【初回ダウンロードで5000Pプレゼント】オッズ・距離・馬場のスクショを入れるだけで、レースを3つの層に判定。'
          '1着→2着のゾーンと馬番、3着まで一発で。単勝5連勝や収支の記録も、このアプリひとつで。')
 DESCRIPTION = f'''【スクショを入れるだけで、レースを判定！】
 オッズ・距離・馬場のスクショを選ぶだけで、レースの「荒れやすさ」を3つの層（A層＝堅・B層＝警戒・C層＝穴）に判定。推奨の買い目ゾーン（1着→2着と3着）と馬番、過去のデータでの参考的中率まで、一画面で見られる競馬の判定アプリです。
 
 ◆初回ダウンロードで{GIFT:,}Pプレゼント
-はじめてアプリを入れた方に{GIFT:,}ポイントをプレゼント。すぐに{GIFT // 200}レース分の判定を試せます。
+はじめてアプリを入れた方に{GIFT:,}ポイントをプレゼント。すぐに{GIFT // READ}レース分の判定を試せます。
 
 ◆できること
 ・画像の読み取り：出馬表（距離・馬場・出走頭数）、単勝・複勝オッズ、3連単オッズ（人気順）のスクショを選ぶと、入力欄に自動で入ります。読み取りは端末の中で行い、画像はどこにも送りません
@@ -54,8 +56,8 @@ DESCRIPTION = f'''【スクショを入れるだけで、レースを判定！�
 ・的中の演出と結果ボード：結果を記録すると、的中・デカ的中などの演出と、券種ごとの的中ボード（結果ボードカスタムは買い切り）
 ・レースの予約とお知らせ：買い目を予約すると、発走15分後に「結果を確認しよう！」のお知らせ
 ・ミッション・ログインボーナス：レースの記録や毎日のログインでポイントがもらえます
-・TENGERカードバトル：コンピュータや、近くの友達のiPhoneと対戦するカードゲーム（バトルコインは遊んでもらうもので、購入はできません）
-・トレーニングセンター：馬のお世話でポイントが当たるチャンス（お世話トークンはポイントで購入・当たりの確率はアプリの中に掲載）
+・TENGERカードバトル：コンピュータや、近くの友達のiPhoneと対戦するカードゲーム（ポイントで解放。バトルコインは遊んでもらうもので、購入はできません）
+・トレーニングセンター：馬のお世話でポイントが当たるチャンス（お世話トークンはポイントで購入・当たりの確率はアプリの中に掲載。お世話チャレンジはポイントで解放）
 ・思い出フィギュア：記録したレースを、ポイントで3Dのフィギュアにして飾れます
 
 ◆ポイントについて
@@ -84,10 +86,11 @@ DESCRIPTION = f'''【スクショを入れるだけで、レースを判定！�
 ・馬券は20歳になってから。20歳未満の方は、法律により馬券を購入できません
 ・競馬は無理のない範囲で楽しみましょう。のめり込みが心配なときは、ギャンブル依存症予防回復支援センター「サポートコール」0120-683-705（24時間・通話料無料）へ
 ・本アプリは個人が開発した非公式のアプリで、競馬の主催者・団体とは関係ありません
+・レースの記録は直近の3年分を残します。3年たった記録は、30日前からお知らせしたうえで自動で消えます（思い出のレースは残ります）
 ・画面の写真は架空のレースの例です
 
 ◆プライバシー
-記録・設定・マザーデータは、すべて端末の中に保存します。画像の読み取りも端末の中で行い、画像はどこにも送りません。お支払いはAppleが処理し、開発者がカードなどの情報を受け取ることはありません。広告・アクセス解析はありません。
+記録・設定・マザーデータは、すべて端末の中に保存します。画像の読み取りも端末の中で行い、画像はどこにも送りません。新しい版・新しいデータ・正しい時刻の確認のために通信しますが、記録や個人の情報は送りません。お支払いはAppleが処理し、開発者がカードなどの情報を受け取ることはありません。広告・アクセス解析はありません。
 
 ◆利用規約・プライバシーポリシー
 利用規約：''' + EULA + '''
@@ -104,25 +107,25 @@ REVIEW_NOTES = '''This app analyzes horse-racing odds that the user enters (or r
 No real-money gambling: no betting, no ticket purchase, no link to any betting service, no cash-out. Users only record their own results and spending. For adults (18+); the first-launch notice (confirmed with 「はじめる」) says betting is 20+ in Japan, play responsibly, nothing is sold, no profit is promised.
 
 Points (in-app currency, never convertible to money):
-- 1,500 on first launch. Judging a race or a 5-race pick: 200. Unlocks: record bet types 500, data slots 15,000, themes 1,000-7,000, care tokens 100 each, 3D memory figures 22,000/36,000. The built-in reference data shows percentages only.
-- Sold as consumable IAPs and monthly auto-renewable subscriptions (Settings > ポイント). Purchased points never expire; subscription points last 30 days. No free trial. Missions and a daily login bonus also give points.
-- Points, unlocks and records stay on the device (the app warns before buying that deleting the app erases them). Keychain markers stop the same gift being granted twice; a device-only Keychain ID and the system uptime stop date changes from re-granting bonuses.
+- 5,000 on first launch. Reading a race (5-race picks: per race): 400. Unlocks: record bet types 500, data slots 23,000, themes 4,500-9,500, the two mini games 3,000 each, care tokens 100 each, 3D memory figures 22,000/36,000. The built-in reference data shows percentages only.
+- Sold as consumable IAPs and monthly auto-renewable subscriptions (Settings > ポイント). Purchased points never expire; subscription points last 30 days. No free trial. Missions and a daily login bonus give points.
+- Points, unlocks and records stay on the device (the app warns before buying that deleting it erases them). Keychain markers stop the same gift being granted twice; a device-only Keychain ID, the system uptime and the Date header of an App Store lookup stop date changes from re-granting bonuses.
 - Non-consumables: 壁紙パック (1,500 yen, 10 themes), 結果ボードカスタム (1,500 yen, 15 board designs unlocked step by step as races are read), お得パック (2,200 yen, both; offered only while the user owns neither). 「購入を復元」 restores them.
 - Themes (Settings > 着せ替え): 30 cosmetic themes; 16 unlock with points, 3 reward owning 5/10/15 themes, 10 come with 壁紙パック.
 
 Reservations and results: after a judgment the user picks horses and taps 「買い目を予約」 (stored on the device only). A LOCAL notification ("結果を確認しよう！") comes 15 minutes after the start time (UNUserNotificationCenter, no server). The user enters the result and sees hit/miss per bet type with a short animation and board (never money). Flashing stays under 3 per second; effects can be reduced or turned off (Settings > 的中の演出, iOS Reduce Motion).
 
 Mini games (no real money):
-- TENGER Card Battle: vs the computer, or vs a nearby friend's iPhone directly over the local network (Network framework + Bonjour; the local network permission is asked only when a two-player room is used). Battle coins are earned by playing, missions and the login bonus; they cannot be bought. Card packs cost coins and show the odds (「出る 確率」).
-- Training Center (トレーニングセンター): care for virtual horses with care tokens bought with points; some cares grant points or tickets by chance, and the odds are shown before buying (「説明書を 見る（当たりの 確率）」).
-- 思い出フィギュア: a 3D figure booth for saved races (models are bundled; figures are unlocked with points).
+- TENGER Card Battle (3,000-point unlock): vs the computer, or vs a nearby friend's iPhone directly over the local network (Network framework + Bonjour; local network permission is asked only for a two-player room). Battle coins are earned by playing, missions and the login bonus; they cannot be bought. Card packs cost coins and show the odds (「出る 確率」).
+- Training Center (トレーニングセンター): care for virtual horses with care tokens bought with points; some cares grant points or tickets by chance, and the odds are shown before buying (「説明書を 見る（当たりの 確率）」). Its ball-drop game お世話チャレンジ needs a 3,000-point unlock.
+- 思い出フィギュア: a 3D figure booth for saved races (bundled models; unlocked with points).
 
 How to review (no account needed):
 1. 判定 tab > 「入力例を入れる」 shows a full judgment for a fictional race.
 2. 「オッズ画像から読み取る」 reads text in the user's screenshots on the device (Vision). Nothing leaves the device.
-3. Records work offline; backup, CSV export and a blank .xlsx template (no macros) use the iOS share sheet.
+3. Records work offline (ones older than 3 years are deleted after a 30-day in-app notice unless marked 思い出); backup, CSV export and a blank .xlsx template (no macros) use the iOS share sheet.
 4. Settings > データの更新 downloads updated past-race data (JSON only, no code) from our GitHub Pages site; Settings > アプリの更新 checks the App Store version. No user data is sent.
-5. Card Battle can be tried alone (vs computer); the two-player mode needs two iPhones on the same Wi-Fi.
+5. Card Battle (3,000-point unlock; the first-launch gift covers it) can be tried alone vs the computer; the two-player mode needs two iPhones on the same Wi-Fi.
 
 iPhone-only, portrait (iPad runs it in compatibility mode).'''
 

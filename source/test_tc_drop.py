@@ -9,6 +9,7 @@
 #   光の 点めつ（馬バレ 6色）は test_tc_drop_flash.py（コマを 写すので 時間が かかる：ふだんの テストとは 別）
 import json, os, re, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
+from toys_for_test import open_toys      # 第4.212版：おもちゃ（TENGERカードバトル・お世話チャレンジ）を 0P で 解放した ことに する（テスト用）
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 SRV = os.path.join(W, 'srv_tc'); PORT = 8812; APP = f'http://localhost:{PORT}/APP/'; TESTB = f'http://localhost:{PORT}/TEST/'
 SHOT = os.environ.get('SHOT')          # 画面を 写す フォルダ（見る 用）
@@ -71,8 +72,9 @@ def stage_click(pg, x, y):            # フィールドの 座標（1052×1657�
     pg.mouse.click(r[0] + x / 1052 * r[2], r[1] + y / 1657 * r[3])
 
 
-def open_tc(pg, url, wait_drop=True):
+def open_tc(pg, url, wait_drop=True, toy=True):
     pg.goto(url); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(600)
+    if toy: open_toys(pg, ('drop',))      # 第4.212版：お世話チャレンジは おもちゃ（3,000P で 解放）→ ここでは 解放ずみに する（解放の 窓は「■ App Store版：入口」で 本物の 流れを 見る）
     pg.evaluate("() => document.querySelectorAll('.tabbar button')[2].click()"); pg.wait_for_timeout(300)
     pg.locator('#tcFab').click()
     pg.wait_for_function("() => window.TCApp && TCApp.state && window.TCCare && TCCare.on && !document.querySelector('#tcOv .tcld')", timeout=90000); pg.wait_for_timeout(1000)
@@ -225,7 +227,7 @@ try:
 
             # ================= App Store版 =================
             print('■ App Store版：入口・台・色')
-            ctx, pg = page(); open_tc(pg, APP)
+            ctx, pg = page(); open_tc(pg, APP, toy=False)      # 第4.212版：まだ 解放して いない（下の「入口」で 解放する）
             T = pg.evaluate("() => ({ tone: TCDrop.TONE.slice(1), balls: TCDrop.BALLS, name: TCDrop.NAME.slice(1), test: typeof TCApp.test.drop === 'function' ? 1 : 0 })")
             inc = lambda k: all(T['tone'][i][k] < T['tone'][i + 1][k] for i in range(5))
             check(T['balls'] == 5 and T['name'] == ['青', '緑', '紫', '赤', '金', '虹', '激馬熱馬'] and all(inc(k) for k in ('R', 'a', 'dim', 'nt', 'tl', 'len', 'lock')),
@@ -250,7 +252,24 @@ try:
                   f'PUSH の 左下に 入口の 札（紙の 色 {px[0]:.0%}・金の ふち）が 出る・画面の 中に おさまる')
             shot(pg, 'dp_push')
             s0 = pg.evaluate(ST)
-            stage_click(pg, *G['dp']); pg.wait_for_function("() => TCDrop.isOpen()", timeout=8000); pg.wait_for_timeout(900)
+            # 第4.212版（まさちゃん 2026/11/23 10:12「⑤おもちゃを購入を追加 パチンコとテンゲルカードバトルとポイント解放型にして、3000Pで解放にする！」・答え「1つずつ 3,000P」）：
+            #   お世話チャレンジは「おもちゃ」。まだ 解放して いない：入口の 札は「🔒 解放 3,000P」・押すと 解放の 窓（台は 開かない）→「やめる」で PUSH の まま →「解放する」で 3,000P 使って 台が 開く
+            lk0 = pg.evaluate("() => ({ locked: TCApp._t.dropLocked(), has: TengelWallet.toy.has('drop'), total: TengelWallet.total(), lab: TCCare.S.dpLock })")
+            stage_click(pg, *G['dp']); pg.wait_for_selector('#toyOv', timeout=8000); pg.wait_for_timeout(250)
+            lk1 = pg.evaluate("""() => { const o = document.querySelector('#toyOv'), nb = o.querySelector('[data-toy=no]').getBoundingClientRect(), e = document.elementFromPoint(nb.left + nb.width / 2, nb.top + nb.height / 2), bx = o.querySelector('.toybox').getBoundingClientRect();
+              return { t: o.innerText.replace(/\\s+/g, ' '), btn: [...o.querySelectorAll('[data-toy]')].map(x => x.dataset.toy), open: TCDrop.isOpen(), push: !!(TCCare.S.push && TCCare.S.push.hideT == null), z: +getComputedStyle(o).zIndex, tcz: +getComputedStyle(document.querySelector('#tcOv')).zIndex,
+                top: !!e && o.contains(e), inside: bx.left >= 0 && bx.right <= innerWidth && bx.top >= 0 && bx.bottom <= innerHeight }; }""")
+            check(lk0 == {'locked': True, 'has': False, 'total': 5000, 'lab': 3000} and 'お世話チャレンジ' in lk1['t'] and '3,000Pで解放すると、ずっと遊べるよ' in lk1['t'] and '今 5,000P' in lk1['t'] and lk1['btn'] == ['go', 'no'] and not lk1['open'] and lk1['push'] and lk1['z'] > lk1['tcz'] and lk1['top'] and lk1['inside'],
+                  f'まだ 解放して いない：入口の 札に 値段（3,000P）・押すと 解放の 窓（トレーニングセンターの 上に 出る・台は 開かない・PUSH は そのまま）（{lk1["t"][:50]}…）')
+            shot(pg, 'dp_toy_ask')
+            pg.locator('#toyOv [data-toy=no]').click(); pg.wait_for_timeout(400)
+            lk2 = pg.evaluate("() => ({ ov: !!document.querySelector('#toyOv'), open: TCDrop.isOpen(), push: !!(TCCare.S.push && TCCare.S.push.hideT == null), total: TengelWallet.total(), stock: TCCare.S.stock, locked: TCApp._t.dropLocked() })")
+            check(lk2 == {'ov': False, 'open': False, 'push': True, 'total': 5000, 'stock': 12, 'locked': True}, f'「やめる」→ 何も 減らない・台は 開かない・PUSH の まま（PUSH の 抽選は 解放しなくても できる）（{lk2}）')
+            stage_click(pg, *G['dp']); pg.wait_for_selector('#toyOv', timeout=8000); pg.wait_for_timeout(250)
+            pg.locator('#toyOv [data-toy=go]').click(); pg.wait_for_function("() => TCDrop.isOpen()", timeout=8000); pg.wait_for_timeout(900)
+            lk3 = pg.evaluate("() => ({ ov: !!document.querySelector('#toyOv'), locked: TCApp._t.dropLocked(), total: TengelWallet.total(), ev: TengelWallet.events().filter(e => e.id === 'unlock-toy:drop').map(e => e.amount + ':' + e.what).join(), cb: TengelWallet.toy.has('cb'), pt: (document.querySelector('#tcOv .tcpt') || {}).textContent || '' })")
+            check(lk3['ov'] is False and lk3['locked'] is False and lk3['total'] == 2000 and lk3['ev'] == '-3000:toy:drop' and lk3['cb'] is False,
+                  f'「3,000Pを使って解放する」→ 5,000 → 2,000P・台帳に 1件・そのまま 台が 開く（TENGERカードバトルは べつ：まだ）（{lk3}）')
             i0 = pg.evaluate(INFO); s1 = pg.evaluate(ST)
             order = pg.evaluate("() => [...document.querySelector('#tcOv .tcst').children].map(e => e.className.split(' ')[0])")
             # 第4.177版：台は 1まいの 紙の まま（見え方は 前と 同じ）。動かない 所（幕 ＋ 台の 絵）は 重ねた 絵を 1回 だけ 作って、毎コマ そのまま 写す

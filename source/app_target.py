@@ -383,6 +383,22 @@ SAFE_INDEX = [
 ]
 
 
+# ---------- 第4.212版：値段・5連の 読み込み・記録を まとめて 消す（アプリ だけ） ----------
+#   src.html・pwa_shim.js は Web版と 同じ ファイル なので かえず、アプリを 作る ときに 置きかえる（いちばん あとに かける：前の 表で 言葉を そろえた あとの 文）。
+#   ・読み込み 200P → 400P・マザーデータの 枠 15,000P → 23,000P（画面の 文。値段 そのものは points.js の COST）
+#   ・5連の 予想の 読み込み：何レース目か（n）を わたす（points_ui.js の readCharge が 1レースごとに 数える）
+#   ・記録を まとめて 消す 窓口 TengelLocal.delBets（古い 台帳の リセット：old_reset.js。1回の 書きこみで 消して、画面には 1回 だけ 知らせる）
+V212_INDEX = [
+    ('読み込みの 200P は使うよ', '読み込みの 400P は使うよ', 2),
+    ('（15,000P）', '（23,000P）', 3),
+    ('w5: st.w5edit ? { date: st.w5.date } : null', 'w5: st.w5edit ? { date: st.w5.date, n: st.w5edit } : null', 1),
+    ('putBets: function (list) {',
+     "delBets: function (ids) { return ready.then(function () { var list = (ids || []).filter(function (id) { return mem.bets.has(id); }); if (!list.length) return 0; need(); "
+     "var t = idb.transaction('bets', 'readwrite'), s = t.objectStore('bets'); list.forEach(function (id) { s.delete(id); }); "
+     "return done(t).then(function () { list.forEach(function (id) { mem.bets.delete(id); }); notify('bets'); return list.length; }); }); },\n    putBets: function (list) {", 1),
+]
+
+
 def app_index(html):
     """App Store版の index.html：コメントを消して、名前を置きかえて、残っていないか確かめる"""
     html = strip_web_only(html)
@@ -390,6 +406,7 @@ def app_index(html):
     html = apply(html, INDEX, 'index.html')
     html = apply(html, KANJI_INDEX, 'index.html（漢字に そろえる）')
     html = apply(html, SAFE_INDEX, 'index.html（字と して 出す）')      # 第4.211版
+    html = apply(html, V212_INDEX, 'index.html（第4.212版：値段・5連・記録を まとめて 消す）')
     check_clean(html, 'index.html')
     return html
 

@@ -10,5 +10,7 @@
   "phone": "",
   "_phone": "電話番号。空のときは address と同じ書き方",
   "enacted": "2026年10月13日",
+  "revised": "2026年11月23日",
+  "_revised": "プライバシーポリシーを変えた日（第4.212版：時刻の確認・3年の自動リセットを足した）",
   "web": "https://tmmd6z5fh8-creator.github.io/TENGEL/legal/"
 }

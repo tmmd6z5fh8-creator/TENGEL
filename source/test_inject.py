@@ -7,6 +7,7 @@
 #   python3 test_inject.py   （App Store版〈TARGET=app〉を localhost で アプリ版と して 開く・絵と 音は なくて よい）
 import json, os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
+from toys_for_test import open_toys      # 第4.212版：おもちゃ（TENGERカードバトル・お世話チャレンジ）を 0P で 解放した ことに する（テスト用）
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 SRV = os.path.join(W, 'srv_inj'); PORT = 8829
 shutil.rmtree(SRV, ignore_errors=True); os.makedirs(SRV)
@@ -176,6 +177,7 @@ try:
             print(f'  ・{sel}: 押した {k}こ', flush=True)
         for nm, js in [('作戦会議', "() => window.TCPlanOpen && TCPlanOpen()"), ('カードバトル', "() => window.TengelCB && TengelCB.open()")]:
             pg.reload(); pg.wait_for_function("() => window.TengelWallet && TengelWallet.on", timeout=40000); pg.wait_for_timeout(800); gate(pg); pg.wait_for_timeout(600)
+            open_toys(pg, ('cb',))      # 第4.212版：TENGERカードバトルは おもちゃ（3,000P で 解放）→ 解放ずみに して 中を 回る（解放の 窓は 下で べつに 回る）
             try: pg.evaluate(js)
             except Exception as e: print('   ※', nm, str(e)[:120])
             pg.wait_for_timeout(2500); scan(pg, 'open ' + nm)

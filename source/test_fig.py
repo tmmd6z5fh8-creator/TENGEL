@@ -162,7 +162,7 @@ try:
         pg.evaluate("() => TengelWallet.grant('test-fig-pts', 400000, 'テスト')"); pg.wait_for_timeout(400)
         p0 = pg.evaluate(ALL)
         w0 = pg.evaluate("() => [TengelWallet.total(), TengelWallet.hold().free, TengelWallet.avail()]")
-        check(p0 == 401500 and w0 == [99999, 301501, 99999], f'テストの ポイント：台帳は 上限の 99,999P・残り 301,501P は 預かり（{w0}）')
+        check(p0 == 405000 and w0 == [99999, 305001, 99999], f'テストの ポイント：台帳は 上限の 99,999P・残り 305,001P は 預かり（{w0}）')      # 第4.212版：初回プレゼントが 1,500 → 5,000P（＋3,500）
         pg.locator('#recList [data-act=figmake]').click()
         pg.wait_for_function("() => window.FigApp && FigApp._t.mode === 'make'", timeout=30000); pg.wait_for_timeout(500)
         check(pg.locator('#fgOv .fgrace').count() == 2 and 'デザインは 5種類' in pg.locator('#fgOv .fgmk .lead').inner_text(), '1. 思い出のレースを 選ぶ（2つ・「デザインは 5種類」）')
@@ -213,7 +213,7 @@ try:
         sl = pg.evaluate("() => TengelWallet.fig.slots().slice(0, 8).map(Boolean)")
         cost = sum([22000] * 7 + [36000])
         wl = pg.evaluate("() => [TengelWallet.total(), TengelWallet.hold().total, TengelWallet.events().filter(e => e.from === 'hold').length]")
-        check(sl == [True] * 8 and pg.evaluate(ALL) == p0 - cost and wl[0] == 77999 and wl[1] == 133501 and wl[2] == 2 and wl[0] + wl[1] == 211500 and pg.evaluate("() => TengelWallet.fig.items().map(x => x.n).join()") == '1,3,4,5,8,1,3,4',
+        check(sl == [True] * 8 and pg.evaluate(ALL) == p0 - cost and wl[0] == 77999 and wl[1] == 137001 and wl[2] == 2 and wl[0] + wl[1] == 215000 and pg.evaluate("() => TengelWallet.fig.items().map(x => x.n).join()") == '1,3,4,5,8,1,3,4',
               f'8体 飾った・ポイントは 合計 −{cost:,}（{sl}）。台帳が 足りなく なった 2回は 預かりから 先に 補充してから 作れた（台帳 {wl[0]:,}P・預かり {wl[1]:,}P・補充 {wl[2]}回）')
         shot(pg, 'fig_booth1')
         print('■ 部屋（押すと 3D で 見る）')

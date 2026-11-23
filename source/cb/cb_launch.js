@@ -14,14 +14,39 @@
     if (!loading) loading = new Promise(function (ok, ng) { var s = document.createElement('script'); s.src = 'cb_bundle.js'; s.onload = function () { ok(); }; s.onerror = function () { loading = null; ng(new Error('load')); }; document.head.appendChild(s); });
     return loading;
   }
+  // 第4.212版（まさちゃん 2026/11/23 10:12「⑤おもちゃを購入を追加 パチンコとテンゲルカードバトルとポイント解放型にして、3000Pで解放にする！」・答え「1つずつ 3,000P」）：
+  //   TENGERカードバトルは「おもちゃ」（Pカスタムで 解放・3,000P：points.js の TOYS・COST.toy）。まだ 解放して いない ときは 丸い ボタンに 🔒・
+  //   押すと 解放の 窓（points_ui.js の TengelWallet.toy.ask：「3,000Pを使って解放する」「やめる」・足りない ときは「ポイントを買う」）→ 解放 できたら 開く
+  function toy() { var w = window.TengelWallet; return w && w.on && w.toy ? w.toy : null; }
+  function locked() { var t = toy(); return !!t && !t.has('cb'); }
+  function gate() {
+    var t = toy(); if (!t) return Promise.resolve(true);
+    return Promise.resolve(window.TengelWallet.ready).then(function () { return t.has('cb') ? true : t.ask('cb'); });
+  }
+  function paintLock() {
+    if (!fab) return;
+    if (!document.getElementById('cbLockCss')) {
+      var st = document.createElement('style'); st.id = 'cbLockCss';
+      st.textContent = '#cbFab.lock{position:relative}#cbFab.lock::before{content:"🔒";position:absolute;right:-1px;top:-5px;z-index:1;font-size:15px;line-height:1;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.6));pointer-events:none}';
+      document.head.appendChild(st);
+    }
+    var on = locked(); fab.classList.toggle('lock', on);
+    fab.setAttribute('aria-label', on ? 'TENGERカードバトル（おもちゃ：ポイントで 解放すると 遊べるよ）' : 'TENGERカードバトル（押すと 開くよ）');
+  }
   function open() {
     if (fab) fab.disabled = true;
-    return load().then(function () { return window.CBApp.open(); }).catch(function () { note('TENGERカードバトルを 読みこめなかったよ。もう一度 押してね'); }).then(function () { if (fab) fab.disabled = false; });
+    return gate().then(function (ok) {
+      if (!ok) return null;
+      return load().then(function () { return window.CBApp.open(); }).catch(function () { note('TENGERカードバトルを 読みこめなかったよ。もう一度 押してね'); });
+    }).catch(function () { /* 解放の 窓が 出せなかった：何も しない */ }).then(function () { if (fab) fab.disabled = false; paintLock(); });
   }
-  window.TengelCB = { open: open };
+  window.TengelCB = { open: open, locked: locked };
   function boot() {
     if (document.getElementById('cbFab') || !window.TengelFab) return;
     fab = window.TengelFab.add({ id: 'cbFab', order: 2, name: ['TENGER', 'カードバトル'], aria: 'TENGERカードバトル（押すと 開くよ）', img: 'cb_icon.webp', fb: ['バトル', '#0F3A1E', '#E2B33C', '#FFE6A0'], tap: open });
+    paintLock();
+    try { Promise.resolve(window.TengelWallet && window.TengelWallet.ready).then(paintLock, function () { }); } catch (e) { /* なし */ }
+    document.addEventListener('tengel:wallet', paintLock);      // 解放した（Pカスタムの カードから でも）→ 🔒 を 消す
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

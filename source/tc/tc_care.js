@@ -742,7 +742,7 @@ const TCCare = (() => {
         g.strokeStyle = '#e0a21f'; g.lineWidth = 4; g.strokeRect(-w / 2 + 3, -h / 2 + 3, w - 6, h - 6);
         if (dpIcon && dpIcon.naturalWidth) { const ih = h - 20, iw = ih * dpIcon.naturalWidth / dpIcon.naturalHeight; g.drawImage(dpIcon, -w / 2 + 12, -ih / 2, iw, ih); }
         label('お世話', 46, -44, 31, '#7a4520'); label('チャレンジ', 46, -6, 31, '#7a4520');
-        label('玉を 落とす', 46, 44, 24, '#c2362b');
+        { const lk = O.dropLock ? +O.dropLock() || 0 : 0; S.dpLock = lk; label(lk ? `🔒 解放 ${lk.toLocaleString('ja-JP')}P` : '玉を 落とす', 46, 44, lk ? 22 : 24, '#c2362b'); }      // 第4.212版：解放して いない（おもちゃ）ときは 値段
         g.restore();
       }
     }

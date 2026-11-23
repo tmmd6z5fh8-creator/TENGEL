@@ -9,6 +9,7 @@
 #   python3 test_tc_geki_flash.py [1,2,3]   （時間が かかる ので ふだんの テストとは 別に 動かす。コマは t5/gk_frames/<名前>/ に 残す）
 import functools, http.server, json, os, re, shutil, subprocess, sys, threading, time
 from playwright.sync_api import sync_playwright
+from toys_for_test import open_toys      # 第4.212版：おもちゃ（TENGERカードバトル・お世話チャレンジ）を 0P で 解放した ことに する（テスト用）
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 SRV = os.path.join(W, 'srv_tc'); PORT = 8815; APP = f'http://localhost:{PORT}/APP/'
 ONLY = [int(x) for x in sys.argv[1].split(',')] if len(sys.argv) > 1 else None
@@ -130,6 +131,7 @@ try:
         pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.clock.install()                                      # にせの 時計（ページを 開く 前に 入れる。まだ 止めない ＝ ふつうに 進む）
         pg.goto(APP); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(600)
+        open_toys(pg, ('drop',))      # 第4.212版：お世話チャレンジは おもちゃ（3,000P で 解放）→ 解放ずみに する
         pg.evaluate("() => document.querySelectorAll('.tabbar button')[2].click()"); pg.wait_for_timeout(300)
         pg.locator('#tcFab').click()
         pg.wait_for_function("() => window.TCApp && TCApp.state && window.TCCare && TCCare.on && !document.querySelector('#tcOv .tcld')", timeout=90000); pg.wait_for_timeout(1200)

@@ -4,7 +4,8 @@
 #       00:47「トレーニングセンターを一番上、カードバトルを思い出フィギュアの上にして」・01:15「この青四角下の空間気になる。大きさ調整して空間があかないようにして！」・
 #       01:16「カードバトルを、TENGERカードバトルに名前変えて！」）・丸の 大きさは「壁紙&ボード着せ替え」の すぐ 下 〜 下の タブの すぐ 上 を ぴったり うめる 大きさ（66px まで）・
 #       たての 短い 画面（2列 × 2段）でも 右上の ボタンに 重ならない
-#   ・メニュー・あそび方・コンピュータと 対戦（出す・オープン・捨て札・効果 6つ を 画面で）・結果と ごほうび（お世話トークン 1こ・5連勝で 3こ・25こ まで）・とちゅうで やめる
+#   ・メニュー・あそび方・コンピュータと 対戦（出す・オープン・捨て札・効果 6つ を 画面で）・結果と ごほうび（第4.212版：お世話トークンは なし・コンピュータに 3連勝 ごとに 調査隊切符 1枚・5連勝 ごとに 2枚・15枚 まで）・とちゅうで やめる
+#   第4.212版（まさちゃん 2026/11/23）：TENGERカードバトルは「おもちゃ」（3,000P で 解放）。丸い ボタンに 🔒 → 押すと 解放の 窓（やめる／解放する）→ 解放したら 開く
 #   ・部屋：2つの 画面（ホスト・ゲスト）を、にせの アプリ側（Room.swift の かわり：BroadcastChannel）で つないで さいごまで 対戦・もう 1回・やめる
 #   python3 test_cb.py   （ios/cb_assets/ が ある とき だけ 絵の 確かめ。ない とき（CI）も 画面は 動く）
 #   第4.177版（まさちゃん 2026/11/16 10:40）：②説明の 字が 2行に なっても 画面が 上下しない・③5 の 効果は どの ターンでも（使った あとの 手札が のこりの ターンの 数より 少なく ならない とき）・
@@ -34,6 +35,7 @@
 #   ルールの 計算は test_cb_rules.js・対戦の 進め役は test_cb_net.js（node）
 import json, os, re, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
+from toys_for_test import open_toys      # 第4.212版：おもちゃを 0P で 解放した ことに する（テスト用）
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W); sys.path.insert(0, os.path.join(W, 'kisekae'))
 SRV = os.path.join(W, 'srv_cb'); PORT = 8813; APP = f'http://localhost:{PORT}/APP/'
 SHOT = os.environ.get('SHOT')          # 画面を 写す フォルダ（見る 用）
@@ -125,6 +127,7 @@ def idle(pg, t=30000):
 
 
 def open_cb(pg, speed=0.03):
+    open_toys(pg, ('cb',))      # 第4.212版：おもちゃ（3,000P で 解放）。ここでは 0P で 解放した ことに する（解放の 窓は「■ 入口」で 本物の 流れを 見る）
     pg.locator('#cbFab .fabi').click()
     pg.wait_for_function("() => !!window.CBApp && !!document.querySelector('#cbOv.on')", timeout=30000)
     pg.evaluate(f"() => {{ CBApp._t.speed({speed}); CBApp._guard = 0; }}"); pg.wait_for_timeout(150)      # _guard 0：聞く 窓が 出て すぐでも 押せる（テストは すぐ 押す。うっかり 押し 防止は 下で 別に 見る）
@@ -274,12 +277,42 @@ try:
         check(sizes['iPhone 12/13 mini'] < sizes['iPhone 12〜14'] < sizes['iPhone Plus／Pro Max'] and 50 <= sizes['iPhone 12〜14'] <= 62, f'丸の 大きさは 画面が 大きい ほど 大きい {sizes}')
         pg2.evaluate("() => { document.documentElement.style.removeProperty('--bottom-inset'); document.getElementById('cbSp').remove(); }")
 
+        print('■ おもちゃの 解放（第4.212版：TENGERカードバトルは 3,000P で 解放）')
+        tl0 = pg.evaluate("() => ({ lock: document.querySelector('#cbFab').classList.contains('lock'), cbl: TengelCB.locked(), al: document.querySelector('#cbFab').getAttribute('aria-label'), mark: getComputedStyle(document.querySelector('#cbFab'), '::before').content, total: TengelWallet.total(), has: TengelWallet.toy.has('cb') })")
+        check(tl0['lock'] and tl0['cbl'] and not tl0['has'] and '🔒' in tl0['mark'] and 'おもちゃ' in tl0['al'] and tl0['total'] == 5000, f'まだ 解放して いない：丸い ボタンに 🔒・読み上げは「おもちゃ：ポイントで 解放すると 遊べるよ」（{tl0}）')
+        pg.locator('#cbFab .fabi').click(); pg.wait_for_selector('#toyOv', timeout=10000); pg.wait_for_timeout(200)
+        td0 = pg.evaluate("() => { const o = document.querySelector('#toyOv'), b = o.querySelector('.toybox').getBoundingClientRect(), cs = getComputedStyle(o); return { t: o.innerText.replace(/\\s+/g, ' '), role: o.getAttribute('role'), modal: o.getAttribute('aria-modal'), z: +cs.zIndex, inside: b.left >= 0 && b.right <= innerWidth && b.top >= 0 && b.bottom <= innerHeight, btn: [...o.querySelectorAll('[data-toy]')].map(x => x.dataset.toy + ':' + x.textContent), cb: !!document.querySelector('#cbOv.on'), bundle: !!window.CBApp, fab: document.querySelector('#cbFab').disabled }; }")
+        check('TENGERカードバトル' in td0['t'] and '3,000Pで解放すると、ずっと遊べるよ' in td0['t'] and '今 5,000P' in td0['t'] and td0['btn'] == ['go:3,000Pを使って解放する', 'no:やめる'] and td0['role'] == 'dialog' and td0['modal'] == 'true' and td0['z'] >= 100 and td0['inside'] and not td0['cb'] and not td0['bundle'],
+              f'押すと 解放の 窓（「3,000Pを使って解放する」「やめる」・今の ポイント）：カードバトルは まだ 開かない・本体も まだ 読まない（{td0["t"][:60]}…・{td0["btn"]}）')
+        shot(pg, 'cb_toy_ask')
+        pg.locator('#toyOv [data-toy=no]').click(); pg.wait_for_timeout(300)
+        td1 = pg.evaluate("() => ({ ov: !!document.querySelector('#toyOv'), cb: !!document.querySelector('#cbOv.on'), total: TengelWallet.total(), has: TengelWallet.toy.has('cb'), fab: document.querySelector('#cbFab').disabled, lock: document.querySelector('#cbFab').classList.contains('lock') })")
+        check(td1 == {'ov': False, 'cb': False, 'total': 5000, 'has': False, 'fab': False, 'lock': True}, f'「やめる」→ 何も 減らない・開かない・ボタンは また 押せる（{td1}）')
+        # 足りない とき（2,900P）：「ポイントを買う」
+        pg.evaluate("async () => { const s = TengelWallet.snapshot(); s.events.push({ id: 'spend-test-cb', kind: 'spend', bucket: '', amount: -2100, at: new Date().toISOString(), what: 'テスト', device: 'test', use: { paid_sub: 0, paid_pack: 0, free: 2100 }, n: 99 }); await TengelWallet.restore(s); }"); pg.wait_for_timeout(200)
+        pg.locator('#cbFab .fabi').click(); pg.wait_for_selector('#toyOv', timeout=10000); pg.wait_for_timeout(200)
+        td2 = pg.evaluate("() => { const o = document.querySelector('#toyOv'); return { t: o.innerText.replace(/\\s+/g, ' '), btn: [...o.querySelectorAll('[data-toy]')].map(x => x.dataset.toy + ':' + x.textContent), total: TengelWallet.total() }; }")
+        check(td2['total'] == 2900 and 'ポイントが足りないよ（あと 100P）' in td2['t'] and td2['btn'] == ['buy:ポイントを買う', 'no:やめる'], f'足りない とき（今 2,900P）：「ポイントが足りないよ（あと 100P）」・「ポイントを買う」「やめる」（解放する は 出ない）（{td2["btn"]}）')
+        pg.locator('#toyOv [data-toy=buy]').click(); pg.wait_for_timeout(600)
+        td3 = pg.evaluate("() => ({ toy: !!document.querySelector('#toyOv'), pt: !!document.querySelector('#ptOv'), z: document.querySelector('#ptOv') ? +getComputedStyle(document.querySelector('#ptOv')).zIndex : 0, cb: !!document.querySelector('#cbOv.on') })")
+        check(not td3['toy'] and td3['pt'] and td3['z'] >= 100 and not td3['cb'], f'「ポイントを買う」→ 解放の 窓は 閉じて ポイントの 窓が 出る（{td3}）')
+        pg.evaluate("() => TengelWallet.closePoints()"); pg.wait_for_timeout(300)
+        pg.evaluate("async () => { const s = TengelWallet.snapshot(); s.events = s.events.filter(e => e.id !== 'spend-test-cb'); await TengelWallet.restore(s); }"); pg.wait_for_timeout(200)
+        # 解放する（本物の 流れ：5,000 → 2,000P）→ そのまま 開く
+        pg.locator('#cbFab .fabi').click(); pg.wait_for_selector('#toyOv', timeout=10000); pg.wait_for_timeout(200)
+        pg.locator('#toyOv [data-toy=go]').click()
+        pg.wait_for_function("() => !!window.CBApp && !!document.querySelector('#cbOv.on')", timeout=30000); pg.wait_for_timeout(300)
+        td4 = pg.evaluate("() => ({ toy: !!document.querySelector('#toyOv'), total: TengelWallet.total(), has: TengelWallet.toy.has('cb'), drop: TengelWallet.toy.has('drop'), lock: document.querySelector('#cbFab').classList.contains('lock'), ev: TengelWallet.events().filter(e => e.id === 'unlock-toy:cb').map(e => e.amount + ':' + e.what).join(), al: document.querySelector('#cbFab').getAttribute('aria-label'), scr: CBApp._t.screen })")
+        check(td4 == {'toy': False, 'total': 2000, 'has': True, 'drop': False, 'lock': False, 'ev': '-3000:toy:cb', 'al': 'TENGERカードバトル（押すと 開くよ）', 'scr': 'menu'},
+              f'「3,000Pを使って解放する」→ 5,000 → 2,000P・台帳に 1件・🔒 が 消えて、そのまま カードバトルが 開く（お世話チャレンジは べつ：まだ）（{td4}）')
+        pg.evaluate("() => CBApp.close()"); pg.wait_for_timeout(300)
+
         print('■ メニュー・遊び方')
         open_cb(pg)
         m = pg.evaluate("() => ({ scr: CBApp._t.screen, h1: document.querySelector('#cbOv .cbmenu h1').textContent, rec: document.querySelector('#cbOv .cbmenu .rec').textContent, btn: [...document.querySelectorAll('#cbOv .cbmenu .cbb')].map(b => b.textContent.replace(/\\s+/g, ' ').trim()), dis: [...document.querySelectorAll('#cbOv .cbmenu .cbb')].map(b => b.disabled), lg: document.querySelector('#cbOv .cbmenu .lg').naturalWidth })")
         check(m['scr'] == 'menu' and m['h1'].replace('\n', '').replace(' ', '') == 'TENGERカードバトル' and m['btn'] == ['← 戻る', 'コンピュータと 対戦', '⚔️ 決戦調査今月 0／12 討伐・次は レベル1', '部屋を 作る友達と 対戦', '部屋に 入る友達と 対戦', '遊び方', '設定BGM・効果音', '🎯ミッション今月 0／23 達成', 'デザインカスタムカードパック・裏・ボード'] and not any(m['dis']),
               f'メニュー：コンピュータと 対戦・⚔️ 決戦調査（第4.196版）・部屋を 作る・部屋に 入る・遊び方・設定（第4.178版）・ミッション（第4.183版）・デザインカスタム（第4.182版）（{m["btn"]}）')
-        check(m['rec'] == '勝つと お世話トークン 1個・5連勝 ごとに 3個' and (not HAVE or m['lg'] == 720), f'ご褒美の 説明（{m["rec"]}）')
+        check(m['rec'] == 'コンピュータに 3連勝 ごとに 調査隊切符 1枚・5連勝 ごとに 調査隊切符 2枚' and 'お世話トークン' not in m['rec'] and (not HAVE or m['lg'] == 720), f'ご褒美の 説明（第4.212版：お世話トークンは なし・連勝で 調査隊切符）（{m["rec"]}）')
         cl = pg.evaluate("() => { const e = document.querySelector('#cbOv .cbmenu .cbcoinl'); return e ? [e.textContent, e.querySelectorAll('img[src=\"cb_coin.webp\"]').length] : null; }")
         check(cl == ['バトルコイン 0枚コンピュータに 勝つと 2枚（3連勝 ＋6枚・5連勝 ＋10枚）毎日の ログインボーナスで 2枚（7日目 ＋10枚）', 1], f'メニューに バトルコイン（第4.179版：コインの 絵・持って いる 数・もらい方 → 第4.188版：勝つと 2枚・3連勝 ＋6・5連勝 ＋10・ログインボーナス）（{cl}）')
         check(reqs.count('cb_bundle.js') == 1 and 'cb_bundle.js' not in reqs[:reqs.index('cb_bundle.js')][:5], '本体（cb_bundle.js）は ボタンを 押した ときに 1回 だけ 読む')
@@ -297,7 +330,7 @@ try:
                 'セットした カードは 裏（4 の 効果で 見せる か、オープン するまで）', '相手の 手札は いつも 本当の 手札の まま 見えるよ（見た カードを 相手が セットしたら、その カードは 相手の 手札から 消える）',
                 '7 の 効果（4枚 公開）で 強さ 逆転したら、その 対戦が 終わる まで 7 が 一番 強くて、1 が 一番 弱い', '6：2枚 見せて 手札を 見る',
                 '効果を 使うと、ボードの 真ん中に 誰が・どの 効果を・何を するかの 札が 出るよ（タップすると すぐ 次へ）', '5：2枚 捨てて 山札から セット', '残りの ターンの 数より 少なく ならない とき', '最後の ターンは、手札が 1枚 あれば 使える', '4：見せて 強制交換',
-                '3：3枚 見せて 手札を 交換', '裏の カードから 自分で 選んだ 1枚（何が 来るかは わからない）を 交換できるよ。もう 見た カード（表）は 選べないよ', '5・4 の 効果は、2人とも セットした 後の「効果タイム」で、1つずつ 使うか 選ぶよ', '手札に 3 が 3枚 あれば、セットの 前に その 3枚を 相手に 見せて', '神様馬：勝ったら 手札を 見る', '幻の馬：勝ったら 手札を 交換', 'お世話トークン 1個', '5連勝 ごとに 3個', '部屋番号（4桁）', '近くに いる 友達',
+                '3：3枚 見せて 手札を 交換', '裏の カードから 自分で 選んだ 1枚（何が 来るかは わからない）を 交換できるよ。もう 見た カード（表）は 選べないよ', '5・4 の 効果は、2人とも セットした 後の「効果タイム」で、1つずつ 使うか 選ぶよ', '手札に 3 が 3枚 あれば、セットの 前に その 3枚を 相手に 見せて', '神様馬：勝ったら 手札を 見る', '幻の馬：勝ったら 手札を 交換', 'コンピュータに 勝つと バトルコイン', 'コンピュータに 3連勝 ごとに 調査隊切符 1枚・5連勝 ごとに 調査隊切符 2枚（15連勝 など、両方の ときは 両方。調査隊切符は 15枚 まで）', '部屋番号（4桁）', '近くに いる 友達',
                 'もう 見た カード だけの ときは 使えないよ', 'まだ 見て いない カードが ある とき', 'メニューの「デザインカスタム」で、カードの 表・裏と プレイボードの デザインを 変えられるよ', 'コンピュータと 対戦する ときは、コンピュータの カード（裏・表）も あなたが 選んだ デザインに なるよ',
                 '友達と 対戦する ときは、あなたの カードは あなたの デザイン・友達の カードは 友達が 選んだ デザインで 出るよ（山札は あなたの 裏）',
                 'メニューの「ミッション」：コンピュータに 連続勝利・友達バトルで 連続勝利・決戦調査（決戦宝石を 残して 連続勝利）で バトルコインが もらえるよ', '決戦調査（1つの 調査で 数える・宝石を ○個 以上 残せば 達成）：宝石 3個 残し 3連勝 30枚・5連勝 60枚・6連勝 90枚／宝石 4個 残し 3連勝 50枚・5連勝 100枚・6連勝 150枚／宝石 5個 残し 3連勝 90枚・5連勝 180枚・6連勝 270枚', 'コンピュータ：3連勝 30枚・5連勝 60枚・6連勝 90枚・7連勝 120枚・8連勝 150枚・9連勝 200枚・10連勝 300枚',
@@ -308,7 +341,7 @@ try:
                 '1・2 の「逆転勝利」は、めくった 後に 使うか 選ぶよ', '逆転勝利：1 が 3枚 あれば 神様馬・幻の馬に、2 が 3枚 あれば 1 に 勝てる',
                 'バトルコイン', 'コンピュータに 勝つと 2枚 もらえるよ', '連勝すると ボーナス：3連勝 ごとに ＋6枚・5連勝 ごとに ＋10枚（15連勝 など、両方の ときは 両方）', '毎日の ログインボーナスでも 2枚（7日目は ＋10枚）もらえるよ', '買う ことは できない', '参加コイン', '参加コインの 2倍 まで', '同じ 数の 参加コインを 持って いないと 入れない', 'テンゲルから 獲得コインを プレゼントで もらえる',
                 '同点は 参加コインが 戻る', '途中で やめると、参加コインは 戻らない']
-        miss = [x for x in need if x not in ht] + [x for x in ('エフェクト', '光や 動きの 演出') if x in ht]      # 第4.185版：エフェクトの 設定は なくした
+        miss = [x for x in need if x not in ht] + [x for x in ('エフェクト', '光や 動きの 演出', 'お世話トークン') if x in ht]      # 第4.185版：エフェクトの 設定は なくした・第4.212版：お世話トークンの ごほうびも なくした
         check(pg.evaluate("() => CBApp._t.screen") == 'help' and not miss and pg.locator('#cbOv .cbhelp .ord img').count() == 9 and pg.locator('#cbOv .cbhelp .ef').count() == 9 and pg.locator('#cbOv .cbhelp .ef img[src="cb_s3.webp"]').count() == 1 and pg.locator('#cbOv .cbhelp .ef img[src="cb_s1.webp"]').count() == 1 and pg.locator('#cbOv .cbhelp .ef img[src="cb_s2.webp"]').count() == 1,
               f'遊び方：勝負の 仕方（手札 7枚・5ターン）・1ターンの 流れ（セット → 効果タイム → オープン）・強さ（9枚の 並び）・効果 9つ（第4.178版：1・2 の 逆転勝利を 足した）・どの 効果も 自分で 選べる・捨て札・ご褒美・設定・部屋（ない 文 {miss}）')
         shot(pg, 'cb_help')
@@ -1145,9 +1178,11 @@ try:
         check(pg.evaluate(V)['my']['wins'] == 1 and pg.evaluate(HAND) == '12345' and pg.evaluate(V)['last'] == {'turn': 1, 'c': ['2', '1'], 'res': 'win', 'rev': True, 'd4': False}, '2 の 効果を 使う → 1 に 勝ち（手札 7枚の 形）')
         pg.set_viewport_size({'width': 390, 'height': 844}); pg.wait_for_timeout(250)
 
-        print('■ 結果と ご褒美（お世話トークン）')
-        # 勝ち：+1（はじめの 5こ → 6こ）
-        pg.evaluate("() => { localStorage.removeItem('tengel.cb'); CBApp._t.load(); }")
+        print('■ 結果と ご褒美（バトルコイン・連勝で 調査隊切符）')
+        # 第4.212版（まさちゃん 2026/11/23 10:19「テンゲルカードバトルの勝利時のお世話トークンは廃止しなかったっけ？」→ 廃止・「通常CPUバトルの場合、3連勝で調査隊切符1枚、5連勝で調査隊切符2枚を追加して！」）：
+        #   勝っても お世話トークンは もらえない（トレーニングセンターの 部品も 読まない）・コンピュータに 3連勝 ごとに 調査隊切符 1枚・5連勝 ごとに 2枚（15枚 まで）。ここは 切符 10枚から
+        QTN = "() => CBApp._t.qt.n"
+        pg.evaluate("() => { localStorage.removeItem('tengel.cb'); CBApp._t.load(); const T = CBApp._t; T.state.qt = { n: 10, at: Date.now() }; T.save(); }")
         def win_game():
             start(pg, 'k1236', '23567'); play(pg, 'k'); opp(pg, {'t': 'set', 'k': 6}); pg.locator('#cbOv [data-cb=kskip]').click(); idle(pg)      # 2ターン目の はじめ：神様馬の 効果は 使わない
             play(pg, '1'); opp(pg, {'t': 'set', 'k': 7}); play(pg, '2'); opp(pg, {'t': 'set', 'k': 3})
@@ -1157,52 +1192,56 @@ try:
         e = win_game(); t1 = pg.evaluate(TC)
         check(e['st']['coin'] == 2 and 'バトルコイン ＋2枚（今 2枚）' in e['g'] and pg.locator('#cbOv .cbend .gift .cbcl img[src="cb_coin.webp"]').count() == 1 and 'ボーナス！＋' not in e['g'] and pg.locator('#cbOv .cbend .gift .cbsbn').count() == 0,
               f'バトルコイン：コンピュータに 勝つと 2枚（今 {e["st"]["coin"]}枚）（第4.179版 → 第4.188版：1枚 → 2枚）・1連勝では ボーナスの 札は 出ない')
-        check(e['h'] == 'あなたの 勝ち！' and e['sc'].startswith('3 － 0') and t1 == (t0 or 5) + 1 and e['st']['streak'] == 1 and e['st']['win'] == 1 and e['st']['owe'] == 0 and 'お世話トークン＋1個 GET！' in e['g'] and f'今 {t1}こ／25個' in e['g'] and '1連勝中！' in e['g'] and 'あと 4勝で 3個' in e['g'],
-              f'勝ち：お世話トークン ＋1（{t0 or 5} → {t1}）・1連勝中・あと 4勝で 3こ（{e["g"]}）')
-        # 第4.177版（まさちゃん「お世話トークンGETした場合、最後の画面でGETしたことをもう少し分かりやすく」）：金の わくの 札「お世話トークン ＋1こ GET！」
-        pg.wait_for_timeout(750)      # 札が ふくらみ おわる まで（0.55秒）
-        gb = pg.evaluate("""() => { const m = document.querySelector('#cbOv .cbmod.cbend'), b = m.querySelector('.cbget'), R = e => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)]; };
-          if (!b) return null; const n = b.querySelector('.n'), cs = getComputedStyle(b), g = m.querySelector('.gift');
-          return { box: R(b), n: n.textContent, nfs: parseFloat(getComputedStyle(n).fontSize), small: b.querySelector('small').textContent, tk: b.querySelector('.tk').textContent, bw: parseFloat(cs.borderTopWidth), bc: cs.borderTopColor, label: b.getAttribute('aria-label'),
-            gift: R(g), minh: parseFloat(getComputedStyle(g).minHeight), h3: R(m.querySelector('h3')), again: R(m.querySelector('[data-cb=again]')), vh: innerHeight, vw: innerWidth, anim: cs.animationName, iter: cs.animationIterationCount }; }""")
-        check(gb and gb['n'] == '＋1個 GET！' and gb['small'] == 'お世話トークン' and gb['label'] == 'お世話トークン 1個 GET' and gb['nfs'] >= 30 and gb['bw'] >= 2 and gb['box'][2] - gb['box'][0] >= 250 and gb['box'][3] - gb['box'][1] >= 70
-              and gb['box'][0] >= 0 and gb['box'][2] <= gb['vw'] and gb['box'][1] >= gb['gift'][1] and gb['box'][3] <= gb['gift'][3],
-              f'最後の 画面に「お世話トークン ＋1個 GET！」の 金の わくの 札（字 {gb and gb["nfs"]}px・幅 {gb and gb["box"][2] - gb["box"][0]}px・高さ {gb and gb["box"][3] - gb["box"][1]}px）')
-        check(gb and gb['gift'][3] - gb['gift'][1] == gb['minh'] and gb['minh'] >= 150 and gb['again'][3] <= gb['vh'] and gb['h3'][1] >= 0 and gb['anim'] == 'cbget' and gb['iter'] == '1',
-              f'札の 場所は 先に あけて ある（高さ {gb and gb["minh"]}px：札が 出ても「あなたの 勝ち！」や ボタンは 動かない）・札は 1回 ふくらんで 止まる（点めつ しない）')
+        check(e['h'] == 'あなたの 勝ち！' and e['sc'].startswith('3 － 0') and t1 == t0 and e['st']['streak'] == 1 and e['st']['win'] == 1 and 'owe' not in e['st'] and 'お世話トークン' not in e['g'] and 'GET' not in e['g'] and '1連勝中！' in e['g'] and 'あと 2勝で 調査隊切符' in e['g']
+              and pg.evaluate(QTN) == 10 and pg.locator('#cbOv .cbend .cbget').count() == 0 and pg.locator('#cbOv .cbend .cbtkl').count() == 0 and pg.evaluate("() => !window.TCApp && typeof window.TCGift === 'undefined'") and 'tc_bundle.js' not in reqs,
+              f'勝ち：お世話トークンは もらえない（第4.212版で 廃止：{t0} の まま・トレーニングセンターの 部品も 読まない・わたす 口 TCGift も ない）・1連勝中・あと 2勝で 調査隊切符（切符は 10枚の まま）（{e["g"]}）')
+        # 第4.212版：お世話トークンの 札（第4.177版の「お世話トークン ＋1こ GET！」）は もう 出ない。ごほうびの 場所は 先に あけて ある（高さ 204px：札が 出ても まわりは 動かない）
+        pg.wait_for_timeout(300)
+        gb = pg.evaluate("""() => { const m = document.querySelector('#cbOv .cbmod.cbend'), g = m.querySelector('.gift'), R = e => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)]; };
+          return { gift: R(g), minh: parseFloat(getComputedStyle(g).minHeight), h3: R(m.querySelector('h3')), again: R(m.querySelector('[data-cb=again]')), vh: innerHeight, get: m.querySelectorAll('.cbget').length, css: /#cbOv \\.cbget\\{/.test([...document.querySelectorAll('style')].map(x => x.textContent).join('')) }; }""")
+        check(gb['get'] == 0 and not gb['css'] and gb['gift'][3] - gb['gift'][1] == gb['minh'] == 204 and gb['again'][3] <= gb['vh'] and gb['h3'][1] >= 0,
+              f'最後の 画面に お世話トークンの 札は 出ない（形の きまりも ない）・ごほうびの 場所は 先に あけて ある（高さ {gb["minh"]}px：「あなたの 勝ち！」や ボタンは 動かない）')
         shot(pg, 'cb_end_win')
         pg.locator('#cbOv .cbend [data-cb=again]').click(); idle(pg)
         check(pg.evaluate(V)['turn'] == 1 and pg.evaluate(V)['phase'] == 'set' and not pg.evaluate("() => CBApp._t.ended") and pg.evaluate(PIPS) == '0-0' and not pg.evaluate("() => CBApp._t.modOn()"), '「もう 1回」→ すぐ 新しい 対戦（印も 0 に）')
         e = win_game()
-        check(e['st']['coin'] == 4 and 'バトルコイン ＋2枚（今 4枚）' in e['g'] and pg.locator('#cbOv .cbend .gift .cbsbn').count() == 0, f'2連勝目：バトルコイン ＋2枚（今 {e["st"]["coin"]}枚）・ボーナスの 札は 出ない')
+        check(e['st']['coin'] == 4 and 'バトルコイン ＋2枚（今 4枚）' in e['g'] and pg.locator('#cbOv .cbend .gift .cbsbn').count() == 0 and 'あと 1勝で 調査隊切符' in e['g'] and pg.evaluate(QTN) == 10, f'2連勝目：バトルコイン ＋2枚（今 {e["st"]["coin"]}枚）・ボーナスの 札は 出ない・あと 1勝で 調査隊切符')
         e = win_game()
         sb3 = pg.evaluate("""() => { const g = document.querySelector('#cbOv .cbend .gift'), b = g.querySelector('.cbsbn'), m = g.querySelector('.cbmsn'), R = e => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)]; };
-          return b ? { t: b.textContent, lab: b.getAttribute('aria-label'), img: b.querySelectorAll('img[src="cb_coin.webp"]').length, anim: getComputedStyle(b).animationName + '/' + getComputedStyle(b).animationIterationCount, box: R(b), mbox: m ? R(m) : null,
+          return b ? { t: b.textContent, lab: b.getAttribute('aria-label'), img: b.querySelectorAll('img[src="cb_coin.webp"]').length, tki: b.querySelectorAll('img.tki').length, tkl: (g.querySelector('.cbtkl') || {}).textContent || '', tklbox: g.querySelector('.cbtkl') ? R(g.querySelector('.cbtkl')) : null, anim: getComputedStyle(b).animationName + '/' + getComputedStyle(b).animationIterationCount, box: R(b), mbox: m ? R(m) : null,
             gift: R(g), h: Math.round(g.getBoundingClientRect().height), minh: parseFloat(getComputedStyle(g).minHeight), vw: innerWidth, bc: getComputedStyle(b).borderTopColor } : null; }""")
-        check(e['st']['coin'] == 42 and e['st']['streak'] == 3 and 'バトルコイン ＋2枚（今 42枚）' in e['g'] and '🎯ミッション達成！3連勝＋30枚' in e['g'] and sb3 and sb3['t'] == '🔥3連勝 ボーナス！＋6枚' and sb3['lab'] == '3連勝 ボーナス バトルコイン 6枚' and sb3['img'] == 1
+        check(e['st']['coin'] == 42 and e['st']['streak'] == 3 and 'バトルコイン ＋2枚（今 42枚）' in e['g'] and '🎯ミッション達成！3連勝＋30枚' in e['g'] and sb3 and sb3['t'] == '🔥3連勝 ボーナス！＋6枚＋1枚' and sb3['lab'] == '3連勝 ボーナス バトルコイン 6枚 調査隊切符 1枚' and sb3['img'] == 1 and sb3['tki'] == 1
               and sb3['anim'] == 'cbget/1' and sb3['mbox'] and sb3['box'][3] <= sb3['mbox'][1] and sb3['box'][0] >= 0 and sb3['box'][2] <= sb3['vw'] and sb3['h'] == sb3['minh'],
-              f'3連勝目（第4.188版）：いつもの 2枚 ＋ 3連勝 ボーナス 6枚 ＋ ミッション 30枚（2＋2＋8＋30＝{e["st"]["coin"]}枚）・最後の 画面に「🔥 3連勝 ボーナス！ 🪙＋6枚」の 札（ミッションの 札の 上・1回 ふくらむ だけ・札の 場所に おさまる {sb3 and sb3["h"]}／{sb3 and sb3["minh"]}px）')
+              f'3連勝目（第4.188版）：いつもの 2枚 ＋ 3連勝 ボーナス 6枚 ＋ ミッション 30枚（2＋2＋8＋30＝{e["st"]["coin"]}枚）・最後の 画面に「🔥 3連勝 ボーナス！ 🪙＋6枚 🎫＋1枚」の 札（ミッションの 札の 上・1回 ふくらむ だけ・札の 場所に おさまる {sb3 and sb3["h"]}／{sb3 and sb3["minh"]}px）')
+        check(pg.evaluate(QTN) == 11 and sb3 and sb3['tkl'] == '調査隊切符 今 11枚' and sb3['tklbox'] and sb3['box'][3] <= sb3['tklbox'][1] and sb3['tklbox'][3] <= sb3['mbox'][1] and 'あと 2勝で 調査隊切符' in e['g'],
+              f'第4.212版：3連勝で 調査隊切符 ＋1枚（10 → {pg.evaluate(QTN)}枚）・札の 下に「調査隊切符 今 11枚」・次は あと 2勝（5連勝）')
         shot(pg, 'cb_end_bonus3')
         win_game()
         e = win_game(); t5 = pg.evaluate(TC)
         check(e['st']['coin'] == 116 and 'バトルコイン ＋2枚（今 116枚）' in e['g'] and '🔥5連勝 ボーナス！＋10枚' in e['g'] and '🎯ミッション達成！5連勝＋60枚' in e['g'] and e['st']['ms']['cpu'] == 5 and e['st']['ms']['got']['cpu'] == [3, 5],
               f'バトルコイン：5連勝目は 2枚 ＋ 5連勝 ボーナス 10枚（2・2・8・2・12）＋ ミッション（3連勝 30枚・5連勝 60枚：第4.183版）＝ {e["st"]["coin"]}枚・最後の 画面に「🔥 5連勝 ボーナス！ ＋10枚」「🎯 ミッション達成！ 5連勝 ＋60枚」')
-        check(e['st']['streak'] == 5 and e['st']['win'] == 5 and t5 == t1 + 3 + 3 and '5連勝 ボーナス！ お世話トークン＋3個 GET！' in e['g'] and '5連勝中！' in e['g']
-              and pg.evaluate("() => { const g = document.querySelector('#cbOv .cbend .gift'); return Math.round(g.getBoundingClientRect().height) === parseFloat(getComputedStyle(g).minHeight); }"), f'5連勝：5回目は ＋3（{t1} → 2・3・4回目 ＋1 ずつ → 5回目 ＋3 ＝ {t5}）（{e["g"]}）')
+        check(e['st']['streak'] == 5 and e['st']['win'] == 5 and t5 == t0 and pg.evaluate(QTN) == 13 and '🔥5連勝 ボーナス！＋10枚＋2枚' in e['g'] and '調査隊切符 今 13枚' in e['g'] and '5連勝中！' in e['g'] and 'あと 1勝で 調査隊切符' in e['g'] and 'お世話トークン' not in e['g']
+              and pg.evaluate("() => { const g = document.querySelector('#cbOv .cbend .gift'); return Math.round(g.getBoundingClientRect().height) === parseFloat(getComputedStyle(g).minHeight); }"), f'5連勝：調査隊切符 ＋2枚（11 → {pg.evaluate(QTN)}枚）・お世話トークンは なし（{e["g"]}）')
         e = win_game()
-        check(e['st']['streak'] == 6 and pg.evaluate(TC) == t5 + 1 and 'あと 4勝で 3個' in e['g'] and e['st']['coin'] == 214 and 'バトルコイン ＋2枚（今 214枚）' in e['g'] and '🔥6連勝 ボーナス！＋6枚' in e['g'] and '🎯ミッション達成！6連勝＋90枚' in e['g'],
-              '6連勝目は また ＋1（次の ＋3 は 10連勝）・バトルコインは ＋2 と 3連勝 ごとの ボーナス ＋6（6連勝）・ミッション 6連勝 ＋90枚')
-        # 上限 25こ
-        pg.evaluate("() => { TCApp.state.stock = 25; TCApp.state.stockAt = Date.now(); }")
+        check(e['st']['streak'] == 6 and pg.evaluate(QTN) == 14 and 'あと 3勝で 調査隊切符' in e['g'] and '調査隊切符 今 14枚' in e['g'] and e['st']['coin'] == 214 and 'バトルコイン ＋2枚（今 214枚）' in e['g'] and '🔥6連勝 ボーナス！＋6枚＋1枚' in e['g'] and '🎯ミッション達成！6連勝＋90枚' in e['g'],
+              '6連勝目（3連勝 ごと）：調査隊切符 ＋1枚（14枚）・バトルコインは ＋2 と 3連勝 ごとの ボーナス ＋6・ミッション 6連勝 ＋90枚')
+        # 7連勝：切符の ボーナスは ない（3 でも 5 でも 割りきれない）
         e = win_game()
-        check(pg.evaluate(TC) == 25 and 'お世話トークンが いっぱい（25個）なので、今回は もらえなかったよ' in e['g'] and e['st']['streak'] == 7 and e['st']['owe'] == 0 and pg.locator('#cbOv .cbend .cbget').count() == 0
+        check(e['st']['streak'] == 7 and pg.evaluate(QTN) == 14 and pg.locator('#cbOv .cbend .cbtkl').count() == 0 and pg.locator('#cbOv .cbend .cbsbn').count() == 0 and 'あと 2勝で 調査隊切符' in e['g']
               and pg.evaluate("() => { const g = document.querySelector('#cbOv .cbend .gift'); return Math.round(g.getBoundingClientRect().height) === parseFloat(getComputedStyle(g).minHeight); }"),
-              f'お世話トークンが 25個 の とき：増えない（連勝は 数える）・GET の 札は 出ない（{e["g"]}）')
-        pg.evaluate("() => { TCApp.state.stock = 22; TCApp.state.stockAt = Date.now(); }")
-        for k in range(2): win_game()
-        e = win_game()      # 10連勝：＋3 の はずが、あと 1こ しか 入らない
-        check(e['st']['streak'] == 10 and pg.evaluate(TC) == 25 and 'お世話トークン＋1個 GET！' in e['g'] and '25個 まで なので 1個 だけ' in e['g'] and e['st']['owe'] == 0
-              and pg.evaluate("() => { const g = document.querySelector('#cbOv .cbend .gift'); return Math.round(g.getBoundingClientRect().height) === parseFloat(getComputedStyle(g).minHeight); }"), f'10連勝（＋3）で あと 1個 しか 入らない とき：入る 分 だけ（{e["g"]}）')
+              f'7連勝：調査隊切符の ボーナスは ない（14枚の まま・連勝ボーナスの 札も ない）（{e["g"]}）')
+        win_game()      # 8連勝
+        # 上限 15枚：もう いっぱいの とき（9連勝＝3連勝 ごと ＋1）→ 増えない・札には 出さずに 1行で 知らせる
+        pg.evaluate("() => { const T = CBApp._t; T.state.qt = { n: 15, at: Date.now() }; T.save(); }")
+        e = win_game()
+        check(e['st']['streak'] == 9 and pg.evaluate(QTN) == 15 and '調査隊切符は いっぱい（15枚）なので、今回は 増えなかったよ' in e['g'] and '🔥9連勝 ボーナス！＋6枚' in e['g'] and '＋6枚＋' not in e['g'] and pg.locator('#cbOv .cbend .cbsbn img.tki').count() == 0
+              and pg.locator('#cbOv .cbend .cbsbn').get_attribute('aria-label') == '9連勝 ボーナス バトルコイン 6枚'
+              and pg.evaluate("() => { const g = document.querySelector('#cbOv .cbend .gift'); return Math.round(g.getBoundingClientRect().height) === parseFloat(getComputedStyle(g).minHeight); }"),
+              f'調査隊切符が 15枚の とき：増えない（連勝ボーナスの 札は バトルコイン だけ・「いっぱい なので 増えなかった」の 1行）（{e["g"]}）')
+        pg.evaluate("() => { const T = CBApp._t; T.state.qt = { n: 14, at: Date.now() }; T.save(); }")
+        e = win_game()      # 10連勝：＋2 の はずが、あと 1枚 しか 入らない
+        check(e['st']['streak'] == 10 and pg.evaluate(QTN) == 15 and '🔥10連勝 ボーナス！＋10枚＋1枚' in e['g'] and '調査隊切符 今 15枚（15枚 まで なので 1枚 だけ）' in e['g'] and pg.evaluate(TC) == t0
+              and pg.evaluate("() => { const g = document.querySelector('#cbOv .cbend .gift'); return Math.round(g.getBoundingClientRect().height) === parseFloat(getComputedStyle(g).minHeight); }"), f'10連勝（＋2）で あと 1枚 しか 入らない とき：入る 分 だけ（{e["g"]}）')
         check(e['st']['coin'] == 1008 and 'バトルコイン ＋2枚（今 1008枚）' in e['g'] and '🔥10連勝 ボーナス！＋10枚' in e['g'] and '🎯ミッション達成！10連勝＋300枚' in e['g'] and e['st']['ms']['got']['cpu'] == [3, 5, 6, 7, 8, 9, 10] and e['st']['ms']['cpu'] == 10,
               f'10連勝目は バトルコイン 2枚 ＋ 5連勝 ごとの ボーナス 10枚 ＋ ミッション 10連勝 300枚（勝つ 分 2×10＝20・ボーナス 6×3＋10×2＝38・ミッション 950：今 {e["st"]["coin"]}枚）・字は 札の 場所に おさまる')
         shot(pg, 'cb_end_coin')
@@ -1210,7 +1249,7 @@ try:
         start(pg, '23677', '12356'); play(pg, '3'); opp(pg, {'t': 'set', 'k': 1}); play(pg, '6'); opp(pg, {'t': 'set', 'k': 2}); play(pg, '7'); opp(pg, {'t': 'set', 'k': 3})
         pg.wait_for_function("() => { const g = document.querySelector('#cbOv .cbend .gift'); return CBApp._t.ended && g && g.textContent.length > 3; }", timeout=30000)
         e = pg.evaluate("() => ({ h: document.querySelector('#cbOv .cbend h3').textContent, g: document.querySelector('#cbOv .cbend .gift').textContent, st: Object.assign({}, CBApp._t.state) })")
-        check(e['h'] == 'あなたの 負け…' and e['st']['streak'] == 0 and e['st']['lose'] == 1 and '連勝は 0 に 戻ったよ' in e['g'] and pg.evaluate(TC) == 25 and pg.locator('#cbOv .cbend .cbget').count() == 0, f'負け：連勝は 0 に 戻る・トークンは 変わらない・GET の 札は 出ない（{e["g"]}）')
+        check(e['h'] == 'あなたの 負け…' and e['st']['streak'] == 0 and e['st']['lose'] == 1 and '連勝は 0 に 戻ったよ' in e['g'] and pg.evaluate(TC) == t0 and pg.evaluate(QTN) == 15 and pg.locator('#cbOv .cbend .cbget').count() == 0 and pg.locator('#cbOv .cbend .cbtkl').count() == 0, f'負け：連勝は 0 に 戻る・お世話トークンも 調査隊切符も 変わらない・札は 出ない（{e["g"]}）')
         pg.locator('#cbOv .cbend [data-cb=menu]').click(); pg.wait_for_timeout(120)
         rec = pg.locator('#cbOv .cbmenu .rec').inner_text()
         check(pg.evaluate("() => CBApp._t.screen") == 'menu' and '10勝 1敗 0分' in rec.replace('\n', ' '), f'メニューに 勝ち負けの 数（{rec!r}）')
@@ -2017,7 +2056,7 @@ try:
             inside: c.top >= 0 && c.bottom <= innerHeight && c.left >= 0 && c.right <= innerWidth, q: q.left >= c.left && q.right <= c.right, z: +getComputedStyle(o).zIndex, cbz: +getComputedStyle(document.getElementById('cbOv')).zIndex }; }""")
         pg.evaluate("() => TengelLogin.close()"); pg.wait_for_timeout(150)
         g1 = pg.evaluate(GIFT); tt = TS(); c1 = pg.evaluate(COINS4)
-        check(d0 == 0 and lg1['line'] == '1日目 の ボーナス+200Pとバトルコイン+2枚を もらったよ' and lg1['img'] == 8 and lg1['tiles'][0] == '1日目200P2枚' and lg1['tiles'][6] == '7日目1,300P12枚' and lg1['cb'] == [2, 2, 2, 2, 2, 2, 12] and lg1['inside'] and lg1['q']
+        check(d0 == 0 and lg1['line'] == '1日目 の ボーナス+500Pとバトルコイン+2枚を もらったよ' and lg1['img'] == 8 and lg1['tiles'][0] == '1日目500P2枚' and lg1['tiles'][6] == '7日目3,000P12枚' and lg1['cb'] == [2, 2, 2, 2, 2, 2, 12] and lg1['inside'] and lg1['q']
               and g1 == {'v': 1, 'list': [{'id': f'login-{today}', 'c': 2}]} and c1 == [7, [f'login-{today}'], 7, '7'] and tt == ['🎁 ログインボーナスの バトルコイン\n2枚を 受け取ったよ'],
               f'カードバトルの メニューを 開いて いる ときに ログインボーナス（1日目）→ 窓に「バトルコイン +2枚」（7日ぶんの 札にも：1〜6日目 2枚・7日目 12枚）・すぐ 受け取る（5 → {c1[0]}枚）・メニューで 知らせる（{tt!r}）')
         pg.evaluate("() => { CBApp._t.load(); CBApp._t.menu(); }"); pg.wait_for_timeout(150); c2 = pg.evaluate(COINS4); r2 = pg.evaluate("() => TengelLogin.check()"); pg.wait_for_timeout(300); c3 = pg.evaluate(COINS4)
@@ -2342,23 +2381,14 @@ try:
         check(d0['hid'] and d0['og'] is None and pg.evaluate("() => CBApp._t.view.my.gem") is None and '💎' not in pg.evaluate(MSG), '決戦宝石 なし（いつもの 対戦）：ケースは 出ない・下の 字も 前と 同じ')
         pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(150)
         print('■ 抜け穴（第4.211版・まさちゃん 11/22 21:36「不正にポイントやバトルコイン、お世話トークンを手に入れる抜け穴は無いか全部細かく徹底的に確認して！」）')
-        # ① ごほうびを わたして いる 途中に もう 1回（結果の 画面 ＋ メニュー）→ わたすのは 1回 だけ
-        py = pg.evaluate("""async () => {
-          const T = CBApp._t, st = T.state, real = window.TCGift, wait = ms => new Promise(r => setTimeout(r, ms)); let calls = [];
-          window.TCGift = n => { calls.push(n); return new Promise(ok => setTimeout(() => ok({ add: n, stock: 9, max: 25 }), 300)); };
-          st.owe = 3; T.save();
-          const a = T.pay(), b = T.pay(); T.menu();      // つづけて 2回 ＋ メニューを 開く（メニューも わたそうと する）
-          const ra = await a, rb = await b; await wait(500);
-          const out = { calls: calls.slice(), ra: ra, rb: rb, owe: st.owe, saved: JSON.parse(localStorage.getItem('tengel.cb')).owe };
-          calls = []; st.owe = 2; const c = T.pay(); st.owe += 1; const rc = await c;      // わたして いる 途中に 次の 勝ち（＋1）
-          out.mid = { calls: calls.slice(), add: rc && rc.add, owe: st.owe };
-          calls = []; window.TCGift = () => Promise.resolve(null); st.owe = 2; const rn = await T.pay(); out.ng = { r: rn, owe: st.owe };      // 読みこめなかった：そのまま のこる
-          window.TCGift = n => { calls.push(n); return Promise.resolve({ add: n, stock: 9, max: 25 }); }; const r2 = await T.pay(); out.again = { calls: calls.slice(), add: r2 && r2.add, owe: st.owe, busy: !!window.__cbPayBusy };
-          window.TCGift = real; st.owe = 0; T.save(); return out; }""")
-        check(py['calls'] == [3] and py['ra'] and py['ra']['add'] == 3 and py['rb'] is None and py['owe'] == 0 and py['saved'] == 0,
-              f'ごほうびを わたして いる 途中に もう 1回（つづけて 2回 ＋ メニュー）→ トレーニングセンターへ わたすのは 1回 だけ（{py["calls"]}・のこり {py["owe"]}）')
-        check(py['mid'] == {'calls': [2], 'add': 2, 'owe': 1} and py['ng'] == {'r': None, 'owe': 2} and py['again'] == {'calls': [2], 'add': 2, 'owe': 0, 'busy': False},
-              f'わたして いる 途中に ふえた ぶんは のこる・読みこめなかった ときは そのまま のこって 次に わたせる（{py["mid"]}・{py["ng"]}・{py["again"]}）')
+        # ① 第4.212版：勝った ときの お世話トークンは 廃止 → わたす 口（pay・rewardFor・REWARD・TCGift）と、まだ わたして いない 数（owe）は もう ない。
+        #    前の 版の 保存（owe が 残って いる）を 読んでも 何も わたさない（消える）
+        py = pg.evaluate("""() => {
+          const T = CBApp._t, s0 = localStorage.getItem('tengel.cb'), s = JSON.parse(s0); s.owe = 7; localStorage.setItem('tengel.cb', JSON.stringify(s)); T.load();
+          const out = { pay: typeof T.pay, rf: typeof CBApp.rewardFor, rw: typeof CBApp.REWARD, gift: typeof window.TCGift, busy: typeof window.__cbPayBusy, owe: 'owe' in T.state, tk: [1, 2, 3, 5, 6, 9, 10, 15, 30].map(n => CBApp.tkBonus(n)), TK: JSON.stringify(CBApp.TK_BONUS) };
+          T.save(); out.saved = 'owe' in JSON.parse(localStorage.getItem('tengel.cb')); T.menu(); out.tc = !!window.TCApp; return out; }""")
+        check(py == {'pay': 'undefined', 'rf': 'undefined', 'rw': 'undefined', 'gift': 'undefined', 'busy': 'undefined', 'owe': False, 'tk': [0, 0, 1, 2, 1, 1, 2, 3, 3], 'TK': '[[3,1],[5,2]]', 'saved': False, 'tc': False},
+              f'お世話トークンを わたす 口は もう ない（pay・rewardFor・REWARD・TCGift）・前の 版の「まだ わたして いない 数」は 読んだ ときに 消える・調査隊切符の 連勝ボーナスは 3連勝 ごと 1枚・5連勝 ごと 2枚（15連勝は 3枚）（{py}）')
         # ② にせものの ホスト（本物の アプリで ない 相手）：「配った → あなたの 勝ち」を 50回
         FKV = """{ v: 4, me: 1, turn: 1, turns: 5, phase: 'set', deckN: 20, rv: false, discard: [], my: { hand: [{ u: 1, k: '1', seen: false }, { u: 2, k: '2', seen: false }, { u: 3, k: '3', seen: false }, { u: 4, k: '4', seen: false }], set: null, wins: 0, gem: null },
           op: { hand: [{ u: 9, k: null }, { u: 10, k: null }], set: null, wins: 0, gem: null }, can: { set: true, x7r: false, x7: false, x3: false, x3p: [], gem: [], eff: null, six: null }, pend: null, wait: false, last: null, res: null, early: 0 }"""

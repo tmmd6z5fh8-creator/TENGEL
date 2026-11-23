@@ -546,6 +546,20 @@ const TCApp = (() => {
       return prizeFx(z);
     },
   };
+  // 第4.212版（まさちゃん 2026/11/23 10:12「⑤おもちゃを購入を追加 パチンコとテンゲルカードバトルとポイント解放型にして、3000Pで解放にする！」・答え「1つずつ 3,000P」）：
+  //   お世話チャレンジ（玉を 落とす 台）は「おもちゃ」（Pカスタムで 解放・3,000P：points.js の TOYS・COST.toy）。まだ 解放して いない ときは、入口の 札に「解放 3,000P」・
+  //   押すと 解放の 窓（points_ui.js の TengelWallet.toy.ask）→ 解放 できたら 台を 開く。抽選（PUSH）は 今まで どおり 解放なしで できる（台は 同じ くじの もう 1つの 遊び方）。
+  //   前の 版で 落とした 玉の 当たりが 残って いる とき（dropResume）は、解放して いなくても わたす
+  const toyW = () => { try { const w = window.TengelWallet; return w && w.on && w.toy ? w.toy : null; } catch (e) { return null; } };
+  const dropLocked = () => { const t = toyW(); return !!t && !t.has('drop'); };
+  const toyCost = () => { const t = toyW(); return (t && +t.cost) || 3000; };
+  let toyAsking = false;
+  function dropTap() {
+    const t = toyW();
+    if (!t || t.has('drop')) { dropOpen(false); return; }
+    if (toyAsking) return; toyAsking = true;
+    Promise.resolve(t.ask('drop')).then(ok => { toyAsking = false; if (ok) dropOpen(false); }, () => { toyAsking = false; });
+  }
   async function dropOpen(resume) {
     if (dropping || busy || resetting || !built || !dropOk() || !TCCare.on) return false;
     dropping = true; busy = true; TCCare.roulette(true);      // PUSH を かくす・押せなく する（当たりの 演出の 間と 同じ）
@@ -830,7 +844,7 @@ const TCApp = (() => {
       lottery, onPrize, onEvent: onCareEvent, banTop: 290, dropX: 726, hiX: 580, hiY: 204, points: walletTotal, onHelp: () => { if (window.TCGuide) TCGuide.open(stage, { anim: true }); },
       onBuy: () => { if (!window.TCBuy || !buyShow()) return false; TCBuy.open(stage, BUY); return true; },      // 第4.165版：下の 列の「お世話トークン購入」（tc_care.js が 描く）→ 購入の 窓
       stockMax: TOKEN_MAX, bulk: !!st.bulk, onBulk: v => { st.bulk = !!v; touch(); save(); }, onPush: on => { st.push = !!on; touch(); save(); },
-      dropOk, onDrop: () => { dropOpen(false); },      // 第4.173版：お世話チャレンジ（PUSH の 左下の 入口 → 玉を 落とす 台）
+      dropOk, onDrop: () => { dropTap(); }, dropLock: () => (dropLocked() ? toyCost() : 0),      // 第4.173版：お世話チャレンジ（PUSH の 左下の 入口 → 玉を 落とす 台）。第4.212版：解放して いない ときは 解放の 窓（dropTap）・入口に 値段（dropLock）
       lotFree: () => !busy && !resetting && !panelOpen() && !st.pend, drawLeft });      // drawLeft（第4.168版）：幻の馬・神様馬の 抽選の のこり（上限で PUSH を 消す）      // 第4.159版：PUSH の スイッチ（1個／まとめて）と「PUSH が まだ 出て いる」を おぼえる・待って いた ハートの 抽選を 始めて よいか（当たりの 演出・馬の 入れかえ・説明書などの 途中で ない）
     const S = TCCare.S; S.heart = S.heartShow = st.heart || 0; S.stock = S.stockShow = st.stock; S.high = st.high || 0; S.fav = st.fav.kind;
     if (st.push) { if (st.stock >= 1) TCCare.pushShow(clock() + 0.9); else { st.push = false; touch(); } }      // 前に お世話を した あと PUSH を 押す 前に 閉じた → また 出す（お世話 1回には トークンを 1つは 使う）
@@ -863,20 +877,16 @@ const TCApp = (() => {
   // 着せ替え（kisekae.js）から：チケットの 数・使う
   const tickets = { count: () => { if (!st) load(); return st.tickets || 0; }, use: () => { if (!st) load(); if ((st.tickets || 0) < 1) return false; st.tickets -= 1; save(); if (ov) paintHead(); return true; },
     back: () => { if (!st) load(); st.tickets = (st.tickets || 0) + 1; save(); if (ov) paintHead(); return true; } };      // back＝使った 1枚を もどす（着せ替えで 解放できなかった とき：第4.140版）
-  // 第4.176版（馬カードバトルの ごほうび：まさちゃん 2026/11/15「お世話トークン1個、5連勝で3個」）：お世話トークンを n こ わたす（cb/cb_app.js → tc_launch.js の TCGift）。
-  //   トレーニングセンターを 開いて いなくても 使える（tickets と 同じ：保存を 読んで 書く）。時間で たまって いた ぶんを 先に 数えて から 足す。
-  //   持てる 数は TOKEN_MAX（25こ）まで：こえる ぶんは わたせない。返り値 { add（わたせた 数）, stock（いまの 数）, max }
+  // 第4.212版（まさちゃん 2026/11/23 10:19：カードバトルで 勝った ときの お世話トークンは 廃止）：トークンを わたす 口（第4.176版の tokens.give・tc_launch.js の TCGift）は なくした。
+  //   now＝時間で たまって いた ぶんを 数えて、いまの 数を 返す だけ（{ stock, max }：ふやす 口では ない・画面は 開かない。テストが 数を 読む）
   const tokens = {
-    give: n => {
+    now: () => {
       if (!st) load();
-      n = Math.max(0, Math.floor(+n || 0));
       stockNow(); const got = accrue(tnow());
       if (got > 0) stockSet(st.stock, got);
-      const add = Math.min(n, Math.max(0, TOKEN_MAX - st.stock));
-      if (add > 0) stockSet(st.stock + add, add);
       save();
-      return { add, stock: st.stock, max: TOKEN_MAX };
+      return { stock: st.stock, max: TOKEN_MAX };
     }
   };
-  return { open, close, tickets, tokens, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, _t: { dropOpen, dropResume, dropTone, dropOk, dropLeft, DROP, prep, buyShow, recoverBuy, PACKS, ZONE, GEKI, GEKI_SE, DROP_SE, zoneV, zoneRoll, gov: GOV, get hidN() { return hidN; }, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, drawMax, drawLeft, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, visitDraws: Object.assign({}, VISIT_DRAWS), capWait: CAP_WAIT, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      // _t：テスト 用
+  return { open, close, tickets, tokens, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, _t: { dropOpen, dropResume, dropTone, dropOk, dropLeft, dropTap, dropLocked, DROP, prep, buyShow, recoverBuy, PACKS, ZONE, GEKI, GEKI_SE, DROP_SE, zoneV, zoneRoll, gov: GOV, get hidN() { return hidN; }, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, drawMax, drawLeft, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, visitDraws: Object.assign({}, VISIT_DRAWS), capWait: CAP_WAIT, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      // _t：テスト 用
 })();

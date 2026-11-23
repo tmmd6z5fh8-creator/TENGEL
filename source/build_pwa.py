@@ -128,6 +128,8 @@ if TARGET == 'app':
     html += '<script>\n' + open(os.path.join('cb', 'cb_launch.js'), encoding='utf8').read() + '\n</script>\n'
     # ログインボーナス（第4.168版：まさちゃん 11/14）：その 日に はじめて 開いた とき 1回（7日で ひとまわり：200・300・400・500・600・1000・1300P）。points_ui.js の 財布（TengelWallet.grant）を 使う
     html += '<script>\n' + open('login_bonus.js', encoding='utf8').read() + '\n</script>\n'
+    # 古い 台帳の リセット（第4.212版：まさちゃん 11/23）：記録タブの 古い レース・ポイントの 履歴を 3年で 自動リセット ＋ 設定の「古い台帳をリセットする」（2年分・1年分・全て）
+    html += '<script>\n' + open('old_reset.js', encoding='utf8').read() + '\n</script>\n'
     # 第4.172版（まさちゃん 11/14 22:05「やっぱりテンゲルBGMも消して！無しでいいや！」）：テンゲルBGM（bgm.js：第4.171版）は アプリに 入れない。設定の 札（src.html の bgmCard）と 説明書の 行も 消した。
     #   bgm.js と 曲を 作る 道具（kisekae/tc/snd/bgm_tengel.py）は リポジトリに 残して ある。もどす とき：ここで bgm.js を 足す ＋ src.html の bgmCard と 説明書の 行（コミット 8bec612）＋ assets_dir.py の きまり
 html += '</body></html>\n'

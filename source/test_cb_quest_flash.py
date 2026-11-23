@@ -6,6 +6,7 @@
 #   python3 test_cb_quest_flash.py [場面の 名前,…]   （時間が かかる ので ふだんの テストとは 別に 動かす。コマは t5/cbq_frames/<場面>/ に 残す）
 import json, os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
+from toys_for_test import open_toys      # 第4.212版：おもちゃ（TENGERカードバトル・お世話チャレンジ）を 0P で 解放した ことに する（テスト用）
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W); sys.path.insert(0, os.path.join(W, 'kisekae'))
 SRV = os.path.join(W, 'srv_cbqf'); PORT = 8816; APP = f'http://localhost:{PORT}/APP/'
 ONLY = sys.argv[1].split(',') if len(sys.argv) > 1 else None
@@ -88,6 +89,7 @@ try:
             ctx.add_init_script(FAKE)
             pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
             pg.goto(APP); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(5200)
+            open_toys(pg, ('cb',))      # 第4.212版：TENGERカードバトルは おもちゃ（3,000P で 解放）→ ここでは 解放ずみに する
             pg.locator('#cbFab .fabi').click(); pg.wait_for_function("() => !!window.CBApp && !!document.querySelector('#cbOv.on')", timeout=30000); pg.wait_for_timeout(600)
             pg.evaluate(f"() => {{ CBApp._guard = 0; CBApp._t.manual(true); CBApp._think = () => 1e9; CBApp._qopt = () => ({json.dumps(WIN)}); CBApp._now = () => new Date('2026-11-18T12:00:00'); CBApp._rng = () => 0.1; CBApp._t.load(); CBApp._t.menu(); }}")
             settle(pg, 0.5, 50)

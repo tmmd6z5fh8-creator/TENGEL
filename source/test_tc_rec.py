@@ -9,6 +9,7 @@
 #   python3 test_tc_rec.py   （ios/tc_assets/ に 絵が ある とき だけ 画面の テスト。ない とき（CI）は 中身の 見くらべ だけ）
 import json, os, re, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
+from toys_for_test import open_toys      # 第4.212版：おもちゃ（TENGERカードバトル・お世話チャレンジ）を 0P で 解放した ことに する（テスト用）
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 SRV = os.path.join(W, 'srv_tc'); PORT = 8816; APP = f'http://localhost:{PORT}/APP/'
 SHOT = os.environ.get('SHOT')
@@ -103,6 +104,7 @@ try:
             ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, locale='ja-JP', timezone_id='Asia/Tokyo'); ctx.add_init_script(COUNT); ctx.add_init_script(FAKE)
             pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
             pg.goto(APP); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(600)
+            open_toys(pg, ('drop',))      # 第4.212版：お世話チャレンジは おもちゃ（3,000P で 解放）→ 解放ずみに する
             pg.evaluate("() => document.querySelectorAll('.tabbar button')[2].click()"); pg.wait_for_timeout(300)
             pg.locator('#tcFab').click()
             pg.wait_for_function("() => window.TCApp && TCApp.state && window.TCCare && TCCare.on && !document.querySelector('#tcOv .tcld')", timeout=120000); pg.wait_for_timeout(1500)

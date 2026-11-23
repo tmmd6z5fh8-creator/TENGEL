@@ -9,6 +9,7 @@
 #   写して いる 間は トレーニングセンターの フィールドを 描くのを 止める（止まった 絵の まま：台の うしろで 9割 かくれて いる・写すのが 速く なる）
 import json, os, re, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
+from toys_for_test import open_toys      # 第4.212版：おもちゃ（TENGERカードバトル・お世話チャレンジ）を 0P で 解放した ことに する（テスト用）
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W)
 SRV = os.path.join(W, 'srv_tc'); PORT = 8813; APP = f'http://localhost:{PORT}/APP/'
 ONLY = [int(x) for x in sys.argv[1].split(',')] if len(sys.argv) > 1 else None      # 数える 色（1 青 … 6 虹・7 激馬熱馬）
@@ -72,6 +73,7 @@ def stage_click(pg, x, y):            # フィールドの 座標（1052×1657�
 
 def open_tc(pg, url, wait_drop=True):
     pg.goto(url); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(600)
+    open_toys(pg, ('drop',))      # 第4.212版：お世話チャレンジは おもちゃ（3,000P で 解放）→ 解放ずみに する
     pg.evaluate("() => document.querySelectorAll('.tabbar button')[2].click()"); pg.wait_for_timeout(300)
     pg.locator('#tcFab').click()
     pg.wait_for_function("() => window.TCApp && TCApp.state && window.TCCare && TCCare.on && !document.querySelector('#tcOv .tcld')", timeout=90000); pg.wait_for_timeout(1000)

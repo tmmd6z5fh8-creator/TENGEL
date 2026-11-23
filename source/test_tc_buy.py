@@ -310,7 +310,7 @@ try:
             stage_click(p2, *BUYXY); p2.wait_for_timeout(450)
             p2.locator('#tcb [data-b=ask][data-n="10"]').click(); p2.wait_for_timeout(150); p2.locator('#tcb [data-b=go]').click(); p2.wait_for_timeout(800)
             q = p2.evaluate("() => [TCApp.state.stock, TengelWallet.total(), typeof window.TCTest, document.querySelectorAll('#tcOv [data-tc=test]').length]")
-            check(q == [13, t0 - 1000, 'undefined', 0] and t0 == 1500, f'App Store版（初めの 1,500P）：下の 列の ボタン → 10個 買う → 3 → {q[0]}個・{t0:,} → {q[1]:,}P（道具箱は ない）')
+            check(q == [13, t0 - 1000, 'undefined', 0] and t0 == 5000, f'App Store版（初めの 5,000P：第4.212版）：下の 列の ボタン → 10個 買う → 3 → {q[0]}個・{t0:,} → {q[1]:,}P（道具箱は ない）')
             check(not e2, f'エラー なし {e2[:3]}')
             c2.close()
         # ---------- 絵が ない とき（CI）：緑の 紙の 丸に ＋ ----------

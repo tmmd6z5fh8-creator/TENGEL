@@ -11,6 +11,7 @@
 #   python3 test_cb_quest.py   （SHOT=<フォルダ> で 画面を 写す。ios/cb_assets/ が ない とき（CI）は 絵の 確かめを とばす）
 import json, os, re, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
+from toys_for_test import open_toys      # 第4.212版：おもちゃ（TENGERカードバトル・お世話チャレンジ）を 0P で 解放した ことに する（テスト用）
 W = os.path.dirname(os.path.abspath(__file__)); os.chdir(W); sys.path.insert(0, os.path.join(W, 'kisekae'))
 SRV = os.path.join(W, 'srv_cbq'); PORT = 8815; APP = f'http://localhost:{PORT}/APP/'
 SHOT = os.environ.get('SHOT')
@@ -89,6 +90,7 @@ def idle(pg, t=30000):
 
 
 def open_cb(pg, speed=0.03):
+    open_toys(pg, ('cb',))      # 第4.212版：TENGERカードバトルは おもちゃ（3,000P で 解放）→ ここでは 解放ずみに する
     pg.locator('#cbFab .fabi').click()
     pg.wait_for_function("() => !!window.CBApp && !!document.querySelector('#cbOv.on')", timeout=30000)
     pg.evaluate(f"() => {{ CBApp._t.speed({speed}); CBApp._guard = 0; CBApp._think = () => 1e9; CBApp._now = () => new Date(window.__now || '2026-11-18T12:00:00'); }}"); pg.wait_for_timeout(150)
@@ -327,7 +329,7 @@ try:
         check(pg.evaluate("() => [document.querySelector('#cbOv .qv').className, document.querySelectorAll('#cbOv .qpt .cf').length, document.querySelectorAll('#cbOv .qpt .cn').length]") == ['qv t1', 0, 0], 'レベル1〜5：1段階目（光の 筋・紙吹雪 なし）')
         s1 = st(pg)
         check(s1['coin'] == s0['coin'] + 10 and s1['q']['clr'] == 1 and s1['ms']['cpu'] == s0['ms']['cpu'], f'コイン ＋10（{s0["coin"]} → {s1["coin"]}）・討伐 1・いつもの ミッションの 連勝は そのまま（第4.209版：決戦調査は 数えない）')
-        check([s1[x] for x in ('win', 'lose', 'draw', 'streak', 'owe')] == [s0[x] for x in ('win', 'lose', 'draw', 'streak', 'owe')], 'いつもの 勝ち負け・連勝・お世話トークンは かわらない')
+        check([s1[x] for x in ('win', 'lose', 'draw', 'streak')] == [s0[x] for x in ('win', 'lose', 'draw', 'streak')] and 'owe' not in s1, 'いつもの 勝ち負け・連勝は かわらない（第4.212版：お世話トークンの ごほうびは もう ない）')
         shot(pg, 'q06_victory1')
         said(pg)
         pg.locator('#cbOv .cbmod [data-cb=qmapgo]').click(); pg.wait_for_timeout(400)
@@ -389,7 +391,7 @@ try:
         pg.locator('#cbOv .cbmod [data-cb=quitgo]').click(); pg.wait_for_timeout(300)
         s3 = st(pg)
         check(scr(pg) == 'qmap' and s3['ms']['cpu'] == 2 and s3['lose'] == s2['lose'] and s3['streak'] == s2['streak'] and s3['q']['clr'] == 2, 'やめた → マップ・いつもの ミッションの 連勝（2）も 負けも そのまま（第4.209版）')
-        check([s3[x] for x in ('win', 'lose', 'draw', 'streak', 'owe')] == [s0[x] for x in ('win', 'lose', 'draw', 'streak', 'owe')], 'ここまで いつもの 勝ち負け・連勝・お世話トークンは かわらない')
+        check([s3[x] for x in ('win', 'lose', 'draw', 'streak')] == [s0[x] for x in ('win', 'lose', 'draw', 'streak')], 'ここまで いつもの 勝ち負け・連勝は かわらない')
 
         print('■ 確定カード（レベル 5〜12）')
         want = {5: {4: ['1']}, 6: {4: ['1', '1']}, 7: {4: ['2', '2'], 5: ['2', '2']}, 8: {5: ['2', '2', '2']}, 9: {5: ['1', '1'], 6: ['1', '1']}, 10: {5: ['1', '1', '1'], 6: ['1', '1', '1']},
@@ -853,7 +855,7 @@ try:
         hl = pg.locator('#cbOv .cbhelp').inner_text()
         check('⚔️ 決戦調査' in hl and 'Lv12 6連勝 250枚' in hl and '毎月 1日に リセット' in hl and '同じ 戦を やり直し' in hl, '遊び方に「⚔️ 決戦調査」（連勝・コイン・同点・リセット）')
         check('決戦宝石' in hl and '決戦調査では いつも 使えるよ' in hl and '5つ 1回ずつ（合計 5個）' in hl and '1試合で 5つ 1回ずつ' in hl and '幻影のアメジスト＝幻の馬トークン' in hl and '三峰の翡翠＝7トークン（1枚で 3頭分）' in hl and '手札が 6枚 以下' in hl and 'その ターン だけ' in hl, '第4.197版：遊び方に「決戦宝石」（決戦調査は いつも・1つの 調査で 5つ 1回ずつ・友達との 対戦は 1試合で 5つ・使える とき・その ターン だけ）')
-        hi = pg.evaluate("() => { const h = document.querySelector('#cbOv .cbhelp'), li = [...h.querySelectorAll('li')].find(e => e.textContent.indexOf('調査隊切符') >= 0), i = li && li.querySelector('img.tki'); return { emo: /[💎🎫]/u.test(h.textContent), first: !!(li && li.firstElementChild === i), src: i && i.getAttribute('src'), ok: !!i && i.complete && i.naturalWidth > 0, gh: [...h.querySelectorAll('h4')].map(e => e.textContent).filter(x => x.indexOf('決戦宝石') >= 0) }; }")
+        hi = pg.evaluate("() => { const h = document.querySelector('#cbOv .cbhelp'), li = [...h.querySelectorAll('li')].find(e => e.textContent.trim().indexOf('調査隊切符') === 0), i = li && li.querySelector('img.tki'); return { emo: /[💎🎫]/u.test(h.textContent), first: !!(li && li.firstElementChild === i), src: i && i.getAttribute('src'), ok: !!i && i.complete && i.naturalWidth > 0, gh: [...h.querySelectorAll('h4')].map(e => e.textContent).filter(x => x.indexOf('決戦宝石') >= 0) }; }")
         check(not hi['emo'] and hi['first'] and hi['src'] == 'cb_q_tk.webp' and (hi['ok'] or not HAVE) and hi['gh'] == ['決戦宝石'], f'第4.205版：遊び方に 💎・🎫 は ない（見出しは「決戦宝石」）・調査隊切符の 行の 頭は 切符の 絵 {hi}')
         check(not errs, f'画面の エラー なし {errs[:3]}')
         ctx.close()
@@ -976,7 +978,7 @@ try:
         rb = pg.locator('#cbOv .cbmod [data-cb=qretry]')
         check(rb.is_disabled() and '切符が たまるまで あと 30:00' in rb.inner_text() and '調査隊切符 のこり 0枚' in mod_text(pg), f'0枚で 負け：「もう 一度 挑戦」は 押せない・「切符が たまるまで あと 30:00」 {rb.inner_text()!r}')
         shot(pg, 'tk07_lose0')
-        pg.evaluate("() => { document.querySelector('#cbOv .cbmod [data-cb=qretry]').disabled = false; }"); said(pg); rb.click(); pg.wait_for_timeout(150)
+        said(pg); pg.evaluate("() => { const b = document.querySelector('#cbOv .cbmod [data-cb=qretry]'); b.disabled = false; b.click(); }"); pg.wait_for_timeout(150)      # 第4.212版：押せる ように して すぐ 押す（1秒ごとの 書き直しが 先に 来ると、また 押せなく なって 待ちつづける ことが あった）
         check(TK()['n'] == 0 and q(pg)['run']['won'] == 1 and rb.is_disabled() and '調査 失敗…' in mod_text(pg) and any('切符が たまるまで あと 30:00' in x for x in said(pg)), '（もし 押せても）0枚 なら やり直さない（結果の 窓の まま）・「切符が たまるまで あと 30:00」')
         TM('2026-11-18T12:59:59')
         check(rb.is_disabled() and 'あと 0:01' in rb.inner_text(), '29分59秒 あと：まだ 押せない（あと 0:01）')
@@ -995,7 +997,7 @@ try:
         o = pop(pg); gb = pg.locator('#cbOv .qpo [data-cb=qgo]')
         check(o and '（今 0枚）' in o['t'] and o['inside'] and gb.is_disabled() and '切符が たまるまで あと 30:00' in gb.inner_text(), f'0枚：ふきだしの「決戦調査に 行く」は 押せない（切符が たまるまで あと 30:00）{o and o["t"]!r}')
         shot(pg, 'tk08b_pop0')
-        pg.evaluate("() => { document.querySelector('#cbOv .qpo [data-cb=qgo]').disabled = false; }"); gb.click(); pg.wait_for_timeout(250)
+        pg.evaluate("() => { const b = document.querySelector('#cbOv .qpo [data-cb=qgo]'); b.disabled = false; b.click(); }"); pg.wait_for_timeout(250)      # 第4.212版：同じ（すぐ 押す）
         t = mod_text(pg)
         check(scr(pg) == 'qmap' and '切符が 足りないよ…' in t and '調査隊切符 0／15枚' in t and '次の 1枚 まで あと 30:00' in t, f'（もし 押せても）0枚 なら 行けない：切符の 窓「切符が 足りないよ…」 {t!r}')
         if HAVE: check(pg.evaluate("() => { const i = document.querySelector('#cbOv .cbmod.cbqtk .tk'); return !!i && i.complete && i.naturalWidth > 0; }"), '切符の 窓に 切符の 絵（cb_q_tk.webp）')

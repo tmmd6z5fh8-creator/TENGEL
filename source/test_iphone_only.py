@@ -228,10 +228,10 @@ if r.returncode == 0:
               and all(m.get('bin') == 'tc_horse_bk_brown_s2.bin' and m.get('tex') == f'tc_c_{c}_s2v2.webp' and m.get('ntex') == 'tc_n_brown_s2.webp' for m, c in zip(_j168, _c168))
               and 'tc_bgm_roulette.m4a' in res and _h(os.path.join(RES, 'tc_bgm_roulette.m4a')) == _h(os.path.join(_ad.master('tc_assets'), 'tc_bgm_roulette.m4a')) and 150e3 < _sz(['tc_bgm_roulette.m4a']) < 400e3
               and "HFIX = { 2: 'v2' }" in _tb and "'tc_bgm_roulette.m4a'" in _tb and 'VISIT_DRAWS = { maboroshi: 10, kamisama: 5 }' in _tb and 'PTR_K = { normal: 1.2 }' in _tb and 'CHBACK = { x: 262, y: 1109, w: 200, h: 58 }' in _tb
-              and 'STANCE_KAMI' not in _tb and 'window.TengelLogin = {' in _ix and 'BONUS = [200, 300, 400, 500, 600, 1000, 1300]' in _ix and 'TOKEN_PACKS = [[1, 100], [5, 500], [10, 1000], [15, 1500], [20, 2000], [25, 2500]]' in _ix
+              and 'STANCE_KAMI' not in _tb and 'window.TengelLogin = {' in _ix and 'BONUS = [500, 500, 1000, 1000, 1500, 1500, 3000]' in _ix and 'TOKEN_PACKS = [[1, 100], [5, 500], [10, 1000], [15, 1500], [20, 2000], [25, 2500]]' in _ix
               and '.fxs .clips .ring{display:none!important}' in _ix and '#planBtn{position:fixed' in _ix,
               f'第4.168版：2段目の 大きさの 馬は たてがみを 直した 絵 5まい（{_sz([f for f in _n168 if f.endswith(".webp") and f in res]) / 1e6:.2f}MB）と その 名前 5つが 入って いる・前の 絵と 名前 10こは 入って いない（もとの フォルダには ある）・'
-              f'ルーレットの BGM（{_sz(["tc_bgm_roulette.m4a"]) / 1e3 if "tc_bgm_roulette.m4a" in res else 0:.0f}KB・もとと 同じ 中身）・ログインボーナス（200〜1,300P）・トークン 1こ 100P（6つの 組）・抽選の 上限（10回・5回）・ノーマルの ピン 1.2倍・「← もどる」・'
+              f'ルーレットの BGM（{_sz(["tc_bgm_roulette.m4a"]) / 1e3 if "tc_bgm_roulette.m4a" in res else 0:.0f}KB・もとと 同じ 中身）・ログインボーナス（第4.212版：500〜3,000P）・トークン 1こ 100P（6つの 組）・抽選の 上限（10回・5回）・ノーマルの ピン 1.2倍・「← もどる」・'
               f'かけらの 光の輪を 消す きまり・右の ボタンを 画面に 止める きまりが 入って いる')
         # 第4.153版（まさちゃん 11/11 13:59「出世馬の結果ボードカスタム3Dに絵を入れ替えて！」・14:23「ボードは何も書いていないように編集して！」）：
         #   出世馬の 7段は 3D の 絵（bcp_shusseN_3d.webp：kisekae/bcp/shusse3d.py）。ボードの 中は 何も 書いて いない（まん中が ほぼ 1色）・板の 四すみと 字の 置き方は 前の 絵と 同じ・前の 絵（bcp_shusseN.webp）は アプリに 入れない（もとの フォルダには 残す）
@@ -441,7 +441,7 @@ if r.returncode == 0:
           and len(ksd['themes']) == 30 and not any(t['id'] in GONE for t in ksd['themes']) and len(ksd['paid']) == 16 and not (set(ksd['paid']) & set(GONE))
           and ksd['pack']['ids'] == ksd['pack']['order'] == ['pirate', 'course', 'space', 'paddock', 'deepsea', 'dino', 'kirie', 'ukiyoe', 'steam', 'future'] and ksd['pack']['every'] == 5
           and "var WALLPACK = { product: 'jp.tengel.app.wallpack1', every: 5, n: 10 };" in _pjs and 'var WALL_TOTAL = 29;' in _pjs and ksd['band'] == {'silver': 5, 'golden': 10, 'tengel': 15}
-          and sorted(t['price'] for t in ksd['themes'] if t.get('price')) == [2000] * 6 + [3000] * 3 + [4000] * 4 + [7000] * 3
+          and sorted(t['price'] for t in ksd['themes'] if t.get('price')) == [4500] * 6 + [5500] * 3 + [6500] * 4 + [9500] * 3
           and not any(('ks_' + b + '.webp') in res or ('ks_' + b + '.svg') in res for b in gone_blobs - keep_blobs)
           and not any(f in res for f in ('KaiseiDecol-700.woff2', 'YujiSyuku-400.woff2', 'YuseiMagic-400.woff2', 'ReggaeOne-400.woff2', 'Murecho-800.woff2', 'ZenOldMincho-900.woff2')),
           f'第4.147版・第4.160版：外した 壁紙 11枚（{"・".join(GONE)}）は アプリに 入って いない（ks_<名前>.json・テーマの 変数・一覧・その 壁紙 だけの 絵と 字）・のこりは 30テーマ（ポイント 16枚＝2,000P×6・3,000P×3・4,000P×4・7,000P×3／壁紙パック 10枚／帯 5・10・15枚）')
