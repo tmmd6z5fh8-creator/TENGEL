@@ -6,7 +6,7 @@
 #   たしかめる こと（kisekae.js の seen・look・watch）：
 #   ・判定タブの 一番 上：動く（.pause なし・動きの 数は 前と 同じ）。少し だけ 見えて いる ときも 動く
 #   ・下へ スクロール して 画面の 外：止まる（.pause・動いて いる 動き 0）→ もどすと 動く（コマの さかい目も 合わせ直す）
-#   ・画面 ぜんぶを おおう 窓（作戦会議・的中の 演出・ためしの 窓）の 下：止まる → 閉じると 動く（タップで 閉じた ときは 0.4秒 以内）。半分 だけ おおう 窓：動く
+#   ・画面 ぜんぶを おおう 窓（作戦会議・的中の 演出・ログインボーナス・ためしの 窓）の 下：止まる → 閉じると 動く（タップで 閉じた ときは 0.4秒 以内）。半分 だけ おおう 窓：動く
 #   ・うすく なって いる 途中の 窓（消える・出る とき）の 下は 動く・2回目の 起動の はじめの 画面の 下では 止まって、消えたら すぐ 動く（body の 子の 出入りを 見る）
 #   ・止まって いる 間の 画面の 仕事は 動いて いる ときの 1割 より 少ない（Chromium の TaskDuration）
 #   ・テストが 手で つけた .pause は さわらない・判定タブ以外では 止まる・控えめ（.calm）は 前と 同じ
@@ -135,6 +135,18 @@ try:
         pg.evaluate("TengelFx.close()")
         ms_fc = wait_cls(pg, B, False, 1800)
         check(ms_fc is not None and pg.evaluate(RUN, B) == n_all, f'演出を 閉じる → 動く（{ms_fc}ms）')
+        # ---- ログインボーナス（本物の 窓：うしろが 暗く なる・出る ときは うすい → こく なる）→ 止まる → OK → すぐ 動く
+        #   自動の ブラウザでは 自分からは 出ない ので、アプリが 開いた ときと 同じ たしかめ（TengelLogin.check）を 呼ぶ（Mac の run 192 は この 窓が 出た まま だった）
+        dlg = pg.evaluate("() => window.TengelLogin ? TengelLogin.check() : -2")
+        pg.wait_for_function("() => !!document.querySelector('#lgOv')", timeout=5000)
+        #   ためしの 壁紙（パドック）は 解放して いない ので、ボーナスで 財布が かわると いつもの 絵に もどる（tengel:wallet・前と 同じ）→ 窓の 下で もう一度 つける
+        pg.evaluate("(id) => TengelKisekae.apply(id, false)", 'paddock')
+        pg.wait_for_function("(id) => TengelKisekae.current() === id && TengelKisekae.loaded()", arg='paddock', timeout=8000)
+        ms_lg = wait_cls(pg, B, True, 2500)
+        check(dlg == 0 and ms_lg is not None and pg.evaluate(RUN, B) == 0, f'ログインボーナスの 窓（{dlg + 1}日目）の 下：止まる（{ms_lg}ms：出る ときの うすい 間は 動く）')
+        pg.click('#lgOv [data-lg=ok]')
+        ms_lgo = wait_cls(pg, B, False, 1600)
+        check(ms_lgo is not None and ms_lgo <= 400 and pg.evaluate(RUN, B) == n_all and pg.locator('#lgOv').count() == 0, f'OK で 閉じる → すぐ 動く（{ms_lgo}ms）')
         # ---- テストが 手で つけた .pause は さわらない（変わった ときだけ さわる）
         pg.evaluate(f"document.querySelector('{B}').classList.add('pause')"); pg.wait_for_timeout(2600)
         keep = pg.evaluate(PAUSED, B)

@@ -296,6 +296,17 @@
       for (var k of ['ks_sunset.json', 'ks_banner_ranch.svg', 'fonts/KaiseiOpti-700.woff2', 'ks_5f93d2cbb5295e4148858bf5daf03c5a.webp', 'ks_sakura.json']) { try { var r = await fetch(k, { cache: 'no-store' }); res.files[k] = r.status; } catch (e) { res.files[k] = String(e); } }
       await K.apply('sunset'); await sleep(900);
       document.querySelector('.tabbar [data-tab=judge]').click(); await sleep(400);
+      // 第4.219版：ログインボーナスの 窓（うしろが 暗く なる）が 出て いる 間は 上の絵は 止まる → OK で 閉じると すぐ 動く（本物の アプリと 同じ 流れ）。
+      //   この あとの 着せ替えの ためし（見本・見えて いる 間 だけ 動く）は 窓なしで 見る（run 192 は 窓が 出た まま だった）
+      var lgb = document.querySelector('#lgOv [data-lg=ok]'), b0 = document.querySelector('#ksBnr');
+      var b0Run = function () { return b0 ? b0.getAnimations({ subtree: true }).filter(function (a) { return a.playState === 'running'; }).length : -1; }, b0P = function () { return !!(b0 && b0.classList.contains('pause')); };
+      if (lgb && b0 && !b0.hidden) {
+        await waitFor(function () { return b0P(); }, 2500);
+        var lg0 = { pause: b0P(), run: b0Run() }, lt0 = Date.now();
+        lgb.click(); await waitFor(function () { return !b0P(); }, 3000);
+        res.lg = { before: lg0, after: { pause: b0P(), run: b0Run(), ms: Date.now() - lt0, gone: !document.querySelector('#lgOv') } };
+        await sleep(300);
+      } else res.lg = lgb ? { skip: true } : null;
       var bn = document.querySelector('#ksBnr');
       res.sunset = { ks: document.documentElement.dataset.ks, loaded: K.loaded(), bnr: bn ? { hidden: bn.hidden, h: bn.getBoundingClientRect().height, w: bn.getBoundingClientRect().width, k: bn.style.getPropertyValue('--ksk'), anims: bn.getAnimations({ subtree: true }).length, inner: !!bn.querySelector('.ssw') } : null,
         bg: getComputedStyle(document.body).backgroundColor, font: getComputedStyle(document.body).fontFamily.slice(0, 40), hfont: getComputedStyle(document.querySelector('.brand h1')).fontFamily.slice(0, 30),
@@ -326,6 +337,8 @@
           below: !!(un && lkb && un.getBoundingClientRect().top >= lkb.getBoundingClientRect().bottom - 1), inside: !!(un && un.getBoundingClientRect().right <= lk.getBoundingClientRect().right + 1 && un.getBoundingClientRect().bottom <= lk.getBoundingClientRect().bottom + 1) };
         // 第4.218版：タップした 壁紙の 見本（PUSH と 結果ボード）が その 行の 下に 出る（本物の WebKit で：形・大きさ・押せない・もう一度 押すと 閉じる）
         // 第4.218版・修正：見本の ボードの 行は 本物と 同じく 0.35秒＋0.15秒ずつ おくれて 出る。Mac が 遅い ときは 1.2秒では まだ 出て いない（run 189 の macOS 15：1行だけ）ので、3行 そろうまで 待つ（長くて 6秒）
+        // 第4.219版：見本は 見えて いる 間 だけ 動く（画面の 外・暗い 窓の 下では 止まって 行も 出ない）ので、見える 所へ 動かしてから 待つ
+        var pv0 = card.querySelector('.kspv'); if (pv0) pv0.scrollIntoView({ block: 'center' });
         var pvT0 = Date.now(), pvRows = function () { var bb = card.querySelector('.kspv [data-pvk=board] .fxs'); return bb ? Array.from(bb.querySelectorAll('.brows li')).map(function (li) { return li.innerText.replace(/\s+/g, ' ').trim(); }) : []; };
         await sleep(1200);
         while (Date.now() - pvT0 < 6000) { var pr0 = pvRows(); if (pr0.length === 3 && pr0.every(function (x) { return !!x; })) break; await sleep(200); }
