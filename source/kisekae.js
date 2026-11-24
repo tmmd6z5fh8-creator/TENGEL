@@ -220,10 +220,12 @@
         ts.push(t);
         if (ts.length < 10) return requestAnimationFrame(step);
         try {
-          let mn = 1e9; for (let i = 1; i < ts.length; i++) mn = Math.min(mn, ts[i] - ts[i - 1]);
-          // 描きかえの きざみ：1秒に 120回の 画面（いちばん 短い 間かくが 11ミリ秒 より 短い）なら 1/120秒、ほかは 1/60秒で 合わせる。
+          let sh = 0; for (let i = 1; i < ts.length; i++) if (ts[i] - ts[i - 1] < 11) sh++;
+          // 描きかえの きざみ：1秒に 120回の 画面（11ミリ秒 より 短い 間かくが 9回中 3回 以上）なら 1/120秒、ほかは 1/60秒で 合わせる。
           //   1秒に 30回（省電力）でも、とちゅうで 描きかえが ぬけても、描きかえの 時刻は 1/60秒の きざみの 上に ある ので 同じ 合わせ方で よい
-          const P = mn < 11 ? 1000 / 120 : 1000 / 60;
+          //   第4.219版：前は いちばん 短い 間かく 1つで きめて いた → 重い 絵を 出した すぐ あとの 1回 だけの 短い 間かく（描きかえの おくれを とりもどす コマ）で
+          //   60回の 画面を 120回と まちがえて、コマの かわる 時刻を 描きかえの 近くに おく ことが あった（見えなく なって また 見えた あとに 合わせ直す ことが ふえた ので）
+          const P = sh >= 3 ? 1000 / 120 : 1000 / 60;
           let n = 0, moved = 0;
           for (const a of b.getAnimations({ subtree: true })) {
             if (a.playState !== 'running' || a.pending || typeof a.startTime !== 'number' || !a.effect) continue;
