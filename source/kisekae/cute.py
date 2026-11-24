@@ -2,7 +2,7 @@
    python3 cute.py <出力フォルダ>   → cute.svg（いつもの絵）・cute_pony.svg
    壁紙の動き（cute_wall.py）のために、banner(parts) で 絵を部品に分けて受けとれる：下の絵（水玉・レース）・ハート（1つめが大きいハート）・
    大きいハートの光・右上のリボン・キラキラ・かげ・ポニー。部品を同じ順に重ねると いつもの絵（いつもの絵は前と1バイトもちがわない）"""
-import sys, os
+import sys, os, re, math
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from art import *
 
@@ -58,11 +58,87 @@ def pony_tail():
     return out
 
 
-def pony_hooves():
-    out = ''
-    for x, y in [(38, 113), (51, 115), (67, 115), (78, 112)]:
-        out += path(smooth([(x - 6, y - 4), (x + 6, y - 4), (x + 6, y + 2), (x - 6, y + 2)]), fill='#FFB3CF')
+HOOVES = [(38, 113), (51, 115), (67, 115), (78, 112)]   # 脚の もよう（ピンクの 帯）の まん中（legs と 同じ じゅん：0・2 が 向こうの 脚）
+FAR, NEAR = (0, 2), (1, 3)
+
+
+def _sample(d, step=.2):
+    """smooth() の 形（M … C … Z）を こまかい 点の 列に（絵に なる 形と 同じ：小数1けたに まるめた 値の まま）"""
+    pts, cur = [], None
+    for cmd, arg in re.findall(r'([MC])([^MCZ]*)', d):
+        v = [float(s) for s in re.findall(r'-?\d+(?:\.\d+)?', arg)]
+        if cmd == 'M':
+            cur = (v[0], v[1]); pts.append(cur); continue
+        for i in range(0, len(v), 6):
+            c1, c2, p3 = (v[i], v[i + 1]), (v[i + 2], v[i + 3]), (v[i + 4], v[i + 5])
+            n = max(4, int((math.dist(cur, c1) + math.dist(c1, c2) + math.dist(c2, p3)) / step))
+            for k in range(1, n + 1):
+                t = k / n; u = 1 - t
+                pts.append(tuple(u * u * u * cur[j] + 3 * u * u * t * c1[j] + 3 * u * t * t * c2[j] + t * t * t * p3[j] for j in (0, 1)))
+            cur = p3
+    if math.dist(pts[0], pts[-1]) < 1e-9:
+        pts.pop()
+    return pts
+
+
+def _area(P):
+    return sum(P[i - 1][0] * P[i][1] - P[i][0] * P[i - 1][1] for i in range(len(P))) / 2
+
+
+def _grow(P, r):
+    """形を まわりへ r だけ ふくらませる（こまかい 点の 列）"""
+    s, n, out = (1 if _area(P) > 0 else -1), len(P), []
+    for i in range(n):
+        a, b = P[i - 1], P[(i + 1) % n]
+        tx, ty = b[0] - a[0], b[1] - a[1]; ln = math.hypot(tx, ty) or 1
+        out.append((P[i][0] + s * ty / ln * r, P[i][1] - s * tx / ln * r))
     return out
+
+
+def _clip(subj, clip):
+    """subj を clip（ふくらんだ 形）の 中だけに 切る（Sutherland–Hodgman）"""
+    s, out = (1 if _area(clip) > 0 else -1), subj
+    for i in range(len(clip)):
+        a, b = clip[i - 1], clip[i]
+        side = lambda p: s * ((b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]))
+        inp, out = out, []
+        for j in range(len(inp)):
+            p, q = inp[j - 1], inp[j]
+            sp, sq = side(p), side(q)
+            if (sp >= 0) != (sq >= 0):
+                t = sp / (sp - sq); out.append((p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])))
+            if sq >= 0:
+                out.append(q)
+    return out
+
+
+def _rdp(P, eps):
+    if len(P) < 3:
+        return P
+    (ax, ay), (bx, by) = P[0], P[-1]; ln = math.hypot(bx - ax, by - ay) or 1e-9
+    d = [abs((bx - ax) * (ay - y) - (ax - x) * (by - ay)) / ln for x, y in P[1:-1]]
+    k = max(range(len(d)), key=d.__getitem__)
+    if d[k] <= eps:
+        return [P[0], P[-1]]
+    return _rdp(P[:k + 2], eps)[:-1] + _rdp(P[k + 1:], eps)
+
+
+def hoof_d(i, legs):
+    """脚 i の もよう（ピンクの 帯）：前と 同じ 帯の 形を、脚の ふちの 内がわ だけに 切る（＋0.3 だけ ふちに かかる＝白い すき間が 出ない）。
+       第4.217版（まさちゃん 2026/11/24 17:07「足の模様が繋ぎ目が無くなってるから、ちゃんと境目が分かるようにして！」）：
+       前は 帯が 脚の はばより 左右 1.5 ずつ はみ出して、となりの 脚との あいだの ふちの 線を かくして いた"""
+    x, y = HOOVES[i]
+    band = _sample(smooth([(x - 6, y - 4), (x + 6, y - 4), (x + 6, y + 2), (x - 6, y + 2)]))
+    P = _clip(_grow(_sample(legs[i]), .3), band)
+    k = max(range(len(P)), key=lambda j: math.dist(P[0], P[j]))      # とじた 形：いちばん 遠い 点で 2つに 分けて 点を へらす
+    P = _rdp(P[:k + 1], .02)[:-1] + _rdp(P[k:] + [P[0]], .02)[:-1]
+    g2 = lambda v: f'{v:.2f}'.rstrip('0').rstrip('.')
+    return 'M' + ' L'.join(f'{g2(px)} {g2(py)}' for px, py in P) + ' Z'
+
+
+def pony_hooves(which=FAR + NEAR):
+    legs = pony_shapes()[4]
+    return ''.join(path(hoof_d(i, legs), fill='#FFB3CF') for i in which)
 
 
 def pony_face_side():
@@ -90,8 +166,13 @@ def pony_mane(curls=((60, 25, 11), (53, 37, 11), (51, 51, 10), (55, 63, 8), (71,
     return out
 
 
-def pony_ears(ears=(((60, 26), (55, 4), (71, 18)), ((84, 22), (92, 3), (97, 25))),
-              inner=(((61, 22), (58, 10), (67, 18)), ((87, 20), (92, 9), (94, 22))), bow_at=(76, 15)):
+SIDE_EARS = (((60, 26), (55, 4), (71, 18)), ((84, 22), (92, 3), (97, 25)))      # 横向きの 頭の 耳（左・右）
+SIDE_INNER = (((61, 22), (58, 10), (67, 18)), ((87, 20), (92, 9), (94, 22)))     # 耳の 中の ピンク
+SIDE_BOW = (76, 15)                                                             # 頭の リボンの 結び目
+FRONT_DX = 4      # 正面の 顔：横向きと 同じ 耳2つ・リボンを 4 右へ（リボンが 顔の まん中 x=80 に くる）
+
+
+def pony_ears(ears=SIDE_EARS, inner=SIDE_INNER, bow_at=SIDE_BOW):
     """耳（たてがみの上）と 頭のリボン"""
     out = outlined([smooth(list(e)) for e in ears], '#FFFFFF', LINE, 2.2)
     for e in inner:
@@ -104,10 +185,10 @@ def pony():
     """右向きのポニー（だいたい 0〜135 × 0〜122）"""
     head, snout, body, neck, legs = pony_shapes()
     out = pony_tail()
-    # 向こうの脚は少しだけ濃く
-    out += outlined(legs[0:1] + legs[2:3], '#FFF0F6', LINE, 2.2)
+    # 向こうの脚は少しだけ濃く。脚の もようは 向こうの 脚の 分を 先に（手前の 脚の ふちが 上に のる＝さかい目が 見える）
+    out += outlined(legs[0:1] + legs[2:3], '#FFF0F6', LINE, 2.2) + pony_hooves(FAR)
     out += outlined([body, neck, head, snout] + legs[1:2] + legs[3:4], '#FFFFFF', LINE, 2.2)
-    out += pony_hooves()
+    out += pony_hooves(NEAR)
     out += pony_face_side()
     out += pony_mane()
     out += pony_ears()
@@ -118,8 +199,8 @@ def pony():
 def pony_body():
     """体：しっぽ・脚・体と首（ふちどり）・ひづめ（頭は べつ）"""
     head, snout, body, neck, legs = pony_shapes()
-    return (pony_tail() + outlined(legs[0:1] + legs[2:3], '#FFF0F6', LINE, 2.2)
-            + outlined([body, neck] + legs[1:2] + legs[3:4], '#FFFFFF', LINE, 2.2) + pony_hooves())
+    return (pony_tail() + outlined(legs[0:1] + legs[2:3], '#FFF0F6', LINE, 2.2) + pony_hooves(FAR)
+            + outlined([body, neck] + legs[1:2] + legs[3:4], '#FFFFFF', LINE, 2.2) + pony_hooves(NEAR))
 
 
 def pony_head_side():
@@ -153,8 +234,10 @@ def pony_head_front(eye_cls=''):
         out += f'<g{c}>{front_eye(ex, 45, side)}</g>'
     out += pony_mane(((54, 28, 10), (49, 40, 10.5), (49, 52, 10), (54, 63, 8), (72, 18, 8.5), (87, 17, 8)),
                      ((54, 28, 4.6), (49, 40, 4.8), (49, 52, 4.5), (72, 18, 3.8)))
-    out += pony_ears((((59, 27), (55, 5), (70, 19)), ((101, 27), (105, 5), (90, 19))),
-                     (((61, 22), (58, 10), (67, 18)), ((99, 22), (102, 10), (93, 18))), bow_at=(64, 14))
+    # 第4.217版（まさちゃん 2026/11/24 17:07「一枚目、の上側の赤丸の耳とリボンの形で、二枚目、三枚目も統一して！」）：
+    #   耳と リボンは 横向きの 頭と 同じ 形（耳2つの あいだに リボン）。前は リボンが 左の 耳の 上（左の 耳が かくれる）・右の 耳だけ 大きかった
+    sh = lambda E: tuple(tuple((x + FRONT_DX, y) for x, y in e) for e in E)
+    out += pony_ears(sh(SIDE_EARS), sh(SIDE_INNER), bow_at=(SIDE_BOW[0] + FRONT_DX, SIDE_BOW[1]))
     return out
 
 

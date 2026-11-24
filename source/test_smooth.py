@@ -144,7 +144,8 @@ check(bool(re.search(r'@media \(-webkit-min-device-pixel-ratio:3\),\(min-resolut
       '星空：画面が 3倍の iPhone では 流れを 1/3pt（＝画面の 1画素）ずつ（steps(1170)。前は どの 画面でも 0.5pt ずつ ＝ 3倍の 画面で 1.5画素ずつ に なって がたついた）')
 # ほかの 壁紙の ファイル（第4.165版の ks_<id>.json の md5）：絵が 手元に ある とき（絵の 名前が 入る）だけ くらべる
 SAME = dict(deepsea='b94d10960aff14f2eb8b188288455892', kirie='d874ec69837117d3dae9dd69809498ad', steam='c48013fe78ee67aaeefc4fa9feb5be9d',
-            ranch='2fdfc69de72ad3fa177236943881ae62', cute='c8053f83635bdf6593e41ec8a3a9dc69', kids='e737b853237cd0672e4199594218295b',
+            ranch='2fdfc69de72ad3fa177236943881ae62', kids='e737b853237cd0672e4199594218295b',
+            cute='6cd4d037102580ea2f4894269fc44977',       # 第4.217版（まさちゃん 2026/11/24 17:07）：ポニーの 正面の 耳と リボン・脚の もようの さかい目・「！」の 場所（前は c8053f83…：動きは かえて いない）
             gold='da4ade57bb5733fac3de0212678fc1e6', fireworks='5e12b63bc9534b5a32d3b1b60b99d1aa',
             lucky='71fbba803a218eafc8f76cae4ddbb95b',      # 第4.215版（まさちゃん 2026/11/24 01:22 ⑤）：招き馬の 首（首輪）の はばを 体に 合わせた（前は bcdc74a5…：動きは かえて いない）
             chalk='9116ecabb050e3b0f0dac72fb08e0ec1', carousel='08168d5be91da3bb13b8652fcc9b5479', silver='f0cf1c64ce06bedd16120b570ae30018',

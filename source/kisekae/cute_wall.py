@@ -134,7 +134,8 @@ def heart_box(cx, cy, s, pad=1.6):
 
 
 # ---------- こっちを見る（頭だけ回す・96秒で1回り） ----------
-EX_AT = (178, 32)             # 2度見の「！」（絵の座標・ポニーが いつもの場所の時）
+EX_AT = (183, 32)             # 2度見の「！」（絵の座標・ポニーが いつもの場所の時）。第4.217版：正面の 右の 耳が 横向きと 同じ 形に なって 左へ 寄った ので、
+                              #   「！」の 左の 線が 耳の 先に かからない ように 5 右へ（前は 178,32）
 EXCLAIM = (f'<g transform="translate({EX_AT[0]} {EX_AT[1]})" stroke-linecap="round">'
            '<path d="M-9.5 -9 l-4 -3 M-10.5 -3 l-5 0 M9.5 -9 l4 -3 M10.5 -3 l5 0" stroke="#FF4F9A" stroke-width="2"/>'
            '<path d="M0 -12.5 L0 0" stroke="#FFFFFF" stroke-width="8.6"/><circle cy="7" r="4.2" fill="#FFFFFF"/>'
