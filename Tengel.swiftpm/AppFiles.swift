@@ -61,7 +61,12 @@ final class AppSchemeHandler: NSObject, WKURLSchemeHandler {
     }
 
     private func respond(_ task: WKURLSchemeTask, url: URL, status: Int, type: String, body: Data, extra: [String: String] = [:]) {
-        var headers = ["Content-Type": type, "Content-Length": String(body.count), "Cache-Control": "no-store", "Accept-Ranges": "bytes"]
+        // 第4.219版（まさちゃん 2026/11/25「なんか全体的にめちゃくちゃ重い！理由見つけて改善して！」）：アプリの 中の 絵・字・データ（中身が かわらない ファイル）は
+        //   WebKit の メモリの キャッシュに のこして 使い回して もらう。前は ぜんぶ no-store だった ので、同じ 絵を 画面に 出す たびに
+        //   （着せ替えの タイル・結果ボード・カードバトルの カード …）ここで 読み直して 送り、iPhone が その 絵を ほどき直して いた（同じ 絵が 2か所に あれば 2まいぶん）。
+        //   中身が かわる もの（自動バックアップ・テストの 合図）・画面 そのもの（.html）・一部分（206）・見つからない（404）は 今まで どおり no-store
+        let fixed = status == 200 && !url.path.hasPrefix("/__native/") && !url.path.hasPrefix("/__selftest/") && !type.hasPrefix("text/html")
+        var headers = ["Content-Type": type, "Content-Length": String(body.count), "Cache-Control": fixed ? "max-age=31536000, immutable" : "no-store", "Accept-Ranges": "bytes"]
         for (key, value) in extra {
             headers[key] = value
         }

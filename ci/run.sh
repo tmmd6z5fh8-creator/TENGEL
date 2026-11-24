@@ -220,6 +220,16 @@ ok = p.get("id") == "lucky" and p.get("after") == "lucky" and "kb" in push and p
      and 0.2 < (p.get("k") or 0) < 0.6 and p.get("below") is True and (p.get("scrollW") or 999) <= 440 and c.get("pvClosed") is True
 print("pv %s after %s push %s board %s rows %d size %sx%s k %s inert %s tab %s closed %s wait %sms -> %s" % (p.get("id"), p.get("after"), p.get("push"), p.get("board"), len(rows), p.get("sw"), p.get("sh"), p.get("k"), p.get("inert"), p.get("tab"), c.get("pvClosed"), p.get("wait"), "OK" if ok else "CHECK " + json.dumps(c, ensure_ascii=False)[:400]))
 ' "$OUT/iphone-report-1.json" 2>&1)"
+  # 第4.219版：上の絵（マスター帯）は 見えて いる 間 だけ 動く（本物の WebKit で：一番 上・下へ スクロール・もどす・画面 ぜんぶを おおう 窓・タップで 閉じる）
+  [ -f "$OUT/iphone-report-1.json" ] && say "   kisekae seen: $(python3 -c '
+import json, sys
+k = json.load(open(sys.argv[1])).get("kisekae") or {}; s = k.get("seen") or {}
+t, d, b, c, o = (s.get(x) or {} for x in ("top", "down", "back", "cover", "open"))
+n = t.get("run") or 0
+ok = n > 0 and t.get("pause") is False and d.get("pause") is True and d.get("run") == 0 and (d.get("bottom") or 0) < 0 and b.get("pause") is False and b.get("run") == n \
+     and c.get("pause") is True and c.get("run") == 0 and o.get("pause") is False and o.get("run") == n and (o.get("ms") or 9999) < 1500
+print("top run %s / down pause %s run %s / back run %s / cover pause %s run %s / tap-close run %s %sms -> %s" % (n, d.get("pause"), d.get("run"), b.get("run"), c.get("pause"), c.get("run"), o.get("run"), o.get("ms"), "OK" if ok else "CHECK " + json.dumps(s, ensure_ascii=False)[:300]))
+' "$OUT/iphone-report-1.json" 2>&1)"
   # 第4.212版：値段（初回 5,000P・読み込み 400P・5連も 1レース 400P・マザーデータの 枠 23,000P・おもちゃ 3,000P）・Pカスタムの「おもちゃを購入」（2つ）・
   #   設定の「古い台帳をリセットする」の カード（バックアップの すぐ 下・注意書き）・まとめて 消す 口（TengelLocal.delBets）が 本物の アプリの 画面に ある
   [ -f "$OUT/iphone-report-1.json" ] && say "   v212: $(python3 -c '
