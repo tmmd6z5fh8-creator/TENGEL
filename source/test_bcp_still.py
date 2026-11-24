@@ -69,13 +69,13 @@ fl = _bcp.files(); MD = master('bcp_assets')
 sha = lambda p_: hashlib.sha1(open(p_, 'rb').read()).hexdigest()
 same = all(os.path.exists(os.path.join(MD, f)) and sha(os.path.join(MD, f)) == sha(os.path.join(BCP_DIR, f)) for f in fl)
 sizes = {Image.open(os.path.join(BCP_DIR, BG(nm))).size for _i, _k, _n, nm in STAGES}
-fgs = [f for f in fl if f.endswith('_f2.webp')]
+fgs = [f for f in fl if f.endswith(('_f2.webp', '_f3.webp'))]      # 第4.216版：花束①・④は 右上を 直した …_f3.webp
 fg_ok = all(Image.open(os.path.join(BCP_DIR, f)).mode == 'RGBA' and Image.open(os.path.join(BCP_DIR, f)).size == (1170, 2532) for f in fgs)
 tot = sum(os.path.getsize(os.path.join(BCP_DIR, f)) for f in fl)
-check(len(fl) == len(set(fl)) == 86 and len(STAGES) == 44 and sum(1 for f in fl if f.startswith('bcp_t_')) == 11 and all(BG(nm) in fl for _i, _k, _n, nm in STAGES) and sum(1 for f in fl if f.endswith('_b2.webp')) == 44 and not [f for f in fl if f.endswith(('_bl.webp', '_fg.webp', '_b.webp'))] and not any(f'bcp_{nm}.webp' in fl for _i, _k, _n, nm in STAGES if _bcp.blank(nm)) and len(fgs) == 31 and not (set(fl) & MOVING) and len(MOVING) > 300
+check(len(fl) == len(set(fl)) == 86 and len(STAGES) == 44 and sum(1 for f in fl if f.startswith('bcp_t_')) == 11 and all(BG(nm) in fl for _i, _k, _n, nm in STAGES) and sum(1 for f in fl if f.endswith(('_b2.webp', '_b3.webp'))) == 44 and sum(1 for f in fl if f.endswith('_b3.webp')) == 11 and not [f for f in fl if f.endswith(('_bl.webp', '_fg.webp', '_b.webp'))] and not any(f'bcp_{nm}.webp' in fl for _i, _k, _n, nm in STAGES if _bcp.blank(nm)) and len(fgs) == 31 and not (set(fl) & MOVING) and len(MOVING) > 300
       and not [f for f in fl if f.startswith(('bcp_ring', 'bcp_shusse', 'bcp_miss3', 'bcp_t_ring', 'bcp_t_climb', 'bcp_t_cover'))] and not (set(nm for _i, _k, _n, nm in STAGES) & set(_bcp.GONE))
       and _bcp.stills_out() == [] and all('mo' not in d for d in _bcp.data()['d'].values()) and same and sizes == {(1170, 2532)} and fg_ok,
-      f'アプリに 入れる 絵は 86まい（見本 11・止まった 絵 44〈どれも ボードの 中を ぬり直した 絵：第4.215版 …_b2.webp〉・前の 絵 31〈…_f2.webp〉：{tot / 1e6:.2f}MB）・消した 3こ（結果ボードを廻る・出世馬・隠蔽作戦）の 絵は 入れない・動く 絵の 部品（{len(MOVING)}まい）と 動きの データは 入れない・'
+      f'アプリに 入れる 絵は 86まい（見本 11・止まった 絵 44〈どれも ボードの 中を ぬり直した 絵：第4.215版 …_b2.webp・第4.216版 描き直した 11まいは …_b3.webp〉・前の 絵 31〈…_f2.webp・花束①・④は …_f3.webp〉：{tot / 1e6:.2f}MB）・消した 3こ（結果ボードを廻る・出世馬・隠蔽作戦）の 絵は 入れない・動く 絵の 部品（{len(MOVING)}まい）と 動きの データは 入れない・'
       f'中身は もとの 絵（ios/bcp_assets）と 同じ＝軽く して いない・止まった 絵と 前の 絵は 1170×2532（{sizes}）')
 
 try:
@@ -153,7 +153,7 @@ try:
             keep = np.ones(src.shape[:2], bool)
             for (x0, y0, x1, y1), m in ((box['rb'], 12), (box['close'], 132)):      # 「とじる」は まわりの 光（box-shadow：馬が運ぶ結果ボード など）も のぞく
                 keep[max(0, int(y0 * 3) - m):int(y1 * 3) + m, max(0, int(x0 * 3) - m):int(x1 * 3) + m] = False
-            fgp = os.path.join(MD, f'bcp_{name}_f2.webp')
+            fgp = os.path.join(MD, FG(name) or f'bcp_{name}_f2.webp')
             if os.path.exists(fgp) and _bcp.cfg(name).get('fg'): keep &= np.asarray(Image.open(fgp).convert('RGBA'))[..., 3] == 0
             d = np.abs(shot - src).max(-1)
             res3.append((name, shot.shape[:2] == src.shape[:2], int(d[keep].max()), round(float(keep.mean()), 2)))

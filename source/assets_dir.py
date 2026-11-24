@@ -22,7 +22,8 @@ FX_NEW = ((('sgd_film2.mp4', 'sgd_last2.webp', 'sfx_sgd2.m4a'), ('sgd_film.mp4',
           (('nd_film4.mp4', 'nd_last4.webp'), ('nd_film.mp4', 'nd_last.webp', 'nd_film2.mp4', 'nd_last2.webp', 'nd_film3.mp4', 'nd_last3.webp')),
           (('gk_film2.mp4', 'gk_last2.webp'), ('gk_film.mp4', 'gk_last.webp')),
           (('sd_film5.mp4', 'sd_last4.webp'), ('sd_film.mp4', 'sd_last.webp', 'sd_film2.mp4', 'sd_last2.webp', 'sd_film3.mp4', 'sd_last3.webp', 'sd_film4.mp4')),
-          (('gk_film3.mp4', 'gk_last3.webp', 'sfx_gk2.m4a'), ('gk_film.mp4', 'gk_last.webp', 'gk_film2.mp4', 'gk_last2.webp', 'sfx_gk.m4a')))
+          (('gk_film3.mp4', 'gk_last3.webp', 'sfx_gk2.m4a'), ('gk_film.mp4', 'gk_last.webp', 'gk_film2.mp4', 'gk_last2.webp', 'sfx_gk.m4a')),
+          (('gk_film4.mp4', 'gk_last3.webp', 'sfx_gk3.m4a'), ('gk_film.mp4', 'gk_last.webp', 'gk_film2.mp4', 'gk_last2.webp', 'sfx_gk.m4a', 'gk_film3.mp4', 'sfx_gk2.m4a')))
 #   第4.162版（22:32「一枚目の球体のシーン消して！…鳥居とか文字関係はこのファイルのデータを使って！」）：超神様の 動画・さいごの 1まい・音は 新しい もの（…2）を 使う。
 #   新しい ものが 3つ そろって いる ときは 前の もの（球体の 場面 あり）は 入れない（もとの フォルダには 残す）
 #   第4.163版（11/13 00:15「極ど的中の演出の馬、文字をこのファイルと入れ替えて！」・02:35「ノーマルど的中演出の文字このファイルと入れ替えて！」）：極ど的中（紫電）と
@@ -36,6 +37,8 @@ FX_NEW = ((('sgd_film2.mp4', 'sgd_last2.webp', 'sfx_sgd2.m4a'), ('sgd_film.mp4',
 #   前の さいごの 1まい（…3・…2・はじめの もの）を 入れない
 #   第4.215版（まさちゃん 2026/11/24 01:35「神様極的中の演出 ①…顔が…変な影みたいなの…②…破片を薄く…あと…カットイン早すぎるから、ゆっくり」）：神様極的中の 動画・さいごの 1まい・音は
 #   新しい もの（gk_film3.mp4・gk_last3.webp・sfx_gk2.m4a：寄りが 長く なって 時刻が かわった ので 音も 作り直し）。3つ そろって いる ときは 前の もの（…2・はじめの もの・sfx_gk.m4a）を 入れない
+#   第4.216版（まさちゃん 2026/11/24 11:01「カットインもう少し早くして！…3Dのデータから入れ直すことできる？」）：神様極的中の 動画・音は 新しい もの（gk_film4.mp4・sfx_gk3.m4a：
+#   寄りが 1つ 0.6秒 で 時刻が かわった）。さいごの 1まいは 同じ（gk_last3.webp）。そろって いる ときは 前の 動画（…3・…2・はじめの もの）と 音（sfx_gk2・sfx_gk）を 入れない
 FIG_GONE = re.compile(r'fg[267](\.json|\.bin|_[a-z]+\.webp)')      # 第4.176版：なくした フィギュアの デザイン（番号 2・6・7）の 形と 絵
 FIG_BOOTHS = 5      # 第4.201版：思い出フィギュアの ブースの 数（fig/fig_app.js の PAGES と 同じ）。棚の 絵 fg_shelf2_c<番号>.webp は この 数まで アプリに 入れる
 RT_OLD = re.compile(r'rt_(normal|maboroshi|kamisama)_(plate|knob|stick|ptr)\.webp')      # ルーレットの 前の 絵（第4.157版まで）

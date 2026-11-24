@@ -145,7 +145,7 @@ def clean(src, name, cfg=None, dbg=None, P=None, fg=None, model=None):
     fade = np.clip((D - d) / 16.0, 0, 1)[..., None]; synR = (Um[db, si] * fade).astype(np.float32); synR[d > D] = 0      # ふちから はなれると 面の 色へ
     syn = cv2.warpPerspective(synR, Hm, (W, H), flags=cv2.INTER_LINEAR | cv2.WARP_INVERSE_MAP, borderMode=cv2.BORDER_REPLICATE)
     a = cv2.GaussianBlur(M.astype(np.float32), (0, 0), 0.8)[..., None]; out = np.clip(P * (1 - a) + (S + syn) * a, 0, 255)      # ふちを なじませる（1px）
-    if model is not None: model.update(board=np.clip(S + syn, 0, 255), quad=quad > 0, roi=roi, q=q)
+    if model is not None: model.update(board=np.clip(S + syn, 0, 255), quad=quad > 0, roi=roi, q=q, M=M, geo=dict(Hm=Hm, WR=WR, HR=HR, r=r, cxr=cxr, cyr=cyr, hx=hx, hy=hy))      # geo：第4.216版 bcp_rim.py（わくの ふちの 直し）が 使う
     if dbg:
         x0, y0, x1, y1 = [int(t) for t in (max(0, q[:, 0].min() - 50), max(0, q[:, 1].min() - 50), min(W, q[:, 0].max() + 50), min(H, q[:, 1].max() + 50))]
         v = P.copy(); edge = cv2.morphologyEx(M.astype(np.uint8), cv2.MORPH_GRADIENT, np.ones((3, 3), np.uint8)) > 0; v[edge] = (255, 0, 255); gm = guard & roi & ~M; v[gm] = v[gm] * 0.6 + np.array([0, 255, 0]) * 0.4

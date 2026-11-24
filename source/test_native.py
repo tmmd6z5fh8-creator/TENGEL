@@ -879,7 +879,7 @@ try:
         gsx = pg.evaluate('TengelFx.sfxState()')
         check(kg == 'gk' and 'k-gk' in pg.locator('#fxOv').get_attribute('class') and pbg['fz'] and 'rbw' in pbg['box'] and pbg['rbf'] == 1 and pbg['rba'] == 1 and pbg['cur'] == 1.6 and pbg['label'] == '神様極的中ボタン'
               and pg.locator('#fxVh video[data-film=gk_film]').count() == 1 and pg.evaluate("document.querySelector('#fxVh video[data-film=gk_film]').preload") == 'auto' and {'fz_push', 'ndt', 'gk'} <= set(gsx['keys'])
-              and pg.evaluate("window.__FX.sfx.gk") == 'sfx_gk2.m4a' and pg.evaluate("window.__FX.sfx.fz_push") == 'sfx_fz_push.m4a',      # 第4.215版：寄りを ゆっくりに した 動画の 時刻の 音（sfx_gk2.m4a）
+              and pg.evaluate("window.__FX.sfx.gk") == 'sfx_gk3.m4a' and pg.evaluate("window.__FX.sfx.fz_push") == 'sfx_fz_push.m4a',      # 第4.215版：寄りを ゆっくりに した 動画の 時刻の 音（sfx_gk2.m4a）→ 第4.216版：寄りを 1つ 0.6秒 に した 動画の 音（sfx_gk3.m4a）
               f'神様極的中の PUSH：超神様と 同じ 虹色の PUSH（1.6倍・まわる 虹・面に 流れる 虹）・名前「神様極的中ボタン」・音は ど的中の PUSH の 音（fz_push）・出る 前に 動画と 音（ndt・gk）を 読んでおく（{pbg}）')
         pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(100)
         pg.evaluate("(s) => TengelFx.show(Object.assign({ force: 'sgd' }, s))", GS); pg.wait_for_timeout(300)
@@ -901,13 +901,13 @@ try:
             pg.evaluate("window.__goT = performance.now()")
             pg.wait_for_function("() => getComputedStyle(document.querySelector('#fxOv .ov.gk .ndt')).visibility === 'hidden'", timeout=3000)
             check(pg.evaluate("performance.now() - window.__goT") < 1500, '神様極的中：押した 画面は すぐ（約0.55秒）消える（動画の 初めの 真っ暗の 間）')
-            pg.wait_for_function("() => performance.now() - window.__goT > 13100", timeout=16000)      # 第4.215版：寄りを ゆっくりに した ぶん 1.73秒 おそい（ボードは 13.73秒）
+            pg.wait_for_function("() => performance.now() - window.__goT > 12300", timeout=15000)      # 第4.215版：寄りを ゆっくりに した ぶん 1.73秒 おそい（ボードは 13.73秒）→ 第4.216版：寄り 1つ 0.6秒（ボードは 12.93秒）
             hb114 = pg.evaluate("(() => { const h = getComputedStyle(document.querySelector('#fxOv .ov.gk .hb')); return { op: h.opacity, k: getComputedStyle(document.querySelector('#fxOv .ov.gk .gkk')).opacity, t: Math.round(performance.now() - window.__goT) }; })()")
-            check(hb114['op'] == '0' and hb114['k'] == '0', f'神様極的中：13.1秒（最後の 場面：虹色の 極と 雷）は まだ ボードを 出さない（{hb114}）')
-            pg.wait_for_function("() => performance.now() - window.__goT > 15300", timeout=5000)
+            check(hb114['op'] == '0' and hb114['k'] == '0', f'神様極的中：12.3秒（最後の 場面：虹色の 極と 雷）は まだ ボードを 出さない（{hb114}）')
+            pg.wait_for_function("() => performance.now() - window.__goT > 14500", timeout=5000)
             gb = pg.evaluate("(() => { const z = document.querySelector('#fxOv .ov.gk .rb .zrib'); return { hb: getComputedStyle(document.querySelector('#fxOv .ov.gk .hb')).opacity, close: getComputedStyle(document.querySelector('#fxOv .close')).visibility, t: document.querySelector('#fxOv .rb.fz .bh').innerText, rib: z ? z.innerText.replace(/\\s+/g, '') : '', zx: [...document.querySelectorAll('#fxOv .rb .brows li.top .n.zx')].map(n => n.innerText) }; })()")
             check(gb['hb'] == '1' and gb['close'] == 'visible' and gb['t'] == '神様極的中！！！' and gb['rib'] == '超大穴11大穴8が3連単に！' and gb['zx'] == ['11', '8'],
-                  f'神様極的中：13.73秒で ボード「神様極的中！！！」（帯は 超大穴 11 と 大穴 8・3連単の 11 と 8 に 虹色の 輪）→「閉じる」（{gb}）')
+                  f'神様極的中：12.93秒で ボード「神様極的中！！！」（帯は 超大穴 11 と 大穴 8・3連単の 11 と 8 に 虹色の 輪）→「閉じる」（{gb}）')
         else:
             print('  ⚠️ 神様極的中の 動画の webm が ない（ffmpeg で 作ると 動画の 流れも 確かめる）')
         pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(200)
@@ -920,9 +920,9 @@ try:
         pg.wait_for_timeout(1400)   # 押して 2.4秒（さいごの 1まい → 1.3秒 ボード → 1.6秒 見出し → 1.7秒 帯）
         bhg = pg.evaluate("(() => { const e = document.querySelector('#fxOv .ov.gk .rb .bh'), z = document.querySelector('#fxOv .ov.gk .rb .zrib'); const s = getComputedStyle(e); return { op: s.opacity, vis: s.visibility, t: e.innerText, rib: z ? getComputedStyle(z).opacity : null, ribt: z ? z.innerText.replace(/\\s+/g, '') : null, hb: getComputedStyle(document.querySelector('#fxOv .ov.gk .hb')).opacity, k: getComputedStyle(document.querySelector('#fxOv .ov.gk .gkk')).opacity }; })()")
         check(bhg['op'] == '1' and bhg['vis'] == 'visible' and bhg['hb'] == '1' and bhg['t'] == '神様極的中！！！' and bhg['rib'] == '1' and bhg['ribt'] == '超大穴11大穴8が3連単に！' and bhg['k'] == '1'
-              and pg.evaluate("window.__FX.t.GKS") == {'FROM': 13.48, 'WAIT': 1.0} and pg.evaluate("window.__FX.t.GK") == 13.58 and pg.evaluate("window.__FX.t.GKB") == 13.73 and pg.evaluate("window.__FX.art.gk") == ['gk_last3.webp']
-              and pg.evaluate("window.__FX.films.gk_film") is not None and pg.evaluate("window.__FX.css.includes('fxsdBoard .5s cubic-bezier(.2,.9,.3,1.1) 13.73s both')"),
-              f'神様極的中の still：1.3秒で ボード（うしろは 少し 暗く）・見出し「神様極的中！！！」と 帯（超大穴と 大穴）も 一緒に・音は sfx_gk2 の 13.48秒から・ボードは 動画の 13.73秒（第4.215版：寄りを ゆっくりに した ぶん 1.73秒 おそい）（{bhg}）')
+              and pg.evaluate("window.__FX.t.GKS") == {'FROM': 12.68, 'WAIT': 1.0} and pg.evaluate("window.__FX.t.GK") == 12.78 and pg.evaluate("window.__FX.t.GKB") == 12.93 and pg.evaluate("window.__FX.art.gk") == ['gk_last3.webp']
+              and pg.evaluate("window.__FX.films.gk_film") is not None and pg.evaluate("window.__FX.css.includes('fxsdBoard .5s cubic-bezier(.2,.9,.3,1.1) 12.93s both')"),
+              f'神様極的中の still：1.3秒で ボード（うしろは 少し 暗く）・見出し「神様極的中！！！」と 帯（超大穴と 大穴）も 一緒に・音は sfx_gk3 の 12.68秒から・ボードは 動画の 12.93秒（第4.216版：寄りを 1つ 0.6秒）（{bhg}）')
         pg.evaluate('TengelFx.close()'); pg.wait_for_timeout(100)
         pg.evaluate("TengelFx.set({ calm: true })")
         pg.evaluate("(s) => TengelFx.show(s)", dict(GS, godN=2)); pg.wait_for_timeout(200); pg.evaluate('TengelFx.tap()'); pg.wait_for_timeout(300)
@@ -1656,7 +1656,7 @@ try:
             okm = all(m['n'] == 0 and not m['go'] and m['mo'] == '' and m['an'] == 0 and m['oc'] == 0 and m['ot'] == 0 and m['bg'] == _bcp.pics(want6[i])[0] for i, m in enumerate(mo6))
             # 絵は 出て いる（背景が 見える・読めない 絵 0）・読む 絵は 止まった 絵と 前の 絵 だけ
             okm = okm and all((not m['ld']) and m['vis'] == 'visible' and m['bad'] == 0 and sorted(m['srcs']) == sorted(_need6(want6[i])) for i, m in enumerate(mo6))
-            okm = okm and all(_need6(n) == [f'bcp_{n}_b2.webp' if _bcp.blank(n) else f'bcp_{n}.webp'] + ([f'bcp_{n}_f2.webp'] if _bcp.cfg(n).get('fg') else []) for n in ALLD6)      # 第4.153版：ボードの 中を ぬり直した 絵。第4.215版：光の 線・床・ボードに 重なる 光を 直した 絵（うしろ _b2・前の 絵 _f2）
+            okm = okm and all(_need6(n) == [f'bcp_{n}_{"b3" if n in _bcp.REDO3 else "b2"}.webp' if _bcp.blank(n) else f'bcp_{n}.webp'] + ([f'bcp_{n}_{"f3" if n in _bcp.FRONT3_OF else "f2"}.webp'] if _bcp.cfg(n).get('fg') else []) for n in ALLD6)      # 第4.153版：ボードの 中を ぬり直した 絵。第4.215版：光の 線・床・ボードに 重なる 光を 直した 絵（うしろ _b2・前の 絵 _f2）。第4.216版：すじ・板の ふち・右上を 描き直した 11デザインは _b3（花束①・④は 前の 絵も _f3）
         else:
             okm = all(m['n'] == 0 and not m['go'] for m in mo6)
         check(okm and stp[9]['n'] == 0 and not stp[9]['go'] and ex6 == {'cv': 0, 'css': 0},
@@ -1670,7 +1670,8 @@ try:
         gone6 = [f for f in fl6 if f.startswith(('bcp_ring', 'bcp_shusse', 'bcp_miss3', 'bcp_t_ring', 'bcp_t_climb', 'bcp_t_cover'))]      # 第4.214版で 消した 3こ の 絵
         gd6 = p6.evaluate("(ns) => ns.filter(n => window.__BCP.d[n]).length + ['ring', 'climb', 'cover'].filter(i => (window.__BCP.items || {})[i]).length", list(_bcp.GONE))
         check(len(ALLD6) == 44 and all(len(a) == len(set(a)) and sorted(a) == sorted(_need6(n)) for n, a in zip(ALLD6, ps6)) and so6 == [] and len(fl6) == len(set(fl6)) == 86
-              and sum(1 for f in fl6 if f.endswith('_f2.webp')) == 31 and sum(1 for f in fl6 if f.startswith('bcp_t_') and f.endswith('_c.webp')) == 11 and all(_bcp.pics(n)[0] in fl6 for n in ALLD6) and sum(1 for f in fl6 if f.endswith('_b2.webp')) == 44 and not [f for f in fl6 if f.endswith(('_bl.webp', '_fg.webp', '_b.webp'))] and not (set(fl6) & mf6) and mo_n == 0
+              and sum(1 for f in fl6 if f.endswith(('_f2.webp', '_f3.webp'))) == 31 and sum(1 for f in fl6 if f.endswith('_f3.webp')) == len(_bcp.FRONT3_OF) and sum(1 for f in fl6 if f.startswith('bcp_t_') and f.endswith(('_c.webp', '_d.webp'))) == 11 and all(_bcp.pics(n)[0] in fl6 for n in ALLD6)
+              and sum(1 for f in fl6 if f.endswith(('_b2.webp', '_b3.webp'))) == 44 and sum(1 for f in fl6 if f.endswith('_b3.webp')) == len(_bcp.REDO3) == 11 and not [f for f in fl6 if f.endswith(('_bl.webp', '_fg.webp', '_b.webp'))] and not (set(fl6) & mf6) and mo_n == 0
               and gone6 == [] and gd6 == 0 and not (set(ALLD6) & set(_bcp.GONE)),
               f'第4.150版：アプリが 読む 絵は bcx.js と bcp_app.py で 同じ（44デザイン）・入れる 絵 {len(fl6)}（見本 11・止まった 絵 44・前の 絵 31）・動く 絵の 部品（{len(mf6)}枚）は 入れない・動きの データ なし（{mo_n}）・'
               f'第4.214版：消した 3こ の 絵と データは 入って いない（{gone6}・{gd6}）')

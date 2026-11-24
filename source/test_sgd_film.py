@@ -102,7 +102,7 @@ if KG.have():
 
 print('■ アプリ（なくした 演出・新しい 動画の 名前）')
 import build_fx as BF
-check(BF.FILMS == {'sgd_film': 'sgd_film2.mp4', 'sd_film': 'sd_film5.mp4', 'nd_film': 'nd_film4.mp4', 'gk_film': 'gk_film3.mp4'}      # 第4.195版：極ど的中の 動画は …5・第4.215版：神様極的中は …3
+check(BF.FILMS == {'sgd_film': 'sgd_film2.mp4', 'sd_film': 'sd_film5.mp4', 'nd_film': 'nd_film4.mp4', 'gk_film': 'gk_film4.mp4'}      # 第4.195版：極ど的中の 動画は …5・第4.215版：神様極的中は …3
       and BF.STILL['sgd_last'] == 'sgd_last2.webp' and BF.SFX['sgd'] == 'sfx_sgd2.m4a'
       and sorted(BF.SFX) == ['big', 'big_push', 'fz_push', 'gk', 'hit', 'hit_push', 'nd', 'ndt', 'sd', 'sdp', 'sgd'] and sorted(BF.ART) == ['gk', 'nd', 'sd', 'sgd'] and len(BF.ASSET_FILES) == 23      # 第4.175版：ノーマルど的中の さいごの 1まいを 外して 23こ
       and all(f in BF.ASSET_FILES for f in NEW) and not [f for f in BF.ASSET_FILES if f in OLD or f.startswith('pm_')],

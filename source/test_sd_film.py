@@ -154,7 +154,7 @@ allf = set(OLD) | set(NEW) | {'sfx_sd.m4a', 'sfx_nd.m4a', 'gk_film.mp4', 'gk_las
 sd1, nd1 = {'sd_film.mp4', 'sd_last.webp'}, {'nd_film.mp4', 'nd_last.webp'}
 sd2, nd2 = {'sd_film2.mp4', 'sd_last2.webp'}, {'nd_film2.mp4', 'nd_last2.webp'}
 check(S('fx_assets', allf) == set(OLD) and S('fx_assets', allf - {'sd_last3.webp'}) == sd1 | nd1 | nd2 and S('fx_assets', allf - {'nd_film3.mp4'}) == sd1 | sd2 | nd1
-      and S('fx_assets', allf - set(NEW)) == sd1 | nd1 and S('fx_assets', set(OLD1) | {'sfx_sd.m4a'}) == set() and len(assets_dir.FX_NEW) == 10
+      and S('fx_assets', allf - set(NEW)) == sd1 | nd1 and S('fx_assets', set(OLD1) | {'sfx_sd.m4a'}) == set() and len(assets_dir.FX_NEW) == 11      # 第4.216版：神様極的中の 第16稿（gk_film4.mp4・sfx_gk3.m4a）で 1つ ふえた
       and S('fx_assets', allf | set(NOW)) == set(OLD) | set(NEW) and S('fx_assets', allf | {'sd_film4.mp4', 'sd_last4.webp'}) == set(OLD) | {'sd_film3.mp4', 'sd_last3.webp'},
       'アプリに 入れない もの（assets_dir.superseded）：前の 動画と さいごの 1まいは、新しい 2つが そろって いる 組 だけ（極ど的中・ノーマルど的中 べつべつ。…3 が そろえば …2 と はじめの もの・'
       '…3 が なければ …2 を 使って はじめの もの だけ 外す）')

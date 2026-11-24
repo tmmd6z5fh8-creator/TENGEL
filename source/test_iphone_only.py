@@ -103,7 +103,7 @@ if r.returncode == 0:
           and not any(x in html for x in ('pm_face_F.webp', 'pm_fin.webp', 'sfx_pc.m4a', 'sfx_zp.m4a', 'sfx_spg.m4a', 'sfx_spg_up.m4a', 'spg_up.mp4', 'sgd_film.mp4', 'sgd_last.webp', 'sfx_sgd.m4a', 'sd_film.mp4', 'sd_last.webp', 'nd_film.mp4', 'nd_last.webp', 'sd_film2.mp4', 'sd_last2.webp', 'nd_film2.mp4', 'nd_last2.webp', 'sd_film3.mp4', 'sd_last3.webp', 'nd_film3.mp4', 'nd_last3.webp', 'gk_film.mp4', 'gk_last.webp', 'gk_film2.mp4', 'gk_last2.webp', 'sfx_gk.m4a', '.fxs .ov.fz.pm', '.fxs .ov.fz.zp', '.fxs .spu', '.fxs .zpdefs', 'spgGo', 'spzOv')) and 'sd_t_hit.webp' not in html and 'sd_horse.webp' not in html and 'sd_film5.mp4' in html and 'sd_film4.mp4' not in html
           and 'nd_film4.mp4' in html and 'nd_last4.webp' not in html and 'class=\\"nds\\"' not in html and '.fxs .ov.fz.nd' in html      # 第4.175版：ノーマルど的中の さいごの 1まいは 入れない（幕にも 置かない）
           and [FILMS['sd_film'], STILL['sd_last'], FILMS['nd_film'], STILL['nd_last'], SFX['sd'], SFX['nd']] == ['sd_film5.mp4', 'sd_last4.webp', 'nd_film4.mp4', 'nd_last4.webp', 'sfx_sd.m4a', 'sfx_nd.m4a']      # 第4.195版：極ど的中の 動画は 顔の 場面だけ 新しい 馬の …5
-          and 'gk_film3.mp4' in html and 'gk_last3.webp' in html and 'sfx_gk2.m4a' in html and '.fxs .ov.fz.gk' in html and FXJ['board']['titles'].get('gk') == '神様極的中！！！' and FXJ['t'].get('GKB') == 13.73 and FXJ['t'].get('GK') == 13.58   # 第4.117版：神様極的中・第4.215版：顔・かけら・寄りを 直した 動画（…3）と その 時刻の 音（sfx_gk2.m4a）・ボードは 13.73秒
+          and 'gk_film4.mp4' in html and 'gk_last3.webp' in html and 'sfx_gk3.m4a' in html and 'gk_film3.mp4' not in html and 'sfx_gk2.m4a' not in html and '.fxs .ov.fz.gk' in html and FXJ['board']['titles'].get('gk') == '神様極的中！！！' and FXJ['t'].get('GKB') == 12.93 and FXJ['t'].get('GK') == 12.78   # 第4.117版：神様極的中・第4.215版：顔・かけら・寄りを 直した 動画（…3）と その 時刻の 音（sfx_gk2.m4a）・ボードは 13.73秒
           and '.fxs .ov.fz.sgd' in html and '.fxs .ov.fz.sd' in html and "data-film" in html and 'WAIT_MAX' in html and '.ph ' not in html.split('window.__FX=')[1][:400000]
           and sorted(FXJ['reveal']) == ['big', 'gk', 'hit', 'hit_t', 'miss', 'nd', 'sd', 'sgd'] and sorted(FXJ['push']) == ['big_t', 'fz_t', 'hit', 'hit_t'] and 'fz' not in FXJ['sfx'] and '.nic' not in FXJ['css'] and 'gd' not in FXJ['art'] and 'gd' not in FXJ['sfx'] and 'gd' not in FXJ['board']['titles'] and 'hidden' not in FXJ['board']['titles']
           and 'gd_dome.webp' not in html and 'sfx_gd.m4a' not in html and '.fxs .ov.fz.gd' not in html and 'GD' not in FXJ['t'] and 'ZP' not in FXJ['t'],
@@ -112,7 +112,8 @@ if r.returncode == 0:
           '第4.163版：極ど的中（紫電）と ノーマルど的中の 動画／さいごの 1まいは 新しい もの（馬と 字は まさちゃんの 3D。音は 前と 同じ）・'
           '第4.164版：字を 明るく した もの → 第4.171版：同じ 絵を 3倍（1170×2532）に した もの（sd_film4.mp4・sd_last4.webp・nd_film4.mp4・nd_last4.webp・神様極的中は gk_film2.mp4・gk_last2.webp）・前の 名前（…3・…2・はじめの もの）は 入って いない・'
           '第4.195版：極ど的中の 動画は 顔の 場面だけ 新しい 馬（sd_film5.mp4：さいごの 1まいは sd_last4.webp の まま・sd_film4.mp4 は 入って いない）・'
-          '第4.215版：神様極的中は 顔の まだら・かけら・寄りを 直した もの（gk_film3.mp4・gk_last3.webp・音 sfx_gk2.m4a・ボード 13.73秒）・前の もの（…2・sfx_gk.m4a）は 入って いない')
+          '第4.215版：神様極的中は 顔の まだら・かけら・寄りを 直した もの（gk_film3.mp4・gk_last3.webp・音 sfx_gk2.m4a・ボード 13.73秒）・前の もの（…2・sfx_gk.m4a）は 入って いない・'
+          '第4.216版：神様極的中は はじめの 顔を 3D から（下向き → 上へ）・寄りを 1つ 0.6秒 に した もの（gk_film4.mp4・さいごの 1まいは gk_last3.webp の まま・音 sfx_gk3.m4a・ボード 12.93秒）・前の 動画と 音（…3・sfx_gk2.m4a）は 入って いない')
     check('pm' not in ART and not [f for f in ASSET_FILES if f.startswith(('pm_', 'spg', 'sfx_pc', 'sfx_zp', 'sfx_spg'))] and 'gd' not in ART and 'gd' not in SFX and ART['sd'] == ['sd_last4.webp'] and ART['nd'] == [] and ART['gk'] == ['gk_last3.webp'] and ART['sgd'] == ['sgd_last2.webp'] and len(FILMS) == 4 and len(ASSET_FILES) == 11 + 3 + 4 + 5 and ASSET_FILES[:5] == ['bcx_hb_eye.webp', 'bcx_hb_fore.webp', 'bcx_hb_head.webp', 'bcx_hb_hind.webp', 'bcx_hb_tail.webp'] and not [f for f in ASSET_FILES if f.startswith('bcx_ph')], f'絵と音と動画の 数：音 11（第4.86版：神様的中の 音は なし・第4.109版：前の ど的中の 音と ネオンの 絵 2まいは 入れない・第4.117版：神様極的中の 音・第4.162版：プレミアム／超プレミアム／超プレミアム神様／昇格の 音 4こは なし）・プレミアムの 絵 43まいは なし（第4.162版）・さいごの 1まい 3（超神様・紫電・神様極的中。第4.175版：ノーマルど的中の ものは 入れない＝もう 出ない 絵）・動画 4（第4.162版：昇格の 動画は なし）・ボードを持つ馬の 部品 5（第4.108版）・結果ボードカスタムの 幻の 馬の 絵 2まいは 入れない（第4.113版：出世馬と いっしょに 消した）（{len(ASSET_FILES)}）')
     check('root.TengelBoardArt = {' in html and 'window.TengelBoard = {' in html and 'setBoard' in html and 'jp.tengel.app.boardcustom' in html
           and html.index('root.TengelBoardArt = {') < html.index('window.TengelBoard = {') and html.index('window.TengelKisekae') < html.index('window.TengelBoard = {')
@@ -147,7 +148,9 @@ if r.returncode == 0:
     so = _bcp.stills_out()
     bsz = sum(os.path.getsize(os.path.join(bdir, f)) for f in bhave) if bhave else 0
     check(mo_d == [] and len(mo_f) == 346 and not (set(mo_f) & set(bfiles)) and not any(f in res for f in mo_f) and so == []
-          and all((BCPJ['d'][k].get('p') or f'bcp_{k}.webp') in bfiles for k in BCPJ['d']) and sum(1 for k in BCPJ['d'] if BCPJ['d'][k].get('p') == f'bcp_{k}_b2.webp') == 44 and 'D.p ||' in html and all((f'bcp_{k}_f2.webp' in bfiles) == bool(BCPJ['d'][k].get('fg')) and (BCPJ['d'][k].get('f') == f'bcp_{k}_f2.webp') == bool(BCPJ['d'][k].get('fg')) for k in BCPJ['d']) and sum(1 for k in BCPJ['d'] if BCPJ['d'][k].get('fg')) == 31
+          and all((BCPJ['d'][k].get('p') or f'bcp_{k}.webp') in bfiles for k in BCPJ['d']) and sum(1 for k in BCPJ['d'] if BCPJ['d'][k].get('p') == f'bcp_{k}_{"b3" if k in _bcp.REDO3 else "b2"}.webp') == 44 and sum(1 for k in BCPJ['d'] if BCPJ['d'][k].get('p') == f'bcp_{k}_b3.webp') == 11 and 'D.p ||' in html
+          and all((_bcp.pics(k)[1] in bfiles) == bool(BCPJ['d'][k].get('fg')) and (BCPJ['d'][k].get('f') == f'bcp_{k}_{"f3" if k in _bcp.FRONT3_OF else "f2"}.webp') == bool(BCPJ['d'][k].get('fg')) for k in BCPJ['d']) and sum(1 for k in BCPJ['d'] if BCPJ['d'][k].get('fg')) == 31
+          and [BCPJ['items'][i].get('t') for i in ('toast', 'snap', 'bloom', 'race')] == ['bcp_t_toast_d.webp', 'bcp_t_snap_d.webp', 'bcp_t_bloom_d.webp', None]      # 第4.216版：描き直した 11デザイン（_b3・花束①・④の 前の 絵 _f3）と 見本 3つ（_d）
           and 'D.f ||' in html and not [f for f in bfiles if f.endswith(('_bl.webp', '_fg.webp'))]      # 第4.215版：光の 線・床・ボードに 重なる 光を 直した 絵（うしろ …_b2.webp・前の 絵 …_f2.webp：kisekae/bcp/bcp_remake.py）
           and (not bhave or 12.6e6 < bsz < 13.8e6) and 'bcpld' in html and "decoding = 'sync'" in html and 'bcp_${name}.webp' in html and 'const st = true' in html,
           f'第4.150版：絵の ボードは 動かない：動きの データ なし（{len(mo_d)}段）・動く 絵の 部品 {len(mo_f)}まいは アプリに 入れない・44段 ぜんぶ 止まった 絵と 前の 絵（31段）を 入れる・'
@@ -264,14 +267,14 @@ if r.returncode == 0:
             for _i, _k, st in _B3.ITEMS:
                 for _c, n in st:
                     if not _B3.blank(n): continue
-                    f = f'bcp_{n}_b2.webp'
+                    f = _B3.pics(n)[0]      # 第4.216版：描き直した 11デザインは …_b3.webp
                     if f not in res or f'bcp_{n}.webp' in res or f'bcp_{n}_bl.webp' in res or not os.path.isfile(os.path.join(MD_, f'bcp_{n}.webp')): return None
                     im = _I.open(os.path.join(RES, f))
                     if im.size != (1170, 2532): return None
                     a = _np.asarray(im.convert('RGB'), _np.float32); o = _np.asarray(_I.open(os.path.join(MD_, f'bcp_{n}.webp')).convert('RGB'), _np.float32); q, m = _q(n)
                     core = _cv.erode(m, _cv.getStructuringElement(_cv.MORPH_ELLIPSE, (121, 121))) > 0; sn, so_ = _std(a, core), _std(o, core); rat.append(sn / so_)
                     if n.startswith(('ring', 'toast', 'race', 'trophy', 'carry', 'bouquet', 'miss4')): simple.append(sn)
-                    fgp = os.path.join(MD_, f'bcp_{n}_f2.webp')      # 第4.215版：前の 絵（キャラに ぴったり 合わせた …_f2.webp）
+                    fgp = os.path.join(MD_, _B3.pics(n)[1] or f'bcp_{n}_f2.webp')      # 第4.215版：前の 絵（キャラに ぴったり 合わせた …_f2.webp）。第4.216版：花束①・④は …_f3.webp
                     if _B3.cfg(n).get('fg') and os.path.isfile(fgp):       # 前の 絵（キャラ）の 所は ぬり直さない（色の 差は 圧縮し直した 分 だけ）
                         fa = _np.asarray(_I.open(fgp).convert('RGBA'))[..., 3] > 200; fgd = max(fgd, float(_np.abs(a - o).max(2)[fa].mean()))
                     if n.startswith('stamp'):

@@ -36,10 +36,16 @@ ITEMS = [
 ]
 GONE = ['ring1', 'ring2', 'ring3', 'ring4', 'shusse1_3d', 'shusse2_3d', 'shusse3_3d', 'shusse4_3d', 'shusse8_3d', 'shusse16_3d', 'shusse24_3d', 'miss3', 'miss3_2', 'miss3_3', 'miss3_4']      # 第4.214版：アプリから 外した デザイン（絵・設定・動きの データは 手元に のこる）
 THUMB = 'bcp_t_{}_c.webp'        # 設定の タイルの 見本（bcp_thumbs.py で 作る・いちばん はじめの 段）。第4.153版：ボードの 中を ぬり直した 絵で 作り直した 見本（_b）・第4.215版：作り直した 絵（_b2・_f2）で 作り直した 見本（_c）。前の 見本（bcp_t_<id>.webp・_b.webp）は 残す＝上書きしない
-THUMB_OF = {}                    # 見本の 名前が きまりと ちがう もの（{ id: 名前 }）
+THUMB_OF = {'toast': 'bcp_t_toast_d.webp', 'snap': 'bcp_t_snap_d.webp', 'bloom': 'bcp_t_bloom_d.webp'}      # 見本の 名前が きまりと ちがう もの（{ id: 名前 }）。第4.216版：描き直した 乾杯・自撮り・花束の 見本（_d）
 BLANK = '_b2'                    # 背景の 絵の 名前の しっぽ。第4.153版（まさちゃん 2026/11/11 15:39「他の結果ボードカスタムのボードも、綺麗に何も書いていないようにして！」）：ボードの 中を きれいな 板に ぬり直した 絵（bcp_blank.py：_bl）
                                  #   第4.215版（まさちゃん 2026/11/24 01:31 の ①〜④）：絵の 上下を 作り直して・板を 絵の ぎりぎり まで ぬり直した 絵（bcp_remake.py：_b2）。前の 絵（_bl）は 絵の フォルダに 残す
 FRONT = '_f2'                    # 前の 絵（ボードの 前の キャラ など）の 名前の しっぽ。第4.215版：絵の ぎりぎりで 切りぬき直した 絵（bcp_fg2.py：_f2）。前の 絵（_fg）は 絵の フォルダに 残す
+# 第4.216版（まさちゃん 2026/11/24 11:39「赤丸のところ、枠がガタガタしてたり書き直しが甘かったりするところあるから、確認して描き直して！」）：
+#   花束①〜④の 上下・自撮り①〜④の 上の 光の すじを 描き直し、乾杯①〜③の 板の ふち（わくの 内がわの 段）を なおし、花束①・④の 右上の 四角を 直した 絵（bcp_remake.py --v3：_b3）。
+#   前の 絵を 直した デザイン（花束①・④）は 前の 絵も 新しい 名前（_f3）。前の 絵（_b2・_f2）は 絵の フォルダに 残す
+BLANK3, FRONT3 = '_b3', '_f3'
+REDO3 = ('bouquet1', 'bouquet2', 'bouquet3', 'bouquet4', 'selfie1', 'selfie2', 'selfie3', 'selfie4', 'toast1', 'toast2', 'toast3')
+FRONT3_OF = ('bouquet1', 'bouquet4')
 
 
 def thumb(iid):
@@ -79,8 +85,8 @@ def pics(name):
     """アプリが 読む 背景と 前の 絵の 名前（bcx.js の picBg・picFg と 同じ きまり）。
        第4.150版（まさちゃん 2026/11/11 02:36「結果カスタムボードの動き全部無くして！…その代わり、画質あげて！」）：どの デザインも 止まった 絵（bcp_<name>.webp・前の 絵 _fg.webp）。
        キャラが 動く 部品（chr/motion.json の bgx・fgx・layers・光と 雲）は アプリに 入れない（道具と 部品は 手元に のこす：もどす ときは この 関数と design の mo）"""
-    bg = f'bcp_{name}{BLANK}.webp' if blank(name) else f'bcp_{name}.webp'        # 第4.153版：出世馬（3D の 絵）の ほかは ボードの 中を ぬり直した 絵。前の 絵（bcp_<name>.webp）は 絵の フォルダに 残す（ぬり直す もと）
-    fg = f'bcp_{name}{FRONT}.webp' if cfg(name).get('fg') else None                 # 前の 絵（キャラ）。第4.215版：切りぬき直した 絵（_f2）
+    bg = f'bcp_{name}{BLANK3 if name in REDO3 else BLANK}.webp' if blank(name) else f'bcp_{name}.webp'        # 第4.153版：出世馬（3D の 絵）の ほかは ボードの 中を ぬり直した 絵。前の 絵（bcp_<name>.webp）は 絵の フォルダに 残す（ぬり直す もと）。第4.216版：描き直した デザインは _b3
+    fg = f'bcp_{name}{FRONT3 if name in FRONT3_OF else FRONT}.webp' if cfg(name).get('fg') else None          # 前の 絵（キャラ）。第4.215版：切りぬき直した 絵（_f2）。第4.216版：花束①・④は 右上を 直した _f3
     return bg, fg
 
 

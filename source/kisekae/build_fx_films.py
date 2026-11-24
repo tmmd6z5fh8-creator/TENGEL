@@ -36,6 +36,8 @@
      gk_last.webp … 神様極的中の 動画の さいごの 1まい
      gk_film3.mp4・gk_last3.webp・sfx_gk2.m4a … 第4.215版（まさちゃん 2026/11/24 01:35）：顔の まだらを けした・かけらを 画面に 近づく ほど うすく・寄りを ゆっくり（1つ 0.8秒）に した
                      できた 動画（第15稿：kisekae/gk15/ の 道具が 第14稿の コマから 作る・413コマ・13.77秒）を 3倍に のばした もの と、その 時刻の 音（FILMS=gk）
+     gk_film4.mp4・sfx_gk3.m4a … 第4.216版（まさちゃん 2026/11/24 11:01・12:23）：はじめの 顔を 3D から 描き直した（下向き → 光が 強く なるに つれて 上へ）・寄りを 1つ 0.6秒 に した
+                     できた 動画（第16稿：kisekae/gk16/・389コマ・12.97秒）を 3倍に のばした もの と、その 時刻の 音。さいごの 1まいは 同じ 場面 なので gk_last3.webp の まま
    乱数の 種が 決まって いるので、コマの 絵は 何回 作っても 同じ（動画の ファイルは ffmpeg の 版で 少し ちがう ことが ある）。
    第4.162版：もう ある 動画は 作り直さない（もと＝マスターを 上書きしない）。作り直す ときは FORCE=1（その 動画の 名前を FILMS で 決めて）。
    numpy・opencv・fontTools・librsvg・ffmpeg・Playwright がいる。キャンバス（見本）から 取った 同じ 名前の ファイルを 置いても よい。"""
@@ -267,6 +269,9 @@ def gk_film_up():
     assert film != 'gk_film.mp4' and last != 'gk_last.webp', '新しい 名前で 書き出す（前の ものを 上書きしない）'
     run([FF, '-y', '-loglevel', 'error', '-i', src, '-vf', GK_UP, '-c:v', 'libx264', '-preset', 'slow', '-crf', '20', '-profile:v', 'high', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-tag:v', 'avc1', '-an', os.path.join(out, film)])
     print(film, f'{os.path.getsize(os.path.join(out, film)) / 1e6:.2f}MB', flush=True)
+    if os.path.exists(os.path.join(out, last)):                                      # 第4.216版：さいごの 1まいが もう ある（同じ 場面）→ 作り直さない（上書きしない）
+        print(last, 'は もう ある → そのまま', flush=True)
+        return
     tmp = os.path.join(work, 'gk_last_up.png')
     run([FF, '-y', '-loglevel', 'error', '-sseof', '-0.05', '-i', src, '-frames:v', '1', '-update', '1', '-vf', GK_UP, tmp])
     import cv2
@@ -279,9 +284,10 @@ def gk_film_up():
 
 def gk_sound():
     """神様極的中の 動画の 音（gen_sfx.py の sfx_gk＝kami_kiwami.py の FILM の 時刻で 作る）→ out/<build_fx.py の SFX の gk>（AAC 160kbps：build_fx_assets.py の 音と 同じ 形）。
-       第4.215版：寄りを ゆっくりに して 時刻が かわった ので 新しい 名前（sfx_gk2.m4a）。前の 音（sfx_gk.m4a＝第14稿までの 時刻）は のこす"""
+       第4.215版：寄りを ゆっくりに して 時刻が かわった ので 新しい 名前（sfx_gk2.m4a）。前の 音（sfx_gk.m4a＝第14稿までの 時刻）は のこす
+       第4.216版：寄りを 1つ 0.6秒に して 時刻が かわった ので 新しい 名前（sfx_gk3.m4a）。前の 音（sfx_gk2.m4a・sfx_gk.m4a）は のこす"""
     name = BF.SFX['gk']
-    assert name != 'sfx_gk.m4a', '新しい 名前で 書き出す（前の ものを 上書きしない）'
+    assert name not in ('sfx_gk.m4a', 'sfx_gk2.m4a'), '新しい 名前で 書き出す（前の ものを 上書きしない）'
     argv = sys.argv
     sys.argv = ['gen_sfx.py']
     try:
