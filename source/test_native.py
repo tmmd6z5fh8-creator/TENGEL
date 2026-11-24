@@ -1194,12 +1194,65 @@ try:
             kss: el ? parseFloat(getComputedStyle(el).getPropertyValue('--kss')) : 0, img: !!document.querySelector('#setKisekae .kst.lv .ksth') }; }""")
         check(lv['id'] == 'lucky' and lv['n'] == 1 and lv['run'] > 0 and lv['others'] == 0 and lv['scoped'] and lv['kp'] and 0.3 < lv['kss'] < 1 and lv['img'],
               f'第4.89版：確認を 開いた カギの タイル（招き馬）だけ 動く 壁紙が 重なる（他の タイルは 止まった 絵・CSS は #setKisekae .kslv に・@keyframes は kp…）（{lv}）')
+        # 第4.218版（まさちゃん 2026/11/24 18:55「①壁紙カスタム 壁紙を選ぶところでタップすると、pushボタンと結果ボードを表示されるようにして、見本みたいに見えるようにして！」）：
+        #   タップした 壁紙の 行の すぐ 下に 見本（その テーマの 的中の PUSH と 結果ボード・架空の レース 9R：馬単 6→2・馬連 2-6 が 的中・3連単は 不的中）
+        PVQ = """(id) => { const c = document.querySelector('#setKisekae'), p = c && c.querySelector('.kspv'), t = c && c.querySelector(`.kst[data-ks="${id}"]`);
+          if (!p || !t) return { p: !!p, n: c ? c.querySelectorAll('.kspv').length : -1, pv: TengelKisekae.pv(), css: (document.querySelector('#ksPvFx') || {}).textContent || '' };
+          const g = p.parentElement, r = p.getBoundingClientRect(), tr = t.getBoundingClientRect(), gr = g.getBoundingClientRect(), tiles = [...g.querySelectorAll('.kst')];
+          const pw = p.querySelector('[data-pvk=push] .fxs'), bw = p.querySelector('[data-pvk=board] .fxs'), btn = pw && pw.querySelector('.push'), hd = document.querySelector('header.top'), tb = document.querySelector('.tabbar');
+          return { p: true, n: c.querySelectorAll('.kspv').length, pv: TengelKisekae.pv(), live: TengelKisekae.live(), prev: p.previousElementSibling ? p.previousElementSibling.dataset.ks : null,
+            below: r.top >= tr.bottom - 1, full: Math.abs(r.width - gr.width) < 1.5, row: tiles.filter(x => Math.abs(x.getBoundingClientRect().top - tr.top) < 1).map(x => x.dataset.ks),
+            after: tiles.filter(x => x.getBoundingClientRect().top > r.bottom - 1).slice(0, 2).map(x => x.dataset.ks),
+            push: btn ? btn.className : '', face: !!(btn && btn.querySelector('.pimg, svg')), tab: btn ? btn.getAttribute('tabindex') : null, dfx: btn ? btn.hasAttribute('data-fx') : null, inert: !!(pw && pw.hasAttribute('inert') && bw.hasAttribute('inert')),
+            board: bw && bw.querySelector('.rb') ? bw.querySelector('.rb').className : '', title: bw && bw.querySelector('.bh') ? bw.querySelector('.bh').innerText : '',
+            rows: bw ? [...bw.querySelectorAll('.brows li')].map(li => li.innerText.replace(/\\s+/g, ' ').trim()) : [], css: (document.querySelector('#ksPvFx') || {}).textContent || '',
+            k: pw ? parseFloat(pw.style.getPropertyValue('--fxk')) : 0, sw: pw ? Math.round(pw.parentElement.getBoundingClientRect().width) : 0, sh: pw ? Math.round(pw.parentElement.getBoundingClientRect().height) : 0,
+            vis: r.top >= (hd ? hd.getBoundingClientRect().bottom : 0) - 1 && r.bottom <= (tb ? tb.getBoundingClientRect().top : innerHeight) + 1,
+            text: p.innerText.replace(/\\s+/g, ' '), sx: document.documentElement.scrollWidth, run: p.getAnimations({ subtree: true }).filter(a => a.playState === 'running').length,
+            bg: (p.querySelector('.kspvbg') || {}).getAttribute ? p.querySelector('.kspvbg').getAttribute('src') : null, tile: t.querySelector('.ksth').getAttribute('src') }; }"""
+        pg.wait_for_timeout(900)
+        pvl = pg.evaluate(PVQ, 'lucky')
+        check(pvl['p'] and pvl['n'] == 1 and pvl['pv'] == 'lucky' and pvl['live'] == 'lucky' and pvl['prev'] == 'lucky' and pvl['below'] and pvl['full']
+              and 'kb' in pvl['push'].split() and ('pim' in pvl['push'].split()) == PIC and pvl['face'] and pvl['tab'] == '-1' and pvl['dfx'] is False and pvl['inert']
+              and pvl['board'].split() == ['rb', 'hit', 't-lucky'] and pvl['title'].replace('\n', '') == '的中！' and pvl['rows'] == ['馬単 的中 6 → 2', '馬連 的中 2 - 6', '3連単 不的中']
+              and '.fxs .rb.t-lucky' in pvl['css'] and '.fxs .push.kb' in pvl['css'] and 0.3 < pvl['k'] < 0.5 and pvl['sw'] > 120 and pvl['sh'] > pvl['sw'] and pvl['sx'] <= 390 and pvl['run'] > 0
+              and '見本：招き馬' in pvl['text'] and '架空のレース' in pvl['text'] and 'PUSHボタン' in pvl['text'] and '結果ボード' in pvl['text'] and '閉じる' in pvl['text'] and pvl['bg'] == pvl['tile'] and pvl['vis'],
+              f'第4.218版：カギの 壁紙（招き馬）を タップ → その 行の 下に 見本（招き馬の PUSH〈押せない〉と 結果ボード・架空の レース）・上の 帯と 下の タブに かくれない（{ {k: v for k, v in pvl.items() if k not in ("css", "text")} }）')
         ks.locator('.kst[data-ks=lucky]').click(position={'x': 10, 'y': 10}); pg.wait_for_timeout(200)
         check(ks.locator('.ksconf').count() == 0 and ks.locator('.kst.cf').count() == 0 and ks.locator('.kst.lv').count() == 0 and pg.evaluate("document.querySelector('#ksPrev').textContent") == '',
               'もう一度 タイルを タップ → 閉じる（動く 壁紙も 消える：いつもの は 動く 絵が ないので どの タイルも 止まった まま）')
+        pv0 = pg.evaluate(PVQ, 'lucky')
+        check(not pv0['p'] and pv0['n'] == 0 and pv0['pv'] == '' and pv0['css'] == '', f'第4.218版：もう一度 タップ → 見本も 閉じる（見本の CSS も 消える）（{pv0}）')
         ks.locator('.kst[data-ks=lucky]').click(); pg.wait_for_timeout(300)
         ks.locator('.ksconf [data-ksact=cancel]').click(); pg.wait_for_timeout(200)
         check(ks.locator('.ksconf').count() == 0 and pg.evaluate('TengelWallet.total()') == 9500 and pg.evaluate("TengelKisekae.current()") == 'default', 'やめると何も変わらない')
+        check(ks.locator('.kspv').count() == 0 and pg.evaluate("TengelKisekae.pv()") == '', '第4.218版：「やめる」で 見本も 閉じる')
+        # 第4.218版：行の まん中の タイル（定番の 1行目：いつもの・牧場・かわいいお馬さん の 牧場）でも、見本は その 行の 下（行は 欠けない：grid の dense）
+        ks.locator('.kst[data-ks=ranch]').click(); pg.wait_for_timeout(1400)
+        pvr = pg.evaluate(PVQ, 'ranch')
+        check(pvr['p'] and pvr['prev'] == 'ranch' and pvr['row'] == ['default', 'ranch', 'cute'] and pvr['after'] == ['kids', 'gold'] and pvr['below'] and pvr['full'] and 'gr' in pvr['push'].split()
+              and pvr['board'].split() == ['rb', 'hit', 't-ranch'] and '.fxs .rb.t-ranch' in pvr['css'] and '.fxs .rb.t-lucky' not in pvr['css'] and pvr['sx'] <= 390 and pvr['vis'],
+              f'第4.218版：牧場（行の まん中）を タップ → 見本は 1行目（いつもの・牧場・かわいいお馬さん）の 下・2行目（毛糸のお馬とロボット・ぷりけつのお馬）は その 下（{ {k: pvr[k] for k in ("row", "after", "prev", "push", "board", "vis")} }）')
+        # 見本の「閉じる」→ 見本だけ 閉じる（解放の 確認は のこる）
+        ks.locator('.kspv [data-ksact=pvx]').click(); pg.wait_for_timeout(300)
+        check(ks.locator('.kspv').count() == 0 and ks.locator('.kst.cf[data-ks=ranch] .ksconf').count() == 1 and pg.evaluate("TengelKisekae.pv()") == '' and pg.evaluate("document.querySelector('#ksPvFx').textContent") == '',
+              '第4.218版：見本の「閉じる」で 見本だけ 閉じる（牧場の 解放の 確認は のこる・見本の CSS は 消える）')
+        ks.locator('.ksconf [data-ksact=cancel]').click(); pg.wait_for_timeout(200)
+        # 使用中の タイル（いつもの）：前は 押しても 何も しなかった → 見本を 開く／もう一度で 閉じる。いつもの は 赤い PUSH（絵が あれば 絵）と いつもの ボード
+        ks.locator('.kst[data-ks=default]').click(); pg.wait_for_timeout(1400)
+        pvd = pg.evaluate(PVQ, 'default')
+        check(pvd['p'] and pvd['prev'] == 'default' and pvd['pv'] == 'default' and pvd['board'].split() == ['rb', 'hit', 't-default'] and pvd['push'].split()[0] == 'push' and ('pim' in pvd['push'].split()) == PIC
+              and pvd['css'] == '' and pg.evaluate("TengelKisekae.current()") == 'default' and '見本：いつもの' in pvd['text'],
+              f'第4.218版：使用中の いつもの を タップ → 見本（いつもの PUSH と ボード・テーマの CSS は 足さない）（{ {k: pvd[k] for k in ("push", "board", "pv")} }）')
+        ks.locator('.kst[data-ks=default]').click(); pg.wait_for_timeout(300)
+        check(ks.locator('.kspv').count() == 0 and pg.evaluate("TengelKisekae.pv()") == '' and pg.evaluate("TengelKisekae.current()") == 'default', '第4.218版：使用中の タイルを もう一度 タップ → 見本を 閉じる（テーマは そのまま）')
+        # ほかの タブへ 行くと 見本は 閉じる（もどった ときは 閉じた 形）
+        ks.locator('.kst[data-ks=ranch]').click(); pg.wait_for_timeout(700)
+        pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(300)
+        pvt = pg.evaluate("[document.querySelectorAll('#setKisekae .kspv').length, TengelKisekae.pv(), document.querySelector('#ksPvFx').textContent.length]")
+        pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(400)
+        check(pvt == [0, '', 0] and ks.locator('.kspv').count() == 0 and ks.locator('.ksconf').count() == 1, f'第4.218版：ほかの タブへ 行くと 見本は 閉じる（もどっても 閉じた まま・解放の 確認は 前と 同じく のこる）（{pvt}）')
+        ks.locator('.ksconf [data-ksact=cancel]').click(); pg.wait_for_timeout(200)
         # 夕焼け（4,500P：第4.212版）を解放 → 着せ替わる（第4.147版：桜を 外した ので、のこった「季節・行事」の 夕焼けで）
         ks.locator('.kst[data-ks=sunset]').click(); pg.wait_for_timeout(300)
         ks.locator('.ksconf [data-ksact=unlock]').click(); pg.wait_for_timeout(1200)

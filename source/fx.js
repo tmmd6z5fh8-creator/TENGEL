@@ -217,11 +217,12 @@
     }
     return `<div class="zrib"><b class="zt">超大穴</b>${supers.map(s => num(s.no, n, true)).join('')}<span>${supers.map(s => esc(s.rank) + '番人気').join('・')}${where}</span></div>`;
   }
-  function boardHTML(kind, spec, supers, bigs, rows, trig) {
+  // th（第4.218版）：テーマを 決めて 作る とき（着せ替えの 見本：sample）。ない（undefined）ときは いまの テーマ・null は いつもの
+  function boardHTML(kind, spec, supers, bigs, rows, trig, th) {
     const k = BOARD_OF[kind] || kind;
     const sub = `${esc(spec && spec.r != null ? spec.r : '')}R の券種ごとの結果`;
     const rib = ribbonHTML(kind, spec, supers, bigs, trig);
-    const ks = KS(), tid = ks ? ks.tid : 'default', orn = ks ? ks.orn : A.board.orn;   // ボードはそのテーマの形（16.4）。CSS は kisekae.js が入れる
+    const ks = th === undefined ? KS() : th, tid = ks ? ks.tid : 'default', orn = ks ? ks.orn : A.board.orn;   // ボードはそのテーマの形（16.4）。CSS は kisekae.js が入れる
     return `<div class="rb ${k} t-${tid}"><div class="hd"><div class="bh${kind === 'miss' ? '' : ' logo'}">${titleHTML(kind)}</div><div class="bsub">${sub}</div>${rib}</div><div class="card">${orn}<ul class="brows">${rows}</ul></div></div>`;
   }
 
@@ -640,6 +641,25 @@
     open(k, spec, d.supers, d.bigs, false, o || {}, d.trig);
     return k;
   }
+  // 着せ替えの 見本（第4.218版・まさちゃん 2026/11/24 18:55「壁紙を選ぶところでタップすると、pushボタンと結果ボードを表示されるようにして、見本みたいに見えるようにして！」）：
+  //   設定 › 着せ替え（kisekae.js）で タップした 壁紙の 的中の PUSH と 結果ボードを 小さく ならべて 出す ための HTML。演出は 出さない（音・舞台・ほかの 画面は さわらない）。
+  //   レースは 見本の 画面（kisekae/mock/Fx_Hit*.dc.html）と 同じ 架空の レース：9R・12頭・馬単 6→2 と 馬連 2-6 が 的中・3連単 6→10→2 は 不的中。
+  //   th＝その テーマの { tid, pc, push, orn }（kisekae.js の fx() と 同じ 形）・null は いつもの。art＝その テーマの PUSHボタンの 絵（kisekae.js の pushArt と 同じ 形・
+  //   読めた とき だけ）。PUSH の 形の きまりは 的中の 画面（push）と 同じ：絵が あれば 絵（光る・光の すじ）・絵だけの テーマ（img）で 絵が ない ときは いつもの 赤い PUSH。
+  //   PUSH は 押せない（data-fx なし・tabindex -1）。押された PUSH・はじける かけら・紙吹雪・「閉じる」・結果ボードカスタムの 飾りは 入れない（壁紙の テーマ だけの 見た目）
+  const SAMPLE = { r: 9, n: 12, rows: [{ t: '馬単', state: '的中', hits: [[6, 2]], n: 1 }, { t: '馬連', state: '的中', hits: [[2, 6]], n: 1 }, { t: '3連単', state: '不的中', hits: [], n: 1 }], ranks: { 6: 1, 2: 2, 10: 3 } };
+  function sample(th, art) {
+    css();
+    const a = art && art.src ? art : null;
+    const t = th && th.push && th.pc && (a || !th.push.img) ? th : null;
+    const box = document.createElement('div');
+    box.innerHTML = t ? A.push.hit_t.split('{{PC}}').join(' ' + t.pc).replace('{{SVG}}', t.push.svg) : A.push.hit;
+    const btn = box.querySelector('.push');
+    if (btn) { btn.removeAttribute('data-fx'); btn.setAttribute('tabindex', '-1'); if (a) artOn(btn, a); }
+    const rows = rowsHTML(SAMPLE, 'hit', [], [], null);
+    const board = `<div class="ov hit" style="--n:${Math.max(1, rows.n)}"><div class="dim"></div><div class="rays"></div><div class="hb">${boardHTML('hit', SAMPLE, [], [], rows.html, null, th && th.tid ? th : null)}</div></div>`;
+    return { push: box.innerHTML, board: board, calm: calm(), art: !!a, theme: t ? t.tid : null };
+  }
   // 第4.109版：前の ど的中（fz：フリーズ・ネオンの カット）と 神様的中（gd）の 押したあとは アプリに 入って いない（くじで 出ない）。
   // 決めて 出す とき（テスト・CI の force・ためし）は ノーマルど的中（nd）に する。静かな ボード（的中エフェクト オフ）は ど的中の ボードの まま
   // 第4.162版：なくした 演出（プレミアムど的中 pc → ノーマルど的中 nd・超プレミアム神様的中 spg → 超神様的中 sgd）。静かな ボードでも 同じ（見出しは もとから 同じ）
@@ -849,7 +869,7 @@
   }
 
   window.TengelFx = {
-    on: true, T: A.t, decide: decide, show: show, preview: preview, close: close, prime: prime, get: () => Object.assign({}, S), set: set, calm: calm, reduced: reduced, unlock: unlock,
+    on: true, T: A.t, decide: decide, show: show, preview: preview, sample: sample, close: close, prime: prime, get: () => Object.assign({}, S), set: set, calm: calm, reduced: reduced, unlock: unlock,
     audio: () => (S.sound ? actx() : null),
     current: () => (cur ? { kind: cur.kind, phase: cur.phase, quiet: cur.quiet, theme: cur.theme ? cur.theme.tid : null, film: cur.on, pre: cur.pre, pz: cur.pz, art: cur.art ? cur.art.src : '' } : null),
     tap: () => { if (cur && cur.phase === 'push') reveal(); }, sfxState: () => ({ ctx: !!SX.ctx, fetched: SX.fetched, playing: !!SX.src, more: SX.more.length, keys: Object.keys(SX.raw), bufs: Object.keys(SX.buf) }),

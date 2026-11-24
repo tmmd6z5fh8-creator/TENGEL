@@ -324,11 +324,20 @@
         res.conf = { tile: (card.querySelector('.kst.cf') || {}).dataset ? card.querySelector('.kst.cf').dataset.ks : null, role: lk.getAttribute('role'), text: cf ? cf.innerText.replace(/\n/g, '／') : null,
           unlock: !!(cf && cf.querySelector('[data-ksact=unlock]')), buy: !!(cf && cf.querySelector('[data-gopt=points]')), cancel: !!(cf && cf.querySelector('[data-ksact=cancel]')), top: !!card.querySelector('.ksbody > .ksconf'),
           below: !!(un && lkb && un.getBoundingClientRect().top >= lkb.getBoundingClientRect().bottom - 1), inside: !!(un && un.getBoundingClientRect().right <= lk.getBoundingClientRect().right + 1 && un.getBoundingClientRect().bottom <= lk.getBoundingClientRect().bottom + 1) };
+        // 第4.218版：タップした 壁紙の 見本（PUSH と 結果ボード）が その 行の 下に 出る（本物の WebKit で：形・大きさ・押せない・もう一度 押すと 閉じる）
+        await sleep(1200);
+        var pvb = card.querySelector('.kspv'), pws = pvb && pvb.querySelector('[data-pvk=push] .fxs'), bws = pvb && pvb.querySelector('[data-pvk=board] .fxs'), pbt = pws && pws.querySelector('.push');
+        res.conf.pv = pvb ? { id: K.pv ? K.pv() : null, after: pvb.previousElementSibling && pvb.previousElementSibling.dataset ? pvb.previousElementSibling.dataset.ks : null,
+          push: pbt ? pbt.className : null, tab: pbt ? pbt.getAttribute('tabindex') : null, inert: !!(pws && pws.hasAttribute('inert')), board: bws && bws.querySelector('.rb') ? bws.querySelector('.rb').className : null,
+          rows: bws ? Array.from(bws.querySelectorAll('.brows li')).map(function (li) { return li.innerText.replace(/\s+/g, ' ').trim(); }) : [],
+          w: Math.round(pvb.getBoundingClientRect().width), gw: Math.round(pvb.parentElement.getBoundingClientRect().width), sw: pws ? Math.round(pws.parentElement.getBoundingClientRect().width) : 0, sh: pws ? Math.round(pws.parentElement.getBoundingClientRect().height) : 0,
+          k: pws ? parseFloat(pws.style.getPropertyValue('--fxk')) || 0 : 0, below: pvb.getBoundingClientRect().top >= lk.getBoundingClientRect().bottom - 1, scrollW: document.documentElement.scrollWidth } : null;
         var lk2 = card.querySelector('.kst.cf') || lk;                      // paint() で タイルは 作り直されるので、もう一度 さがす
         lk2.scrollIntoView({ block: 'center' }); await sleep(300);
         await mark('ks-conf');
         lk2.click(); await sleep(300);
         res.conf.closed = !card.querySelector('.ksconf');
+        res.conf.pvClosed = !card.querySelector('.kspv');
       } else { res.conf = null; await mark('ks-conf'); }
       await K.apply('tengel'); await sleep(900);
       document.querySelector('.tabbar [data-tab=judge]').click(); await sleep(400);

@@ -33,9 +33,25 @@
   const TK_CSS = '#setKisekae .kstk{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 2px;border:1px dashed var(--line);border-radius:12px;padding:9px 12px;background:var(--surface-2)}'
     + '#setKisekae .kstk .kstx{flex:1 1 190px;min-width:0;font-size:13px;line-height:1.5}#setKisekae .kstk .kstx>b{display:block;font-size:14px}#setKisekae .kstk small{display:block;font-size:12px;color:var(--muted)}'
     + '#setKisekae .kstk .kstb{display:flex;gap:8px;flex:none;flex-wrap:wrap}';
+  // 見本（第4.218版）：タップした 壁紙の タイルの 行の すぐ 下に、全部の 列を つかう 箱（.kspv）。並びは grid の dense で つめる（タイルの 行は 欠けない）。
+  //   中は 2つの 小さな 画面（.kspvw：舞台 390×844 の まん中 390×560 を 幅に 合わせて 縮める）＝ 左 PUSH・右 結果ボード。うしろは その 壁紙の 小さな 絵
+  //   右の あきは 右下の 丸い ボタンの 列（#fabCol）の 手前まで（--fabz：tc/tc_launch.js が 入れる・買い目編集の 保存の 帯と 同じ）＝「閉じる」と ボードが 列に かくれない
+  const PV_CSS = '#setKisekae .ksgrid{grid-auto-flow:row dense}'
+    + '#setKisekae .kspv{grid-column:1/-1;min-width:0;padding:8px max(8px,var(--fabz,0px)) 9px 8px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);animation:ksCf .18s ease-out}'
+    + '#setKisekae .kspvh{display:flex;align-items:center;gap:8px;margin:0 2px 8px}'
+    + '#setKisekae .kspvt{flex:1 1 auto;min-width:0;font-size:13px;line-height:1.4}#setKisekae .kspvt>b{display:block;font-size:13.5px}#setKisekae .kspvt small{display:block;font-size:11.5px;color:var(--muted)}'
+    + '#setKisekae .kspvh .btn{flex:none;min-height:32px;padding:4px 12px;font-size:12.5px;line-height:1.2;border-radius:8px;cursor:pointer}'
+    + '#setKisekae .kspvs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}'
+    + '#setKisekae .kspvf{margin:0;min-width:0}'
+    + '#setKisekae .kspvw{position:relative;width:100%;aspect-ratio:390/560;overflow:hidden;border-radius:10px;background:#20160E;isolation:isolate}'
+    + '#setKisekae .kspvw .kspvbg{position:absolute;left:0;top:0;width:100%;height:auto;aspect-ratio:390/160;object-fit:cover;display:block;pointer-events:none}'
+    + '#setKisekae .kspvw .fxs{transform:translateY(var(--pvy,0px)) scale(var(--fxk,.38));pointer-events:none}'
+    + '#setKisekae .kspvf figcaption{margin-top:4px;font-size:12px;font-weight:700;line-height:1.3;text-align:center;color:var(--muted)}'
+    + '#setKisekae .kspvw .hit{--t0:.35s}'                 // ボードの 行は 的中の 画面（PUSH を 押して 1.15秒 あと：.fxs .hit）より 早く 出す
+    + '#setKisekae .kspv.pause .kspvw *{animation-play-state:paused!important}';
   function css() {
     if ($('#ksCss')) return;
-    const st = document.createElement('style'); st.id = 'ksCss'; st.textContent = A.css + TK_CSS;
+    const st = document.createElement('style'); st.id = 'ksCss'; st.textContent = A.css + TK_CSS + PV_CSS;
     document.head.appendChild(st);
   }
 
@@ -214,7 +230,9 @@
   //   タイルの 絵は ふだん 止まった 絵（牧場・ぷりけつの SVG も 止める）。タップして 選んだ タイル＝使用中（解放後）か 解放の 確認を 開いた タイル（解放前）だけ、
   //   判定タブの 上の絵と 同じ 動く 壁紙（ks_<id>.json の bnr）を 小さく 重ねて 動かす（.kslive › .kslv）。CSS は #ksBnr → #setKisekae .kslv に、@keyframes の 名前は kp を 足して、
   //   判定タブの 壁紙と ぶつからない ように（テーマどうしで 同じ 名前の @keyframes が ある）。設定タブが 見えていない 間は 止める（.pause）・控えめは .calm
-  const liveId = () => conf || curId;
+  // 第4.218版：見本を 開いた タイル（pv）も 動かす（帯・壁紙パックの 待ちの タイルも タップで 動く）
+  let pv = '';
+  const liveId = () => conf || pv || curId;
   function liveStyle() {
     let st = $('#ksPrev');
     if (!st) { st = document.createElement('style'); st.id = 'ksPrev'; document.head.appendChild(st); }
@@ -237,10 +255,11 @@
     w.style.setProperty('--kss', Math.max(W / 390, H / 160).toFixed(4));
   }
   function motionLive() {
-    const el = $('#setKisekae .kst .kslv'); if (!el) return;
-    const F = FX(), v = $('#v-set');
-    el.classList.toggle('calm', !!(F && F.calm && F.calm()));
-    el.classList.toggle('pause', !!document.hidden || !!(v && v.hidden));
+    const F = FX(), v = $('#v-set'), cm = !!(F && F.calm && F.calm()), ps = !!document.hidden || !!(v && v.hidden);
+    const el = $('#setKisekae .kst .kslv');
+    if (el) { el.classList.toggle('calm', cm); el.classList.toggle('pause', ps); }
+    const pb = $('#setKisekae .kspv');                       // 第4.218版：見本も 同じ（控えめ＝.fxs.calm・設定タブが 見えて いない 間は 止める）
+    if (pb) { pb.classList.toggle('pause', ps); pb.querySelectorAll('.kspvw .fxs').forEach(s => s.classList.toggle('calm', cm)); }
   }
   async function paintLive() {
     const id = liveId(), el = $('#setKisekae .kst .kslv'), st = liveStyle();
@@ -250,6 +269,88 @@
     if (!p || !p.bnr || !p.bnr.html) { st.textContent = ''; el.innerHTML = ''; return; }
     const r = rescope(id, p.bnr);
     st.textContent = r.css; el.innerHTML = r.html; fitLive(); motionLive();
+  }
+  // ---------- 見本（第4.218版・まさちゃん 2026/11/24 18:55「①壁紙カスタム 壁紙を選ぶところでタップすると、pushボタンと結果ボードを表示されるようにして、見本みたいに見えるようにして！」）----------
+  //   壁紙の タイルを タップすると（使う・解放の 確認・帯や 壁紙パックの 案内）、その 行の 下に その 壁紙の 的中の PUSH と 結果ボードを 小さく ならべる（.kspv）。
+  //   絵は fx.js の TengelFx.sample（見本の 画面と 同じ 架空の レース・押せない）。PUSH と ボードの CSS は その テーマの ks_<id>.json の push・board（#ksPvFx：
+  //   いまの テーマの #ksTheme と 同じく fx の CSS の あと ＝ 的中の 画面と 同じ 重なり。テーマごとに クラスが ちがう ので ぶつからない）。
+  //   同じ タイルを もう一度 タップ・「閉じる」・ほかの タブへ 行くと 閉じる。控えめ・視差効果を減らす は 的中の 画面と 同じ 止め方（.fxs.calm）
+  function pvHTML(t) {
+    const nm = esc(t.name);
+    return `<div class="kspv" role="group" aria-label="${nm}の見本">`
+      + `<div class="kspvh"><span class="kspvt"><b>見本：${nm}</b><small>的中したときの PUSHボタンと 結果ボードだよ（架空のレース）</small></span>`
+      + '<button class="btn ghost" type="button" data-ksact="pvx">閉じる</button></div><div class="kspvs">'
+      + `<figure class="kspvf"><div class="kspvw" data-pvk="push" role="img" aria-label="${nm}の PUSHボタン"></div><figcaption>PUSHボタン</figcaption></figure>`
+      + `<figure class="kspvf"><div class="kspvw" data-pvk="board" role="img" aria-label="${nm}の 結果ボード"></div><figcaption>結果ボード</figcaption></figure>`
+      + '</div></div>';
+  }
+  function pvStyle() { let st = $('#ksPvFx'); if (!st) { st = document.createElement('style'); st.id = 'ksPvFx'; document.head.appendChild(st); } return st; }
+  // 小さな 画面に 合わせる：幅で 縮める（--fxk）。ボードは ボードの まん中が 画面の まん中に 来る ように 上下に ずらす（--pvy：字が 読めて から もう一度）
+  function fitPv() {
+    document.querySelectorAll('#setKisekae .kspvw').forEach(w => {
+      const st = w.querySelector('.fxs'); if (!st) return;
+      const W = w.clientWidth; if (!(W > 0)) return;
+      const k = W / 390; let y = 0;
+      if (w.dataset.pvk === 'board') { const hb = st.querySelector('.hb'); if (hb && hb.offsetHeight) y = (422 - (hb.offsetTop + hb.offsetHeight / 2)) * k; }
+      st.style.setProperty('--fxk', k.toFixed(4)); st.style.setProperty('--pvy', y.toFixed(1) + 'px');
+    });
+  }
+  // PUSHボタンの 絵（第4.148版）が 読めるまで 待つ（読めた／読めなかった／絵の ない テーマ・長くても 2.5秒）
+  function artWait(id) {
+    preArt(id);
+    const t0 = Date.now();
+    return new Promise(res => { const tick = () => { if (art[id] !== undefined || !(byId[id] && byId[id].pa) || Date.now() - t0 > 2500) res(); else setTimeout(tick, 40); }; tick(); });
+  }
+  async function paintPv() {
+    const id = pv, box = $('#setKisekae .kspv');
+    if (!box || !id) { const st = $('#ksPvFx'); if (st) st.textContent = ''; return; }
+    const r = await Promise.all([id === 'default' ? null : load(id), artWait(id)]), p = r[0];
+    if (pv !== id || box !== $('#setKisekae .kspv')) return;            // 待つ 間に 変わった
+    const F = FX(), t = byId[id];
+    const th = p && p.push && p.push.pc ? { tid: id, pc: p.push.pc, push: p.push, orn: (p.board && p.board.orn) || '' } : null;
+    if (!F || !F.sample || (id !== 'default' && !th)) { const s = $('.kspvs', box); if (s) s.innerHTML = '<p class="ptnote" style="margin:0;grid-column:1/-1">見本を 出せなかったよ</p>'; return; }
+    pvStyle().textContent = th ? [(p.push && p.push.css) || '', (p.board && p.board.css) || ''].join('\n') : '';
+    const s = F.sample(th, pushArt(id)), cm = s.calm ? ' calm' : '';
+    const bg = t && t.thumb ? `<img class="kspvbg" src="${esc(t.thumb)}" alt="" decoding="async">` : '';
+    const pw = $('[data-pvk=push]', box), bw = $('[data-pvk=board]', box);
+    const col = themeBg(id);
+    [pw, bw].forEach(w => { if (w && col) w.style.background = col; });
+    if (pw) pw.innerHTML = bg + `<div class="fxs${cm}" inert aria-hidden="true">${s.push}</div>`;
+    if (bw) bw.innerHTML = bg + `<div class="fxs${cm}" inert aria-hidden="true">${s.board}</div>`;
+    fitPv(); motionLive();
+    setTimeout(fitPv, 350);
+    try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitPv); } catch (e) { /* なし */ }
+  }
+  // 見本が 見える ところまで 動かす：上の 帯（header.top：上に くっつく）と 下の タブ（.tabbar）の あいだに、タップした タイルの 行と 見本が
+  //   ぜんぶ 入る なら はみ出した ぶん だけ（タイルが 上の 帯に かくれて いれば 下げる・見本が 下の タブに かくれて いれば 上げる）。入らない ときは 見本を ぜんぶ 見せる
+  function pvScroll() {
+    const p = $('#setKisekae .kspv'); if (!p) return;
+    const t = p.previousElementSibling, hd = $('header.top'), tb = $('.tabbar');
+    const v1 = (hd ? hd.getBoundingClientRect().bottom : 0) + 8;
+    const v2 = (tb && getComputedStyle(tb).display !== 'none' ? tb.getBoundingClientRect().top : window.innerHeight) - 8;
+    const pr = p.getBoundingClientRect(), a = t && t.classList.contains('kst') ? Math.min(t.getBoundingClientRect().top, pr.top) : pr.top, b = pr.bottom;
+    let d = 0;
+    if (b - a <= v2 - v1) { if (a < v1) d = a - v1; else if (b > v2) d = b - v2; }
+    else if (b > v2) d = b - v2; else if (pr.top < v1) d = pr.top - v1;
+    if (Math.abs(d) < 1) return;
+    try { window.scrollBy({ top: d, behavior: 'smooth' }); } catch (e) { window.scrollBy(0, d); }
+  }
+  // その テーマの 画面の 地の 色（見本の うしろ：html[data-ks="<id>"] の --bg・いつもの は :root の --bg）。上に その 壁紙の 小さな 絵（判定タブの 上の 絵の かわり）
+  const bgOf = {};
+  function themeBg(id) {
+    if (bgOf[id] !== undefined) return bgOf[id];
+    let v = '';
+    try {
+      if (id !== 'default') { const m = A.css.match(new RegExp('html\\[data-ks="' + id + '"\\]\\{[^}]*?--bg:([^;}]+)')); v = m ? m[1].trim() : ''; }
+      else {
+        for (const sh of [...document.styleSheets]) {
+          let rs = null; try { rs = sh.cssRules; } catch (e) { rs = null; }
+          if (rs) for (const r of [...rs]) { if (!v && r.selectorText === ':root' && r.style && r.style.getPropertyValue('--bg')) v = r.style.getPropertyValue('--bg').trim(); }
+          if (v) break;
+        }
+      }
+    } catch (e) { v = ''; }
+    return (bgOf[id] = /^[#\w(),.% -]+$/.test(v) ? v : '');
   }
   // 解放の 確認（第4.64版）：タップした カギの 壁紙の タイルの 中（カギの 下）に 出す。前は 一覧の 上に 1本の 帯で 出していた
   //   （2026/10/25 まさちゃん「赤のところは消して、解放されていない壁紙をタップしたら下に、解放、ボタンが出てくるようにして！」）。
@@ -324,7 +425,7 @@
     const box = $('#setKisekae .ksbody'); if (!box) return;
     const cur = byId[curId] || byId.default, n = count(), total = have();
     let h = `<p class="hint" style="margin:0 0 4px">今のテーマ：<b>${esc(cur.name)}</b>。見た目だけが変わるよ。判定・記録・ポイントはそのまま。</p>`;
-    h += `<p class="ptnote" style="margin:0">解放した壁紙：<b>${n}</b>/${A.paid.length + PK.order.length}枚（ポイント・壁紙パック。${[A.band.silver, A.band.golden, A.band.tengel].join('・')}枚で 帯の壁紙がミッションでもらえるよ）。解放した壁紙はずっと使えるよ（アプリを消すと消えるよ）。カギの壁紙をタップすると、その下に「解放する」が出るよ。</p>`;
+    h += `<p class="ptnote" style="margin:0">解放した壁紙：<b>${n}</b>/${A.paid.length + PK.order.length}枚（ポイント・壁紙パック。${[A.band.silver, A.band.golden, A.band.tengel].join('・')}枚で 帯の壁紙がミッションでもらえるよ）。解放した壁紙はずっと使えるよ（アプリを消すと消えるよ）。カギの壁紙をタップすると、その下に「解放する」が出るよ。壁紙をタップすると、的中したときのPUSHボタンと結果ボードの見本も出るよ。</p>`;
     h += ticketBox();
     const groups = [];
     A.themes.forEach(t => { let g = groups.find(x => x.name === t.group); if (!g) { g = { name: t.group, items: [] }; groups.push(g); } g.items.push(t); });
@@ -336,19 +437,21 @@
           + `<img class="ksth" src="${esc(t.thumb)}" alt="" loading="lazy" decoding="async">`
           + (lv ? '<div class="kslive" aria-hidden="true"><div class="kslv"></div></div>' : '')
           + `<span class="ksn">${esc(t.name)}</span><span class="ksd">${esc(t.desc)}</span>`
-          + (on ? '<span class="ksbadge">使用中</span>' : '') + (can ? '' : lockLabel(t)) + (cf ? confBox(t, total) : '') + '</div>';
+          + (on ? '<span class="ksbadge">使用中</span>' : '') + (can ? '' : lockLabel(t)) + (cf ? confBox(t, total) : '') + '</div>'
+          + (t.id === pv ? pvHTML(t) : '');                // 第4.218版：見本（タイルの すぐ あと・行の 下に 出る：dense）
       });
       h += '</div>';
     });
     h += '<p class="ptnote" style="margin-top:12px">馬番の枠の色は、どのテーマでも同じだよ（読み間違えないように）</p>'
       + '<div class="ksnums" aria-hidden="true">' + [1, 2, 3, 4, 5, 6, 7, 8].map(i => `<span class="num w${i}">${i}</span>`).join('') + '</div>';
     box.innerHTML = h;
-    paintLive();
+    paintLive(); paintPv();
   }
   async function onClick(e) {
     const a = e.target.closest('[data-ksact]');
     if (a) {
-      if (a.dataset.ksact === 'cancel') { conf = ''; paint(); return; }
+      if (a.dataset.ksact === 'cancel') { conf = ''; pv = ''; paint(); return; }   // 第4.218版：見本も 閉じる
+      if (a.dataset.ksact === 'pvx') { pv = ''; paint(); return; }                 // 第4.218版：見本の「閉じる」
       if (a.dataset.ksact === 'tkpt1') { tkAsk = true; conf = ''; paint(); return; }
       if (a.dataset.ksact === 'tkpt0') { tkAsk = false; paint(); return; }
       if (a.dataset.ksact === 'tkpt2') { a.disabled = true; await ticketToPoints(); tkAsk = false; paint(); return; }
@@ -389,23 +492,27 @@
     if (e.target.closest('.ksconf')) return;          // 確認の 文字の 所を 押しても 何も しない
     const b = e.target.closest('.kst'); if (!b) return;
     const id = b.dataset.ks, t = byId[id]; if (!t) return;
-    if (id === curId) return;
-    if (usable(id)) { await apply(id, true); toast(`「${t.name}」に着せ替えたよ`); return; }
+    // 第4.218版：タップした 壁紙の 見本（PUSH と 結果ボード）を その 行の 下に 出す。見本が 開いて いる タイルを もう一度 タップすると 閉じる
+    const was = pv === id;
+    if (id === curId) { pv = was ? '' : id; conf = ''; paint(); if (pv) pvScroll(); return; }   // 使用中の タイル：見本を 開く／閉じる（前は 何も しなかった）
+    if (usable(id)) { pv = id; await apply(id, true); toast(`「${t.name}」に着せ替えたよ`); pvScroll(); return; }
     if (t.pack) {
       const k = packLeft(t);
-      if (k >= 0) { toast(`あと ${k}レース 読み込むと「${t.name}」が使えるよ（${PK.every}レースごとに 1枚）`, 3600); return; }
-      if (conf === id) { conf = ''; paint(); return; }
-      conf = id; paint();
+      if (k >= 0) { toast(`あと ${k}レース 読み込むと「${t.name}」が使えるよ（${PK.every}レースごとに 1枚）`, 3600); pv = was ? '' : id; conf = ''; paint(); if (pv) pvScroll(); return; }
+      if (conf === id) { conf = ''; pv = ''; paint(); return; }
+      conf = id; pv = id; paint();
       const c = $('#setKisekae .kst.cf'); if (c) c.scrollIntoView({ block: 'nearest' });
+      pvScroll();
       return;
     }
     if (t.price) {
-      if (conf === id) { conf = ''; paint(); return; }   // もう一度 タップ → 閉じる
-      conf = id; paint();
+      if (conf === id) { conf = ''; pv = ''; paint(); return; }   // もう一度 タップ → 閉じる（見本も）
+      conf = id; pv = id; paint();
       const c = $('#setKisekae .kst.cf'); if (c) c.scrollIntoView({ block: 'nearest' });
+      pvScroll();
       return;
     }
-    if (t.band) { toast(`壁紙を${t.band}枚あつめて、ミッションで受け取ると使えるよ（今 ${count()}枚）`, 3600); }
+    if (t.band) { toast(`壁紙を${t.band}枚あつめて、ミッションで受け取ると使えるよ（今 ${count()}枚）`, 3600); pv = was ? '' : id; conf = ''; paint(); if (pv) pvScroll(); }
   }
   // タイルは <div role="button">：Enter か スペースで 押す
   function onKey(e) {
@@ -461,16 +568,20 @@
     if (d.phase === 'owned' || d.phase === 'refund') { conf = ''; paint(); if (!usable(curId)) apply('default', true); }
   });
   document.addEventListener('tengel:tab', e => {
+    if (e.detail !== 'set' && pv) {                         // 第4.218版：ほかの タブへ 行ったら 見本は 閉じる（もどった ときは 閉じた 形で 描き直す）
+      pv = ''; const p = $('#setKisekae .kspv'); if (p) p.remove();
+      const st = $('#ksPvFx'); if (st) st.textContent = '';
+    }
     if (e.detail === 'set') { card(); paint(); try { const w = wallet(); if (w && w.pack && !packInfo().owned) w.pack.products().then(paint).catch(() => {}); } catch (x) { /* なし */ } }
     motion(); motionLive(); if (e.detail === 'judge') fitBnr();
   });
   document.addEventListener('tengel:fx', e => { if (e.detail && e.detail.phase === 'settings') { motion(); motionLive(); } });
   document.addEventListener('visibilitychange', () => { motion(); motionLive(); });
-  window.addEventListener('resize', () => { fitBnr(); fitLive(); });
+  window.addEventListener('resize', () => { fitBnr(); fitLive(); fitPv(); });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', card);
 
   window.TengelKisekae = {
     on: true, ready: ready, list: () => A.themes.slice(), current: () => curId, apply: id => apply(id, true), usable: usable, unlocked: unlocked, count: count, fx: fx, pushArt: pushArt,
-    loaded: () => curId === 'default' || !!payload, band: Object.assign({}, A.band), paid: A.paid.slice(), motion: motion, phase: phase, live: liveId, pack: () => Object.assign({ ids: PK.ids.slice(), order: PK.order.slice() }, packInfo())
+    loaded: () => curId === 'default' || !!payload, band: Object.assign({}, A.band), paid: A.paid.slice(), motion: motion, phase: phase, live: liveId, pv: () => pv, pack: () => Object.assign({ ids: PK.ids.slice(), order: PK.order.slice() }, packInfo())
   };
 })();
