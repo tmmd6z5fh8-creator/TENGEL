@@ -9720,10 +9720,12 @@ window.__KS={"themes":[{"id":"pirate","name":"海賊","desc":"宝箱と海賊旗
         ts.push(t);
         if (ts.length < 10) return requestAnimationFrame(step);
         try {
-          let mn = 1e9; for (let i = 1; i < ts.length; i++) mn = Math.min(mn, ts[i] - ts[i - 1]);
+          let sh = 0; for (let i = 1; i < ts.length; i++) if (ts[i] - ts[i - 1] < 11) sh++;
           
           
-          const P = mn < 11 ? 1000 / 120 : 1000 / 60;
+          
+          
+          const P = sh >= 3 ? 1000 / 120 : 1000 / 60;
           let n = 0, moved = 0;
           for (const a of b.getAnimations({ subtree: true })) {
             if (a.playState !== 'running' || a.pending || typeof a.startTime !== 'number' || !a.effect) continue;
