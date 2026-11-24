@@ -16,7 +16,7 @@ jobs:
       matrix:
         os: [macos-15, macos-26]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 90      # 第4.156版：iPad の 広い 窓の 確かめ（もう 1回 作る）の 分 のばした（前は 50）。第4.180版：run 146 の macOS 26 が Mac の 混み合いで 70分を こえた ので 90 に
+    timeout-minutes: 150     # 第4.218版：run 189 の macOS 26 が Mac の 遅さで 90分に 届いて 止まった（結果も 送れなかった）ので 150 に。第4.156版：iPad の 広い 窓の 確かめ（もう 1回 作る）の 分 のばした（前は 50）。第4.180版：run 146 の macOS 26 が Mac の 混み合いで 70分を こえた ので 90 に
     steps:
       - uses: actions/checkout@v4
       - name: Build and run in Simulator

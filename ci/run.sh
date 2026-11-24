@@ -218,7 +218,7 @@ push = (p.get("push") or "").split(); board = (p.get("board") or "").split(); ro
 ok = p.get("id") == "lucky" and p.get("after") == "lucky" and "kb" in push and p.get("tab") == "-1" and p.get("inert") is True and board == ["rb", "hit", "t-lucky"] \
      and rows == ["馬単的中6→2", "馬連的中2-6", "3連単不的中"] and abs((p.get("w") or 0) - (p.get("gw") or -9)) <= 2 and (p.get("sw") or 0) > 100 and (p.get("sh") or 0) > (p.get("sw") or 0) \
      and 0.2 < (p.get("k") or 0) < 0.6 and p.get("below") is True and (p.get("scrollW") or 999) <= 440 and c.get("pvClosed") is True
-print("pv %s after %s push %s board %s rows %d size %sx%s k %s inert %s tab %s closed %s -> %s" % (p.get("id"), p.get("after"), p.get("push"), p.get("board"), len(rows), p.get("sw"), p.get("sh"), p.get("k"), p.get("inert"), p.get("tab"), c.get("pvClosed"), "OK" if ok else "CHECK " + json.dumps(c, ensure_ascii=False)[:400]))
+print("pv %s after %s push %s board %s rows %d size %sx%s k %s inert %s tab %s closed %s wait %sms -> %s" % (p.get("id"), p.get("after"), p.get("push"), p.get("board"), len(rows), p.get("sw"), p.get("sh"), p.get("k"), p.get("inert"), p.get("tab"), c.get("pvClosed"), p.get("wait"), "OK" if ok else "CHECK " + json.dumps(c, ensure_ascii=False)[:400]))
 ' "$OUT/iphone-report-1.json" 2>&1)"
   # 第4.212版：値段（初回 5,000P・読み込み 400P・5連も 1レース 400P・マザーデータの 枠 23,000P・おもちゃ 3,000P）・Pカスタムの「おもちゃを購入」（2つ）・
   #   設定の「古い台帳をリセットする」の カード（バックアップの すぐ 下・注意書き）・まとめて 消す 口（TengelLocal.delBets）が 本物の アプリの 画面に ある
