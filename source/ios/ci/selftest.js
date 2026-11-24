@@ -325,13 +325,16 @@
           unlock: !!(cf && cf.querySelector('[data-ksact=unlock]')), buy: !!(cf && cf.querySelector('[data-gopt=points]')), cancel: !!(cf && cf.querySelector('[data-ksact=cancel]')), top: !!card.querySelector('.ksbody > .ksconf'),
           below: !!(un && lkb && un.getBoundingClientRect().top >= lkb.getBoundingClientRect().bottom - 1), inside: !!(un && un.getBoundingClientRect().right <= lk.getBoundingClientRect().right + 1 && un.getBoundingClientRect().bottom <= lk.getBoundingClientRect().bottom + 1) };
         // 第4.218版：タップした 壁紙の 見本（PUSH と 結果ボード）が その 行の 下に 出る（本物の WebKit で：形・大きさ・押せない・もう一度 押すと 閉じる）
+        // 第4.218版・修正：見本の ボードの 行は 本物と 同じく 0.35秒＋0.15秒ずつ おくれて 出る。Mac が 遅い ときは 1.2秒では まだ 出て いない（run 189 の macOS 15：1行だけ）ので、3行 そろうまで 待つ（長くて 6秒）
+        var pvT0 = Date.now(), pvRows = function () { var bb = card.querySelector('.kspv [data-pvk=board] .fxs'); return bb ? Array.from(bb.querySelectorAll('.brows li')).map(function (li) { return li.innerText.replace(/\s+/g, ' ').trim(); }) : []; };
         await sleep(1200);
+        while (Date.now() - pvT0 < 6000) { var pr0 = pvRows(); if (pr0.length === 3 && pr0.every(function (x) { return !!x; })) break; await sleep(200); }
         var pvb = card.querySelector('.kspv'), pws = pvb && pvb.querySelector('[data-pvk=push] .fxs'), bws = pvb && pvb.querySelector('[data-pvk=board] .fxs'), pbt = pws && pws.querySelector('.push');
         res.conf.pv = pvb ? { id: K.pv ? K.pv() : null, after: pvb.previousElementSibling && pvb.previousElementSibling.dataset ? pvb.previousElementSibling.dataset.ks : null,
           push: pbt ? pbt.className : null, tab: pbt ? pbt.getAttribute('tabindex') : null, inert: !!(pws && pws.hasAttribute('inert')), board: bws && bws.querySelector('.rb') ? bws.querySelector('.rb').className : null,
           rows: bws ? Array.from(bws.querySelectorAll('.brows li')).map(function (li) { return li.innerText.replace(/\s+/g, ' ').trim(); }) : [],
           w: Math.round(pvb.getBoundingClientRect().width), gw: Math.round(pvb.parentElement.getBoundingClientRect().width), sw: pws ? Math.round(pws.parentElement.getBoundingClientRect().width) : 0, sh: pws ? Math.round(pws.parentElement.getBoundingClientRect().height) : 0,
-          k: pws ? parseFloat(pws.style.getPropertyValue('--fxk')) || 0 : 0, below: pvb.getBoundingClientRect().top >= lk.getBoundingClientRect().bottom - 1, scrollW: document.documentElement.scrollWidth } : null;
+          k: pws ? parseFloat(pws.style.getPropertyValue('--fxk')) || 0 : 0, wait: Date.now() - pvT0, below: pvb.getBoundingClientRect().top >= lk.getBoundingClientRect().bottom - 1, scrollW: document.documentElement.scrollWidth } : null;
         var lk2 = card.querySelector('.kst.cf') || lk;                      // paint() で タイルは 作り直されるので、もう一度 さがす
         lk2.scrollIntoView({ block: 'center' }); await sleep(300);
         await mark('ks-conf');
@@ -343,6 +346,22 @@
       document.querySelector('.tabbar [data-tab=judge]').click(); await sleep(400);
       res.tengel = { ks: document.documentElement.dataset.ks, bg: getComputedStyle(document.body).backgroundColor, anims: (document.querySelector('#ksBnr') || { getAnimations: function () { return []; } }).getAnimations({ subtree: true }).length, scrollW: document.documentElement.scrollWidth };
       await mark('ks-tengel');
+      // 第4.219版：上の絵は 見えて いる 間 だけ 動く（本物の WebKit で：一番 上＝動く → 下へ スクロール＝止まる → もどす＝動く → 画面 ぜんぶを おおう 窓＝止まる → タップで 閉じる＝すぐ 動く）
+      var sb = document.querySelector('#ksBnr'), runN = function () { return sb ? sb.getAnimations({ subtree: true }).filter(function (a) { return a.playState === 'running'; }).length : -1; }, isP = function () { return !!(sb && sb.classList.contains('pause')); };
+      if (sb && !sb.hidden) {
+        window.scrollTo(0, 0); await sleep(700);
+        var s0 = { pause: isP(), run: runN() };
+        window.scrollTo(0, Math.ceil(sb.getBoundingClientRect().bottom + window.scrollY + 60)); await waitFor(function () { return isP(); }, 3000);
+        var s1 = { pause: isP(), run: runN(), bottom: Math.round(sb.getBoundingClientRect().bottom) };
+        window.scrollTo(0, 0); await waitFor(function () { return !isP(); }, 3000);
+        var s2 = { pause: isP(), run: runN() };
+        var cv = document.createElement('div'); cv.id = 'stCover'; cv.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;z-index:99999;background:#203040';
+        cv.addEventListener('click', function () { cv.remove(); }); document.body.appendChild(cv);
+        await waitFor(function () { return isP(); }, 3000);
+        var s3 = { pause: isP(), run: runN() };
+        var tc0 = Date.now(); cv.click(); await waitFor(function () { return !isP(); }, 3000);
+        res.seen = { top: s0, down: s1, back: s2, cover: s3, open: { pause: isP(), run: runN(), ms: Date.now() - tc0 } };
+      } else res.seen = null;
       // 第4.92版：壁紙パック（買い切り・10枚：第4.147版で 七夕を 外した）。いちばん 上の 組・買う 箱（買う 前）。絵の 部品（SVG）は アプリの 中に ある ので CI でも 動く（馬の コマと 止まった 絵は 404）
       if (K.pack) {
         var pk = K.pack();

@@ -10,6 +10,7 @@
 //   見本（kisekae/themes20.py・boards.py・gen_fx.py・mock/）の CSS と HTML は kisekae/build_kisekae.py が束ねる：小さい分は window.__KS、テーマごとの大きい分は ks_<id>.json（選んだときに 1回だけ読む）。
 //   選んだテーマは端末に保存（localStorage＝起動の瞬間から・設定の DB にも）。解放したかどうかは ポイントの台帳（unlock-theme:<id>・TengelWallet）。
 //   「視差効果を減らす」か 設定の「演出を控えめにする」なら 壁紙は止まった絵（CSS の @media と .calm）。判定タブが見えていない間は 動きを止める（.pause ※仮）。
+//   第4.219版：上の絵・設定タブの 動く タイル・見本は、画面の 外か ほかの 窓（トレーニングセンター・カードバトル・的中の 演出 など）の 下に ある 間も 止める（下の seen）。
 //   第4.92版：壁紙パック（買い切り 1,500円・10枚〔第4.147版で 11 → 10枚〕：kisekae/pack/）。いちばん 上の 組に 買う ボタンと 解放の 進み具合。買った あとに 読み込んだ レース 5つごとに
 //   1枚ずつ 使える ように なる（TengelWallet.pack）。ポイントでは 解放 できない。帯の 壁紙の ミッションの 枚数に 数える
 //   Web版（ホーム画面のアプリ）では何もしない。
@@ -49,9 +50,13 @@
     + '#setKisekae .kspvf figcaption{margin-top:4px;font-size:12px;font-weight:700;line-height:1.3;text-align:center;color:var(--muted)}'
     + '#setKisekae .kspvw .hit{--t0:.35s}'                 // ボードの 行は 的中の 画面（PUSH を 押して 1.15秒 あと：.fxs .hit）より 早く 出す
     + '#setKisekae .kspv.pause .kspvw *{animation-play-state:paused!important}';
+  // 第4.219版：止める（.pause）ときは かざり（::before・::after）の 動きも 止める。前は 中の 要素（*）だけ で、海賊の 上の絵の 旗の 32こ・見本の PUSH の 光は
+  //   ほかの タブに いる 間も アプリが 裏の 間も 動いて いた
+  const STOP_CSS = '#ksBnr.pause *::before,#ksBnr.pause *::after,#setKisekae .kst .kslv.pause *::before,#setKisekae .kst .kslv.pause *::after,'
+    + '#setKisekae .kspv.pause .kspvw *::before,#setKisekae .kspv.pause .kspvw *::after{animation-play-state:paused!important}';
   function css() {
     if ($('#ksCss')) return;
-    const st = document.createElement('style'); st.id = 'ksCss'; st.textContent = A.css + TK_CSS + PV_CSS;
+    const st = document.createElement('style'); st.id = 'ksCss'; st.textContent = A.css + TK_CSS + PV_CSS + STOP_CSS;
     document.head.appendChild(st);
   }
 
@@ -107,16 +112,88 @@
     motion();
     if (!b.hidden) phaseSoon();
   }
-  // 動きを止める：「視差効果を減らす」か「演出を控えめにする」（.calm）・判定タブが見えていない／アプリが裏（.pause）※仮
+  // 動きを止める：「視差効果を減らす」か「演出を控えめにする」（.calm）・判定タブが見えていない／アプリが裏・上の絵が 見えて いない（.pause：第4.219版の seen）
   function motion() {
     const b = $('#ksBnr'); if (!b) return;
     const F = FX();
     const was = b.classList.contains('pause') || b.classList.contains('calm');
     b.classList.toggle('calm', !!(F && F.calm && F.calm()));
     const v = $('#v-judge');
-    b.classList.toggle('pause', !!document.hidden || !!(v && v.hidden));
+    const sb = !b.hidden && seen(b); SEEN.b = sb;
+    b.classList.toggle('pause', !!document.hidden || !!(v && v.hidden) || (!b.hidden && !sb));
     if (was && !b.hidden && !b.classList.contains('pause') && !b.classList.contains('calm')) phaseSoon();      // また 動きだした：コマの さかい目を 合わせ直す
+    watch();
   }
+  // ---------- 見えて いない 間は 止める（第4.219版・まさちゃん 2026/11/25 00:00「なんか全体的にめちゃくちゃ重い！理由見つけて改善して！」）----------
+  //   判定タブの 上の絵（#ksBnr）・設定タブの 動く タイル（.kslive › .kslv：いま 使って いる 壁紙と 同じ 動き まるごと）・見本（.kspv）は、
+  //   多い 壁紙で 200〜300 の 動きを 毎コマ 動かす。iPhone（WebKit）は SVG の 中の 動き・steps() の コマ送り・visibility などを 画面の 合成に まかせられず、
+  //   毎コマ 計算して 描き直す。前は タブが 見えて さえ いれば、下へ スクロール して 上の絵が 画面の 外の ときも、トレーニングセンター・カードバトル・
+  //   思い出フィギュア・作戦会議・推し馬・的中の 演出の 窓の 下でも、設定タブの 上や 下（着せ替えの カードが 画面の 外）でも ずっと 動いて いた ＝ アプリ ぜんたいが 重い もと。
+  //   → 画面の 中に ない、または 見えて いる 所が ぜんぶ ほかの 窓の 下（elementFromPoint で 9点：1点でも 見えれば 動かす）なら 止める（.pause：CSS の 止め方の まま）。
+  //     見える ように なったら すぐ 動かす（上の絵は コマの さかい目も 合わせ直す：phaseSoon）。見えて いる 間の 動きは 前と 同じ。
+  //   見直す とき：画面に 出入り（IntersectionObserver）・タップの あと（窓が 開く／閉じる：0.09秒・0.7秒 あと）・タブ・アプリの 表と 裏・1秒ごと（判定か 設定の タブで 壁紙が ある とき だけ）。
+  //   変わった ときだけ クラスを さわる（テストが 手で つけた .pause は そのまま）
+  const SEEN = { b: null, l: null, p: null };
+  function seen(el, host) {
+    if (!el || !el.isConnected) return false;
+    const r = el.getBoundingClientRect(), W = window.innerWidth || 0, H = window.innerHeight || 0;
+    const t = Math.max(r.top, 0), bt = Math.min(r.bottom, H), l = Math.max(r.left, 0), rt = Math.min(r.right, W);
+    if (!(r.width > 0 && r.height > 0) || bt - t < 1 || rt - l < 1) return false;           // 画面の 外・出て いない
+    const vs = window.visualViewport && window.visualViewport.scale;
+    if ((vs && vs > 1.01) || typeof document.elementFromPoint !== 'function') return true;  // 2本指で 拡大 中は 点の はかり方が かわる → かくれて いるかは 見ない（動かす）
+    const me = host || el;
+    // 上に ある 窓が うすく なって いる とちゅう（消える・出る ときの すき通し：はじめの 画面が 消える 間・的中の 演出の 暗い 膜が 出る 間）は 見えて いる ことに する
+    const thin = h => { let o = 1; for (let x = h; x && x.nodeType === 1 && x !== document.body; x = x.parentElement) { const v = parseFloat(getComputedStyle(x).opacity); if (v < 1) o *= v; if (o < 0.99) return true; } return false; };
+    // 見る 点：横 3つ × 縦 3つ（見えて いる 所の 上の はし・まん中・下の はし）。上に くっつく 帯（header.top）の 下に 少し だけ 出て いる ときも 下の はしで 見つける
+    for (const y of [t + Math.min(3, (bt - t) / 2), (t + bt) / 2, bt - Math.min(3, (bt - t) / 2)]) {
+      for (const fx of [0.12, 0.5, 0.88]) {
+        const h = document.elementFromPoint(l + (rt - l) * fx, y);
+        if (!h || me.contains(h) || h.contains(me) || thin(h)) return true;                   // 1点でも 見えて いれば 動かす（中の 絵が 押せない 形でも 下の 箱が 当たる）
+      }
+    }
+    return false;                                                                             // 見えて いる 所は ぜんぶ ほかの 窓の 下
+  }
+  const liveBox = () => $('#setKisekae .kst .kslive');
+  function look() {
+    const b = $('#ksBnr'), lw = liveBox(), pb = $('#setKisekae .kspv');
+    const sb = !!b && !b.hidden && seen(b), sl = !!lw && seen(lw, lw.closest('.kst')), sp = !!pb && seen(pb);
+    if (b && sb !== SEEN.b) motion();
+    if ((lw && sl !== SEEN.l) || (pb && sp !== SEEN.p)) motionLive();
+  }
+  let lookT = 0, io = null, ioT = [];
+  function observe() {
+    if (typeof IntersectionObserver !== 'function') return;
+    const ts = [$('#ksBnr'), liveBox(), $('#setKisekae .kspv')].filter(Boolean);
+    if (ts.length === ioT.length && ts.every((e, i) => e === ioT[i])) return;
+    try {
+      if (!io) io = new IntersectionObserver(() => look(), { threshold: 0 });
+      io.disconnect(); ts.forEach(e => io.observe(e)); ioT = ts;
+    } catch (e) { io = null; ioT = []; }
+  }
+  function watch() {
+    const vj = $('#v-judge'), vs = $('#v-set'), b = $('#ksBnr');
+    const need = !document.hidden && ((!!b && !b.hidden && !!vj && !vj.hidden) || (!!vs && !vs.hidden && !!(liveBox() || $('#setKisekae .kspv'))));
+    if (need && !lookT) lookT = setInterval(look, 1000);
+    else if (!need && lookT) { clearInterval(lookT); lookT = 0; }
+    if (need) observe();
+  }
+  document.addEventListener('click', () => { if (!lookT) return; setTimeout(look, 90); setTimeout(look, 700); }, true);
+  // 窓の 出入り（body の すぐ 下の 要素が ふえる・へる・class／hidden／style が かわる）→ 次の コマで 見直す（＋0.35秒 あと：消える ときの うすく なる 動きの あと）。
+  //   タップの ない 開き方・閉じ方も すぐ わかる（はじめの 画面が 自分で 消える・演出が 自分で 閉じる など：1秒ごとを 待たない）。見るのは body の 子 だけ（中の 動きでは よばれない）
+  let lookRaf = 0;
+  const lookSoon = () => { if (!lookT || lookRaf) return; lookRaf = requestAnimationFrame(() => { lookRaf = 0; look(); setTimeout(look, 350); }); };
+  function kidsWatch() {
+    try {
+      const AT = { attributes: true, attributeFilter: ['class', 'hidden', 'style'] };
+      const mo = new MutationObserver(recs => {
+        recs.forEach(r => { if (r.type === 'childList') r.addedNodes.forEach(nd => { if (nd.nodeType === 1) mo.observe(nd, AT); }); });
+        lookSoon();
+      });
+      mo.observe(document.body, { childList: true });
+      Array.from(document.body.children).forEach(c => mo.observe(c, AT));
+    } catch (e) { /* なし：1秒ごとと タップの あとで 見直す */ }
+  }
+  if (document.body) kidsWatch(); else document.addEventListener('DOMContentLoaded', kidsWatch);
   // ---------- コマ送りの 絵を なめらかに（第4.166版・まさちゃん 2026/11/13 15:21「海賊の壁紙カクカクするんだけど、他にもカクカクする物があれば見つけて！全部ヌルヌル動くようにして！」）----------
   //   壁紙の コマ送りの 絵（馬の シートを めくる）は 1コマ 1/30秒 ＝ 画面の 描きかえ（ふつう 1秒に 60回）の 2回ぶん。
   //   コマが かわる 時刻が 描きかえの 時刻と 重なると、ほんの 少しの ずれで「1回 だけ 出る コマ」と「3回 出る コマ」が まざって がたつく（コマは 30こ あっても なめらかに 見えない）。
@@ -256,10 +333,13 @@
   }
   function motionLive() {
     const F = FX(), v = $('#v-set'), cm = !!(F && F.calm && F.calm()), ps = !!document.hidden || !!(v && v.hidden);
-    const el = $('#setKisekae .kst .kslv');
-    if (el) { el.classList.toggle('calm', cm); el.classList.toggle('pause', ps); }
+    const el = $('#setKisekae .kst .kslv'), lw = liveBox();
+    const sl = !!lw && seen(lw, lw.closest('.kst')); SEEN.l = sl;      // 第4.219版：タイルが 画面の 外・ほかの 窓の 下なら 止める（上の seen）
+    if (el) { el.classList.toggle('calm', cm); el.classList.toggle('pause', ps || !sl); }
     const pb = $('#setKisekae .kspv');                       // 第4.218版：見本も 同じ（控えめ＝.fxs.calm・設定タブが 見えて いない 間は 止める）
-    if (pb) { pb.classList.toggle('pause', ps); pb.querySelectorAll('.kspvw .fxs').forEach(s => s.classList.toggle('calm', cm)); }
+    const sp = !!pb && seen(pb); SEEN.p = sp;
+    if (pb) { pb.classList.toggle('pause', ps || !sp); pb.querySelectorAll('.kspvw .fxs').forEach(s => s.classList.toggle('calm', cm)); }
+    watch();
   }
   async function paintLive() {
     const id = liveId(), el = $('#setKisekae .kst .kslv'), st = liveStyle();
@@ -577,7 +657,7 @@
   });
   document.addEventListener('tengel:fx', e => { if (e.detail && e.detail.phase === 'settings') { motion(); motionLive(); } });
   document.addEventListener('visibilitychange', () => { motion(); motionLive(); });
-  window.addEventListener('resize', () => { fitBnr(); fitLive(); fitPv(); });
+  window.addEventListener('resize', () => { fitBnr(); fitLive(); fitPv(); if (lookT) look(); });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', card);
 
   window.TengelKisekae = {

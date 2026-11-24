@@ -208,12 +208,17 @@ def gaps(a):
     return [v for v in g if v < 250]
 
 
+GATE_GONE = "() => { const g = document.querySelector('#gate'); return !g || g.hidden || getComputedStyle(g).display === 'none'; }"
+
+
 def open_app(ctx):
     pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     bad = []; pg.on('response', lambda r: bad.append(r.url.split('/')[-1]) if r.status >= 400 and '/ks_' in r.url else None)
     pg.goto(APP); pg.wait_for_timeout(1500)
     if pg.locator('#gateGo').count(): pg.click('#gateGo'); pg.wait_for_timeout(700)
     pg.wait_for_function("() => window.TengelKisekae && TengelKisekae.list().length > 0", timeout=10000)
+    pg.wait_for_function(GATE_GONE, timeout=10000)      # 第4.219版：はじめの 画面（#gate）の 下では 上の絵は 止まる（kisekae.js の seen）→ 消えるまで 待つ
+    pg.wait_for_timeout(500)
     return pg, errs, bad
 
 
@@ -311,6 +316,8 @@ try:
         pg2 = ctx.new_page(); pg2.goto(APP); pg2.wait_for_timeout(1500)
         if pg2.locator('#gateGo').count(): pg2.click('#gateGo'); pg2.wait_for_timeout(700)
         pg2.wait_for_function("() => window.TengelKisekae && TengelKisekae.list().length > 0", timeout=10000)
+        pg2.wait_for_function(GATE_GONE, timeout=10000)      # 第4.219版：2回目からの はじめの 画面（ボタン なしで 自分で 消える）の 下では 上の絵は 止まる → 消えるまで 待つ
+        pg2.wait_for_timeout(800)                             #   （消えた すぐ あとは 画面 ぜんたいを 描き直す ので コマの 間かくが そろわない：前と 同じく 落ち着いて から はかる）
         rows = []
         for tid, groups in (('pirate', ['.prw']), ('paddock', ['.pkH.n2', '.pkH.n5', '.pkH.n7', '.pkH.f1', '.pkH.f4', '.pkH.f8']), ('dino', ['.dnH.h1', '.dnH.h2']), ('news', ['.nsw']), ('silks', ['.sbh']),
                             ('night', ['.nth7', '.nth5', '.nth3']), ('pixel', ['.pqh']), ('marble', ['.mww'])):

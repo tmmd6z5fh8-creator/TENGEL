@@ -386,6 +386,13 @@ if r.returncode == 0:
         if _P0 is not None: os.environ['LITE'] = _P0
     af = open(os.path.join(W, 'ios', 'Tengel.swiftpm', 'AppFiles.swift'), encoding='utf8').read()
     check('byteRange' in af and 'Content-Range' in af and 'Accept-Ranges' in af and '"mp4": return "video/mp4"' in af and 'statusCode: status' in af and 'options: .alwaysMapped' in af, 'AppFiles.swift：動画の 部分読み（Range → 206・Content-Range）と mp4 の MIME・ファイルは メモリに 写す だけ（第4.109版：Range の たびに まるごと 読まない）')
+    # 第4.219版：中身が かわらない ファイル（200）は WebKit の メモリの キャッシュで 使い回す（前は ぜんぶ no-store ＝ 同じ 絵を 出す たびに 読み直して ほどき直した）。
+    #   自動バックアップ（/__native/）・テストの 合図（/__selftest/）・画面（text/html）・一部分（206）・見つからない（404）は no-store の まま
+    rs = af[af.index('private func respond('):]; rs = rs[:rs.index('task.didReceive(response)')]
+    check(af.count('"Cache-Control"') == 1 and '"Cache-Control": fixed ? "max-age=31536000, immutable" : "no-store"' in rs
+          and 'let fixed = status == 200 && !url.path.hasPrefix("/__native/") && !url.path.hasPrefix("/__selftest/") && !type.hasPrefix("text/html")' in rs
+          and 'status: 206' in af and 'status: 404' in af and '"html", "htm": return "text/html; charset=utf-8"' in af,
+          'AppFiles.swift：絵・字・データ（200）は WebKit の メモリの キャッシュで 使い回す（max-age・immutable）。自動バックアップ・テストの 合図・画面（html）・一部分（206）・404 は no-store の まま（第4.219版）')
     # 第4.109版：基本の フォント（BIZ UDPGothic 2つ・Dela Gothic One）は 字は そのままで WOFF2（ios/fonts/make_woff2.py）・IBM Plex Mono（予約名「Plex」）は TTF の まま
     check(all(f in res for f in ('BIZUDPGothic-Regular.woff2', 'BIZUDPGothic-Bold.woff2', 'DelaGothicOne-Regular.woff2', 'IBMPlexMono-Medium.ttf', 'IBMPlexMono-SemiBold.ttf'))
           and not any(f in res for f in ('BIZUDPGothic-Regular.ttf', 'BIZUDPGothic-Bold.ttf', 'DelaGothicOne-Regular.ttf'))
