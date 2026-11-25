@@ -41,7 +41,7 @@ if TEST:
     assert 'テンゲル テスト' in ps
     # 第4.122版（まさちゃん 2026/11/04「アプリのテスト版でiPhoneて動かせないの？」）：テスト版は 本番と 別の アプリ（ID jp.tengel.app.test）。
     #   iPad の Swift Playgrounds から App Store Connect に あげて、TestFlight（内部テスト）で iPhone に 入れる。本番の「テンゲル」と 並べて 入れられる・
-    #   キーチェーンの しるし（初回の 1,500P）も 本番と 分かれる（しるしは アプリの ID ごと）。前の 版までは 本番と 同じ ID（入れると 入れかわった）
+    #   キーチェーンの しるし（初回の 5,000P：第4.212版から）も 本番と 分かれる（しるしは アプリの ID ごと）。前の 版までは 本番と 同じ ID（入れると 入れかわった）
     assert ps.count('bundleIdentifier: "jp.tengel.app",') == 1, 'Package.swift の ID の 形が かわった'
     ps = ps.replace('bundleIdentifier: "jp.tengel.app",', 'bundleIdentifier: "jp.tengel.app.test",')
     # ビルド番号：あげる たびに 前より 大きく（App Store Connect は 同じ 番号を 2回 受けつけない）。APP_VER 2026.11.04-3 → 20261104.3（IOS_BUILD が あれば それ）

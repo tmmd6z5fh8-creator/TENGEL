@@ -1026,7 +1026,7 @@
   const TEST_GIFT = 10000;
   async function testGift() {
     if (!window.__TEST || !W || P.has(W.events, 'gift-test')) return;
-    const need = TEST_GIFT - total(); if (need <= 0) return;   // 初回の 1,500P と 合わせて ちょうど 10,000P に（しるしが あって 1,500P が 出ない 端末では 10,000P）
+    const need = TEST_GIFT - total(); if (need <= 0) return;   // 初回の 5,000P と 合わせて ちょうど 10,000P に（しるしが あって 5,000P が 出ない 端末では 10,000P）。はじめから 10,000P は テスト版 だけ（販売版は 0P から 初回の 5,000P だけ：まさちゃん 2026-11-25）
     W.events.push(P.giftEvent(Date.now(), need, 'gift-test', 'テスト版のポイント'));
     await save(); paintAll();
     toast(`🧪 テスト版：初めから ${pts(TEST_GIFT)} 入って いるよ`, 3200);
