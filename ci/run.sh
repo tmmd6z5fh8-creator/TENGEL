@@ -245,6 +245,19 @@ ok = c.get("gift") == 5000 and c.get("read") == 400 and c.get("w5") == 400 and c
      and "古い台帳をリセットする" in old and "3年たった記録と履歴は、自動でリセットされるよ" in old and v.get("oldAfterBackup") is True and v.get("oldApi") == "object" and v.get("delBets") == "function" and not v.get("error")
 print("cost %s toys %s toy-items %s old-card %s after-backup %s api %s delBets %s auto-line %s -> %s" % (c, [t[0] for t in toys], v.get("toyItems"), bool(old), v.get("oldAfterBackup"), v.get("oldApi"), v.get("delBets"), ((v.get("oldState") or {}).get("f") or {}).get("line"), "OK" if ok else "CHECK " + json.dumps(v, ensure_ascii=False)[:300]))
 ' "$OUT/iphone-report-1.json" 2>&1)"
+  # 第4.220版：Pカスタムの 解放の 確認（マザーデータ②・23,000P）は 名前・説明の 下に 1列（名前は 項目の はば いっぱい・1行・ボタンは 項目の 中・
+  #   「（今 △P）」は ひとまとまり）・「やめる」で 閉じて ポイントは そのまま（前は 名前・説明の はばが 0 に なり 1文字ずつ 縦に ならんで いた）
+  [ -f "$OUT/iphone-report-1.json" ] && say "   unlock confirm: $(python3 -c '
+import json, sys
+v = json.load(open(sys.argv[1])).get("v220") or {}
+it, pn, pd, go, no, nw, ls = (v.get(x) or [0, 0, 0, 0] for x in ("item", "pn", "pd", "go", "no", "now", "list"))
+inner = v.get("inner") or 0; lh = v.get("lh") or 20; nlh = v.get("nlh") or 20; tx = v.get("text") or ""
+one = pn[3] <= lh * 1.6
+ok = "cf" in (v.get("cls") or "").split() and inner > 0 and pn[2] >= inner - 1 and pd[2] >= inner - 1 and one and go[1] >= pd[1] + pd[3] - 1 and no[1] >= go[1] \
+     and go[0] >= it[0] and go[0] + go[2] <= it[0] + it[2] and no[0] >= it[0] and no[0] + no[2] <= it[0] + it[2] and it[0] + it[2] <= ls[0] + ls[2] + 1 \
+     and v.get("now") is not None and nw[3] <= nlh * 1.6 and tx.startswith("23,000Pを使って解放する（今 ") and "\n" not in tx and v.get("closed") is True and v.get("same") is True and not v.get("error")
+print("item %s name %s/%s 1-line %s go %s now %s text %s closed %s points-same %s -> %s" % (it, pn[2], inner, one, go, nw, tx, v.get("closed"), v.get("same"), "OK" if ok else "CHECK " + json.dumps(v, ensure_ascii=False)[:360]))
+' "$OUT/iphone-report-1.json" 2>&1)"
   [ -f "$OUT/iphone-report-1.json" ] && say "   care recorder: $(python3 -c "$RECPY" "$OUT/iphone-report-1.json" 2>&1)"
   phase "$IPHONE" iphone 2 700 report-2
   # 第4.191版：時計の 番人：アプリの 時計（Clock.swift）が 届く・電源を 入れてからの 時間が 進む・アプリを 開き直しても 起動の 番号（boot）と 端末の 番号（dev）は 同じ・

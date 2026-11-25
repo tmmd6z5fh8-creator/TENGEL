@@ -485,6 +485,26 @@
       R.v212 = { cost: Wv ? Wv.COST : null, toys: Wv && Wv.toy ? Wv.toy.list() : null, toyItems: document.querySelectorAll('#setCustom .ptitem[data-key^="toy:"]').length, old: oc ? oc.innerText.slice(0, 400) : null, oldAfterBackup: !!(oc && bkc && bkc.nextElementSibling === oc),
         oldApi: typeof window.TengelOld, oldState: window.TengelOld ? window.TengelOld.state() : null, hist: Wv && Wv.old ? Wv.old.rows() : null, delBets: typeof (window.TengelLocal || {}).delBets };
     } catch (e) { R.v212 = { error: String(e) }; }
+    // 第4.220版（まさちゃん 11/25「解放しようとすると、文字がおかしく表示される！改善して！」・iPad の 写真）：Pカスタムで「解放する」を 押した ときの 確認は
+    //   名前・説明の 下に 1列（前は 右の ボタンが 広がって 名前・説明の はばが 0 に なり、1文字ずつ 縦に ならんで いた）。いちばん 長い マザーデータ②（23,000P）で 見て、
+    //   「やめる」で 閉じる（解放は しない・ポイントも へらない）。写真 unlock-conf
+    try {
+      var ulk = 'slot:3', ub = document.querySelector('#setCustom [data-pt=unlock1][data-key="' + ulk + '"]'), ut0 = window.TengelWallet ? window.TengelWallet.total() : null;
+      if (ub) {
+        ub.click(); await sleep(300);
+        var ui = document.querySelector('#setCustom .ptitem[data-key="' + ulk + '"]');
+        if (ui) { ui.scrollIntoView({ block: 'center' }); await sleep(400); }
+        var urr = function (e) { if (!e) return null; var q = e.getBoundingClientRect(); return [Math.round(q.left), Math.round(q.top), Math.round(q.width), Math.round(q.height)]; };
+        var upn = ui && ui.querySelector('.pn'), upd = ui && ui.querySelector('.pd'), ugo = ui && ui.querySelector('[data-pt=unlock2]'), uno = ui && ui.querySelector('[data-pt=unlock0]'), unw = ugo && ugo.querySelector('.ptnow'), ucs = ui ? getComputedStyle(ui) : null;
+        R.v220 = { cls: ui ? ui.className : null, item: urr(ui), inner: ui ? Math.round(ui.clientWidth - parseFloat(ucs.paddingLeft) - parseFloat(ucs.paddingRight)) : null, list: ui ? urr(ui.parentNode) : null,
+          pn: urr(upn), pd: urr(upd), go: urr(ugo), no: urr(uno), now: urr(unw), lh: upn ? parseFloat(getComputedStyle(upn).lineHeight) : null, nlh: unw ? parseFloat(getComputedStyle(unw).lineHeight) : null, text: ugo ? ugo.innerText : null };
+        await mark('unlock-conf');
+        if (uno) { uno.click(); await sleep(300); }
+        R.v220.closed = !document.querySelector('#setCustom [data-pt=unlock2]') && !document.querySelector('#setCustom .ptitem.cf');
+        R.v220.same = (window.TengelWallet ? window.TengelWallet.total() : null) === ut0;
+        if (ptc) { ptc.scrollIntoView({ block: 'start' }); await sleep(300); }
+      } else R.v220 = { none: true };
+    } catch (e) { R.v220 = { error: String(e) }; }
     R.settings = { points: ptc ? ptc.innerText.slice(0, 600) : null, custom: (document.querySelector('#setCustom') || {}).innerText || null, mission: (document.querySelector('#setMission') || {}).innerText || null, update: up ? up.innerText : null, data: (document.querySelector('#setData') || {}).innerText || null };
     await mark('settings');
     var bk = document.querySelector('#setBackup'); if (bk) bk.scrollIntoView({ block: 'start' }); await sleep(600);
