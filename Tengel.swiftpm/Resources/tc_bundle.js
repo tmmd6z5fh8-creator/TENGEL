@@ -4537,8 +4537,12 @@ window.TCFX = TCFX;
 
 
 
+
+
+
+
 const TCPlan = (() => {
-  const PK = 'tengel.plan', MINS = [20, 15, 10, 8, 5], MEMO_MAX = 300;
+  const PK = 'tengel.plan', SEEN = 'tengel.planseen', MINS = [20, 15, 10, 8, 5], MEMO_MAX = 300;
   
   const memoClean = v => { let t = String(v == null ? '' : v).replace(/\r\n?/g, '\n').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '').slice(0, MEMO_MAX); if (/[\uD800-\uDBFF]$/.test(t)) t = t.slice(0, -1); return t; };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -4564,7 +4568,15 @@ const TCPlan = (() => {
   function save(quiet) {
     try { localStorage.setItem(PK, JSON.stringify(P)); } catch (e) {   }
     if (!quiet) resync();
+    ping();
   }
+  
+  function ping() { try { document.dispatchEvent(new CustomEvent('tengel:plan')); } catch (e) {   } }
+  function seen() { try { localStorage.setItem(SEEN, String(Date.now())); } catch (e) {   } ping(); }
+  
+  const startAt = r => { if (!r || !/^\d{4}-\d{2}-\d{2}$/.test(r.date || '') || !/^\d{1,2}:\d{2}$/.test(r.time || '')) return 0; const d = r.date.split('-'), hm = r.time.split(':'); return new Date(+d[0], +d[1] - 1, +d[2], +hm[0], +hm[1], 0).getTime(); };
+  
+  const soonR = (r, now) => { const s = startAt(r); return !!(P && P.on && s && now < s && (r.notify || []).some(m => s - (+m) * 60000 <= now)); };
   function resync() { try { if (typeof window.syncNotify === 'function') window.syncNotify(); } catch (e) {   } }
   const N = () => window.TengelNative && window.TengelNative.notify ? window.TengelNative : null;
   async function authState() { try { const n = N(); if (!n) return ''; const r = await n.notify('status'); return (r && r.auth) || ''; } catch (e) { return ''; } }
@@ -4625,8 +4637,12 @@ const TCPlan = (() => {
 #tcPlan .mm:focus{outline:0;border-style:solid;border-color:#e0a020;background:#fffdf2}
 #tcPlan .fm textarea{display:block;width:100%;box-sizing:border-box;min-height:66px;border-radius:10px;border:1.5px solid #d9b77c;background:#fff;color:#5a3a1c;font:400 16px/1.45 var(--tcpf);padding:8px 10px;resize:none;overflow:hidden;-webkit-appearance:none;appearance:none}
 #tcPlan .fa{display:flex;gap:10px;margin-top:14px}
-#tcPlan .jump{display:flex;gap:8px;margin:0 0 10px}
-#tcPlan .jump button{flex:1 1 0;min-width:0;height:34px;border-radius:17px;border:2px solid #d9b77c;background:#fff8ec;color:#7a4520;font:700 13px/1 var(--tcpf);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tcPlan .pj{flex:none;display:flex;gap:8px;padding:8px 12px;background:#fff8ec;border-bottom:1.5px solid #ead7b2}
+#tcPlan .pj[hidden]{display:none}
+#tcPlan .pj button{flex:1 1 0;min-width:0;height:34px;border-radius:17px;border:2px solid #d9b77c;background:#fff8ec;color:#7a4520;font:700 13px/1 var(--tcpf);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;-webkit-tap-highlight-color:transparent}
+#tcPlan .pj button[aria-pressed="true"]{background:#7a4520;border-color:#7a4520;color:#fff8ec}
+#tcPlan .sn{flex:none;align-self:center;font-size:12px;font-weight:700;line-height:1.2;color:#fff;background:#c2456f;border-radius:10px;padding:3px 8px;white-space:nowrap}
+#tcPlan .sn[hidden]{display:none}
 #tcPlan .oboard{margin-top:14px}
 #tcPlan .oc{position:relative;background:#fffdf7;border-radius:6px;padding:9px 10px 9px 12px;margin:0 0 10px;box-shadow:0 3px 0 rgba(90,55,20,.25);border-left:6px solid #5aa7c4}
 #tcPlan .oc::before{content:"";position:absolute;top:-6px;left:50%;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#9fd8f0,#3f8fb0);box-shadow:0 1px 2px rgba(0,0,0,.35)}
@@ -4651,8 +4667,9 @@ const TCPlan = (() => {
   function build(el) {
     if (!document.getElementById('tcPlanCss')) { const s = document.createElement('style'); s.id = 'tcPlanCss'; s.textContent = css; document.head.appendChild(s); }
     root = document.createElement('div'); root.id = 'tcPlan'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', '作戦会議');
-    root.innerHTML = `<div class="pp"><div class="ph"><img src="tc_icon_plan.webp" alt="作戦会議"><span class="sp"></span><button type="button" class="bx" data-p="close">閉じる</button></div><div class="pb"></div></div><input type="file" accept="image/*" hidden data-p="file">`;
+    root.innerHTML = `<div class="pp"><div class="ph"><img src="tc_icon_plan.webp" alt="作戦会議"><span class="sp"></span><button type="button" class="bx" data-p="close">閉じる</button></div><div class="pj" role="group" aria-label="行き先" hidden></div><div class="pb"></div></div><input type="file" accept="image/*" hidden data-p="file">`;
     el.appendChild(root);
+    root.querySelector('.pb').addEventListener('scroll', pjSync, { passive: true });      
     root.addEventListener('click', onClick);
     root.addEventListener('input', onInput);
     root.querySelector('[data-p=file]').addEventListener('change', onFile);
@@ -4681,11 +4698,11 @@ const TCPlan = (() => {
   }
   function paint() {
     if (!root) return; const b = root.querySelector('.pb');
-    if (edit) { b.innerHTML = formHtml(); fitAll(); return; }
-    if (editO) { b.innerHTML = oFormHtml(); fitAll(); return; }
+    if (edit) { pjPaint(false); b.innerHTML = formHtml(); fitAll(); return; }
+    if (editO) { pjPaint(false); b.innerHTML = oFormHtml(); fitAll(); return; }
     const td = today(), list = P.races.slice().sort((a, c) => (a.date + a.time).localeCompare(c.date + c.time));
     const off = auth === 'denied';
-    let h = OS() ? `<div class="jump"><button type="button" data-p="jr">📋 お気に入りレース</button><button type="button" data-p="jo">🐴 推し馬 ${OL.length}/${OS().MAX}</button></div>` : '';
+    let h = '';      
     h += `<div class="nt"><div class="tx"><b>通知 ${P.on ? 'オン' : 'オフ'}</b>オンに すると、レースごとに 選んだ 時間（20・15・10・8・5分前）に お知らせするよ${off && P.on ? '<div class="warn">iPhone の 通知が オフに なってるよ。iPhone の「設定」→「通知」→「テンゲル」で 通知を 許可してね</div>' : ''}</div>`
       + `<button type="button" class="sw" role="switch" aria-checked="${!!P.on}" aria-label="通知" data-p="on"></button></div>`;
     h += `<div class="board"><div class="cork"><div class="bdt">${jaDate(td)}（${wday(td)}）</div><div class="bsub">お気に入りレース一覧</div>`;
@@ -4694,7 +4711,7 @@ const TCPlan = (() => {
     list.forEach(r => {
       if (r.date !== cur) { cur = r.date; if (r.date !== td) h += `<div class="dh">${jaDate(r.date)}（${wday(r.date)}）</div>`; }
       const meta = [r.venue ? esc(r.venue) : '', r.r ? esc(r.r) + 'R' : '', r.n ? esc(r.n) + '頭' : '', r.dist ? esc(r.dist) + 'm' : ''].filter(Boolean).join('・');
-      h += `<div class="rc"><div class="rt"><span class="tm">${esc(r.time || '--:--')}</span><span class="nm">${esc(r.name || 'レース')}</span></div>${meta ? `<div class="mt">${meta}</div>` : ''}${memoBox(r)}${chipRow(r)}`
+      h += `<div class="rc"><div class="rt"><span class="tm">${esc(r.time || '--:--')}</span><span class="nm">${esc(r.name || 'レース')}</span><span class="sn" data-sn="${esc(r.id)}" hidden>🔔 まもなく発走</span></div>${meta ? `<div class="mt">${meta}</div>` : ''}${memoBox(r)}${chipRow(r)}`
         + `<div class="ra"><button type="button" class="sb" data-p="edit" data-id="${esc(r.id)}">直す</button><button type="button" class="sb del${delAsk === r.id ? ' ask' : ''}" data-p="del" data-id="${esc(r.id)}">${delAsk === r.id ? '本当に 消す？' : '消す'}</button></div></div>`;
     });
     h += `<button type="button" class="add" data-p="add">＋ レースを予約</button></div></div>`;
@@ -4702,6 +4719,33 @@ const TCPlan = (() => {
     const y0 = b.scrollTop;
     b.innerHTML = h; fitAll(); oPad();
     if (oshiMode && b.scrollTop !== y0) b.scrollTop = y0;      
+    pjPaint(true); soonPaint();
+  }
+  
+  
+  function pjPaint(on) {
+    const pj = root && root.querySelector('.pj'); if (!pj) return;
+    const os = OS(), show = !!(on && os);
+    if (pj.hidden !== !show) pj.hidden = !show;
+    if (!show) return;
+    pj.innerHTML = `<button type="button" data-p="jr" aria-pressed="false">📋 作戦会議<span class="jb" hidden> 🔔</span></button><button type="button" data-p="jo" aria-pressed="false">🐴 推し馬 ${OL.length}/${os.MAX}</button>`;
+    pjMark();
+  }
+  
+  function pjMark() {
+    const pj = root && root.querySelector('.pj'); if (!pj || pj.hidden) return;
+    const pb = root.querySelector('.pb'), ob = root.querySelector('.oboard');
+    const o = !!ob && ob.getBoundingClientRect().top - pb.getBoundingClientRect().top <= Math.min(120, pb.clientHeight * 0.35);
+    pj.querySelectorAll('button').forEach(x => { const v = String((x.dataset.p === 'jo') === o); if (x.getAttribute('aria-pressed') !== v) x.setAttribute('aria-pressed', v); });
+  }
+  let pjRaf = 0;
+  function pjSync() { if (!pjRaf) pjRaf = requestAnimationFrame(() => { pjRaf = 0; pjMark(); }); }
+  
+  let snT = 0;
+  function soonPaint() {
+    if (!root || !P) return; const now = Date.now();
+    root.querySelectorAll('.sn[data-sn]').forEach(e => { const on = soonR(P.races.find(x => x.id === e.dataset.sn), now); if (e.hidden !== !on) e.hidden = !on; });
+    const jb = root.querySelector('.pj .jb'), any = P.races.some(r => soonR(r, now)); if (jb && jb.hidden !== !any) jb.hidden = !any;
   }
   
   const oMemoBox = o => `<textarea class="mm" data-p="omemo" data-id="${esc(o.id)}" rows="1" maxlength="${OS().MEMO_MAX}" placeholder="📝 備考を書く（特徴・狙い目など）" aria-label="備考" autocomplete="off" autocapitalize="off" spellcheck="false">\n${esc(o.memo || '')}</textarea>`;
@@ -4800,8 +4844,8 @@ const TCPlan = (() => {
     if (k !== 'del') delAsk = null;
     if (k !== 'odel') delAskO = null;
     
-    if (k === 'jr') { oshiMode = false; oPad(); root.querySelector('.pb').scrollTop = 0; return; }
-    if (k === 'jo') { oshiMode = true; oPad(); oJump(null); return; }
+    if (k === 'jr') { oshiMode = false; oPad(); root.querySelector('.pb').scrollTop = 0; pjMark(); return; }
+    if (k === 'jo') { oshiMode = true; oPad(); oJump(null); pjMark(); return; }
     if (k === 'otog') { const id = a.dataset.id; if (openO[id]) delete openO[id]; else openO[id] = 1; paint(); return; }
     if (k === 'oadd') { const os = OS(); if (!os || OL.length >= os.MAX) return; editO = { _new: true, id: 'o' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36), name: '', ped: Array(os.PED).fill(''), memo: '' }; paint(); root.querySelector('.pb').scrollTop = 0; return; }
     if (k === 'oedit') { const o = OL.find(x => x.id === a.dataset.id); if (!o) return; editO = { id: o.id, name: o.name, ped: o.ped.slice(), memo: o.memo || '', at: o.at || '' }; paint(); root.querySelector('.pb').scrollTop = 0; return; }
@@ -4863,12 +4907,17 @@ const TCPlan = (() => {
     oshiMode = oshi; oPad();
     if (oshi) oJump(null); else pb.scrollTop = 0;      
     const y0 = pb.scrollTop;
+    seen(); clearInterval(snT); snT = setInterval(soonPaint, 15000);      
     auth = await authState(); paint();
     if (oshi && Math.abs(pb.scrollTop - y0) < 2) oJump(null);      
+    pjMark();
   }
   function close() {
     try { const f = document.activeElement; if (root && f && root.contains(f) && f.blur) f.blur(); } catch (e) {   }      
+    const was = isOpen();
     if (root) root.style.display = 'none'; edit = null; delAsk = null; editO = null; delAskO = null; oshiMode = false;
+    clearInterval(snT); snT = 0;
+    if (was) seen();      
   }
   function isOpen() { return !!root && root.style.display !== 'none'; }
   return { open, close, isOpen };

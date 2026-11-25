@@ -488,6 +488,7 @@
     // 第4.220版（まさちゃん 11/25「解放しようとすると、文字がおかしく表示される！改善して！」・iPad の 写真）：Pカスタムで「解放する」を 押した ときの 確認は
     //   名前・説明の 下に 1列（前は 右の ボタンが 広がって 名前・説明の はばが 0 に なり、1文字ずつ 縦に ならんで いた）。いちばん 長い マザーデータ②（23,000P）で 見て、
     //   「やめる」で 閉じる（解放は しない・ポイントも へらない）。写真 unlock-conf
+    var mk20 = false;      // 第4.221版：写真の 合図は かならず 出す（CI は P1 の 順に 待つ：出ないと そこで 止まる）
     try {
       var ulk = 'slot:3', ub = document.querySelector('#setCustom [data-pt=unlock1][data-key="' + ulk + '"]'), ut0 = window.TengelWallet ? window.TengelWallet.total() : null;
       if (ub) {
@@ -498,13 +499,59 @@
         var upn = ui && ui.querySelector('.pn'), upd = ui && ui.querySelector('.pd'), ugo = ui && ui.querySelector('[data-pt=unlock2]'), uno = ui && ui.querySelector('[data-pt=unlock0]'), unw = ugo && ugo.querySelector('.ptnow'), ucs = ui ? getComputedStyle(ui) : null;
         R.v220 = { cls: ui ? ui.className : null, item: urr(ui), inner: ui ? Math.round(ui.clientWidth - parseFloat(ucs.paddingLeft) - parseFloat(ucs.paddingRight)) : null, list: ui ? urr(ui.parentNode) : null,
           pn: urr(upn), pd: urr(upd), go: urr(ugo), no: urr(uno), now: urr(unw), lh: upn ? parseFloat(getComputedStyle(upn).lineHeight) : null, nlh: unw ? parseFloat(getComputedStyle(unw).lineHeight) : null, text: ugo ? ugo.innerText : null };
-        await mark('unlock-conf');
+        await mark('unlock-conf'); mk20 = true;
         if (uno) { uno.click(); await sleep(300); }
         R.v220.closed = !document.querySelector('#setCustom [data-pt=unlock2]') && !document.querySelector('#setCustom .ptitem.cf');
         R.v220.same = (window.TengelWallet ? window.TengelWallet.total() : null) === ut0;
         if (ptc) { ptc.scrollIntoView({ block: 'start' }); await sleep(300); }
       } else R.v220 = { none: true };
     } catch (e) { R.v220 = { error: String(e) }; }
+    if (!mk20) await mark('unlock-conf');
+    // 第4.221版（まさちゃん 2026/11/25 12:07・12:11・12:13）：右下の 丸い ボタンの 数と 🔔・作戦会議の 行き先の 札・データの 札・壁紙の 組 を 本物の WebKit で。
+    //   トレーニングセンターの 丸に お世話トークンの 数・推し馬の 丸に 🔔（作戦会議に レースを 1つ：4分 あとに 発走・5分前の お知らせ ＝ もう 来た）→ 写真 fab-marks →
+    //   🔔 の 推し馬を 押す → 作戦会議が 上（予約した レース）から 開く・「🔔 まもなく発走」・行き先の 札 → 写真 plan-soon →「🐴 推し馬」→「📋 作戦会議」→ 閉じる → 🔔 は 消えた まま。
+    //   データの 札は「テンゲルデータ」だけ・着せ替えの 組は 壁紙パック・ポイント壁紙カスタム・帯。作戦会議の 中身は もとに もどす（調査隊切符の 枚数は カードバトルの あと：cb.qtBadge）
+    var fm221 = function (id) {
+      var b = document.getElementById(id), i = b && b.querySelector('.fabi'), m = i && [].filter.call(i.querySelectorAll('.fabc, .fabb'), function (e) { return !e.hidden; })[0];
+      if (!m) return { t: null, al: b ? b.getAttribute('aria-label') : null };
+      var r = m.getBoundingClientRect(), f = i.getBoundingClientRect(), cs = getComputedStyle(m);
+      return { t: m.textContent, cls: m.className, al: b.getAttribute('aria-label'), fs: Math.round(parseFloat(cs.fontSize) * 10) / 10, wh: [Math.round(r.width), Math.round(r.height)],
+        corner: r.top < f.top + f.height * 0.3 && r.bottom > f.top && r.right > f.right - f.width * 0.3, inView: r.left >= 0 && r.right <= innerWidth + 0.5 && r.top >= 0 };
+    };
+    var mk21 = {};
+    try {
+      var V21 = R.v221 = { pill: (document.querySelector('#dbpill') || {}).textContent || null,
+        ks: [].map.call(document.querySelectorAll('#setKisekae .ksg'), function (h) { return h.firstChild.textContent + '/' + ((h.querySelector('small') || {}).textContent || ''); }) };
+      V21.tc = fm221('tcFab'); V21.cb = fm221('cbFab'); V21.oshi0 = fm221('oshiFab');
+      var pd21 = function (n) { return String(n).padStart(2, '0'); }, s21 = new Date(Date.now() + 4 * 60000); s21.setSeconds(0, 0);
+      var P21 = localStorage.getItem('tengel.plan'), S21 = localStorage.getItem('tengel.planseen');
+      localStorage.setItem('tengel.plan', JSON.stringify({ v: 1, on: true, races: [{ id: 'pci', date: s21.getFullYear() + '-' + pd21(s21.getMonth() + 1) + '-' + pd21(s21.getDate()), time: pd21(s21.getHours()) + ':' + pd21(s21.getMinutes()), name: 'テスト特別', n: 12, dist: 1600, venue: '', r: '', memo: '', notify: [5] }] }));
+      localStorage.setItem('tengel.planseen', String(Date.now() - 600000));
+      document.dispatchEvent(new CustomEvent('tengel:plan')); await sleep(400);
+      V21.oshi = fm221('oshiFab');
+      await mark('fab-marks'); mk21.f = 1;
+      var ob21 = document.querySelector('#oshiFab .fabi');
+      if (ob21) {
+        var pl21 = function () {
+          var r = document.querySelector('#tcPlan'), pb = r && r.querySelector('.pb'), pj = r && r.querySelector('.pj'), sn = r && r.querySelector('.rc .sn'), q = pb ? pb.getBoundingClientRect() : null;
+          if (!r || r.style.display === 'none') return { open: false };
+          return { open: true, st: Math.round(pb.scrollTop), sn: sn ? !sn.hidden : null, pj: pj && !pj.hidden ? { see: pj.getBoundingClientRect().bottom <= q.top + 1 && pj.getBoundingClientRect().height > 20,
+            on: [].map.call(pj.querySelectorAll('button'), function (x) { return x.getAttribute('aria-pressed'); }), t: [].map.call(pj.querySelectorAll('button'), function (x) { return x.innerText; }) } : null };
+        };
+        ob21.click(); await waitFor(function () { return window.TCPlan && window.TCPlan.isOpen(); }, 30000); await sleep(900);
+        V21.plan = pl21(); V21.oshiAfter = fm221('oshiFab');
+        await mark('plan-soon'); mk21.p = 1;
+        var jo21 = document.querySelector('#tcPlan [data-p=jo]'); if (jo21) { jo21.click(); await sleep(600); } V21.planO = pl21();
+        var jr21 = document.querySelector('#tcPlan [data-p=jr]'); if (jr21) { jr21.click(); await sleep(600); } V21.planR = pl21();
+        var cl21 = document.querySelector('#tcPlan [data-p=close]'); if (cl21) { cl21.click(); await sleep(400); }
+      }
+      V21.oshiEnd = fm221('oshiFab');
+      if (P21 == null) localStorage.removeItem('tengel.plan'); else localStorage.setItem('tengel.plan', P21);
+      if (S21 == null) localStorage.removeItem('tengel.planseen'); else localStorage.setItem('tengel.planseen', S21);
+      document.dispatchEvent(new CustomEvent('tengel:plan'));
+    } catch (e) { R.v221 = Object.assign(R.v221 || {}, { error: String(e) }); }
+    if (!mk21.f) await mark('fab-marks');
+    if (!mk21.p) await mark('plan-soon');
     R.settings = { points: ptc ? ptc.innerText.slice(0, 600) : null, custom: (document.querySelector('#setCustom') || {}).innerText || null, mission: (document.querySelector('#setMission') || {}).innerText || null, update: up ? up.innerText : null, data: (document.querySelector('#setData') || {}).innerText || null };
     await mark('settings');
     var bk = document.querySelector('#setBackup'); if (bk) bk.scrollIntoView({ block: 'start' }); await sleep(600);
@@ -625,6 +672,8 @@
       var mb = document.querySelector('#cbOv .cbend [data-cb=menu]'); if (mb) mb.click(); await sleep(300);
       var cl = document.querySelector('#cbOv .cbmenu [data-cb=close]'); if (cl) cl.click(); await sleep(300);
       out.closed = !document.querySelector('#cbOv.on');
+      // 第4.221版：解放して 遊んだ あと：丸の 右上に 今の 調査隊切符の 枚数（カードバトルの 中の 数と 同じ）
+      try { out.qtBadge = Object.assign(fm221('cbFab'), { n: window.CBApp._t.qt ? window.CBApp._t.qt.n : null }); } catch (e) { out.qtBadge = { error: String(e) }; }
       return out;
     });
     // 第4.177版：お世話の 札の「描く 命令を 書きとめる 役」（tc/tc_care.js の REC：同じ 絵の コマは 紙に さわらない）を 本物の WebKit で たしかめる。

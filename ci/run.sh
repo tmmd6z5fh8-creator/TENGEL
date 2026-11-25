@@ -143,6 +143,21 @@ ok3 = ty.get("locked") is True and ty.get("lock") is True and "3,000P" in (ty.ge
       and af == {"ov": False, "cb": False} and ty.get("opened") == [True] and ty.get("lock2") is False and not o.get("toyErr")
 print("   card battle toy: locked %s badge %s points %s ask-buttons %s opened-before-unlock %s after-cancel %s unlocked %s badge-after %s err %s -> %s" % (ty.get("locked"), ty.get("lock"), ty.get("total"), ty.get("btn"), ty.get("cbOpen"), af, ty.get("opened"), ty.get("lock2"), o.get("toyErr"), "OK" if ok3 else "CHECK " + json.dumps(ty, ensure_ascii=False)[:300]))
 '
+# 第4.221版（まさちゃん 2026/11/25 12:07・12:11・12:13）：データの 札は「テンゲルデータ」だけ・着せ替えの 組は 3つ（壁紙パック 10・ポイント壁紙カスタム 17・帯 3）・
+#   トレーニングセンターの 丸に お世話トークンの 数（右上・画面の 中・字 10.5px 以上）・推し馬の 丸に 🔔（作戦会議の レースの お知らせの 時刻が 来た）→ 押すと 作戦会議の 上（予約した レース）・
+#   「🔔 まもなく発走」・行き先の 札は 見えた まま（📋 作戦会議／🐴 推し馬 の 色が かわる）・開いたら 🔔 は 消える・カードバトルで 遊んだ あとの 調査隊切符の 枚数（中の 数と 同じ）
+V221PY='
+import json, sys
+r = json.load(open(sys.argv[1])); v = r.get("v221") or {}; q = (r.get("cb") or {}).get("qtBadge") or {}
+tc, cb, o0, o1, oa, oe, pl, po, pr = (v.get(k) or {} for k in ("tc", "cb", "oshi0", "oshi", "oshiAfter", "oshiEnd", "plan", "planO", "planR"))
+bar = lambda x: (x.get("pj") or {}).get("on")
+ok = v.get("pill") == "テンゲルデータ" and v.get("ks") == ["壁紙パック/10", "ポイント壁紙カスタム/17", "帯/3"] \
+     and (tc.get("t") or "").isdigit() and "お世話トークン " + (tc.get("t") or "?") + "個" in (tc.get("al") or "") and tc.get("corner") is True and tc.get("inView") is True and (tc.get("fs") or 0) >= 10.5 \
+     and (cb.get("t") is None or (cb.get("t") or "").isdigit()) and o0.get("t") is None and o1.get("t") == "🔔" and o1.get("corner") is True and o1.get("inView") is True and oa.get("t") is None and oe.get("t") is None \
+     and pl.get("open") is True and pl.get("st") == 0 and pl.get("sn") is True and (pl.get("pj") or {}).get("see") is True and bar(pl) == ["true", "false"] and bar(po) == ["false", "true"] and bar(pr) == ["true", "false"] and pr.get("st") == 0 \
+     and (q.get("t") or "").isdigit() and q.get("t") == str(q.get("n")) and q.get("corner") is True and q.get("inView") is True and not v.get("error")
+print("pill %s groups %s tokens %s (font %s size %s corner %s in %s) bell %s -> open %s -> after %s plan top %s soon %s bar %s tickets %s/%s (corner %s in %s) -> %s" % (v.get("pill"), v.get("ks"), tc.get("t"), tc.get("fs"), tc.get("wh"), tc.get("corner"), tc.get("inView"), o1.get("t"), oa.get("t"), oe.get("t"), pl.get("st"), pl.get("sn"), [bar(x) for x in (pl, po, pr)], q.get("t"), q.get("n"), q.get("corner"), q.get("inView"), "OK" if ok else "CHECK " + json.dumps(v, ensure_ascii=False)[:420] + " qt " + json.dumps(q, ensure_ascii=False)[:160]))
+'
 # 第4.177版：お世話の 札の「描く 命令を 書きとめる 役」（tc/tc_care.js の REC）を 本物の WebKit で：16コマ（描く 8〈はじめの 2コマ・場面が かわった 3コマ・中身の かわる 紙の 2コマ・かくれた あとの 1コマ〉・同じ 絵で 描かない 6・かくれて いて 描かない 2）・
 #   じかに 描いた 紙と 1画素も ちがわない（くらべた 14コマ・べつの 紙との 見くらべも 0）・読んだ 値（線の 太さ 2・こさ 0.375）
 RECPY='
@@ -185,7 +200,7 @@ phase() {
 }
 applog() { xcrun simctl spawn "$1" log show --last 15m --style compact --predicate 'process CONTAINS "テンゲル" OR (process CONTAINS "WebContent" AND eventMessage CONTAINS[c] "error")' 2>/dev/null | tail -400 > "$OUT/$2-log.txt"; }
 
-P1="gate-first main rsv-ov fx-push fx-board fx-fz-push fx-fz-result fx-sgd-still fx-sd fx-sd-board fx-gk fx-gk-board board-carry board-carry-slip board-carry-miss ks-judge ks-push ks-board ks-set ks-conf ks-tengel ks-pack ks-pack-wall points settings backup about rec numpad manual-ov manual-ov-item cb-toy cb-menu cb-game cb-end report-1 manual manual-item report-manual back report-back"
+P1="gate-first main rsv-ov fx-push fx-board fx-fz-push fx-fz-result fx-sgd-still fx-sd fx-sd-board fx-gk fx-gk-board board-carry board-carry-slip board-carry-miss ks-judge ks-push ks-board ks-set ks-conf ks-tengel ks-pack ks-pack-wall points unlock-conf fab-marks plan-soon settings backup about rec numpad manual-ov manual-ov-item cb-toy cb-menu cb-game cb-end report-1 manual manual-item report-manual back report-back"
 # 4) iPhone
 if [ -n "$IPHONE" ]; then
   xcrun simctl boot "$IPHONE" > /dev/null 2>&1; xcrun simctl bootstatus "$IPHONE" -b > /dev/null 2>&1
@@ -258,6 +273,7 @@ ok = "cf" in (v.get("cls") or "").split() and inner > 0 and pn[2] >= inner - 1 a
      and v.get("now") is not None and nw[3] <= nlh * 1.6 and tx.startswith("23,000Pを使って解放する（今 ") and "\n" not in tx and v.get("closed") is True and v.get("same") is True and not v.get("error")
 print("item %s name %s/%s 1-line %s go %s now %s text %s closed %s points-same %s -> %s" % (it, pn[2], inner, one, go, nw, tx, v.get("closed"), v.get("same"), "OK" if ok else "CHECK " + json.dumps(v, ensure_ascii=False)[:360]))
 ' "$OUT/iphone-report-1.json" 2>&1)"
+  [ -f "$OUT/iphone-report-1.json" ] && say "   fab marks: $(python3 -c "$V221PY" "$OUT/iphone-report-1.json" 2>&1)"
   [ -f "$OUT/iphone-report-1.json" ] && say "   care recorder: $(python3 -c "$RECPY" "$OUT/iphone-report-1.json" 2>&1)"
   phase "$IPHONE" iphone 2 700 report-2
   # 第4.191版：時計の 番人：アプリの 時計（Clock.swift）が 届く・電源を 入れてからの 時間が 進む・アプリを 開き直しても 起動の 番号（boot）と 端末の 番号（dev）は 同じ・
@@ -323,6 +339,7 @@ if [ -n "$IPAD" ]; then
   phase "$IPAD" ipad 1 1000 $P1
   [ -f "$OUT/ipad-report-1.json" ] && say "   card battle (ipad): $(python3 -c "$CBPY" "$OUT/ipad-report-1.json" 2>&1)"
   [ -f "$OUT/ipad-report-1.json" ] && say "   care recorder (ipad): $(python3 -c "$RECPY" "$OUT/ipad-report-1.json" 2>&1)"
+  [ -f "$OUT/ipad-report-1.json" ] && say "   fab marks (ipad): $(python3 -c "$V221PY" "$OUT/ipad-report-1.json" 2>&1)"
   applog "$IPAD" ipad
   xcrun simctl shutdown "$IPAD" > /dev/null 2>&1
 fi
