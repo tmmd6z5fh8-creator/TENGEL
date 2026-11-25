@@ -399,6 +399,15 @@ V212_INDEX = [
 ]
 
 
+# ---------- 第4.221版（まさちゃん 2026/11/25 12:13「テンゲルデータのみは、記録数載せなくていい！他の解放したマザーデータは全て表示して！」・答え「使っているデータだけ」）----------
+#   画面の 上の データの 札（#dbpill）：テンゲルデータを 使って いる ときは 名前 だけ（前は「テンゲルデータ・記録 ○件」）。
+#   マザーデータ①〜③を 使って いる ときは 今までどおり ぜんぶ（「マザーデータ① ○走・記録 ○件」）。札は 使って いる データ 1つ だけ。src.html は Web版と 同じ ファイル なので アプリを 作る ときに 置きかえる
+V221_INDEX = [
+    ("p.textContent = fx ? `${Slots.on ? motherName() : 'テンゲルデータ'}・記録 ${st.bets.size}件${st.canWrite ? '' : '（閲覧のみ）'}`",
+     "p.textContent = fx ? `${Slots.on ? motherName() : 'テンゲルデータ'}${st.canWrite ? '' : '（閲覧のみ）'}`", 1),
+]
+
+
 def app_index(html):
     """App Store版の index.html：コメントを消して、名前を置きかえて、残っていないか確かめる"""
     html = strip_web_only(html)
@@ -407,6 +416,7 @@ def app_index(html):
     html = apply(html, KANJI_INDEX, 'index.html（漢字に そろえる）')
     html = apply(html, SAFE_INDEX, 'index.html（字と して 出す）')      # 第4.211版
     html = apply(html, V212_INDEX, 'index.html（第4.212版：値段・5連・記録を まとめて 消す）')
+    html = apply(html, V221_INDEX, 'index.html（第4.221版：テンゲルデータの 札は 名前 だけ）')
     check_clean(html, 'index.html')
     return html
 

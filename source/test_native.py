@@ -1172,8 +1172,8 @@ try:
         NPK = pg.evaluate("TengelKisekae.pack().ids.length")                # 第4.92版：壁紙パックの テーマ（いちばん 上の 組・買う まで カギ）
         #   第4.147版（まさちゃん 2026/11/10 22:12「壁紙 ホワイトデー・バレンタインデー・ハロウィン・正月・クリスマス・雪・紅葉・桜・海 これら全部消して！」「七夕も消して！」）：41 → 31テーマ（ポイント 26 → 17枚・壁紙パック 11 → 10枚）
         #   第4.160版（まさちゃん 2026/11/12 14:31「壁紙のネオン消して！」）：31 → 30テーマ（ポイント 17 → 16枚）
-        check(ks.count() == 1 and NPK == 10 and ks.locator('.kst').count() == 20 + NPK and ks.locator('.ksg').count() == 7 and ks.locator('.kst.on').get_attribute('data-ks') == 'default' and ks.locator('.kst.lock').count() == 19 + NPK and pg.evaluate("TengelKisekae.current()") == 'default' and pg.evaluate("document.documentElement.dataset.ks") is None,
-              f'設定に「着せ替え」：7つの組（壁紙パック＋6）・{20 + NPK}テーマ・いつものが使用中・他の{19 + NPK}はカギ')
+        check(ks.count() == 1 and NPK == 10 and ks.locator('.kst').count() == 20 + NPK and ks.locator('.ksg').count() == 3 and pg.evaluate("[...document.querySelectorAll('#setKisekae .ksg')].map(h => h.firstChild.textContent)") == ['壁紙パック', 'ポイント壁紙カスタム', '帯'] and ks.locator('.kst.on').get_attribute('data-ks') == 'default' and ks.locator('.kst.lock').count() == 19 + NPK and pg.evaluate("TengelKisekae.current()") == 'default' and pg.evaluate("document.documentElement.dataset.ks") is None,
+              f'設定に「着せ替え」：3つの組（壁紙パック・ポイント壁紙カスタム・帯：第4.221版 まさちゃん 11/25 12:11「項目ごとに分けずに並べて！」）・{20 + NPK}テーマ・いつものが使用中・他の{19 + NPK}はカギ')
         check(not any(ks.locator(f'.kst[data-ks={t}]').count() for t in ('sakura', 'sea', 'autumn', 'snow', 'newyear', 'xmas', 'halloween', 'valentine', 'whiteday', 'tanabata', 'neon'))
               and not any(n in ks.inner_text() for n in ('桜', '紅葉', 'お正月', 'クリスマス', 'ハロウィン', 'バレンタイン', 'ホワイトデー', '七夕', 'ネオン')) and pg.evaluate("TengelKisekae.list().length") == 30
               and not pg.evaluate("TengelKisekae.usable('neon')"),
@@ -1184,7 +1184,7 @@ try:
         names = names[NPK:]
         check(names[:5] == ['いつもの', '牧場', 'かわいいお馬さん', '毛糸のお馬とロボット', 'ぷりけつのお馬'] and names[5:7] == ['夕焼け', '花火']
               and names[7:11] == ['ナイター', '競馬新聞', '勝負服', '招き馬'] and names[11:13] == ['水墨画', '大理石の馬'] and names[13:17] == ['ドット', '黒板', 'メリーゴーランド', '星座'] and names[17:] == ['シルバー帯', 'ゴールド帯', 'マスター帯'],
-              f'9.1 の名前と並び（定番5・季節・行事2・競馬4・和・アート2・レトロ・ポップ4〔第4.160版：ネオンを 外した〕・帯3）：{names[:7]}…')
+              f'9.1 の名前と並び（ポイント壁紙カスタム 17：いつもの・牧場 … 星座〔第4.160版：ネオンを 外した・第4.221版：組を 1つに〕・帯3）：{names[:7]}…')
         locks = ks.locator('.kst .kslock').all_inner_texts()
         check(locks.count('🔒 1,000P') == 0 and locks.count('🔒 2,000P') == 0 and locks.count('🔒 3,000P') == 0 and locks.count('🔒 4,000P') == 0 and locks.count('🔒 7,000P') == 0
               and locks.count('🔒 4,500P') == 6 and locks.count('🔒 5,500P') == 3 and locks.count('🔒 6,500P') == 4 and locks.count('🔒 9,500P') == 3 and locks.count('🔒 壁紙を5枚あつめると') == 1 and locks.count('🔒 壁紙を10枚あつめると') == 1 and locks.count('🔒 壁紙を15枚あつめると') == 1 and locks.count('🔒 壁紙を16枚あつめると') == 0 and locks.count('🔒 壁紙パック') == NPK

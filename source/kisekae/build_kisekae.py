@@ -48,15 +48,15 @@ PAID = sorted(PRICE)                                     # ポイントで解放
 assert len(PAID) == 16 and sum(PRICE.values()) == 98000, (len(PAID), sum(PRICE.values()))      # 第4.212版：58,000 → 98,000P（＋2,500P × 16）
 assert max(BAND.values()) < len(PAID), BAND             # マスター帯は ポイントの 壁紙 だけで 届く
 # 第4.92版：壁紙パック（買い切り 1,500円・pack/：第4.147版から 10枚）は いちばん上の 組（買う ボタンと 解放の 進み具合は kisekae.js が 組の 上に 出す）
+# 第4.221版（まさちゃん 2026/11/25 12:11「壁紙のところ、無課金のポイントでGETできる組は、定番じゃなくてポイント壁紙カスタムにして、項目ごとに分けずに並べて！
+#   例えば、季節・行事とかの項目ごとに分けるのを無くして！」）：前の 定番・季節・行事・競馬・和・アート・レトロ・ポップ の 5つの 組を 1つ「ポイント壁紙カスタム」に（並びは 前の まま：
+#   いつもの（初めから）→ ポイントで 解放する 16枚）。壁紙パック（買い切り）と 帯（ミッション）は 今までどおり 別の 組
 GROUPS = [('壁紙パック', list(PK.IDS)),
-          ('定番', ['default', 'ranch', 'cute', 'kids', 'gold']),
-          ('季節・行事', ['sunset', 'fireworks']),
-          ('競馬', ['night', 'news', 'silks', 'lucky']),
-          ('和・アート', ['ink', 'marble']),
-          ('レトロ・ポップ', ['pixel', 'chalk', 'carousel', 'stars']),
+          ('ポイント壁紙カスタム', ['default', 'ranch', 'cute', 'kids', 'gold', 'sunset', 'fireworks', 'night', 'news', 'silks', 'lucky', 'ink', 'marble', 'pixel', 'chalk', 'carousel', 'stars']),
           ('帯', ['silver', 'golden', 'tengel'])]
 ORDER = [i for _, ids in GROUPS for i in ids]
 assert sorted(ORDER) == sorted(BY_ID), set(ORDER) ^ set(BY_ID)
+assert sorted(GROUPS[1][1][1:]) == PAID, set(GROUPS[1][1][1:]) ^ set(PAID)      # ポイント壁紙カスタム＝いつもの＋ポイントで 解放する 16枚
 OLD_DESC = dict(default='紺と金', ranch='黄緑・芝と馬', cute='ピンク・リボン', kids='ぬいぐるみ', gold='金ピカ・ゴージャス')
 T20_BY = {t['id']: t for t in T20}
 BLOBS20 = json.load(open(os.path.join(K, 'blobs20.json')))

@@ -280,6 +280,8 @@ try:
         print('■ おもちゃの 解放（第4.212版：TENGERカードバトルは 3,000P で 解放）')
         tl0 = pg.evaluate("() => ({ lock: document.querySelector('#cbFab').classList.contains('lock'), cbl: TengelCB.locked(), al: document.querySelector('#cbFab').getAttribute('aria-label'), mark: getComputedStyle(document.querySelector('#cbFab'), '::before').content, total: TengelWallet.total(), has: TengelWallet.toy.has('cb') })")
         check(tl0['lock'] and tl0['cbl'] and not tl0['has'] and '🔒' in tl0['mark'] and 'おもちゃ' in tl0['al'] and tl0['total'] == 5000, f'まだ 解放して いない：丸い ボタンに 🔒・読み上げは「おもちゃ：ポイントで 解放すると 遊べるよ」（{tl0}）')
+        qt0 = pg.evaluate("() => [...document.querySelectorAll('#cbFab .fabc')].filter(e => !e.hidden).length")
+        check(qt0 == 0, f'第4.221版：まだ 解放して いない ときは 調査隊切符の 枚数を 出さない（🔒 だけ：{qt0}）')
         pg.locator('#cbFab .fabi').click(); pg.wait_for_selector('#toyOv', timeout=10000); pg.wait_for_timeout(200)
         td0 = pg.evaluate("() => { const o = document.querySelector('#toyOv'), b = o.querySelector('.toybox').getBoundingClientRect(), cs = getComputedStyle(o); return { t: o.innerText.replace(/\\s+/g, ' '), role: o.getAttribute('role'), modal: o.getAttribute('aria-modal'), z: +cs.zIndex, inside: b.left >= 0 && b.right <= innerWidth && b.top >= 0 && b.bottom <= innerHeight, btn: [...o.querySelectorAll('[data-toy]')].map(x => x.dataset.toy + ':' + x.textContent), cb: !!document.querySelector('#cbOv.on'), bundle: !!window.CBApp, fab: document.querySelector('#cbFab').disabled }; }")
         check('TENGERカードバトル' in td0['t'] and '3,000Pで解放すると、ずっと遊べるよ' in td0['t'] and '今 5,000P' in td0['t'] and td0['btn'] == ['go:3,000Pを使って解放する', 'no:やめる'] and td0['role'] == 'dialog' and td0['modal'] == 'true' and td0['z'] >= 100 and td0['inside'] and not td0['cb'] and not td0['bundle'],
@@ -303,9 +305,11 @@ try:
         pg.locator('#toyOv [data-toy=go]').click()
         pg.wait_for_function("() => !!window.CBApp && !!document.querySelector('#cbOv.on')", timeout=30000); pg.wait_for_timeout(300)
         td4 = pg.evaluate("() => ({ toy: !!document.querySelector('#toyOv'), total: TengelWallet.total(), has: TengelWallet.toy.has('cb'), drop: TengelWallet.toy.has('drop'), lock: document.querySelector('#cbFab').classList.contains('lock'), ev: TengelWallet.events().filter(e => e.id === 'unlock-toy:cb').map(e => e.amount + ':' + e.what).join(), al: document.querySelector('#cbFab').getAttribute('aria-label'), scr: CBApp._t.screen })")
-        check(td4 == {'toy': False, 'total': 2000, 'has': True, 'drop': False, 'lock': False, 'ev': '-3000:toy:cb', 'al': 'TENGERカードバトル（押すと 開くよ）', 'scr': 'menu'},
+        check(td4 == {'toy': False, 'total': 2000, 'has': True, 'drop': False, 'lock': False, 'ev': '-3000:toy:cb', 'al': 'TENGERカードバトル（調査隊切符 15枚・押すと 開くよ）', 'scr': 'menu'},
               f'「3,000Pを使って解放する」→ 5,000 → 2,000P・台帳に 1件・🔒 が 消えて、そのまま カードバトルが 開く（お世話チャレンジは べつ：まだ）（{td4}）')
         pg.evaluate("() => CBApp.close()"); pg.wait_for_timeout(300)
+        qt1 = pg.evaluate("() => { const e = document.querySelector('#cbFab .fabc.qt'), r = e && e.getBoundingClientRect(), f = document.querySelector('#cbFab .fabi').getBoundingClientRect(); return e ? { t: e.textContent, hid: e.hidden, ah: e.getAttribute('aria-hidden'), in: r.right <= innerWidth && r.top >= f.top - 8 && r.right <= f.right + 8 && r.width > 15 } : null; }")
+        check(qt1 == {'t': '15', 'hid': False, 'ah': 'true', 'in': True}, f'第4.221版（まさちゃん 11/25 12:07「調査隊切符も同じようにしてほしい！」）：解放 したら 丸の 右上に 今の 調査隊切符の 枚数（はじめは 15枚・画面から はみ出さない：{qt1}）')
 
         print('■ メニュー・遊び方')
         open_cb(pg)

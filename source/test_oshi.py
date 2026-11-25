@@ -57,7 +57,8 @@ def open_plan(pg):                    # 判定タブの「作戦会議」の 札
 BOARD = """() => { const r = document.querySelector('#tcPlan'), ob = r.querySelector('.oboard'); if (!ob) return null;
   return { title: ob.querySelector('.bdt').textContent, sub: ob.querySelector('.bsub').textContent, empty: !!ob.querySelector('.empty'), cards: [...ob.querySelectorAll('.oc')].map(c => ({ id: c.dataset.oid, name: c.querySelector('.onm').textContent, sum: (c.querySelector('.osum') || {}).textContent || '',
       tog: c.querySelector('.otg').textContent, open: c.querySelector('.oh').getAttribute('aria-expanded'), ped: !!c.querySelector('.ped'), memo: c.querySelector('textarea.mm').value, btns: [...c.querySelectorAll('.ra .sb')].map(b => b.textContent) })),
-    add: ob.querySelector('.oadd').textContent, addOff: ob.querySelector('.oadd').disabled, jump: [...r.querySelectorAll('.jump button')].map(b => b.textContent), order: [...r.querySelectorAll('.pb > *')].map(e => e.className) }; }"""
+    add: ob.querySelector('.oadd').textContent, addOff: ob.querySelector('.oadd').disabled, jump: [...r.querySelectorAll('.pj button')].map(b => b.innerText), order: [...r.querySelectorAll('.pb > *')].map(e => e.className),
+    pj: (() => { const j = r.querySelector('.pj'), pb = r.querySelector('.pb'); return j && !j.hidden ? { above: Math.round(j.getBoundingClientRect().bottom - pb.getBoundingClientRect().top), next: j.nextElementSibling === pb, prev: j.previousElementSibling.className } : null; })() }; }"""
 LS = "() => JSON.parse(localStorage.getItem('tengel.oshi') || 'null')"
 try:
     print('■ 中身')
@@ -100,7 +101,8 @@ try:
         open_plan(pg); bd = pg.evaluate(BOARD); shot(pg, 'oshi_empty')
         check(bd is not None and bd['title'] == '推し馬' and '0頭' in bd['sub'] and '25頭まで' in bd['sub'] and bd['empty'] and bd['cards'] == [] and bd['add'] == '＋ 推し馬を登録' and not bd['addOff'],
               f'レースの ボードの 下に「推し馬」の ボード（0頭・25頭まで 登録できるよ・「＋ 推し馬を登録」）')
-        check(bd['order'] == ['jump', 'nt', 'board', 'board oboard'] and len(bd['jump']) == 2 and '推し馬 0/25' in bd['jump'][1], f'並び：上から 行き先の 札（お気に入りレース／推し馬 0/25）・通知・お気に入りレース一覧・推し馬 {bd["order"]}')
+        check(bd['order'] == ['nt', 'board', 'board oboard'] and len(bd['jump']) == 2 and bd['jump'][0] == '📋 作戦会議' and '推し馬 0/25' in bd['jump'][1] and bd['pj'] == {'above': 0, 'next': True, 'prev': 'ph'},
+              f'並び：見出しの すぐ 下に 行き先の 札（第4.221版：中身の 外に 止める「📋 作戦会議」／「🐴 推し馬 0/25」{bd["jump"]}・{bd["pj"]}）・中身は 上から 通知・お気に入りレース一覧・推し馬 {bd["order"]}')
         # 登録の 入力
         pg.locator('#tcPlan [data-p=oadd]').click(); pg.wait_for_timeout(250); shot(pg, 'oshi_form')
         fm = pg.evaluate("""() => { const r = document.querySelector('#tcPlan .ofm'), pb = document.querySelector('#tcPlan .pb'); return { h3: r.querySelector('h3').textContent, h4: [...r.querySelectorAll('h4')].map(e => e.textContent), labels: [...r.querySelectorAll('label')].map(e => e.textContent),
@@ -180,7 +182,7 @@ try:
         pg.locator('#tcPlan [data-p=jo]').click(); pg.wait_for_timeout(200)
         jo = pg.evaluate("() => { const pb = document.querySelector('#tcPlan .pb'), ob = document.querySelector('#tcPlan .oboard'); return [pb.scrollTop > 100, Math.abs(ob.getBoundingClientRect().top - pb.getBoundingClientRect().top) < 30]; }")
         pg.locator('#tcPlan [data-p=jr]').click(); pg.wait_for_timeout(150); jr = pg.evaluate("() => document.querySelector('#tcPlan .pb').scrollTop")
-        check(jo == [True, True] and jr == 0, '上の 札「推し馬」→ 推し馬の ボードへ・「お気に入りレース」→ 一番 上へ')
+        check(jo == [True, True] and jr == 0, '上の 札「推し馬」→ 推し馬の ボードへ・「作戦会議」→ 一番 上へ')
         pg.locator('#tcPlan [data-p=oadd]').click(); pg.wait_for_timeout(200); pg.locator('#tcPlan [data-o=name]').fill('25頭目'); pg.locator('#tcPlan [data-p=osave]').click(); pg.wait_for_timeout(300)
         bd = pg.evaluate(BOARD); shot(pg, 'oshi_full')
         vis = pg.evaluate("() => { const pb = document.querySelector('#tcPlan .pb').getBoundingClientRect(), c = [...document.querySelectorAll('#tcPlan .oc')].pop().getBoundingClientRect(); return c.top >= pb.top - 1 && c.top < pb.bottom; }")
@@ -213,7 +215,8 @@ try:
             tab: document.querySelector('.tabbar').getBoundingClientRect().top, iw: ir ? [ir.width, ir.height] : null, vis: !!o && getComputedStyle(document.querySelector('#fabCol')).display !== 'none' }; }"""
         JUMP = """() => { const pb = document.querySelector('#tcPlan .pb'), ob = document.querySelector('#tcPlan .oboard'), sp = pb.querySelector('.osp'); const p = pb.getBoundingClientRect();
           return { open: TCPlan.isOpen(), host: document.querySelector('#tcPlan').parentNode.id, top: ob ? Math.round(ob.getBoundingClientRect().top - p.top) : null, st: Math.round(pb.scrollTop), sp: sp ? Math.round(sp.getBoundingClientRect().height) : 0,
-            tc: !!document.querySelector('#tcOv.on'), n: document.querySelectorAll('#tcPlan .oc').length, vis: ob ? ob.getBoundingClientRect().top < p.bottom - 100 : false }; }"""
+            tc: !!document.querySelector('#tcOv.on'), n: document.querySelectorAll('#tcPlan .oc').length, vis: ob ? ob.getBoundingClientRect().top < p.bottom - 100 : false,
+            pj: (() => { const j = document.querySelector('#tcPlan .pj'); if (!j || j.hidden) return null; const q = j.getBoundingClientRect(); return { see: q.height > 20 && q.top >= 0 && q.bottom <= p.top + 1, on: [...j.querySelectorAll('button')].map(b => b.getAttribute('aria-pressed')) }; })() }; }"""
         if HAVE:
             for f in os.listdir(TCA):
                 if not os.path.exists(os.path.join(SRV, 'APP', f)): shutil.copy(os.path.join(TCA, f), os.path.join(SRV, 'APP', f))
@@ -240,11 +243,12 @@ try:
         # 押す（まだ 作戦会議を 読んで いない：開き直した すぐ あと）→ 作戦会議が 開いて 推し馬の 欄が 上（25頭：中身が 長い）
         pg.locator('#oshiFab .fabi').click(); pg.wait_for_function("() => window.TCPlan && TCPlan.isOpen()", timeout=30000); pg.wait_for_timeout(500)
         j1 = pg.evaluate(JUMP); shot(pg, 'oshi_fab_open')
-        check(j1['open'] and j1['host'] == 'planHost' and not j1['tc'] and j1['n'] == 25 and j1['top'] is not None and 0 <= j1['top'] <= 12 and j1['st'] > 200,
-              f'推し馬の アイコンを 押す → 作戦会議が 開いて「推し馬」の 欄が 一番 上（上から {j1["top"]}px・トレーニングセンターは 開かない）')
+        check(j1['open'] and j1['host'] == 'planHost' and not j1['tc'] and j1['n'] == 25 and j1['top'] is not None and 0 <= j1['top'] <= 12 and j1['st'] > 200 and j1['pj'] == {'see': True, 'on': ['false', 'true']},
+              f'推し馬の アイコンを 押す → 作戦会議が 開いて「推し馬」の 欄が 一番 上（上から {j1["top"]}px・トレーニングセンターは 開かない）・行き先の 札は 見えた まま（「🐴 推し馬」の 色：{j1["pj"]}）')
         pg.locator('#tcPlan [data-p=jr]').click(); pg.wait_for_timeout(200); j2 = pg.evaluate(JUMP)
         pg.locator('#tcPlan [data-p=jo]').click(); pg.wait_for_timeout(200); j3 = pg.evaluate(JUMP)
-        check(j2['st'] == 0 and j2['sp'] == 0 and 0 <= j3['top'] <= 12, f'上の「📋 お気に入りレース」で 一番 上へ・「🐴 推し馬」で また 推し馬の 欄へ（{j2["st"]} → 上から {j3["top"]}px）')
+        check(j2['st'] == 0 and j2['sp'] == 0 and 0 <= j3['top'] <= 12 and j2['pj'] == {'see': True, 'on': ['true', 'false']} and j3['pj'] == {'see': True, 'on': ['false', 'true']},
+              f'第4.221版（まさちゃん 11/25 12:07「推し馬からも作戦会議に飛べるようにして！」）：推し馬の 欄から 上の「📋 作戦会議」で 一番 上（予約した レース）へ・「🐴 推し馬」で また 推し馬の 欄へ（{j2["st"]} → 上から {j3["top"]}px・色 {j2["pj"]["on"]} → {j3["pj"]["on"]}）')
         pg.locator('#tcPlan [data-p=close]').click(); pg.wait_for_timeout(200)
         open_plan(pg); j4 = pg.evaluate(JUMP)
         check(j4['open'] and j4['st'] == 0 and j4['sp'] == 0, f'判定タブの「作戦会議」の 札から 開いた ときは いつも 上から（推し馬の 欄へ 進めた 所は 残らない：{j4["st"]}）')

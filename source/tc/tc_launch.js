@@ -77,13 +77,17 @@
   }
   window.TCOshi = { MAX: OSHI.MAX, PED: OSHI.PED, NAME_MAX: OSHI.NAME, MEMO_MAX: OSHI.MEMO, load: oshiLoad, save: oshiSave, merge: oshiMerge, norm: oshiNorm, str: oshiStr };
   // ---------- 作戦会議の 通知（発走の 20・15・10・8・5分前：選んだ もの だけ）----------
+  //   発走の 時刻（ミリ秒・この 端末の 時刻）。日付か 時刻が ない ときは 0（第4.221版：推し馬の 丸の 🔔 と いっしょに 使う）
+  function planStart(r) {
+    if (!r || !/^\d{4}-\d{2}-\d{2}$/.test(r.date || '') || !/^\d{1,2}:\d{2}$/.test(r.time || '')) return 0;
+    var d = r.date.split('-'), hm = r.time.split(':');
+    return new Date(+d[0], +d[1] - 1, +d[2], +hm[0], +hm[1], 0).getTime();
+  }
   window.TCPlanNotify = function () {
     var P = jget(PK); if (!P || !P.on || !Array.isArray(P.races)) return [];
     var now = Date.now(), out = [];
     P.races.forEach(function (r) {
-      if (!r || !/^\d{4}-\d{2}-\d{2}$/.test(r.date || '') || !/^\d{1,2}:\d{2}$/.test(r.time || '')) return;
-      var d = r.date.split('-'), hm = r.time.split(':');
-      var at0 = new Date(+d[0], +d[1] - 1, +d[2], +hm[0], +hm[1], 0).getTime();
+      var at0 = planStart(r); if (!at0) return;
       (r.notify || []).forEach(function (m) {
         var at = at0 - m * 60000; if (at <= now + 5000) return;
         out.push({ id: 'plan-' + r.id + '-' + m, at: at, title: 'まもなく発走！', body: (r.name || 'レース') + '　' + r.time + ' 発走（あと' + m + '分）', race: '' });
@@ -129,6 +133,21 @@
       + '#fabCol .fabt{display:flex;align-items:center;justify-content:center;width:100%;height:100%;border-radius:50%;box-sizing:border-box;border:4px solid;font:400 12px/1.15 var(--font-display,sans-serif);font-size:calc(var(--fd) * .182);text-align:center}'
       + '#fabCol .fabl{pointer-events:auto;cursor:pointer;position:relative;display:block;box-sizing:border-box;min-width:calc(var(--fd) - 2px);margin-top:-8px;padding:.2em .6em .26em;border-radius:9px;border:1px solid var(--lamp);background:var(--night);color:var(--night-ink);'
       + 'font-family:var(--font-body);font-weight:700;font-size:clamp(7px,calc(var(--fd) * .144),9.5px);line-height:1.16;letter-spacing:-.01em;text-align:center;white-space:pre;box-shadow:0 1px 3px rgba(0,0,0,.25)}'
+      // 第4.221版：丸の 右上の 小さい 札（fabMark）。.fabc＝数（.tk お世話トークン：金の コイン・.qt 調査隊切符：切符の 赤茶・.z 0）・.fabb＝🔔（推し馬：作戦会議の お知らせ）。
+      //   丸の 中（.fabi）に 置く ＝ 押せる 所・列の 並びは かわらない（押すと 丸が 押される）。大きさは 丸に 合わせる（小さい 丸でも 字は 10.5px より 小さく しない）。
+      //   右へ はみ出すのは 3px まで（列は 画面の 右はしから 4px：名前の 札が 丸より せまい とき 丸の 右はしが 列の 右はし ＝ それ より 出すと 画面の 外へ 切れる）
+      + '#fabCol .fabi{position:relative}'
+      + '#fabCol .fabc{position:absolute;top:calc(var(--fd) * -.05);right:max(-3px,calc(var(--fd) * -.06));z-index:1;box-sizing:border-box;display:flex;align-items:center;justify-content:center;min-width:max(18px,calc(var(--fd) * .36));height:max(18px,calc(var(--fd) * .36));'
+      + 'padding:0 max(4px,calc(var(--fd) * .07));border-radius:999px;border:1.5px solid #fff;font-family:var(--font-body,sans-serif);font-weight:800;font-size:max(10.5px,calc(var(--fd) * .215));line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em;white-space:nowrap;'
+      + 'box-shadow:0 1px 2px rgba(0,0,0,.4);pointer-events:none}'
+      + '#fabCol .fabc[hidden],#fabCol .fabb[hidden]{display:none}'
+      + '#fabCol .fabc.tk{background:linear-gradient(#fff0b0,#f0c04a 55%,#d99a1e);color:#5b3412;border-color:#fffbe8}'
+      + '#fabCol .fabc.qt{background:linear-gradient(#c2483a,#7a2018);color:#ffe7a6;border-color:#f6d77e}'
+      + '#fabCol .fabc.z{filter:grayscale(.8)}'
+      + '#fabCol .fabb{position:absolute;top:calc(var(--fd) * -.07);right:max(-3px,calc(var(--fd) * -.06));z-index:1;box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:max(19px,calc(var(--fd) * .4));height:max(19px,calc(var(--fd) * .4));'
+      + 'border-radius:50%;border:1.5px solid #fff;background:#e0245e;font-size:max(10.5px,calc(var(--fd) * .23));line-height:1;box-shadow:0 1px 2px rgba(0,0,0,.4);pointer-events:none;transform-origin:50% 12%;animation:fabRing 2.6s ease-in-out infinite}'
+      + '@keyframes fabRing{0%,64%,100%{transform:rotate(0)}68%{transform:rotate(15deg)}74%{transform:rotate(-13deg)}80%{transform:rotate(9deg)}86%{transform:rotate(-5deg)}92%{transform:rotate(2deg)}}'
+      + '@media (prefers-reduced-motion:reduce){#fabCol .fabb{animation:none}}'
       + '.zsave.sticky{margin-right:var(--fabz,0px)}'
       + '#minibar{padding-right:var(--fabm,12px)}'       // 判定の 帯：右の あき（もとは 12px）を 列の 手前まで 広げる ＝ 帯（まん中に よせた 丸い 札）は 列に かからない。字が 入らない ぶんは「…」
       // ちぢめた とき（.fabn：下の clear が つける）は 少し つめる（左の あき 12 → 6px・中の すきま 10 → 6px・字 13 → 12px）：そのままだと A層・B層の 2本の ゾーン
@@ -225,7 +244,19 @@
     var c = fabCol(); c.appendChild(b); c._fit = ''; fabFit(c); clear();      // ボタンが ふえた：大きさを 決め直す
     return b;
   }
-  window.TengelFab = { add: fabAdd, busy: function () { return !!holdT; } };      // busy：大きさを 決め直すのを 待って いる（テストが 落ち着くのを 待つ ため）
+  // 第4.221版：丸の 右上の 小さい 札を 出す・かえる・かくす（b＝ボタン・cls＝'fabc tk' など：はじめの 名前で 1つ・text＝字。null なら かくす）。
+  //   字は 読み上げない（aria-hidden：ボタンの aria-label に 入れる）
+  function fabMark(b, cls, text) {
+    var i = b && b.querySelector('.fabi'); if (!i) return null;
+    var m = i.querySelector('.' + cls.split(' ')[0]);
+    if (text == null) { if (m && !m.hidden) m.hidden = true; return m; }
+    if (!m) { m = document.createElement('span'); m.setAttribute('aria-hidden', 'true'); i.appendChild(m); }
+    if (m.className !== cls) m.className = cls;
+    if (m.textContent !== text) m.textContent = text;
+    if (m.hidden) m.hidden = false;
+    return m;
+  }
+  window.TengelFab = { add: fabAdd, mark: fabMark, busy: function () { return !!holdT; } };      // busy：大きさを 決め直すのを 待って いる（テストが 落ち着くのを 待つ ため）
   var fab = null, loading = null;
   // 第4.140版：alert() は アプリの 中で 出ない → 画面の お知らせ（下の 黒い 札）
   function note(m) { try { var t = document.getElementById('toast'); if (t) { t.textContent = m; t.hidden = false; clearTimeout(t._tc); t._tc = setTimeout(function () { t.hidden = true; }, 4200); } } catch (e) { /* なし */ } }
@@ -463,12 +494,67 @@
     try { if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', planPlace); } catch (e) { /* なし */ }      // 壁紙の 字が あとから 読めた（チップの 幅が かわる）
     try { if (window.MutationObserver) new MutationObserver(function () { fitHold(1500); planPlace(); setTimeout(planPlace, 300); setTimeout(planPlace, 1200); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-ks'] }); } catch (e) { /* なし */ }      // 壁紙を かえた
   }
+  // ---------- 第4.221版（まさちゃん 2026/11/25 12:07「トレーニングセンターのアイコンにお世話トークンの数が分かるように表示することって可能？」）----------
+  //   トレーニングセンターの 丸の 右上に 今の お世話トークンの 数。数え方は tc_app.js の accrue と 同じ（5分ごとに 5個・25個 まで・時刻は 時計の 番人・
+  //   もどらない 時計 seen より 前に しない）。まだ 開いた ことが ない ときは はじめの 5個（開いた ときから 数えはじめる）。
+  //   書き直す とき：数が かわる 時刻（次の 5分：10分より 先は 10分ごとに 見直す）・閉じた（'tengel:tc'）・時計を たしかめた（'tengel:clock'）・アプリに もどった
+  var TK_EVERY = 5 * 60000, TK_STEP = 5, TK_MAX = 25, TK_FIRST = 5, WAIT_MAX = 600000;
+  function clockNow() { try { var c = window.TengelClock; if (c && typeof c.now === 'function') { var t = +c.now(); if (isFinite(t) && t > 0) return t; } } catch (e) { /* なし */ } return Date.now(); }
+  function tokens() {
+    var s = live() || jget(TK); if (!s || s.v !== 1) return { n: TK_FIRST, wait: 0 };      // 形の ちがう 保存は tc_app.js も 使わない（はじめから）
+    var n = Math.max(0, Math.min(TK_MAX, Math.round(+s.stock || 0))), at = +s.stockAt;
+    if (n >= TK_MAX || !isFinite(at)) return { n: n, wait: 0 };
+    var t = Math.max(clockNow(), +s.seen || 0), k = Math.floor((t - at) / TK_EVERY);
+    if (k > 0) n = Math.min(TK_MAX, n + k * TK_STEP);
+    return { n: n, wait: n >= TK_MAX ? 0 : at + (Math.max(0, k) + 1) * TK_EVERY - t };
+  }
+  var tkT = 0;
+  function tcPaint() {
+    clearTimeout(tkT); tkT = 0; if (!fab) return;
+    var r = tokens();
+    fabMark(fab, 'fabc tk' + (r.n ? '' : ' z'), String(r.n));
+    var a = 'トレーニングセンター（お世話トークン ' + r.n + '個・押すと 開くよ）'; if (fab.getAttribute('aria-label') !== a) fab.setAttribute('aria-label', a);
+    if (r.wait > 0) tkT = setTimeout(tcPaint, Math.min(r.wait + 400, WAIT_MAX));
+  }
+  // ---------- 第4.221版（12:07「時間がやりたいレースの通知時間が来たら、推し馬のアイコンのところにも、通知が来てることが分かるようにして！」）----------
+  //   推し馬の 丸の 右上に 🔔：作戦会議の 通知が オン（tengel.plan の on）で、予約した レースの 選んだ お知らせの 時刻（発走の ○分前）が 来て から 発走 まで。
+  //   作戦会議を 開いた・閉じた 時刻（tengel.planseen：tc_plan.js）より あとに 来た お知らせ だけ ＝ 開いて 見たら 消える（次の お知らせの 時刻で また 出る）。発走を すぎたら 消える。
+  //   🔔 が 出て いる ときに 押すと 作戦会議を 上（予約した レース）から 開く（ふだんは 推し馬の 欄）
+  function planAlert() {
+    var P = jget(PK), now = Date.now(), seen = +jget('tengel.planseen') || 0, on = false, next = 0;
+    if (P && P.on && Array.isArray(P.races)) P.races.forEach(function (r) {
+      var s = planStart(r); if (!s || s <= now) return;
+      next = next ? Math.min(next, s) : s;                                   // 発走で 消す
+      (r.notify || []).forEach(function (m) {
+        var at = s - (+m) * 60000; if (!isFinite(at)) return;
+        if (at <= now) { if (at > seen) on = true; } else next = Math.min(next, at);
+      });
+    });
+    return { on: on, wait: next ? next - now : 0 };
+  }
+  var olT = 0;
+  function oshiPaint() {
+    clearTimeout(olT); olT = 0; if (!oshiB) return;
+    var r = planAlert();
+    fabMark(oshiB, 'fabb', r.on ? '🔔' : null);
+    var a = r.on ? '推し馬（🔔 まもなく 発走の レースが あるよ。押すと 作戦会議の レースを 開くよ）' : '推し馬（押すと 作戦会議の 推し馬の 欄を 開くよ）';
+    if (oshiB.getAttribute('aria-label') !== a) oshiB.setAttribute('aria-label', a);
+    if (r.wait > 0) olT = setTimeout(oshiPaint, Math.min(r.wait + 400, WAIT_MAX));
+  }
+  function marks() { tcPaint(); oshiPaint(); }
   function boot() {
     if (document.getElementById('tcFab')) return;
     // 第4.165版：推し馬 → 作戦会議の「推し馬」の 欄を すぐ 開く。順（order）：第4.176版から トレーニングセンター 0 → 推し馬 1 → カードバトル 2 → 思い出フィギュア 3
-    oshiB = fabAdd({ id: 'oshiFab', order: 1, name: ['推し馬'], aria: '推し馬（押すと 作戦会議の 推し馬の 欄を 開くよ）', img: 'tc_icon_oshi.webp', fb: ['推し馬', '#BFE6C4', '#E2B33C', '#5B3412'], tap: function () { planOpen({ oshi: true }); } });
+    //   第4.221版：🔔 が 出て いる ときは 作戦会議の 上（予約した レース）から 開く
+    oshiB = fabAdd({ id: 'oshiFab', order: 1, name: ['推し馬'], aria: '推し馬（押すと 作戦会議の 推し馬の 欄を 開くよ）', img: 'tc_icon_oshi.webp', fb: ['推し馬', '#BFE6C4', '#E2B33C', '#5B3412'], tap: function () { planOpen(planAlert().on ? null : { oshi: true }); } });
     fab = fabAdd({ id: 'tcFab', order: 0, name: ['トレーニング', 'センター'], aria: 'トレーニングセンター（押すと 開くよ）', img: 'tc_icon_tc.webp', fb: ['トレセン', '#1F5A2E', '#E2B33C', '#FFF3C4'], tap: function () { open(); } });
     planBoot();
+    marks();
+    document.addEventListener('tengel:tc', tcPaint);
+    document.addEventListener('tengel:clock', tcPaint);
+    document.addEventListener('tengel:plan', oshiPaint);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) marks(); });
+    window.addEventListener('pageshow', marks);
   }
   // 通知を 押した（作戦会議）→ トレーニングセンターの 作戦会議を 開く
   document.addEventListener('tengel:native', function (e) {
