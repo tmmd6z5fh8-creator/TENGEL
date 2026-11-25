@@ -518,6 +518,33 @@
       return { t: m.textContent, cls: m.className, al: b.getAttribute('aria-label'), fs: Math.round(parseFloat(cs.fontSize) * 10) / 10, wh: [Math.round(r.width), Math.round(r.height)],
         corner: r.top < f.top + f.height * 0.3 && r.bottom > f.top && r.right > f.right - f.width * 0.3, inView: r.left >= 0 && r.right <= innerWidth + 0.5 && r.top >= 0 };
     };
+    // 第4.222版（まさちゃん 2026/11/25 14:39「推し馬の通知のベルがトレーニングセンターの文字の下に隠れてるから前に出てくるようにして！」）：丸の 右上の 札（数・🔔）が
+    //   ほかの ボタンの 名前の 札に 重なる ところで、札が 前か を 本物の WebKit で（test_fab_badge.py の FRONT と 同じ 測り方：札を いっとき 押せる ように して、重なる 四角の 中の
+    //   7 × 4 点で elementsFromPoint・両方 ある 点で 札が 先なら 前・🔔 の ゆれは 止める）。text＝名前の 字の 四角の 上に 札の 形が ある か（見る だけ）
+    var front222 = function () {
+      var out = [], labs = [].slice.call(document.querySelectorAll('#fabCol .fabl'));
+      var cut = function (a, c) { var r = [Math.max(a.left, c.left), Math.min(a.right, c.right), Math.max(a.top, c.top), Math.min(a.bottom, c.bottom)]; return r[1] - r[0] >= 0.3 && r[3] - r[2] >= 0.3 ? r : null; };
+      var pts = function (r, f) {
+        var n = 0, k = 0, i, j, v;
+        for (i = 0; i < 7; i++) for (j = 0; j < 4; j++) { v = f(document.elementsFromPoint(r[0] + (r[1] - r[0]) * (i + 0.5) / 7, r[2] + (r[3] - r[2]) * (j + 0.5) / 4)); if (v != null) { n++; if (v) k++; } }
+        return [n, k];
+      };
+      [].filter.call(document.querySelectorAll('#fabCol .fabc, #fabCol .fabb'), function (e) { return !e.hidden && e.getClientRects().length; }).forEach(function (m) {
+        var own = m.closest('button'), pe = m.style.pointerEvents, an = m.style.animation; m.style.pointerEvents = 'auto'; m.style.animation = 'none';
+        var a = m.getBoundingClientRect(), row = { b: own.id, t: m.textContent, over: [] };
+        labs.forEach(function (l) {
+          if (l.closest('button') === own) return;
+          var r = cut(a, l.getBoundingClientRect()); if (!r) return;
+          var nk = pts(r, function (st) { var im = st.findIndex(function (e) { return m.contains(e); }), il = st.findIndex(function (e) { return l.contains(e); }); return im >= 0 && il >= 0 ? im < il : null; });
+          if (!nk[0]) return;
+          var rg = document.createRange(); rg.selectNodeContents(l);
+          var tx = [].some.call(rg.getClientRects(), function (q) { var t = q.width > 0 && cut(a, q); return !!t && pts(t, function (st) { return st.some(function (e) { return m.contains(e); }) || null; })[0] > 0; });
+          row.over.push({ l: l.closest('button').id, h: Math.round((r[3] - r[2]) * 10) / 10, n: nk[0], front: nk[1] === nk[0], text: tx });
+        });
+        m.style.pointerEvents = pe; m.style.animation = an; out.push(row);
+      });
+      return out;
+    };
     var mk21 = {};
     try {
       var V21 = R.v221 = { pill: (document.querySelector('#dbpill') || {}).textContent || null,
@@ -529,6 +556,7 @@
       localStorage.setItem('tengel.planseen', String(Date.now() - 600000));
       document.dispatchEvent(new CustomEvent('tengel:plan')); await sleep(400);
       V21.oshi = fm221('oshiFab');
+      try { V21.front = front222(); V21.z = [].map.call(document.querySelectorAll('#fabCol > button'), function (b) { return b.id + ':' + b.style.zIndex; }).sort().join(' '); } catch (e) { V21.front = { error: String(e) }; }
       await mark('fab-marks'); mk21.f = 1;
       var ob21 = document.querySelector('#oshiFab .fabi');
       if (ob21) {

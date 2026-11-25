@@ -146,17 +146,20 @@ print("   card battle toy: locked %s badge %s points %s ask-buttons %s opened-be
 # 第4.221版（まさちゃん 2026/11/25 12:07・12:11・12:13）：データの 札は「テンゲルデータ」だけ・着せ替えの 組は 3つ（壁紙パック 10・ポイント壁紙カスタム 17・帯 3）・
 #   トレーニングセンターの 丸に お世話トークンの 数（右上・画面の 中・字 10.5px 以上）・推し馬の 丸に 🔔（作戦会議の レースの お知らせの 時刻が 来た）→ 押すと 作戦会議の 上（予約した レース）・
 #   「🔔 まもなく発走」・行き先の 札は 見えた まま（📋 作戦会議／🐴 推し馬 の 色が かわる）・開いたら 🔔 は 消える・カードバトルで 遊んだ あとの 調査隊切符の 枚数（中の 数と 同じ）
+#   第4.222版（まさちゃん 2026/11/25 14:39）：丸の 右上の 札（🔔・数）は ほかの ボタンの 名前の 札より 前（front：重なる ところ ごとに [札の ボタン, 名前の 札の ボタン, 重なる 高さ, 前か, 字に かかるか]・z：重なりの 順）
 V221PY='
 import json, sys
 r = json.load(open(sys.argv[1])); v = r.get("v221") or {}; q = (r.get("cb") or {}).get("qtBadge") or {}
 tc, cb, o0, o1, oa, oe, pl, po, pr = (v.get(k) or {} for k in ("tc", "cb", "oshi0", "oshi", "oshiAfter", "oshiEnd", "plan", "planO", "planR"))
 bar = lambda x: (x.get("pj") or {}).get("on")
+fr = v.get("front"); ov = [(x.get("b"), o.get("l"), o.get("h"), o.get("front"), o.get("text")) for x in (fr if isinstance(fr, list) else []) for o in (x.get("over") or [])]
+frok = isinstance(fr, list) and all(o[3] is True for o in ov)
 ok = v.get("pill") == "テンゲルデータ" and v.get("ks") == ["壁紙パック/10", "ポイント壁紙カスタム/17", "帯/3"] \
      and (tc.get("t") or "").isdigit() and "お世話トークン " + (tc.get("t") or "?") + "個" in (tc.get("al") or "") and tc.get("corner") is True and tc.get("inView") is True and (tc.get("fs") or 0) >= 10.5 \
      and (cb.get("t") is None or (cb.get("t") or "").isdigit()) and o0.get("t") is None and o1.get("t") == "🔔" and o1.get("corner") is True and o1.get("inView") is True and oa.get("t") is None and oe.get("t") is None \
      and pl.get("open") is True and pl.get("st") == 0 and pl.get("sn") is True and (pl.get("pj") or {}).get("see") is True and bar(pl) == ["true", "false"] and bar(po) == ["false", "true"] and bar(pr) == ["true", "false"] and pr.get("st") == 0 \
-     and (q.get("t") or "").isdigit() and q.get("t") == str(q.get("n")) and q.get("corner") is True and q.get("inView") is True and not v.get("error")
-print("pill %s groups %s tokens %s (font %s size %s corner %s in %s) bell %s -> open %s -> after %s plan top %s soon %s bar %s tickets %s/%s (corner %s in %s) -> %s" % (v.get("pill"), v.get("ks"), tc.get("t"), tc.get("fs"), tc.get("wh"), tc.get("corner"), tc.get("inView"), o1.get("t"), oa.get("t"), oe.get("t"), pl.get("st"), pl.get("sn"), [bar(x) for x in (pl, po, pr)], q.get("t"), q.get("n"), q.get("corner"), q.get("inView"), "OK" if ok else "CHECK " + json.dumps(v, ensure_ascii=False)[:420] + " qt " + json.dumps(q, ensure_ascii=False)[:160]))
+     and (q.get("t") or "").isdigit() and q.get("t") == str(q.get("n")) and q.get("corner") is True and q.get("inView") is True and frok and not v.get("error")
+print("pill %s groups %s tokens %s (font %s size %s corner %s in %s) bell %s -> open %s -> after %s plan top %s soon %s bar %s tickets %s/%s (corner %s in %s) front %s z %s -> %s" % (v.get("pill"), v.get("ks"), tc.get("t"), tc.get("fs"), tc.get("wh"), tc.get("corner"), tc.get("inView"), o1.get("t"), oa.get("t"), oe.get("t"), pl.get("st"), pl.get("sn"), [bar(x) for x in (pl, po, pr)], q.get("t"), q.get("n"), q.get("corner"), q.get("inView"), [(o[0][:-3], o[1][:-3], o[2], o[3], o[4]) for o in ov] if isinstance(fr, list) else fr, v.get("z"), "OK" if ok else "CHECK " + json.dumps(v, ensure_ascii=False)[:420] + " qt " + json.dumps(q, ensure_ascii=False)[:160]))
 '
 # 第4.177版：お世話の 札の「描く 命令を 書きとめる 役」（tc/tc_care.js の REC）を 本物の WebKit で：16コマ（描く 8〈はじめの 2コマ・場面が かわった 3コマ・中身の かわる 紙の 2コマ・かくれた あとの 1コマ〉・同じ 絵で 描かない 6・かくれて いて 描かない 2）・
 #   じかに 描いた 紙と 1画素も ちがわない（くらべた 14コマ・べつの 紙との 見くらべも 0）・読んだ 値（線の 太さ 2・こさ 0.375）

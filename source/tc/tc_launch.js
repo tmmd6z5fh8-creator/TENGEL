@@ -126,7 +126,8 @@
     //     4つで ぴったり うめる（丸は その ぶん 大きく なる：390×844 の iPhone で 46px → 53〜58px）。判定の 帯（#minibar）は 列の 手前で 終わる（右の あき --fabm：下の clear が 入れる）
     st.textContent = '#fabCol{position:fixed;right:4px;bottom:calc(69px + var(--sab,0px));z-index:29;display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none;--fd:66px}'
       + '#fabCol.g2{display:grid;grid-template-rows:auto auto;grid-auto-flow:column;justify-items:center;align-items:start}'
-      + '#fabCol>button{pointer-events:none;display:flex;flex-direction:column;align-items:center;border:0;padding:0;margin:0;background:none;color:inherit;-webkit-tap-highlight-color:transparent;transition:transform .15s}'
+      // 第4.222版：ボタンごとに 重なりの 順（z-index：下の fabZ が 入れる）。下の 段の ボタンほど 前 ＝ 丸の 右上の 札（数・🔔）は 上の ボタンの 名前の 札より 前に 出る
+      + '#fabCol>button{position:relative;pointer-events:none;display:flex;flex-direction:column;align-items:center;border:0;padding:0;margin:0;background:none;color:inherit;-webkit-tap-highlight-color:transparent;transition:transform .15s}'
       + '#fabCol>button:active{transform:scale(.94)}#fabCol>button:disabled{opacity:.7}'
       + '#fabCol .fabi{pointer-events:auto;cursor:pointer;display:block;width:var(--fd);height:var(--fd);border-radius:50%;filter:drop-shadow(0 3px 5px rgba(0,0,0,.35))}'
       + '#fabCol .fabi img{width:100%;height:100%;display:block;pointer-events:none}'
@@ -197,7 +198,7 @@
     var top = (c._kb || 409 + 0.44 * (vw - 375)) + FD_PAD;                 // 列の 上は ここより 下
     var key = [n, vw, window.innerHeight, top, c._b1, c._b2, Math.round(cr.bottom * 2) / 2].join(':'); if (c._fit === key) return;
     var set = function (d, g2) {
-      c.classList.toggle('g2', !!g2); var b = g2 ? c._b2 : c._b1; if (b && c.style.bottom !== b) c.style.bottom = b;
+      c.classList.toggle('g2', !!g2); fabZ(c); var b = g2 ? c._b2 : c._b1; if (b && c.style.bottom !== b) c.style.bottom = b;
       c.style.setProperty('--fd', d + 'px'); return c.getBoundingClientRect().top;
     };
     var d;
@@ -205,6 +206,16 @@
     for (d = FD_MAX; d >= FD_MIN; d--) if (set(d, false) >= top) return done();
     for (d = FD_MAX; d >= FD_MIN; d--) if (set(d, true) >= top) return done();
     set(FD_MIN, true); done();
+  }
+  // 第4.222版（まさちゃん 2026/11/25 14:39「推し馬の通知のベルがトレーニングセンターの文字の下に隠れてるから前に出てくるようにして！」）：ボタンの 重なりの 順（z-index）。
+  //   画面で 下の 段の ボタンほど 前 ＝ 丸の 右上の 札（数・🔔：丸より 上へ 少し 出る）は、すぐ 上の 段の ボタンの 名前の 札より 前に 出る。
+  //   前は 入れた 順（推し馬 → トレーニングセンター → …）で 重なって いて、推し馬の 🔔 が 上の トレーニングセンターの 名前の 札（2行）の 下に 2〜3px かくれて いた。
+  //   段：たて 1列は 並びの 順（order）の とおり・2列 × 2段（.g2：左の 列の 上 → 下、右の 列の 上 → 下）は 並びの 順の 2で 割った あまり
+  //   （2列 × 2段 では 推し馬の 🔔 が 右上の カードバトルの 名前の 札にも 少し かかる ＝ 下の 段を 前に する）
+  function fabZ(c) {
+    var g2 = c.classList.contains('g2');
+    [].slice.call(c.children).map(function (b, k) { return [+b.style.order || 0, k, b]; }).sort(function (x, y) { return x[0] - y[0] || x[1] - y[1]; })
+      .forEach(function (x, i) { var z = String((g2 ? i % 2 : i) + 1); if (x[2].style.zIndex !== z) x[2].style.zIndex = z; });
   }
   // 大きさを 決め直して ほしい（場所が かわった・着せ替えの ボタンを 置いた）：ふだんは すぐ。fitHold の あいだは おわって から 1回
   function fitAsk() {
@@ -241,7 +252,7 @@
     im.src = o.img; i.appendChild(im); b.appendChild(i);
     var l = document.createElement('span'); l.className = 'fabl'; l.textContent = o.name.join('\n'); b.appendChild(l);
     b.addEventListener('click', function () { if (!b.disabled) o.tap(); });
-    var c = fabCol(); c.appendChild(b); c._fit = ''; fabFit(c); clear();      // ボタンが ふえた：大きさを 決め直す
+    var c = fabCol(); c.appendChild(b); fabZ(c); c._fit = ''; fabFit(c); clear();      // ボタンが ふえた：重なりの 順・大きさを 決め直す
     return b;
   }
   // 第4.221版：丸の 右上の 小さい 札を 出す・かえる・かくす（b＝ボタン・cls＝'fabc tk' など：はじめの 名前で 1つ・text＝字。null なら かくす）。

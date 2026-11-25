@@ -1,4 +1,4 @@
-# 第4.221版の テスト：右下の 丸い ボタンの 数と 🔔・作戦会議の 行き先の 札・画面の 上の データの 札・壁紙の 組
+# 第4.221版の テスト：右下の 丸い ボタンの 数と 🔔・作戦会議の 行き先の 札・画面の 上の データの 札・壁紙の 組（第4.222版：札は 上の ボタンの 名前の 札より 前）
 #   まさちゃん 2026/11/25 12:07「・トレーニングセンターのアイコンにお世話トークンの数が分かるように表示することって可能？ ・調査隊切符も同じようにしてほしい！
 #     ・推し馬からも作戦会議に飛べるようにして！時間がやりたいレースの通知時間が来たら、推し馬のアイコンのところにも、通知が来てることが分かるようにして！」
 #   12:11「壁紙のところ、無課金のポイントでGETできる組は、定番じゃなくてポイント壁紙カスタムにして、項目ごとに分けずに並べて！」
@@ -84,6 +84,31 @@ PLAN = """() => { const r = document.querySelector('#tcPlan'); if (!r || r.style
   return { open: true, st: Math.round(pb.scrollTop), ob: ob ? Math.round(ob.getBoundingClientRect().top - q.top) : null, sn: sn ? !sn.hidden : null, snt: sn ? sn.textContent : null,
     pj: pj && !pj.hidden ? { see: pj.getBoundingClientRect().bottom <= q.top + 1 && pj.getBoundingClientRect().height > 20, on: [...pj.querySelectorAll('button')].map(b => b.getAttribute('aria-pressed')), t: [...pj.querySelectorAll('button')].map(b => b.innerText) } : null }; }"""
 OSHI0 = '推し馬（押すと 作戦会議の 推し馬の 欄を 開くよ）'
+# 第4.222版：丸の 右上の 札（数・🔔）が ほかの ボタンの 名前の 札に 重なる ところ ごとに、どちらが 前か（札を いっとき 押せる ように して、重なる 四角の 中の 7 × 4 点で
+#   elementsFromPoint：札と 名前の 札の 両方が ある 点で 札が 先なら 前・🔔 の ゆれは 止める）・名前の 字（Range の 四角）の 上に 札の 形が あるか。
+#   四角は 重なっても 形（丸）が 重ならない ときは 数えない。over＝[{ l：名前の 札の ボタン, h：重なる 高さ, n：両方 ある 点の 数, front, text }]
+FRONT = """() => { const out = [], labs = [...document.querySelectorAll('#fabCol .fabl')];
+  const pts = (r, f) => { let n = 0, k = 0; for (let i = 0; i < 7; i++) for (let j = 0; j < 4; j++) { const v = f(document.elementsFromPoint(r[0] + (r[1] - r[0]) * (i + 0.5) / 7, r[2] + (r[3] - r[2]) * (j + 0.5) / 4)); if (v != null) { n++; if (v) k++; } } return [n, k]; };
+  const cut = (a, c) => { const r = [Math.max(a.left, c.left), Math.min(a.right, c.right), Math.max(a.top, c.top), Math.min(a.bottom, c.bottom)]; return r[1] - r[0] >= 0.3 && r[3] - r[2] >= 0.3 ? r : null; };
+  for (const m of [...document.querySelectorAll('#fabCol .fabc, #fabCol .fabb')].filter(e => !e.hidden && e.getClientRects().length)) {
+    const own = m.closest('button'), pe = m.style.pointerEvents, an = m.style.animation; m.style.pointerEvents = 'auto'; m.style.animation = 'none';
+    const a = m.getBoundingClientRect(), row = { b: own.id, t: m.textContent, over: [] };
+    for (const l of labs) {
+      if (l.closest('button') === own) continue;
+      const r = cut(a, l.getBoundingClientRect()); if (!r) continue;
+      const [n, k] = pts(r, st => { const im = st.findIndex(e => m.contains(e)), il = st.findIndex(e => l.contains(e)); return im >= 0 && il >= 0 ? im < il : null; });
+      if (!n) continue;
+      const rg = document.createRange(); rg.selectNodeContents(l);
+      const tx = [...rg.getClientRects()].some(q => { const t = q.width > 0 && cut(a, q); return !!t && pts(t, st => st.some(e => m.contains(e)) || null)[0] > 0; });
+      row.over.push({ l: l.closest('button').id, h: Math.round((r[3] - r[2]) * 10) / 10, n, front: k === n, text: tx });
+    }
+    m.style.pointerEvents = pe; m.style.animation = an; out.push(row);
+  }
+  return out; }"""
+
+
+def fronts(pg):
+    return [(x['b'], x['t'], o['l'], o['h'], o['front'], o['text'], o['n']) for x in pg.evaluate(FRONT) for o in x['over']]
 try:
     with sync_playwright() as p:
         b = p.chromium.launch()
@@ -144,6 +169,39 @@ try:
         check(all(a == w for a, w in cases) and g['cls'] == 'fabb' and g['al'].startswith('推し馬（🔔') and '作戦会議の レースを 開くよ' in g['al'] and g['corner'] and g['inView'] and g['ah'] == 'true',
               f'🔔：通知 オン・お知らせの 時刻が 来た・発走 前・見た あとに 来た ときだけ（通知 オフ・もう 見た・発走 後・まだ 時刻 前 は 出ない：{cases}）・読み上げにも（{g["al"]}）')
         shot(pg, 'fab_badges', {'x': 402 - 110, 'y': 874 - 420, 'width': 110, 'height': 420})
+
+        print('■ 丸の 右上の 札は 上の ボタンの 名前の 札より 前（第4.222版：まさちゃん 11/25 14:39「推し馬の通知のベルがトレーニングセンターの文字の下に隠れてるから前に出てくるようにして！」）')
+        z = pg.evaluate("() => [...document.querySelectorAll('#fabCol > button')].map(b => [b.id, getComputedStyle(b).zIndex, getComputedStyle(b).order])")
+        f0 = fronts(pg)
+        check(dict((i, (zi, o)) for i, zi, o in z) == {'tcFab': ('1', '0'), 'oshiFab': ('2', '1'), 'cbFab': ('3', '2'), 'figFab': ('4', '3')}
+              and any(x[0] == 'oshiFab' and x[2] == 'tcFab' for x in f0) and all(x[4] and not x[5] for x in f0),
+              f'重なりの 順は 並びの 順（下の ボタンほど 前：{z}）・推し馬の 🔔 は トレーニングセンターの 名前の 札より 前・名前の 字には かからない（{f0}）')
+        sizes = []
+        # たて 1列 の まま 丸の 大きさを かえて 測る（測る あいだ 大きさを 決め直さない：fabFit は 列の 大きさが 0 なら 何も しない ＝ 列の getBoundingClientRect を いっとき 0 に する）
+        pg.evaluate("() => { const c = document.querySelector('#fabCol'); c.getBoundingClientRect = () => ({ x: 0, y: 0, width: 0, height: 0, top: 0, bottom: 0, left: 0, right: 0 }); }")
+        for d in (58, 50, 42, 36):
+            pg.evaluate("d => document.querySelector('#fabCol').style.setProperty('--fd', d + 'px')", d); pg.wait_for_timeout(200)
+            st = pg.evaluate("() => { const c = document.querySelector('#fabCol'); return [parseFloat(getComputedStyle(c).getPropertyValue('--fd')), c.classList.contains('g2')]; }")
+            sizes.append((d, fronts(pg), st == [d, False]))
+        pg.evaluate("() => { const c = document.querySelector('#fabCol'); delete c.getBoundingClientRect; c._fit = ''; window.dispatchEvent(new Event('resize')); }"); pg.wait_for_timeout(500)
+        need = [d for d, fr, _ in sizes if d >= 50 and not any(x[0] == 'oshiFab' and x[2] == 'tcFab' for x in fr)]
+        check(not need and all(ok for *_, ok in sizes) and all(x[4] and not x[5] for _, fr, _ in sizes for x in fr),
+              f'丸の 大きさを かえても（58・50・42・36px）札は いつも 前・名前の 字に かからない（{[(d, [(x[0][:-3], x[2][:-3], x[3], x[4]) for x in fr]) for d, fr, _ in sizes]}）')
+        # 2列 × 2段（たての 短い 画面）：着せ替えの ボタンが 下の 方に ある ことに して（列の 上の 限り）、ほんとうの 決め方（fabFit）で 2列 × 2段に する
+        G2 = """() => { const c = document.querySelector('#fabCol');
+          return { g2: c.classList.contains('g2'), fd: getComputedStyle(c).getPropertyValue('--fd'), z: [...c.children].map(b => [b.id, b.style.zIndex]).sort().map(x => x.join(':')).join(' ') }; }"""
+        kb0 = pg.evaluate("""() => { const c = document.querySelector('#fabCol'), k = document.getElementById('kiseBtn'), y = innerHeight - 258, kb = c._kb === undefined ? null : c._kb;
+          c._kb = y; if (k) k.getBoundingClientRect = () => ({ x: 0, y: y - 80, width: 90, height: 80, top: y - 80, bottom: y, left: 0, right: 90 });
+          c._fit = ''; window.dispatchEvent(new Event('resize')); return [kb, !!k]; }""")
+        pg.wait_for_timeout(600)
+        g = pg.evaluate(G2); fg = fronts(pg)
+        shot(pg, 'fab_badges_g2', {'x': 402 - 150, 'y': 874 - 320, 'width': 150, 'height': 320})
+        pg.evaluate("""kb => { const c = document.querySelector('#fabCol'), k = document.getElementById('kiseBtn'); if (k) delete k.getBoundingClientRect;
+          if (kb == null) delete c._kb; else c._kb = kb; c._fit = ''; window.dispatchEvent(new Event('resize')); }""", kb0[0])
+        pg.wait_for_timeout(600); g0 = pg.evaluate(G2)
+        check(g['g2'] and g['z'] == 'cbFab:1 figFab:2 oshiFab:2 tcFab:1' and any(x[0] == 'oshiFab' and x[2] == 'tcFab' for x in fg) and all(x[4] and not x[5] for x in fg)
+              and not g0['g2'] and g0['z'] == 'cbFab:3 figFab:4 oshiFab:2 tcFab:1',
+              f'2列 × 2段では 下の 段（推し馬・思い出フィギュア）が 前（{g}）・🔔 は 上の 段の 名前の 札（トレーニングセンター・カードバトル）より 前（{fg}）・たて 1列に もどると また 並びの 順（{g0}・着せ替えの ボタン {kb0[1]}）')
         # 押すと 作戦会議の 上（予約した レース）が 開く・まもなく 発走の 札・🔔 は 消える
         pg.locator('#oshiFab .fabi').click(); pg.wait_for_function("() => window.TCPlan && TCPlan.isOpen()", timeout=30000); pg.wait_for_timeout(700)
         p1 = pg.evaluate(PLAN); o1 = pg.evaluate(BADGE, 'oshiFab'); jb = pg.evaluate("() => { const j = document.querySelector('#tcPlan .pj .jb'); return j ? !j.hidden : null; }")
@@ -209,7 +267,9 @@ try:
             inView: ms.every(m => { const r = m.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && r.top >= 0; }),
             over: ms.some(m => { const a = R(m), own = m.closest('.fabi'); return fi.some(f => f !== own && (() => { const c = R(f); return a[0] < c[2] - 2 && c[0] < a[2] - 2 && a[1] < c[3] - 2 && c[1] < a[3] - 2; })()); }) }; }""")
         shot(p2_, 'fab_badges_se', {'x': 375 - 130, 'y': 667 - 330, 'width': 130, 'height': 330})
-        check(sm['n'] == 3 and sm['inView'] and not sm['over'] and not errs2, f'小さい 画面でも 3つの 札（数・数・🔔）は 画面の 中・ほかの 丸に 重ならない（{sm}）')
+        f2 = fronts(p2_)
+        check(sm['n'] == 3 and sm['inView'] and not sm['over'] and all(x[4] and not x[5] for x in f2) and not errs2,
+              f'小さい 画面でも 3つの 札（数・数・🔔）は 画面の 中・ほかの 丸に 重ならない・名前の 札より 前（{sm}・{f2}）')
         ctx2.close()
         b.close()
 finally:
