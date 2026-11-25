@@ -1043,6 +1043,34 @@ try:
         pg.locator('#setCustom [data-pt=unlock1][data-key="toy:drop"]').click(); pg.wait_for_timeout(150)
         ty1 = pg.locator('#setCustom [data-pt=unlock2][data-key="toy:drop"]')
         check(ty1.count() == 1 and '3,000Pを使って解放する（今 3,200P）' in ty1.inner_text() and pg.evaluate('TengelWallet.total()') == 3200, f'おもちゃの「解放」を 押すと「3,000Pを使って解放する（今 3,200P）」（もう 1回 押す まで 何も 減らない）')
+        # 第4.220版（まさちゃん 11/25 10:01「解放しようとすると、文字がおかしく表示される！改善して！」・iPad の 写真）：確認の あいだは 1列（名前・説明の 下に ボタン）。
+        #   前は 右の ボタン（「○Pを使って解放する（今 △P）」は 折り返さない）が 広がって、名前・説明の はばが 0 に なり 1文字ずつ 縦に ならんで いた
+        #   「（今 △P）」は ひとまとまり（せまい ときは その 前で 次の 行へ）・ボタンは 項目の 中・「やめる」も ある。券種（500P）・マザーデータ（23,000P：いちばん 長い）も 見る
+        ULC = """key => {
+          const it = document.querySelector(`#setCustom .ptitem[data-key="${key}"]`); if (!it) return null;
+          const r = e => { if (!e) return null; const b = e.getBoundingClientRect(); return [Math.round(b.left), Math.round(b.top), Math.round(b.width), Math.round(b.height)]; };
+          const pn = it.querySelector('.pn'), pd = it.querySelector('.pd'), go = it.querySelector('[data-pt=unlock2]'), no = it.querySelector('[data-pt=unlock0]'), nw = go && go.querySelector('.ptnow'), cs = getComputedStyle(it);
+          return { cls: it.className, item: r(it), inner: Math.round(it.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)), pn: r(pn), pd: r(pd), go: r(go), no: r(no), now: r(nw),
+            lh: parseFloat(getComputedStyle(pn).lineHeight), nlh: nw ? parseFloat(getComputedStyle(nw).lineHeight) : 0, text: go ? go.innerText : '', list: r(it.parentNode) };
+        }"""
+        def ulc_ok(u):
+            return bool(u) and 'cf' in u['cls'].split() and u['pn'][2] >= u['inner'] - 1 and u['pd'][2] >= u['inner'] - 1 and u['pn'][3] <= u['lh'] * 1.6 \
+                and u['go'][1] >= u['pd'][1] + u['pd'][3] - 1 and u['no'][1] >= u['go'][1] and u['go'][0] >= u['item'][0] and u['go'][0] + u['go'][2] <= u['item'][0] + u['item'][2] \
+                and u['no'][0] >= u['item'][0] and u['no'][0] + u['no'][2] <= u['item'][0] + u['item'][2] and u['item'][0] + u['item'][2] <= u['list'][0] + u['list'][2] + 1 \
+                and u['now'] is not None and u['now'][3] <= u['nlh'] * 1.6 and '\n' not in u['text']
+        u1 = pg.evaluate(ULC, 'toy:drop')
+        check(ulc_ok(u1), f'第4.220版：おもちゃの 確認は 名前・説明の 下に 1列（名前の はば {u1 and u1["pn"][2]}／{u1 and u1["inner"]}・1行・ボタンは 項目の 中・「（今 △P）」は ひとまとまり）（{u1}）')
+        pg.locator('#setCustom [data-pt=unlock0]').click(); pg.wait_for_timeout(150)
+        ulx = {}
+        for k2 in ('type:馬連', 'slot:3'):
+            pg.locator(f'#setCustom [data-pt=unlock1][data-key="{k2}"]').click(); pg.wait_for_timeout(150)
+            ulx[k2] = pg.evaluate(ULC, k2)
+            pg.locator('#setCustom [data-pt=unlock0]').click(); pg.wait_for_timeout(150)
+        u0 = pg.evaluate("() => ({ cf: document.querySelectorAll('#setCustom .ptitem.cf').length, go: document.querySelectorAll('#setCustom [data-pt=unlock2]').length, total: TengelWallet.total() })")
+        check(all(ulc_ok(v) for v in ulx.values()) and '23,000Pを使って解放する（今 3,200P）' == ulx['slot:3']['text'] and '500Pを使って解放する（今 3,200P）' == ulx['type:馬連']['text'] and u0 == {'cf': 0, 'go': 0, 'total': 3200},
+              f'第4.220版：券種（500P）・マザーデータ（23,000P）の 確認も 1列・「やめる」で もとの 形に もどる（何も 減らない）（{ {k: (v["pn"][2], v["inner"], v["go"][3]) for k, v in ulx.items()} }・{u0}）')
+        pg.locator('#setCustom [data-pt=unlock1][data-key="toy:drop"]').click(); pg.wait_for_timeout(150)
+        ty1 = pg.locator('#setCustom [data-pt=unlock2][data-key="toy:drop"]')
         ty1.click(); pg.wait_for_timeout(500)
         ty2 = pg.evaluate("() => ({ total: TengelWallet.total(), drop: TengelWallet.toy.has('drop'), cb: TengelWallet.toy.has('cb'), toast: document.querySelector('#toast').innerText, item: document.querySelector('#setCustom .ptitem[data-key=\"toy:drop\"]').innerText.replace(/\\s+/g, ' '), on: document.querySelector('#setCustom .ptitem[data-key=\"toy:drop\"]').classList.contains('on'), ev: TengelWallet.events().filter(e => e.id === 'unlock-toy:drop').map(e => e.amount + ':' + e.what).join(), lock: document.querySelector('#cbFab').classList.contains('lock') })")
         check(ty2['total'] == 200 and ty2['drop'] and not ty2['cb'] and 'おもちゃ「お世話チャレンジ」を解放したよ（残り 200P）' in ty2['toast'] and ty2['on'] and '解放済み' in ty2['item'] and '遊べるよ' in ty2['item'] and ty2['ev'] == '-3000:toy:drop' and ty2['lock'],
