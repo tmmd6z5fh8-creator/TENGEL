@@ -9,6 +9,8 @@
 # 新しい版をApp Storeに出すとき（アップデート）は、版の番号を上げて作る：
 #   IOS_VERSION=1.1 IOS_BUILD=2 python3 build_ios.py <出力フォルダ>
 #   （IOS_VERSION＝お客さんに見える版「1.1」・IOS_BUILD＝出すたびに1ずつ上げる番号。どちらも前より大きく）
+#   第4.223版から：IOS_BUILD が なければ ビルド番号は APP_VER から（2026.11.26-1 → 20261126.1：販売版も テスト版も）。
+#   IOS_TEAM＝チーム ID（Package.swift の teamIdentifier：Swift Playground で チームを 選ばなくても あげられる。ID は 手元の xt/team_id.txt・リポジトリには 入れない）
 import os, re, shutil, subprocess, sys, tempfile, zipfile
 from PIL import Image
 W = os.path.dirname(os.path.abspath(__file__))
@@ -50,6 +52,24 @@ if TEST:
         TEST_BUILD = f'{m.group(1)}{m.group(2)}{m.group(3)}.{int(m.group(4) or 1)}' if m else __import__('time').strftime('%Y%m%d.%H%M')
         ps = ps.replace(f'bundleVersion: "{IOS_BUILD or cur_b}"', f'bundleVersion: "{TEST_BUILD}"')
         assert f'bundleVersion: "{TEST_BUILD}"' in ps
+elif not IOS_BUILD:
+    # 第4.223版（2026-11-26・まさちゃん「販売版でいい！」：TestFlight に 販売版も あげる）：販売版の ビルド番号も APP_VER から（テスト版と 同じ 形）。
+    #   前は いつも "1" ＝ 2回目の アップロードで「同じ 番号」に なって 受けつけられない。APP_VER が ない ときは 今までどおり（IOS_BUILD で 決める）
+    m = re.fullmatch(r'(\d{4})\.(\d{2})\.(\d{2})(?:-(\d+))?', os.environ.get('APP_VER', ''))
+    if m:
+        TEST_BUILD = f'{m.group(1)}{m.group(2)}{m.group(3)}.{int(m.group(4) or 1)}'
+        ps = ps.replace(f'bundleVersion: "{cur_b}"', f'bundleVersion: "{TEST_BUILD}"')
+        assert f'bundleVersion: "{TEST_BUILD}"' in ps
+# 第4.223版（まさちゃん 2026/11/26 02:20「なんかpを打ち直しても保存できないよ」）：iPad の Swift Playground で「チームおよびバンドル識別子」の チームを
+#   選んでも「保存」が 押せず、アップロードで「チームを選択してください」に なる → チーム ID を はじめから Package.swift に 書いて おく（IOS_TEAM・
+#   Swift Playground が 書く ときと 同じ 場所：bundleIdentifier の すぐ 下）。チーム ID は 公開の リポジトリには 入れない（作る ときに 外から わたす：
+#   手元の xt/team_id.txt）。CI の ビルドには 入れない（IOS_TEAM なし ＝ 今までどおり）
+IOS_TEAM = os.environ.get('IOS_TEAM', '').strip()
+if IOS_TEAM:
+    if not re.fullmatch(r'[A-Z0-9]{10}', IOS_TEAM): sys.exit('IOS_TEAM は 10文字の 英数字（チーム ID）だよ')
+    m = re.search(r'\n( *)bundleIdentifier: "[^"]+",\n', ps)
+    assert m and 'teamIdentifier' not in ps, 'Package.swift の bundleIdentifier の 形が かわった'
+    ps = ps[:m.end()] + f'{m.group(1)}teamIdentifier: "{IOS_TEAM}",\n' + ps[m.end():]
 open(pk, 'w', encoding='utf8').write(ps)
 VER = (IOS_VERSION or cur_v, IOS_BUILD or TEST_BUILD or cur_b)
 
