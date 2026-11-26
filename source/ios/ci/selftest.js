@@ -453,8 +453,11 @@
       var f = new File([await res.blob()], 'e_soon.jpg', { type: 'image/jpeg' });
       var raw = await TengelNative.readText(await new Promise(function (ok, ng) { var fr = new FileReader(); fr.onload = function () { ok(String(fr.result).split(',')[1]); }; fr.onerror = ng; fr.readAsDataURL(f); }));
       var d = await (await window.claude.use('sample')).json('', { images: [f] });
-      var top = (raw && raw.lines || []).filter(function (l) { return l.y < 0.12; }).map(function (l) { return [l.text, Math.round(l.x * 1000) / 1000, Math.round(l.y * 1000) / 1000, Math.round(l.h * 1000) / 1000]; });
-      return { closed: d.closed, soon: !!d.soon, start: d.start, r: d.r, dist: d.dist, n: d.n, horses: (d.horses || []).length, top: top };
+      var at = function (l) { return [l.text, Math.round(l.x * 1000) / 1000, Math.round(l.y * 1000) / 1000, Math.round(l.w * 1000) / 1000, Math.round(l.h * 1000) / 1000]; };
+      var top = (raw && raw.lines || []).filter(function (l) { return l.y < 0.12; }).map(at);
+      // run 202：表の 馬が 12頭の うち 11頭 → 読めた 馬番と、表の 所の 読めた 字（位置つき）も 出す（どの 行が なぜ 落ちたか 見る）
+      var body = (raw && raw.lines || []).filter(function (l) { return l.y >= 0.12; }).map(at);
+      return { closed: d.closed, soon: !!d.soon, start: d.start, r: d.r, dist: d.dist, n: d.n, horses: (d.horses || []).length, nos: (d.horses || []).map(function (h) { return h.no; }), top: top, body: body };
     });
     // 第4.172版（まさちゃん 11/14 22:05「やっぱりテンゲルBGMも消して！無しでいいや！」）：テンゲルBGM は なくした → しかけ（window.TengelBgm）と 設定の 札が 入って いない ことを 見る。
     //   ルーレットの 爆発の 動画（H.264 High：第4.171版）を この WebKit が 読める 形かも 見る
