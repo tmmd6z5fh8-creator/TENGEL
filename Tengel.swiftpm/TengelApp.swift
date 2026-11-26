@@ -139,8 +139,9 @@ final class StatusBarTint: ObservableObject {
 /// preferredStatusBarStyle を、current を 返す ものに 入れかえる（1つの 型に 1回・Objective-C の しくみ：公開されて いる 関数 だけ）。
 /// 入れかえられなかった ときは 今までどおり（iPhone の ライト／ダークに 合わせた 字）
 enum StatusBarStyle {
-    static var current: UIStatusBarStyle = .lightContent
-    private static var patched: [ObjectIdentifier] = []
+    // UIKit が 字の 色を 聞く のも ここを かえる のも メインの スレッド だけ（Swift 6 の きまりでは「メイン だけで 使う」と 書く 必要が ある：nonisolated(unsafe)）
+    nonisolated(unsafe) static var current: UIStatusBarStyle = .lightContent
+    nonisolated(unsafe) private static var patched: [ObjectIdentifier] = []
 
     @MainActor
     static func apply(in window: UIWindow?) {
