@@ -124,11 +124,12 @@ CBPY='
 # 第4.196版：メニューに「⚔️ 決戦調査」（ボタンは 9こ：戻る・コンピュータと 対戦・決戦調査・部屋を 作る・部屋に 入る・遊び方・設定・ミッション・デザインカスタム）
 # 第4.212版：勝っても お世話トークンは もらえない（トレーニングセンターの 部品を 読まない＝tokens は None・state に owe は ない）・
 #   TENGERカードバトルは おもちゃ（3,000P で 解放）：解放の 前は 丸い ボタンに 🔒・押すと 解放の 窓（カードバトルは 開かない・本体も 読まない）→「やめる」→ 解放ずみに して 開く
+# 第4.230版：丸い ボタンは 下の タブの すぐ 上に 横 1列（row）・丸は 44〜80px・作戦会議と 着せ替えは 上の 帯の 中（dock：記録 だけ）
 import json, sys
 o = json.load(open(sys.argv[1])).get("cb") or {}
 rm = o.get("room") or {}; rb = o.get("roomBad") or {}; st = o.get("start") or {}; au = o.get("auto") or {}; s = o.get("state") or {}
 fd = o.get("fd") or []
-ok = (o.get("fab") or [])[:4] == ["tcFab", "oshiFab", "cbFab", "figFab"] and (o.get("col") is True or o.get("g2") is True) and len(fd) == 4 and len(set(fd)) == 1 and 36 <= fd[0] <= 66 and o.get("clear") is True and o.get("api") == "object" and rm.get("ok") is True and rm.get("state") == "idle" and rb.get("ok") is False and rb.get("why") == "room" \
+ok = (o.get("fab") or [])[:4] == ["tcFab", "oshiFab", "cbFab", "figFab"] and (o.get("row") is True or o.get("col") is True or o.get("g2") is True) and len(fd) == 4 and len(set(fd)) == 1 and 36 <= fd[0] <= 80 and o.get("clear") is True and o.get("api") == "object" and rm.get("ok") is True and rm.get("state") == "idle" and rb.get("ok") is False and rb.get("why") == "room" \
      and o.get("open") is True and len(o.get("menu") or []) == 9 and o.get("roomBtn") == [True, True] and st.get("hand") == 7 and st.get("op") in (6, 7) and st.get("deck") == 16 and st.get("turn") == 1 and st.get("turns") == 5 and au.get("ended") is True \
      and o.get("res") in ("win", "lose", "draw") and (o.get("discard") or 0) >= 2 * ((o.get("early") or 0) or 5) and bool(o.get("gift")) and (s.get("win", 0) + s.get("lose", 0) + s.get("draw", 0)) == 1 and o.get("closed") is True \
      and o.get("tokens") is None and "owe" not in s and ("バトルコイン %d" % (2 * (o.get("gift0") or 0))) in (o.get("coinl") or "") and o.get("coin0") == 2 * (o.get("gift0") or 0) \
@@ -136,7 +137,7 @@ ok = (o.get("fab") or [])[:4] == ["tcFab", "oshiFab", "cbFab", "figFab"] and (o.
 se = o.get("sets") or {}; bg = o.get("bgm") or {}; fire = o.get("fire") or []
 ok2 = se.get("fx") is False and isinstance(se.get("se"), bool) and isinstance(se.get("bgm"), bool) and bg.get("on") is False and abs((bg.get("len") or 0) - 80.53) < 0.02 and len(fire) == 2 and all(f.startswith("cbfire ") for f in fire) \
       and o.get("gear") == "bgm,se" and o.get("fxBtn") is False and o.get("board") == ["cb_board.webp", False] and not o.get("setsErr")
-print("fab %s column %s 2x2 %s icon %s clear-of-kise %s (view %s kise %s fabs %s) room-api %s bad-room %s open %s start %s played %s res %s wins %s discard %s early %s tokens %s closed %s coin %s->%s gifts %s -> %s" % ((o.get("fab") or [])[:4], o.get("col"), o.get("g2"), fd[:1], o.get("clear"), o.get("view"), o.get("kise"), o.get("fabRect"), rm, rb.get("why"), o.get("open"), st, au.get("kinds"), o.get("res"), o.get("wins"), o.get("discard"), o.get("early"), o.get("tokens"), o.get("closed"), o.get("coin0"), s.get("coin"), len(s.get("gifts") or []), "OK" if ok else "CHECK " + json.dumps(o, ensure_ascii=False)[:400]))
+print("fab %s row %s dock %s column %s 2x2 %s icon %s clear-of-kise %s (view %s kise %s fabs %s) room-api %s bad-room %s open %s start %s played %s res %s wins %s discard %s early %s tokens %s closed %s coin %s->%s gifts %s -> %s" % ((o.get("fab") or [])[:4], o.get("row"), o.get("dock"), o.get("col"), o.get("g2"), fd[:1], o.get("clear"), o.get("view"), o.get("kise"), o.get("fabRect"), rm, rb.get("why"), o.get("open"), st, au.get("kinds"), o.get("res"), o.get("wins"), o.get("discard"), o.get("early"), o.get("tokens"), o.get("closed"), o.get("coin0"), s.get("coin"), len(s.get("gifts") or []), "OK" if ok else "CHECK " + json.dumps(o, ensure_ascii=False)[:400]))
 print("   card battle settings: sets %s bgm %s fire %s gear %s fx-button %s board %s err %s -> %s" % (se, bg, fire, o.get("gear"), o.get("fxBtn"), o.get("board"), o.get("setsErr"), "OK" if ok2 else "CHECK"))
 ty = o.get("toy") or {}; af = ty.get("after") or {}
 ok3 = ty.get("locked") is True and ty.get("lock") is True and "3,000P" in (ty.get("ask") or "") and "TENGERカードバトル" in (ty.get("ask") or "") and ty.get("btn") in ("go,no", "buy,no") and ty.get("cbOpen") is False and ty.get("bundle") is False \
@@ -285,14 +286,14 @@ for name, white in want.items():
 ok = ok and ((s.get("first") or {}).get("tint") or {}).get("color") == "#16203D" and ((s.get("back") or {}).get("tint") or {}).get("color") == "#16203D"
 print(" / ".join(out) + " -> " + ("OK" if ok else "CHECK " + json.dumps(s, ensure_ascii=False)[:700]))
 ' "$OUT/iphone-report-1.json" 2>&1)"
-  # 第4.212版：値段（初回 5,000P・読み込み 400P・5連も 1レース 400P・マザーデータの 枠 23,000P・おもちゃ 3,000P）・Pカスタムの「おもちゃを購入」（2つ）・
+  # 第4.212版：値段（初回 5,000P・読み込み 400P → 第4.230版：800P・5連も 1レース 800P・マザーデータの 枠 23,000P・おもちゃ 3,000P）・Pカスタムの「おもちゃを購入」（2つ）・
   #   設定の「古い台帳をリセットする」の カード（バックアップの すぐ 下・注意書き）・まとめて 消す 口（TengelLocal.delBets）が 本物の アプリの 画面に ある
   [ -f "$OUT/iphone-report-1.json" ] && say "   v212: $(python3 -c '
 import json, sys
 r = json.load(open(sys.argv[1])); v = r.get("v212") or {}; c = v.get("cost") or {}
 toys = [[t.get("id"), t.get("name")] for t in (v.get("toys") or [])]
 old = v.get("old") or ""
-ok = c.get("gift") == 5000 and c.get("read") == 400 and c.get("w5") == 400 and c.get("slot") == 23000 and c.get("toy") == 3000 and toys == [["drop", "お世話チャレンジ"], ["cb", "TENGERカードバトル"]] and v.get("toyItems") == 2 \
+ok = c.get("gift") == 5000 and c.get("read") == 800 and c.get("w5") == 800 and c.get("slot") == 23000 and c.get("toy") == 3000 and toys == [["drop", "お世話チャレンジ"], ["cb", "TENGERカードバトル"]] and v.get("toyItems") == 2 \
      and "古い台帳をリセットする" in old and "3年たった記録と履歴は、自動でリセットされるよ" in old and v.get("oldAfterBackup") is True and v.get("oldApi") == "object" and v.get("delBets") == "function" and not v.get("error")
 print("cost %s toys %s toy-items %s old-card %s after-backup %s api %s delBets %s auto-line %s -> %s" % (c, [t[0] for t in toys], v.get("toyItems"), bool(old), v.get("oldAfterBackup"), v.get("oldApi"), v.get("delBets"), ((v.get("oldState") or {}).get("f") or {}).get("line"), "OK" if ok else "CHECK " + json.dumps(v, ensure_ascii=False)[:300]))
 ' "$OUT/iphone-report-1.json" 2>&1)"

@@ -490,6 +490,8 @@
     for (let i = 0; i < nv; i++) { const x = pos[i * 3], y = pos[i * 3 + 1], z = pos[i * 3 + 2]; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; if (z < z0) z0 = z; if (z > z1) z1 = z; }
     return { gl, B, meta, tex: opt.texImg ? mkTex(gl, opt.texImg) : null, ntex: opt.nrmImg ? mkTex(gl, opt.nrmImg) : null, box: [x0, y0, z0, x1, y1, z1] };
   }
+  
+  function propSkin(P, img) { return P && img ? Object.assign({}, P, { tex: mkTex(P.gl, img), img: null, skin: true }) : null; }
   function drawProps(h, st, view) {
     const gl = h.gl, Q = view.quality || {};
     const at = (b, loc, n, type, norm, stride) => { if (loc < 0) return; gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, n, type || gl.FLOAT, !!norm, stride || 0, 0); };
@@ -1220,7 +1222,7 @@
     return out;
   }
   function react(st, k, dur, t, o) { st.reacts = (st.reacts || []).filter(r => t - r.t0 < r.dur); st.reacts.push(Object.assign({ k, t0: t, dur }, o || {})); }
-  window.TCHorse = { create, createProp, anchorPose, project, M, brain, step, draw, pose, where, wherePose, react, unz, extent, scaleAt: (h, y) => scaleAt(h, y), GAITS, WALK, RUN, AREA, TRACK, EYE_GLOW, walkLegs, walkSpeed, blendOf };
+  window.TCHorse = { create, createProp, propSkin, anchorPose, project, M, brain, step, draw, pose, where, wherePose, react, unz, extent, scaleAt: (h, y) => scaleAt(h, y), GAITS, WALK, RUN, AREA, TRACK, EYE_GLOW, walkLegs, walkSpeed, blendOf };
 })();
 
 ;
@@ -1405,6 +1407,9 @@ function flK(t) {
 
 
 
+
+
+
 const TCCare = (() => {
   const TAU = Math.PI * 2, W = 1052, H = 1657;
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x)), sm = x => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
@@ -1415,12 +1420,12 @@ const TCCare = (() => {
   const angDiff = (a, b) => { let d = (b - a) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return d; };
   const FONT = '"BIZ UDPGothic", BIZ, "Hiragino Sans", "Noto Sans CJK JP", sans-serif';
   const AP = p => (typeof window !== 'undefined' && typeof window.TC_ASSET === 'function') ? window.TC_ASSET(p) : p;      
-  const RULE = { strokes: 3, strokeLen: 34, cool: 7, streak: 5, perMin: 5, max: 10, win: 1 / 66, unlock: 5, stockMax: 25, stockEvery: 300, stockStep: 5, lotStock: 20 };      
+  const RULE = { strokes: 3, strokeLen: 34, cool: 7, streak: 5, perMin: 5, max: 10, win: 1 / 22, unlock: 5, stockMax: 25, stockEvery: 480, stockStep: 5, lotStock: 20 };      
   const HURRY = 2.8, ZOOM_IN = 0.5, ZOOM_OUT = 0.6, NEAR_Y = 1040, STEP_Y = 230, ZOOM_MIN = 2.2, ZOOM_MAX = 2.7;
   
   
 
-  let g = null, G0 = null, HO = null, BR = null, O = {}, rnd = Math.random, apple = null, carrot = null, carrotG = null, bucket = null, BANNER = null, PROPS = null;
+  let g = null, G0 = null, HO = null, BR = null, O = {}, rnd = Math.random, apple = null, carrot = null, carrotG = null, bucket = null, BANNER = null, PROPS = null, appleG = null, PROPG = null;      
   const FRONT = { x: 526, y: 1372 };          
   function front() {                          
     let y = FRONT.y; while (y > 960 && TCHorse.scaleAt(HO, y) * 1.8 > 0.47 * W) y -= 8; return { x: FRONT.x, y, big: y < FRONT.y };      
@@ -1757,7 +1762,9 @@ const TCCare = (() => {
     at(t + 0.25, tt => {
       S.chooser = null;
       if (S.withLot && !haveToken(tt, 'feed')) { S.phase = 'idle'; S.mode = null; BR.careHold = false; return; }
-      const gold = kind === 'carrot' && S.withLot && (S.demo && S.demo.gold != null ? S.demo.gold : T1('gold', () => rnd() < 1 / 30));      
+      
+      const gold = !!S.withLot && (S.demo ? !!S.demo.gold : !!T1('gold', () => rnd() < 1 / 30));
+      if (gold) { if (kind === 'apple') appleGold(); else if (kind === 'esa') propsGold(); }      
       S.feed = { kind, gold, fav: kind === S.fav, bites: 0, t0: tt };
       if (BR.stand) { BR.reacts = []; mark('A', tt); feedStart(tt); return; }          
       comeNear(tt);
@@ -1782,22 +1789,29 @@ const TCCare = (() => {
         F.b3 = place3(TCHorse.anchorPose(HO, mats, 'nose'), TCHorse.anchorPose(HO, mats, 'eye'), TCHorse.anchorPose(HO, mats, 'poll'), TCHorse.anchorPose(HO, mats1, 'nose'), ds);
       }
       at(t + 0.3, tt => { S.grazeOK = true; BR.want.graze = 1; react('deep', F.b3 ? 4.8 : 4.4, tt, F.b3 ? { ds } : null); });
-      for (let k = 0; k < 3; k++) at(t + 1.2 + k * 1.0, tt => { F.bucket.level = 2 - k; ev(tt, 'munch', { n: k }); const b = F.bucket, rw = F.b3 ? TCHorse.project(HO, [F.b3.cx, F.b3.R, F.b3.cz]) : null; fx({ k: 'crumbs', t0: tt, w: rw || [b.x, b.y - (b.lh + 0.48) * s], col: ['#e8c46a', '#d9a94a', '#f2dc94'] }); });
+      const rim = () => { const b = F.bucket; return (F.b3 ? TCHorse.project(HO, [F.b3.cx, F.b3.R, F.b3.cz]) : null) || [b.x, b.y - (b.lh + 0.48) * s]; };      
+      if (F.gold) at(t + 0.3, tt => { F.glintW = rim(); goldTag(tt); });      
+      for (let k = 0; k < 3; k++) at(t + 1.2 + k * 1.0, tt => { F.bucket.level = 2 - k; ev(tt, 'munch', { n: k }); fx({ k: 'crumbs', t0: tt, w: rim(), col: F.gold ? GOLD_CRUMBS : ['#e8c46a', '#d9a94a', '#f2dc94'] }); });
       at(t + 4.4, tt => { BR.want.graze = 0; S.grazeOK = false; });
       at(t + 4.9, tt => { react('lick', 1.3, tt, { side: sideToward(BR.x, BR.y + 200) }); ev(tt, 'lick'); tagW(P('nose'), 'ぺろっ', tt + 0.2, { off: [0, -90], size: 34 }); });
       at(t + 6.1, tt => { F.bucket.hideT = tt; ev(tt, 'fold'); });
       at(t + 6.7, tt => feedAfter(tt));
     } else {                            
       F.handT = t; F.itemW = itemPos(); ev(t, 'unfold');
-      if (F.gold) at(t + 0.3, tt => { fx({ k: 'glint', t0: tt, dur: 3.2 }); ev(tt, 'gold'); tagW(P('nose'), '金のニンジン！', tt + 0.1, { off: [0, -150], size: 36, dur: 1.8, col: '#b07a10' }); });
+      if (F.gold) at(t + 0.3, tt => goldTag(tt));      
       for (let k = 0; k < 3; k++) at(t + (F.gold ? 1.2 : 0.7) + k * 1.0, tt => {
         F.bites = k + 1; react('eat', 0.95, tt, { side: sideToward(BR.x, BR.y + 200) }); ev(tt, 'bite', { n: k, kind: F.kind });
-        const q = F.itemW; fx({ k: 'crumbs', t0: tt, w: q, col: F.kind === 'apple' ? ['#f4efe0', '#d9343c', '#f7e9c8'] : F.gold ? ['#ffd65c', '#fff1b0', '#e9b13a'] : ['#f08a2a', '#ffb25c', '#f6c38a'] });
+        const q = F.itemW; fx({ k: 'crumbs', t0: tt, w: q, col: F.gold ? GOLD_CRUMBS : F.kind === 'apple' ? ['#f4efe0', '#d9343c', '#f7e9c8'] : ['#f08a2a', '#ffb25c', '#f6c38a'] });
         if (k === 0) tagW(P('nose'), 'シャクッ', tt + 0.05, { off: [-20, -100], size: 34, dur: 1.0 });
       });
       at(t + (F.gold ? 3.9 : 3.4), tt => { F.handHide = tt; ev(tt, 'fold'); });
       at(t + (F.gold ? 4.3 : 3.8), tt => feedAfter(tt));
     }
+  }
+  const GOLD_NAME = { esa: '金のエサ！', apple: '金のリンゴ！', carrot: '金のニンジン！' }, GOLD_CRUMBS = ['#ffd65c', '#fff1b0', '#e9b13a'];
+  function goldTag(t) {                   
+    const F = S.feed; fx({ k: 'glint', t0: t, dur: 3.2 }); ev(t, 'gold');
+    tagW(P('nose'), GOLD_NAME[F.kind] || GOLD_NAME.carrot, t + 0.1, { off: [0, -150], size: 36, dur: 1.8, col: '#b07a10' });
   }
   function feedAfter(t) {                
     const F = S.feed; let end = t + 0.4;
@@ -1805,7 +1819,7 @@ const TCCare = (() => {
       for (let k = 0; k < 5; k++) at(tt + 0.2 + k * 0.3, t2 => { const p = P('poll'); if (p) fx({ k: 'mini', t0: t2, w: [p[0] + (hash(t2 * 3) - 0.5) * 120, p[1] - 10], r: 22, dx: (hash(t2 * 7) - 0.5) * 70 }); ev(t2, 'heartpop'); }); }); end = t + 2.8; }
     if (F.gold) {                       
       for (let k = 0; k < 3; k++) at(t + 0.3 + k * 0.3, tt => {
-        const q = toS(F.itemW || itemPos()), i = Math.min(S.heart, RULE.max - 1); fx({ k: 'fly', t0: tt, x: q[0], y: q[1], i, dur: 0.8 }); ev(tt, 'heart'); S.heart = Math.min(RULE.max, S.heart + 1);
+        const q = toS(F.itemW || F.glintW || itemPos()), i = Math.min(S.heart, RULE.max - 1); fx({ k: 'fly', t0: tt, x: q[0], y: q[1], i, dur: 0.8 }); ev(tt, 'heart'); S.heart = Math.min(RULE.max, S.heart + 1);
         at(tt + 0.8, t2 => { S.heartShow = Math.max(S.heartShow, i + 1); ev(t2, 'slot', { n: i + 1 }); fx({ k: 'pop', t0: t2, x: SLOT(i)[0], y: SLOT(i)[1] }); });
       });
       at(t + 0.3, tt => tagW(P('poll'), '仲良し +3', tt, { off: [30, -110], size: 38, dur: 1.8, col: '#c2456f' }));
@@ -2336,7 +2350,7 @@ const TCCare = (() => {
     
     pet_f: { front: 1, heart: 5, got: [-50, -41, -30, -19, -8], greeted: true, cap: [[0.2, 'R+6.0', 'ハートは 1分に 5個まで']], path: PET3('neckA', 'neckB'), end: 'R+6.2' },
     
-    pet_g: { front: 1, heart: 9, got: [], greeted: true, win: false, cap: [[0.2, 'R+3.4', 'ハートが 10個に なると…'], ['R+3.4', 'R+9.6', '抽選（1/66）→ ハズレは ふぅ〜']], path: PET3('neckA', 'neckB'), end: 'R+9.8' },
+    pet_g: { front: 1, heart: 9, got: [], greeted: true, win: false, cap: [[0.2, 'R+3.4', 'ハートが 10個に なると…'], ['R+3.4', 'R+9.6', '抽選（1/22）→ ハズレは ふぅ〜']], path: PET3('neckA', 'neckB'), end: 'R+9.8' },
     pet_h: { front: 1, heart: 9, got: [], greeted: true, win: true, cap: [[0.2, 'R+3.4', 'ハートが 10個に なると…'], ['R+3.4', 'R+11.2', '当たり → ぴょん！ お世話 5回 解放']], path: PET3('neckA', 'neckB'), end: 'R+11.4' },
     
     pet_i: { front: 1, heart: 2, got: [-30, -15], greeted: true, cap: [[0.2, 'R+9.6', '夕方は ゆったり 寄りかかる']], path: PET3('neckA', 'neckB', 0.7, 0.4), end: 'R+9.8' },
@@ -2351,7 +2365,7 @@ const TCCare = (() => {
     feed_a: { press: [[0.8, 'feed'], [2.3, 'pick', 'esa']], pt: null, beg: false, cap: [[0.2, 2.7, 'ご飯：エサ・リンゴ・ニンジンから 選ぶ'], [2.7, 'Z-0.2', 'エサ → バケツから もぐもぐ（3回で 空っぽ）']], end: 'Z+0.6' },
     feed_b: { press: [[0.6, 'feed'], [1.9, 'pick', 'apple'], ['Z+1.3', 'push']], pt: 100, beg: false, cap: [[0.2, 'F+0.2', 'リンゴ・ニンジン → 手から 3口'], ['F+0.2', 'F+3.8', 'シャクッ・シャクッ・シャクッ'], ['F+3.8', 'Z+0.1', '今日の 好物だと 大喜び'], ['Z+0.1', 'Z+1.3', 'お世話の 後に PUSH！'], ['Z+1.3', 'Z+3.5', '押すと 抽選 → 当たり → ピロン']], end: 'Z+3.6' },      
     feed_c: { heart: 2, got: [], press: [[0.6, 'feed'], [1.9, 'pick', 'carrot']], gold: true, pt: null, beg: true,      
-      cap: [[0.2, 'F+0.4', 'ニンジンは 1/30で 金のニンジン'], ['F+0.4', 'B-0.2', '金のニンジン → 仲良し +3'], ['B-0.2', 'Z+0.6', '時々 おかわりの目（こっちを 見つめる）']], end: 'Z+1.6' },
+      cap: [[0.2, 'F+0.4', 'エサ・リンゴ・ニンジンは 1/30で 金色'], ['F+0.4', 'B-0.2', '金の ごはん → 仲良し +3'], ['B-0.2', 'Z+0.6', '時々 おかわりの目（こっちを 見つめる）']], end: 'Z+1.6' },
     feed_d: { press: [[0.6, 'feed'], [1.9, 'pick', 'carrot']], gold: false, pt: null, beg: false, cap: [[0.2, 'F+0.2', 'ニンジン → 手から 3口'], ['F+0.2', 'Z+0.2', '先から シャクッ・シャクッ・シャクッ']], end: 'Z+0.6' },
     ban_k: { rt: [6.4, 6.7], cap: [], end: 10.6 },          
     ban_m: { rt: [6.4, 6.7], cap: [], end: 10.6 },
@@ -2398,12 +2412,14 @@ const TCCare = (() => {
     const op = b.hideT != null ? 1 - sm((t - b.hideT) / 0.45) : backOut((t - b.t0) / 0.45); if (op <= 0.01) return null;
     const M = TCHorse.M, ox = 0.86 + 0.14 * clamp(op, 0, 1.2), oy = Math.max(0.02, op);
     const mB = M.mul(M.tr(q.cx, 0, q.cz), M.mul(M.ry(B3.yaw), M.sc(q.sB * ox, q.sB * oy, q.sB * ox)));
-    const out = [{ P: PROPS.bucket, m: mB, sh: [q.cx, q.cz, 0.8 * q.sB * ox, 0.8 * clamp(op, 0, 1)] }];
-    if (PROPS.feed) {
+    const GP = F.gold ? propsGold() : null, PB = (GP && GP.bucket) || PROPS.bucket, PF = (GP && GP.feed) || PROPS.feed;      
+    const lift = GP ? GOLD_LIFT : 0;      
+    const out = [{ P: PB, m: mB, sh: [q.cx, q.cz, 0.8 * q.sB * ox, 0.8 * clamp(op, 0, 1)], lift }];
+    if (PF) {
       const d = q.ds.reduce((a, s) => a + sm((t - s) / 0.45), 0) / q.ds.length;          
       const top = lerp(q.top0, q.top1, d) * oy, rf0 = B3.feedR * innerR(1.75) * q.sB;      
       const hf = B3.feedH * rf0 * (1 - 0.6 * d) * oy, base = top - hf, rf = Math.min(rf0, B3.feedR * innerR(base / q.sB) * q.sB) * ox;
-      out.push({ P: PROPS.feed, m: M.mul(M.tr(q.cx, base, q.cz), M.mul(M.ry(0.7), M.sc(rf / 2.65, hf / 2.15, rf / 2.65))) });
+      out.push({ P: PF, m: M.mul(M.tr(q.cx, base, q.cz), M.mul(M.ry(0.7), M.sc(rf / 2.65, hf / 2.15, rf / 2.65))), lift });
     }
     return out;
   }
@@ -2414,11 +2430,40 @@ const TCCare = (() => {
       const bin = TCHorse.unz(await fetch(AP(`tc_items/${meta.bin || nm + '.bin'}`)).then(r => { if (!r.ok) throw new Error(nm); return r.arrayBuffer(); }));
       const im = f => f ? new Promise(ok => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = AP(`tc_items/${f}`); }) : Promise.resolve(null);
       const [texImg, nrmImg] = await Promise.all([im(meta.tex), im(meta.ntex)]);
-      return TCHorse.createProp(HO.gl, meta, bin, { texImg, nrmImg });
+      const pr = TCHorse.createProp(HO.gl, meta, bin, { texImg, nrmImg }); if (pr) pr.img = texImg; return pr;      
     };
     try { const [b3, f3, br, pn] = await Promise.all([one('tc_prop_bucket'), one('tc_prop_feed').catch(() => null), one('tc_prop_broom').catch(() => null), one('tc_prop_pan').catch(() => null)]); return { bucket: b3, feed: f3, broom: br, pan: pn }; } catch (e) { return null; }
   }
-  function bucketArt(x, y, k, level, op, legH) {      
+  
+  
+  
+  
+  const GOLD_STOPS = [[0, 110, 60, 0], [0.3, 165, 105, 2], [0.55, 205, 142, 12], [0.8, 245, 192, 42], [1, 255, 226, 110]];
+  const GOLD_Y = { apple: [50, 161], bucket: [20, 175], feed: [60, 210] }, GOLD_LIFT = 0.3;      
+  let GLUT = null;
+  function goldLut() {
+    if (GLUT) return GLUT; const L = new Uint8Array(768);
+    for (let i = 0; i < 256; i++) { const x = i / 255; let j = 1; while (j < GOLD_STOPS.length - 1 && x > GOLD_STOPS[j][0]) j++; const a = GOLD_STOPS[j - 1], b = GOLD_STOPS[j], u = clamp((x - a[0]) / (b[0] - a[0]), 0, 1); for (let c = 0; c < 3; c++) L[i * 3 + c] = Math.round(a[c + 1] + (b[c + 1] - a[c + 1]) * u); }
+    return (GLUT = L);
+  }
+  function goldify(src, y) {             
+    const w = src && (src.naturalWidth || src.width), h = src && (src.naturalHeight || src.height); if (!w || !h || typeof document === 'undefined') return null;
+    const c = document.createElement('canvas'); c.width = w; c.height = h; const q = c.getContext('2d'); if (!q) return null; q.drawImage(src, 0, 0);
+    try {
+      const d = q.getImageData(0, 0, w, h), a = d.data, L = goldLut(), k = 255 / (y[1] - y[0]);
+      for (let i = 0; i < a.length; i += 4) { const v = (0.299 * a[i] + 0.587 * a[i + 1] + 0.114 * a[i + 2] - y[0]) * k, n = (v <= 0 ? 0 : v >= 255 ? 255 : Math.round(v)) * 3; a[i] = L[n]; a[i + 1] = L[n + 1]; a[i + 2] = L[n + 2]; }
+      q.putImageData(d, 0, 0); c._how = 'lut';
+    } catch (e) { q.globalCompositeOperation = 'source-atop'; q.fillStyle = 'rgba(255,200,60,0.62)'; q.fillRect(0, 0, w, h); q.globalCompositeOperation = 'source-over'; c._how = 'tint'; }
+    c._fix = true; return c;
+  }
+  function appleGold() { if (!appleG && apple && apple.naturalWidth) appleG = goldify(apple, GOLD_Y.apple); return appleG; }
+  function propsGold() {                 
+    if (PROPG || !PROPS || !PROPS.bucket || typeof TCHorse === 'undefined' || !TCHorse.propSkin) return PROPG;
+    const sk = (P, y) => { try { const c = P && P.img ? goldify(P.img, y) : null; return c ? TCHorse.propSkin(P, c) : null; } catch (e) { return null; } };
+    PROPG = { bucket: sk(PROPS.bucket, GOLD_Y.bucket), feed: sk(PROPS.feed, GOLD_Y.feed) };
+    return PROPG;
+  }
+  function bucketArt(x, y, k, level, op, legH, gold) {      
     if (op <= 0.01) return;
     g.save(); g.translate(x, y); g.scale(1, op); g.lineWidth = 0.8;
     const sw = 0.5 * k, lh = (legH != null ? legH : 0.3) * k, bh = 0.42 * k, tw = 0.5 * k, bw = 0.38 * k;
@@ -2426,27 +2471,28 @@ const TCCare = (() => {
     for (const sx of [-1, 1]) { pf([[sx * sw * 0.36 - 4, -lh], [sx * sw * 0.36 + 4, -lh], [sx * sw * 0.42 + 4, 0], [sx * sw * 0.42 - 4, 0]], sx < 0 ? '#9c6a3c' : '#7e5330'); }      
     pf([[-sw / 2, -lh - 0.06 * k], [sw / 2, -lh - 0.06 * k], [sw / 2, -lh], [-sw / 2, -lh]], '#b98552'); pf([[-sw / 2, -lh], [sw / 2, -lh], [sw / 2, -lh + 6], [-sw / 2, -lh + 6]], '#8e6238');      
     const y0 = -lh - 0.06 * k, y1 = y0 - bh;
-    pf([[-bw / 2, y0], [0, y0], [0, y1], [-tw / 2, y1]], '#d49a5c'); pf([[0, y0], [bw / 2, y0], [tw / 2, y1], [0, y1]], '#b9793f');      
-    for (const f of [0.2, 0.75]) { const yy = lerp(y0, y1, f), hw = lerp(bw, tw, f) / 2; pf([[-hw - 1, yy - 4], [hw + 1, yy - 4], [hw + 1, yy + 4], [-hw - 1, yy + 4]], '#8d8f96'); pf([[0, yy - 4], [hw + 1, yy - 4], [hw + 1, yy + 4], [0, yy + 4]], '#6f7178'); }
+    pf([[-bw / 2, y0], [0, y0], [0, y1], [-tw / 2, y1]], gold ? '#f2c446' : '#d49a5c'); pf([[0, y0], [bw / 2, y0], [tw / 2, y1], [0, y1]], gold ? '#cf9a24' : '#b9793f');      
+    for (const f of [0.2, 0.75]) { const yy = lerp(y0, y1, f), hw = lerp(bw, tw, f) / 2; pf([[-hw - 1, yy - 4], [hw + 1, yy - 4], [hw + 1, yy + 4], [-hw - 1, yy + 4]], gold ? '#b8841c' : '#8d8f96'); pf([[0, yy - 4], [hw + 1, yy - 4], [hw + 1, yy + 4], [0, yy + 4]], gold ? '#976812' : '#6f7178'); }
     g.lineWidth = 1.2; for (let q = -2; q <= 2; q++) line([q * bw / 6, y0], [q * tw / 6, y1], 'rgba(90,50,20,0.25)');
     g.fillStyle = '#7a4a22'; g.beginPath(); g.ellipse(0, y1, tw / 2, tw * 0.16, 0, 0, TAU); g.fill();       
     if (level > 0) {                                   
       const hh = [0, 0.05, 0.1, 0.16][level] * k;
-      g.fillStyle = '#e2b858'; g.beginPath(); g.ellipse(0, y1 - hh * 0.3, tw * 0.44, tw * 0.13, 0, 0, TAU); g.fill();
-      pf([[-tw * 0.4, y1], [-tw * 0.15, y1 - hh], [tw * 0.12, y1 - hh * 0.8], [tw * 0.4, y1]], '#f0cf73'); pf([[tw * 0.12, y1 - hh * 0.8], [tw * 0.4, y1], [0, y1 + 2]], '#d6aa4a');
+      g.fillStyle = gold ? '#f5c93a' : '#e2b858'; g.beginPath(); g.ellipse(0, y1 - hh * 0.3, tw * 0.44, tw * 0.13, 0, 0, TAU); g.fill();
+      pf([[-tw * 0.4, y1], [-tw * 0.15, y1 - hh], [tw * 0.12, y1 - hh * 0.8], [tw * 0.4, y1]], gold ? '#ffe27a' : '#f0cf73'); pf([[tw * 0.12, y1 - hh * 0.8], [tw * 0.4, y1], [0, y1 + 2]], gold ? '#e3ad2a' : '#d6aa4a');
       for (let i = 0; i < 9; i++) { const gx = (hash(i * 3.3) - 0.5) * tw * 0.7, gy = y1 - hh * (0.2 + 0.6 * hash(i * 7.7)); pf([[gx - 4, gy], [gx, gy - 3], [gx + 4, gy], [gx, gy + 3]], i % 2 ? '#fff0b8' : '#c99a3c'); }
     }
     g.restore();
   }
   const APPLE_C = typeof document !== 'undefined' ? document.createElement('canvas') : null;
-  function appleArt(x, y, r, bites, a, flip) {         
+  function appleArt(x, y, r, bites, a, flip, gold) {   
     if (!apple || !apple.naturalWidth || a <= 0.01) return;
+    const im = (gold && appleGold()) || apple;
     const w = r * 2, h = w * apple.naturalHeight / apple.naturalWidth, c = APPLE_C; c.width = Math.ceil(w) + 4; c.height = Math.ceil(h) + 4; const q = c.getContext('2d');
-    q.clearRect(0, 0, c.width, c.height); q.drawImage(apple, 2, 2, w, h);
+    q.clearRect(0, 0, c.width, c.height); q.drawImage(im, 2, 2, w, h);
     const nb = Math.min(3, bites | 0);
     if (nb > 0) {
       const B = [[1.0, 0.45, 0.13], [0.98, 0.66, 0.15], [0.86, 0.56, 0.19]];          
-      q.globalCompositeOperation = 'source-atop'; q.fillStyle = '#fff2d6';
+      q.globalCompositeOperation = 'source-atop'; q.fillStyle = gold ? '#fff0ad' : '#fff2d6';
       for (let i = 0; i < nb; i++) { const [bx, by, br] = B[i]; polyP(q, 2 + w * bx, 2 + h * by, w * (br + 0.035), 11, i * 0.8); q.fill(); }
       q.globalCompositeOperation = 'destination-out'; q.fillStyle = '#000';
       for (let i = 0; i < nb; i++) { const [bx, by, br] = B[i]; polyP(q, 2 + w * bx, 2 + h * by, w * br, 11, i * 0.8); q.fill(); }
@@ -2532,13 +2578,13 @@ const TCCare = (() => {
     const F = S.feed;
     if (F && F.bucket) { const b = F.bucket, p = toS([b.x, b.y]), k = TCHorse.scaleAt(HO, b.y) * z, op = b.hideT != null ? 1 - sm((t - b.hideT) / 0.45) : backOut((t - b.t0) / 0.45);
       paperSquare(p[0], p[1] - 0.3 * k, 30 * z * (b.hideT != null ? sm((t - b.hideT - 0.3) / 0.2) * (1 - sm((t - b.hideT - 0.5) / 0.2)) : (1 - sm((t - b.t0 - 0.25) / 0.2))), t, 1);
-      if (!F.b3) bucketArt(p[0], p[1], k, b.level, Math.max(0, op), b.lh); }
+      if (!F.b3) bucketArt(p[0], p[1], k, b.level, Math.max(0, op), b.lh, F.gold); }
     if (F && F.handT != null && F.itemW) {
       const q = toS(F.itemW), k = TCHorse.scaleAt(HO, BR.y) * z, uo = (t - F.handT) / 0.5, uc = F.handHide != null ? (t - F.handHide) / 0.5 : -1;
       const open = uc >= 0 ? 1 - sm(uc / 0.6) : backOut((uo - 0.3) / 0.6), a = uc >= 0 ? 1 - sm((uc - 0.4) / 0.4) : 1;
       const n = P('nose'), w2 = P('withers'), side = n && w2 && n[0] > w2[0] ? 1 : -1;
       if (F.kind === 'apple') {         
-        const ax = q[0] + side * 0.14 * k; hand(ax + side * 0.04 * k, q[1] + 0.16 * k, 62, side * 0.3, 1, a, Math.max(0, open)); appleArt(ax, q[1], 0.2 * k, F.bites, a * sm(uo / 0.6), side > 0);
+        const ax = q[0] + side * 0.14 * k; hand(ax + side * 0.04 * k, q[1] + 0.16 * k, 62, side * 0.3, 1, a, Math.max(0, open)); appleArt(ax, q[1], 0.2 * k, F.bites, a * sm(uo / 0.6), side > 0, F.gold);
       } else {                         
         const L = 0.7 * k, len = L * (1 - 0.27 * Math.min(3, F.bites)), dx = side * 0.96, dy = -0.27, T = [q[0] + dx * len, q[1] + dy * len];
         const Hp = mixP(T, q, 0.3); hand(Hp[0], Hp[1] + 0.13 * k, 62, side * 0.25, 1, a, Math.max(0, open));
@@ -3189,7 +3235,7 @@ const TCCare = (() => {
         const d = 1.0; if (u > d) continue; const q = toS(f.w);
         for (let i = 0; i < 4; i++) { const v = (u - i * 0.12) / 0.7; if (v <= 0 || v >= 1) continue; star(q[0] + (hash(i * 5.1) - 0.5) * 140 * z, q[1] - (10 + 50 * hash(i * 2.2)) * z, 18 * z * Math.sin(Math.PI * v), v, 0.95, '#fff2bf'); }
       } else if (f.k === 'glint') {    
-        const d = f.dur; if (u > d || !S.feed || !S.feed.itemW) continue; const q = toS(S.feed.itemW);
+        const d = f.dur, w0 = S.feed && (S.feed.itemW || S.feed.glintW); if (u > d || !w0) continue; const q = toS(w0);
         for (let i = 0; i < 4; i++) { const v = ((u * 0.8 + i / 4) % 1); star(q[0] + (hash(i * 3.3) - 0.5) * 120 * z, q[1] + (hash(i * 7.1) - 0.5) * 120 * z, 12 * z * Math.sin(Math.PI * v), v * 2, 0.9 * (1 - sm((u - d + 0.4) / 0.4))); }
       } else if (f.k === 'luck') {     
         const d = f.dur; if (u > d) continue; const a = 1 - sm((u - d + 0.4) / 0.4), s2 = backOut(u / 0.3);
@@ -3232,6 +3278,7 @@ const TCCare = (() => {
     g = G0 = o.canvas.getContext('2d'); S.on = true;      
     apple = new Image(); apple.src = AP('tc_items/tc_item_apple.webp'); try { await apple.decode(); } catch (e) { }
     bucket = new Image(); bucket.src = AP('tc_items/tc_item_bucket.webp'); try { await bucket.decode(); } catch (e) { }      
+    PROPG = null; appleG = null;      
     if (o.props !== false) PROPS = await loadProps();      
     carrot = new Image(); carrot.src = AP('tc_items/tc_item_carrot.webp'); carrotG = new Image(); carrotG.src = AP('tc_items/tc_item_carrot_gold.webp');      
     try { await Promise.all([carrot.decode(), carrotG.decode()]); } catch (e) { }
@@ -3321,7 +3368,8 @@ const TCGuide = (() => {
   
   
   
-  const ZONE = { d: 699, start: 1000, add: 2000, rate: 0.6, max: 12 };
+  
+  const ZONE = { d: 799, start: 1000, add: 2000, rate: 0.6, max: 12 };
   const ZV = n => ZONE.start + ZONE.add * n, ZP = n => (n < ZONE.max ? Math.pow(ZONE.rate, n) * (1 - ZONE.rate) : Math.pow(ZONE.rate, ZONE.max));      
   const ZAVG = Array.from({ length: ZONE.max + 1 }, (_, n) => ZV(n) * ZP(n)).reduce((a, b) => a + b, 0);
   const cm = v => Math.round(v).toLocaleString('ja-JP');
@@ -3329,9 +3377,12 @@ const TCGuide = (() => {
   
   const GEKI = { d: 299999, v: 40000 };
   const GROW = R(GEKI.d, `<span class="gk">激馬熱馬</span>（${cm(GEKI.v)}P）`);
-  const CARE = [15, 25, 55, 95, 99, 121, 125, 245, 399, 600, ZONE.d, GEKI.d];      
   
-  const TOK = { every: 5, step: 5, max: 25 };
+  const RTD = [225, 345, 499], TKD = 700;
+  const CARE = [15, 25, 55, 95, 99, 121, RTD[0], RTD[1], RTD[2], TKD, ZONE.d, GEKI.d];      
+  
+  
+  const TOK = { every: 8, step: 5, max: 25 };
   const PACKS = ((typeof window !== 'undefined' && window.TengelPoints && window.TengelPoints.TOKEN_PACKS) || [[1, 100], [5, 500], [10, 1000], [15, 1500], [20, 2000], [25, 2500]]).map(x => x.slice());
   
   const DP = { name: 'お世話チャレンジ', balls: 5, tone: [['青', '#2f7fe0', '10P〜300P'], ['緑', '#2f9f4a', 'ルーレット（800P か 1600P）'], ['紫', '#8a4ad8', 'ルーレット（1600P か 3200P）'], ['赤', '#d8352c', 'ルーレット（3200P か 6400P）'],
@@ -3350,7 +3401,7 @@ const TCGuide = (() => {
     ['選', '#c98a1c', '抽選をする／しない', `<p>・「ご飯」「お掃除」を押すと、先に<b>「抽選を する」「抽選を しない」</b>を選ぶよ</p>
       <p>　<b>抽選を する</b> → お世話が終わるとPUSHが出る（トークンを使って抽選）</p>
       <p>　<b>抽選を しない</b> → お世話だけ（PUSHは出ない・<b>トークンは使わない</b>・0個でもできる）</p>
-      <p data-n="nolot" class="note">「抽選を しない」お世話は、お世話の回数（馬の育ち・馬のリセット・ミッション）には数えないよ。金のニンジンも出ないよ</p>`],
+      <p data-n="nolot" class="note">「抽選を しない」お世話は、お世話の回数（馬の育ち・馬のリセット・ミッション）には数えないよ。金のエサ・金のリンゴ・金のニンジンも出ないよ</p>`],
     ['押', '#d8352c', 'お世話の後のPUSH', `<p>・ご飯・お掃除（<b>「抽選を する」</b>を選んだとき）が終わると<b>PUSH</b>が出るよ。押すと<b>トークンを1つ</b>使って抽選！</p>
       <p>・当たりは押したときに出るよ（ハズレは「プフォ」の音だけ）</p>
       <p>・PUSHの横のスイッチで<b>「1個 使う」「まとめて 使う」</b>を選べる（前に選んだ方を覚えているよ）</p>
@@ -3374,8 +3425,8 @@ const TCGuide = (() => {
       <p class="note">途中でアプリを閉じても、たまった当たりはなくならないよ（次に開いたときに「保留結果を見る」から）</p>`],
     ['P', '#e0a020', 'お世話でポイントGETチャンス', `<p>ご飯・お掃除の後の<b>PUSH</b>を押すたびに抽選！</p>
       <table data-tab="care">${R(15, PT(10))}${R(25, PT(20))}${R(55, PT(50))}${R(95, PT(100))}${R(99, PT(200))}${R(121, PT(300))}
-      ${R(125, RT(800, 1600))}${R(245, RT(1600, 3200))}${R(399, RT(3200, 6400))}
-      ${R(600, '<span class="tk">チケット</span>（壁紙 or ' + TKP + 'P・1〜3枚）')}${ZROW}${GROW}</table>
+      ${R(RTD[0], RT(800, 1600))}${R(RTD[1], RT(1600, 3200))}${R(RTD[2], RT(3200, 6400))}
+      ${R(TKD, '<span class="tk">チケット</span>（壁紙 or ' + TKP + 'P・1〜3枚）')}${ZROW}${GROW}</table>
       <p class="note" data-n="sum">全部 合わせて ${pc(1 / CARE.reduce((a, d) => a + 1 / d, 0))}（何か 当たる）</p>
       <p class="note">ルーレットは どちらも 50%</p>
       <p class="note">チケットは 3枚 ${pc(8)}・2枚 ${pc(3)}・1枚 ${pc(24, 13)}</p>
@@ -3395,11 +3446,11 @@ const TCGuide = (() => {
       <p>・<b>お世話チャレンジ</b>で当たると、馬バレがプチュン！→「激馬熱馬」→<b>「保留結果を見る」</b>で天国へ</p>
       <p class="note">途中でアプリを閉じても、次に開いたときに受け取れるよ</p>`],
     ['撫', '#e86a92', '撫でる → 仲良しハート', `<p>・3回なでると<b>ハート＋1</b></p><p>・続けて<b>5回</b>まで → 5回なでたら<b>7秒</b>お休み</p><p>・ハートは<b>1分に5個</b>まで</p>
-      <p>・ハート<b>10個</b>で抽選（<b>${pc(66)}</b>・1/66）</p><p>　当たり → <b>ぴょん！</b> お世話トークン<b>×5</b></p><p>　ハズレ → ふぅ〜</p>
+      <p>・ハート<b>10個</b>で抽選（<b>${pc(22)}</b>・1/22）</p><p>　当たり → <b>ぴょん！</b> お世話トークン<b>×5</b></p><p>　ハズレ → ふぅ〜</p>
       <p>・抽選は<b>お世話トークンが20こ未満</b>のときだけ。<b>20こ以上</b>（最大の25個も）のときは、ハートが10個たまっても<b>抽選まち</b> → PUSHを押してトークンが<b>20個を切ったら</b>抽選がはじまるよ</p>
       <p class="note">トークンは最大25個まで。25個のときに撫でると「お世話トークンが最大だよ！」と出るよ</p>`],
     ['呼', '#5aa7c4', '呼ぶ', `<p>・「近づいてくる」「振り向く」「甘える」のどれか（${pc(3)}ずつ・1/3）</p><p>・続けて<b>5回</b>まで → 5回呼んだら<b>7秒</b>お休み</p>`],
-    ['食', '#e07a3a', 'ご飯', `<p>・エサ・リンゴ・ニンジンから選ぶ</p><p>・<b>今日の好物</b>だと大喜び</p><p>・<b>金のニンジン</b>（ニンジンの${pc(30)}・1/30）→ 仲良しハート<b>＋3</b></p>`],
+    ['食', '#e07a3a', 'ご飯', `<p>・エサ・リンゴ・ニンジンから選ぶ</p><p>・<b>今日の好物</b>だと大喜び</p><p>・<b>金のエサ・金のリンゴ・金のニンジン</b>（それぞれ${pc(30)}・1/30）→ 仲良しハート<b>＋3</b></p>`],      
     
     ['掃', '#6aa86a', 'お掃除', `<p>・<b>15分ごと</b>にゴミが<b>5か所</b>に散らばる（片付けるまで次のゴミは出ない）</p><p>・うんちは2分ごとに<b>${pc(7)}</b>（1/7）で出る</p><p>・お掃除できるのは<b>ゴミかうんちがあるとき</b>だけ</p><p>・<b>ほうき</b>と<b>ちりとり</b>は、指でつかんで好きな所へ運べるよ</p><p>・ほうきでゴミを押して、ちりとりへ 掃き入れよう（1回で全部片付く）</p><p>・<b>金のうんち</b>（うんちの${pc(20)}・1/20）→ 運がついた！<b>高確ゾーン</b>（お世話5回）</p>`],
     ['★', '#8a62c8', '2分ごとのチャンス', `<p>・<b>高確ゾーン</b> ${pc(50)}（1/50・お世話5回の間当たりやすい）</p>`],
@@ -5843,7 +5894,8 @@ const TCApp = (() => {
   
   
   
-  const TOKEN_MIN = 5, TOKEN_STEP = 5, TOKEN_MAX = 25;
+  
+  const TOKEN_MIN = 8, TOKEN_STEP = 5, TOKEN_MAX = 25;
   const TICK = 120;                                   
   
   
@@ -5872,7 +5924,8 @@ const TCApp = (() => {
   
   
   
-  const ZONE = { d: 699, start: 1000, add: 2000, rate: 0.6, max: 12 };
+  
+  const ZONE = { d: 799, start: 1000, add: 2000, rate: 0.6, max: 12 };
   const zoneV = n => ZONE.start + ZONE.add * Math.max(0, Math.min(ZONE.max, Math.round(+n) || 0));      
   const zoneRoll = () => { let n = 0; while (n < ZONE.max && Math.random() < ZONE.rate) n++; return n; };
   
@@ -5887,7 +5940,11 @@ const TCApp = (() => {
     
     
     
-    [1 / 600, { k: 'tk' }], [1 / 399, { k: 'rt', tier: 'kamisama' }], [1 / 245, { k: 'rt', tier: 'maboroshi' }], [1 / 125, { k: 'rt', tier: 'normal' }],
+    
+    
+    
+    
+    [1 / 700, { k: 'tk' }], [1 / 499, { k: 'rt', tier: 'kamisama' }], [1 / 345, { k: 'rt', tier: 'maboroshi' }], [1 / 225, { k: 'rt', tier: 'normal' }],
     
     
     
