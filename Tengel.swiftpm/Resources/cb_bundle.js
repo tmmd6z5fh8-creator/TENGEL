@@ -145,6 +145,13 @@
 
 
 
+
+
+
+
+
+
+
 const CBRules = (() => {
   'use strict';
   const NUMS = ['1', '2', '3', '4', '5', '6', '7'], KINDS = NUMS.concat(['k', 'm']);
@@ -250,7 +257,9 @@ const CBRules = (() => {
   
   
   
-  const x3Pool = (S, i) => { const P = S.p[i], Q = S.p[1 - i]; return Q.hand.filter(c => !c.tok && P.known.indexOf(c.u) < 0).map(c => c.u); };
+  
+  
+  const x3Pool = (S, i) => { const Q = S.p[1 - i]; return Q.hand.filter(c => !c.tok).map(c => c.u); };
   const canX3 = (S, i) => { const P = S.p[i]; return S.phase === 'set' && !P.set && P.x3 !== S.turn && count(P.hand, '3') >= 3 && P.hand.some(c => c.k === '3' && !c.tok) && x3Pool(S, i).length >= 1; };
   
   const can5 = (S, i) => { const P = S.p[i]; return !!P.set && !P.set.blind && P.set.c.k === '5' && P.hand.length >= 1 && S.deck.length >= 1 && P.hand.some(c => dropOk(S, P, c)); };
@@ -673,11 +682,23 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBRules;
 
 
 
+
+
+
 const CBCpu = (() => {
   'use strict';
   const power = (k, rv) => (k === 'k' || k === 'm' ? 0 : rv ? 8 - +k : +k);      
   const byStrong = (hand, rv) => hand.slice().sort((a, b) => power(a.k, rv) - power(b.k, rv) || a.u - b.u);      
   const pick = (a, rng) => a[Math.floor(rng() * a.length)];
+  
+  function x3Pick(v, rng) {
+    const rv = !!v.rv, ok = c => v.can.x3p.indexOf(c.u) >= 0;
+    const vis = v.op.hand.filter(c => c.k != null && !c.tok && ok(c)).sort((a, b) => power(a.k, rv) - power(b.k, rv) || a.u - b.u);
+    const back = v.op.hand.filter(c => c.k == null && ok(c));
+    if (vis.length && power(vis[0].k, rv) <= 2) return vis[0].u;      
+    if (back.length) return pick(back, rng).u;                         
+    return vis.length ? vis[0].u : pick(v.can.x3p, rng);               
+  }
 
   function decide(v, rng) {
     rng = rng || Math.random;
@@ -716,7 +737,7 @@ const CBCpu = (() => {
     if (v.phase !== 'set' || !v.can.set) return null;
     if (v.can.x7r) return { t: 'x7r' };                 
     if (v.can.x7 && !rv) return { t: 'x7' };            
-    if (v.can.x3 && v.can.x3p.length && rng() < (v.turn >= 2 ? 0.55 : 0.35)) return { t: 'x3', pick: pick(v.can.x3p, rng) };      
+    if (v.can.x3 && v.can.x3p.length && rng() < (v.turn >= 2 ? 0.55 : 0.35)) return { t: 'x3', pick: x3Pick(v, rng) };      
     const s = byS(hand), left = v.turns - v.turn + 1;          
     const top = s.slice(0, Math.min(left, s.length));
     if (hand.length - 2 >= v.turns - v.turn && hand.length - 1 >= 1 && v.deckN >= 1) {          
@@ -780,9 +801,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBCpu;
 
 
 
+
+
 const CBNet = (() => {
   'use strict';
-  const R = CBRules, PROTO = 14, MAXLEN = 20000;      
+  const R = CBRules, PROTO = 15, MAXLEN = 20000;      
   
   const STAKE_MAX = 100;                               
   function stakeOf(k) {
@@ -1014,6 +1037,10 @@ const CBNet = (() => {
 if (typeof module !== 'undefined' && module.exports) module.exports = CBNet;
 
 ;
+
+
+
+
 
 
 
@@ -2286,7 +2313,7 @@ const CBApp = (() => {
     if (x.e === 'u5') return { k: '5', t: '5 の 効果', n: '捨てて 山札から セット', d: 'セットした 5 と 手札 1枚を 捨てて、山札から 1枚 伏せて セットするよ' };
     if (x.e === 'x7') return x.tok ? { k: 't7', t: '7 の 効果', n: '3枚 引く', d: '7トークン（3頭分）を 見せて 捨てて、山札から 3枚 引くよ' } : { k: '7', t: '7 の 効果', n: '3枚 交換', d: '7 を 3枚 山札に 戻して、新しく 3枚 引くよ' };      
     if (x.e === 'x7r') return x.drop && x.drop.tok ? { k: 't7', t: '7 の 効果', n: '強さ 逆転', d: '7 を 4枚 ぶん 見せて（7トークンは 3頭分）、トークンを 捨てるよ。この 対戦が 終わる まで、数字の 強さが 逆に なる！' } : { k: '7', t: '7 の 効果', n: '強さ 逆転', d: '7 を 4枚 見せて 1枚 捨てるよ。この 対戦が 終わる まで、数字の 強さが 逆に なる！' };
-    if (x.e === 'x3') return { k: '3', t: '3 の 効果', n: '手札を 交換', d: x.three && x.three.length < 3 ? `3トークン（2頭分）と 3 で 3枚 ぶん 見せて、本物の 3 と ${yours} 手札から 選んだ 1枚（裏の カード）を 交換するよ` : `3 を 3枚 見せて、その 1枚と ${yours} 手札から 選んだ 1枚（裏の カード）を 交換するよ` };      
+    if (x.e === 'x3') return { k: '3', t: '3 の 効果', n: '手札を 交換', d: x.three && x.three.length < 3 ? `3トークン（2頭分）と 3 で 3枚 ぶん 見せて、本物の 3 と ${yours} 手札から 選んだ 1枚を 交換するよ` : `3 を 3枚 見せて、その 1枚と ${yours} 手札から 選んだ 1枚を 交換するよ` };      
     if (x.e === 'first') return { k: '4', t: '4 の 効果', n: '強制 交換', d: x.me ? `4 を 先に 見せたよ。${W}は セットした カードを 交換するよ` : '4 を 先に 見せたよ。あなたは セットした カードを、手札の 別の カードと 交換してね' };
     if (x.e === 'first2') return { k: '4', t: '4 の 効果', n: '打ち消して ドロー', d: '2人とも 4 の 効果を 使った ので、打ち消しあって この ターンは ドロー（引き分け）だよ', both: true };
     if (x.e === 'k') return { k: x.tok ? tokP('k') : 'k', t: `${kmN('k', x.tok)}の 効果`, n: '手札を 1枚 見る', d: `前の ターンに ${kmN('k', x.tok)}で 勝った ので、${yours} 手札を 1枚 見るよ` };      
@@ -2401,7 +2428,7 @@ const CBApp = (() => {
       + ef('m', '幻の馬：手札を 入れかえ', '勝った 次の ターンの 始め', `${many('m', 1)}<em>幻の馬で 勝つ</em>`, '手札を <b>2枚 捨てて</b>、山札から <b>2枚 引ける</b>よ')
       + ef('1', '1：逆転勝利', 'オープンの 後', `${many('1', 3)}<em>場の 1 ＋ 手札の 1 が 2枚</em>`, '1 を 出して <b>神様馬・幻の馬に 負けた</b> とき、手札の 1 を 2枚 見せて 1枚 捨てると <b>勝ちに できる</b>よ')
       + ef('2', '2：逆転勝利', 'オープンの 後', `${many('2', 3)}<em>場の 2 ＋ 手札の 2 が 2枚</em>`, '2 を 出して <b>1 に 負けた</b> とき、手札の 2 を 2枚 見せて 1枚 捨てると <b>勝ちに できる</b>よ<br><small>1・2 とも、捨てた 後の 手札が 残りの ターンの 数より 少なく ならない とき だけ</small>')
-      + ef('3', '3：3枚 見せて 交換', 'セットの 前', `${many('3', 3)}<em>手札に 3 が 3枚</em>`, '3枚を 見せて、その 1枚と、相手の 手札の <b>裏の カードから 自分で 選んだ 1枚</b>を 交換（何が 来るかは わからない）。もう 見た カードは 選べないよ<br><small>手札に あれば 使える（3 を セットしなくて いい）</small>')
+      + ef('3', '3：3枚 見せて 交換', 'セットの 前', `${many('3', 3)}<em>手札に 3 が 3枚</em>`, '3枚を 見せて、その 1枚と、相手の 手札から <b>自分で 選んだ 1枚</b>を 交換。<b>見えて いる カード</b>（もう 見た カード）も 選べるよ（裏の カードは 何が 来るか わからない）<br><small>手札に あれば 使える（3 を セットしなくて いい）・トークンは 選べない</small>')
       + ef('4', '4：見せて 強制交換', '効果タイム（いちばん 後）', `${many('4', 1)}<em>4 を セット</em>`, '4 を 先に 見せる かわりに、<b>相手は セットした カードを 手札の 別の カードと 交換</b>しないと いけないよ。<b>2人とも 4 の 効果を 使ったら</b> その ターンは <b>ドロー</b>。交換で 5 を セットしたら、5 の 効果も 使えるよ<br><small>4 は 一番 後：相手が 5 の 効果で 山札から 伏せた カードも 交換に なるよ</small>')
       + ef('5', '5：山札から 伏せて セット', '効果タイム', `${many('5', 1)}<em>5 を セット</em>`, '<b>5 と 手札 1枚を 捨てて</b>、山札から 1枚を <b>伏せて セット</b>。何が 出るかは オープンまで 分からない！<br><small>使った 後の 手札が 残りの ターンの 数より 少なく ならない とき だけ（最後の ターンは、手札が 1枚 あれば 使える）</small>')
       + ef('6', '6：相手の 手札を 見る', 'ターンの 始め', `${many('6', 2)}<em>手札に 6 が 2枚</em>`, '2枚を 相手に 見せて、<b>相手の 手札を 1枚 選んで 見る</b>よ。見てから セットする カードを 選べる。相手の 手札が もう 見た カード だけの ときは 使えないよ')
@@ -2986,7 +3013,7 @@ const CBApp = (() => {
   
   const EFFQ = { x7: '7', x3: '3', u5: '5', u4: '4' };      
   const EFFTXT = { 6: '6 を 2枚 見せて、相手の 手札を 1枚 見られるよ', 5: '5 と 手札 1枚を 捨てて、山札から 1枚 セットできるよ', 7: '7 を 3枚 山札に 戻して、新しく 3枚 引けるよ',
-    3: '3 を 3枚 見せて、その 1枚と 相手の 手札の 1枚（裏の カードから 選ぶ）を 交換できるよ', 4: '4 を 見せて、相手に カードを 交換させるよ' };
+    3: '3 を 3枚 見せて、その 1枚と 相手の 手札の 1枚（見えて いる カードも 選べる）を 交換できるよ', 4: '4 を 見せて、相手に カードを 交換させるよ' };
   const EFFBAR = { 3: '3 を 3枚 見せて、手札を 1枚 交換できるよ' };
   const effQ = q => `${q} の 効果を 使う？`;      
   const effBtn = q => `${q} の 効果を 使う`;
@@ -3300,7 +3327,7 @@ const CBApp = (() => {
   const tokIn = k => (V && V.my.hand.find(c => c.tok && c.k === k)) || null;      
   const effKey = q => ((q === '7' || q === '3') && tokIn(q) ? tokP(q) : effK(q));
   const effBar = q => (q === '7' && tokIn('7') ? '7トークン（3頭分）を 見せて 捨てると、山札から 3枚 引けるよ' : q === '3' && tokIn('3') ? '3トークン（2頭分）と 3 を 見せて、本物の 3 を 交換できるよ' : EFFBAR[q] || EFFTXT[q]);      
-  const effText = q => (q === '7' && tokIn('7') ? '7トークン（3頭分）を 見せて 捨てて、山札から 3枚 引けるよ（トークンは 山札に 戻せないので 捨てる）' : q === '3' && tokIn('3') ? '3トークン（2頭分）と 3 で 3枚 ぶん 見せて、本物の 3 と 相手の 手札の 1枚（裏の カードから 選ぶ）を 交換できるよ' : EFFTXT[q]);
+  const effText = q => (q === '7' && tokIn('7') ? '7トークン（3頭分）を 見せて 捨てて、山札から 3枚 引けるよ（トークンは 山札に 戻せないので 捨てる）' : q === '3' && tokIn('3') ? '3トークン（2頭分）と 3 で 3枚 ぶん 見せて、本物の 3 と 相手の 手札の 1枚（見えて いる カードも 選べる）を 交換できるよ' : EFFTXT[q]);
   function askInfo() {
     const v = V; if (!v || ended || !match) return null;
     if (mode.k === 'idle' && v.can.six) return { id: `s${gameNo}.${v.turn}`, k: '6', head: SIX.head, q: SIX.q, text: SIX.text, yes: 'sixyes', no: 'sixno' };      
@@ -3352,12 +3379,15 @@ const CBApp = (() => {
     const v = V;
     
     
+    
+    
     const seen = v.op.hand.some(c => c.k), x3 = kind === 'x3', ok = c => (x3 ? v.can.x3p.indexOf(c.u) >= 0 : !c.k);
     const head = kind === 'p6' ? '6 の 効果' : x3 ? '3 の 効果' : kmN('k', v.pend && v.pend.tok) + 'の 効果';
-    const txt = x3 ? `交換する カードを 1枚 選んでね<br>（相手の 手札の 裏の カード：何が 来るかは わからないよ）<br>${tokIn('3') ? '3トークン（2頭分）と 3 を 見せて、本物の 3 を 1枚 わたすよ' : '手札の 3 を 3枚 相手に 見せて、1枚 わたすよ'}`
+    const txt = x3 ? `交換する カードを 1枚 選んでね<br>（見えて いる カードも 選べるよ。裏の カードは 何が 来るか わからないよ）<br>${tokIn('3') ? '3トークン（2頭分）と 3 を 見せて、本物の 3 を 1枚 わたすよ' : '手札の 3 を 3枚 相手に 見せて、1枚 わたすよ'}`
       : `見たい カードを 1枚 選んでね${kind === 'p6' ? '<br>（手札の 6 を 2枚 相手に 見せるよ）' : ''}`;
-    modal(`<h3 class="gold">${head}</h3><p>${txt}${seen ? '<br>もう 見た カードは 選べないよ' : ''}</p>`
-      + `<div class="pick">${v.op.hand.map(c => cardBtn({ u: c.u, k: c.k }, (c.k ? 'knw' : '') + (ok(c) ? ' tg' : ''), ok(c) ? ` data-cb="pick" data-kind="${kind}"` : ' disabled', 'op')).join('')}</div>`      
+    const note = x3 ? (v.op.hand.some(c => c.k && !ok(c)) ? '<br>トークンは 選べないよ' : '') : seen ? '<br>もう 見た カードは 選べないよ' : '';
+    modal(`<h3 class="gold">${head}</h3><p>${txt}${note}</p>`
+      + `<div class="pick">${v.op.hand.map(c => cardBtn({ u: c.u, k: c.k, tok: c.tok }, (c.k && !ok(c) ? 'knw' : '') + (ok(c) ? ' tg' : ''), ok(c) ? ` data-cb="pick" data-kind="${kind}"` : ' disabled', 'op')).join('')}</div>`      
       + '<div class="col"><button type="button" class="cbb dk" data-cb="modx">戻る</button></div>', x3 ? 'cbx3' : '');
   }
   
@@ -3534,9 +3564,9 @@ const CBApp = (() => {
     if (a === 'modex') { mode = { k: 'idle' }; render(); return; }
     if (a === 'kgo') return pickModal('k');
     if (a === 'pick') {
+      if (b.dataset.kind === 'x3') { if (!v.can.x3 || v.can.x3p.indexOf(u) < 0 || mode.k !== 'idle') return; se('tap', 0.6); return send({ t: 'x3', pick: u }); }      
       if (!v.op.hand.some(c => c.u === u && !c.k)) return;      
       if (b.dataset.kind === 'p6') { if (!v.can.six) return; return send({ t: 'p6', pick: u }); }      
-      if (b.dataset.kind === 'x3') { if (!v.can.x3 || v.can.x3p.indexOf(u) < 0 || mode.k !== 'idle') return; se('tap', 0.6); return send({ t: 'x3', pick: u }); }      
       return send({ t: 'k', pick: u });
     }
     if (a === 'kskip') return send({ t: 'k', pick: null });
