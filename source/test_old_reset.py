@@ -199,12 +199,12 @@ try:
         e0 = pg.evaluate(INFO)
         check(all(x.endswith('消すものがないよ') for x in e0['opts']) and e0['dis'] == [True, True, True], f'消す ものが ない ときは えらべない（{e0["opts"]}）')
         pg.locator('#setOld [data-so=close]').click(); pg.wait_for_timeout(200)
-        # リセットの あとも ふつうに 使える：読み込み（400P）・開き直しても 同じ
+        # リセットの あとも ふつうに 使える：読み込み（800P：第4.230版）・開き直しても 同じ
         r1 = pg.evaluate("async () => { const x = await TengelWallet.readCharge({ form: { date: '2026-11-22', venue: 'テスト場', r: 1 }, ocr: {} }); return [x.ok, x.charged, TengelWallet.total(), TengelWallet.old.rows()]; }")
         pg.reload(); pg.wait_for_function("() => window.TengelWallet && TengelWallet.on && window.TengelOld", timeout=20000); pg.wait_for_timeout(900); gate(pg); pg.wait_for_timeout(500); tab(pg, 'set')
         f = pg.evaluate(INFO)
-        check(r1 == [True, True, 1600, 1] and f['total'] == 1600 and f['rows'] == 1 and f['ids'] == ['b2', 'b7'] and f['unl'] == [True, True, False] and f['figs'] == 1 and f['carry']['cnt'] == 12 and not errs and not dialogs,
-              f'リセットの あとも ふつうに 使える（読み込み 400P → 1,600P・履歴 1行）・開き直しても 同じ・エラー なし {errs[:2]}')
+        check(r1 == [True, True, 1200, 1] and f['total'] == 1200 and f['rows'] == 1 and f['ids'] == ['b2', 'b7'] and f['unl'] == [True, True, False] and f['figs'] == 1 and f['carry']['cnt'] == 12 and not errs and not dialogs,
+              f'リセットの あとも ふつうに 使える（読み込み 800P → 1,200P・履歴 1行）・開き直しても 同じ・エラー なし {errs[:2]}')
         ctx.close()
 
         # ================= 自動（3年）=================

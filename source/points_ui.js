@@ -2,7 +2,7 @@
 // 台帳の計算は points.js（TengelPoints）。ここは保存（アプリの中＝IndexedDB の meta 'wallet'・自動バックアップにも入る）と画面。
 //  ・アプリを消すと台帳も消える（5章）。キーチェーンには「しるし」だけ：初回プレゼント（gift-first）・サブスクのPを足した取引（granted-sub）
 //  ・App内課金（StoreKit 2）はアプリ（Store.swift）。台帳に書けたら finish をお願いする
-//  ・読み込み（画像の読み取り）1レース 400P（第4.212版：200P → 400P）。同じレースの読み直しは 0P（11.4）。5連の予想も 1レースごとに 400P（第4.212版：前は 5レースまとめて 200P）
+//  ・読み込み（画像の読み取り）1レース 800P（第4.212版：200P → 400P・第4.230版：400P → 800P）。同じレースの読み直しは 0P（11.4）。5連の予想も 1レースごとに 800P（第4.212版：前は 5レースまとめて 200P・第4.230版：400P → 800P）
 //  ・第4.212版（まさちゃん 2026/11/23）：値段は ぜんぶ points.js の COST から 出す（画面の 文も）・おもちゃ（お世話チャレンジ・TENGERカードバトル）の 解放（toy）・
 //    古い 履歴を まとめる（points.js の compact：3年より 前は 自動・「古い台帳をリセットする」は old_reset.js から）
 //  ・第4.91版：結果ボードカスタム（買い切り 2,200円・非消耗型）。買ったら 台帳に tx-<取引> の unlock（what＝board）。買った あとに 読み込んだ レースの 数（board.reads）で
@@ -1089,7 +1089,7 @@
     const c = document.createElement('div'); c.className = 'card setsec'; c.id = 'setTest';
     c.innerHTML = '<style>#setTest [data-test="sn"][aria-pressed="true"]{background:var(--primary);color:var(--primary-ink);border-color:var(--primary)}</style>'
       + '<h2>テスト版の道具</h2><p class="hint" style="margin:0 0 8px">この カードは テスト版だけ（App Store に 出す アプリには ない）。初めから 10,000P 入って いるよ。</p>'
-      + '<div class="row" style="margin-bottom:10px"><button type="button" class="btn" data-test="pts">10,000P 足す</button><button type="button" class="btn" data-test="pts100">上限（99,999P）まで 足す</button><button type="button" class="btn" data-test="ptcap">上限に そろえる</button><button type="button" class="btn" data-test="ptsub">サブスク 9,200P が 届いた ことに する</button></div>'
+      + '<div class="row" style="margin-bottom:10px"><button type="button" class="btn" data-test="pts">10,000P 足す</button><button type="button" class="btn" data-test="pts100">上限（99,999P）まで 足す</button><button type="button" class="btn" data-test="ptcap">上限に そろえる</button><button type="button" class="btn" data-test="ptsub">サブスク ' + yen(P.PRODUCTS['jp.tengel.app.sub9200'].points) + 'P が 届いた ことに する</button></div>'      // 第4.230版：数は 商品の 表から（12,500P）
       + '<p class="hint" style="margin:0 0 6px">的中ボタンを 試す（14頭・3連単 11→8→2 の 結果で 出す。くじは 引かない）</p>'
       + '<div class="row">' + TEST_FX.map(x => `<button type="button" class="btn" data-test="fx" data-kind="${x[0]}">${x[1]}</button>`).join('') + '</div>'
       + '<p class="hint" style="margin:10px 0 6px">絵の ボードの 段（連続の 数：的中は 連勝・ハズレは 回目）：<span id="testN"></span></p>'

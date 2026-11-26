@@ -286,14 +286,14 @@ for name, white in want.items():
 ok = ok and ((s.get("first") or {}).get("tint") or {}).get("color") == "#16203D" and ((s.get("back") or {}).get("tint") or {}).get("color") == "#16203D"
 print(" / ".join(out) + " -> " + ("OK" if ok else "CHECK " + json.dumps(s, ensure_ascii=False)[:700]))
 ' "$OUT/iphone-report-1.json" 2>&1)"
-  # 第4.212版：値段（初回 5,000P・読み込み 400P・5連も 1レース 400P・マザーデータの 枠 23,000P・おもちゃ 3,000P）・Pカスタムの「おもちゃを購入」（2つ）・
+  # 第4.212版：値段（初回 5,000P・読み込み 400P → 第4.230版：800P・5連も 1レース 800P・マザーデータの 枠 23,000P・おもちゃ 3,000P）・Pカスタムの「おもちゃを購入」（2つ）・
   #   設定の「古い台帳をリセットする」の カード（バックアップの すぐ 下・注意書き）・まとめて 消す 口（TengelLocal.delBets）が 本物の アプリの 画面に ある
   [ -f "$OUT/iphone-report-1.json" ] && say "   v212: $(python3 -c '
 import json, sys
 r = json.load(open(sys.argv[1])); v = r.get("v212") or {}; c = v.get("cost") or {}
 toys = [[t.get("id"), t.get("name")] for t in (v.get("toys") or [])]
 old = v.get("old") or ""
-ok = c.get("gift") == 5000 and c.get("read") == 400 and c.get("w5") == 400 and c.get("slot") == 23000 and c.get("toy") == 3000 and toys == [["drop", "お世話チャレンジ"], ["cb", "TENGERカードバトル"]] and v.get("toyItems") == 2 \
+ok = c.get("gift") == 5000 and c.get("read") == 800 and c.get("w5") == 800 and c.get("slot") == 23000 and c.get("toy") == 3000 and toys == [["drop", "お世話チャレンジ"], ["cb", "TENGERカードバトル"]] and v.get("toyItems") == 2 \
      and "古い台帳をリセットする" in old and "3年たった記録と履歴は、自動でリセットされるよ" in old and v.get("oldAfterBackup") is True and v.get("oldApi") == "object" and v.get("delBets") == "function" and not v.get("error")
 print("cost %s toys %s toy-items %s old-card %s after-backup %s api %s delBets %s auto-line %s -> %s" % (c, [t[0] for t in toys], v.get("toyItems"), bool(old), v.get("oldAfterBackup"), v.get("oldApi"), v.get("delBets"), ((v.get("oldState") or {}).get("f") or {}).get("line"), "OK" if ok else "CHECK " + json.dumps(v, ensure_ascii=False)[:300]))
 ' "$OUT/iphone-report-1.json" 2>&1)"

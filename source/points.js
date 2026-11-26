@@ -8,13 +8,18 @@
   'use strict';
   var DAY = 86400000;
   var PRODUCTS = {
-    'jp.tengel.app.points500': { kind: 'pack', points: 500, bonus: 0, name: '500ポイント', yen: 176 },
-    'jp.tengel.app.points1000': { kind: 'pack', points: 1000, bonus: 0, name: '1,000ポイント', yen: 352 },
-    'jp.tengel.app.points2000': { kind: 'pack', points: 2000, bonus: 0, name: '2,000ポイント', yen: 704 },
-    'jp.tengel.app.points4000': { kind: 'pack', points: 4000, bonus: 0, name: '4,000ポイント', yen: 1408 },
-    'jp.tengel.app.sub2000': { kind: 'sub', points: 2000, bonus: 0, name: '月2,000Pプラン', yen: 638 },
-    'jp.tengel.app.sub4400': { kind: 'sub', points: 4400, bonus: 400, name: '月4,400Pプラン', yen: 1276 },
-    'jp.tengel.app.sub9200': { kind: 'sub', points: 9200, bonus: 1000, name: '月9,200Pプラン', yen: 1914 },
+    // 第4.230版（まさちゃん 2026/11/27 01:07「金額変更 ポイント購入額 176円　400P 352円　800P 704円　1600P 1408円　3200P サクブス 1250円　3800P 1950円　7600P 3150円　12500P」・01:17「確実な単価にしていいよ！」）：
+    //   App Store の 日本の 値段は 2,000円までは 10円きざみ・それより 上は 100円きざみ（176円・3,150円 などは 選べない）→ 選べる 近い 値段に した：
+    //   パックは 176・352・704・1,408円 → 180・350・700・1,400円（800P から 上は ちょうど 2倍ずつ）・ポイントを 500・1,000・2,000・4,000 → 400・800・1,600・3,200P／
+    //   サブスクは 638・1,276・1,914円 → 1,250・1,950・3,200円・2,000・4,400・9,200 → 3,800・7,600・12,500P（おまけの 内わけは 出さない：bonus 0）。製品ID は 前の まま（App Store Connect に 登録した ID は かえられない・お客さんには 見えない）。
+    //   画面の 値段は App Store の 値段（StoreKit の displayPrice）を そのまま 出す（yen は 読めない ときの めやす）
+    'jp.tengel.app.points500': { kind: 'pack', points: 400, bonus: 0, name: '400ポイント', yen: 180 },
+    'jp.tengel.app.points1000': { kind: 'pack', points: 800, bonus: 0, name: '800ポイント', yen: 350 },
+    'jp.tengel.app.points2000': { kind: 'pack', points: 1600, bonus: 0, name: '1,600ポイント', yen: 700 },
+    'jp.tengel.app.points4000': { kind: 'pack', points: 3200, bonus: 0, name: '3,200ポイント', yen: 1400 },
+    'jp.tengel.app.sub2000': { kind: 'sub', points: 3800, bonus: 0, name: '月3,800Pプラン', yen: 1250 },
+    'jp.tengel.app.sub4400': { kind: 'sub', points: 7600, bonus: 0, name: '月7,600Pプラン', yen: 1950 },
+    'jp.tengel.app.sub9200': { kind: 'sub', points: 12500, bonus: 0, name: '月12,500Pプラン', yen: 3200 },
     // 第4.91版：結果ボードカスタム（買い切り・非消耗型）。1回 買えば ずっと（機種変更・入れ直しは「購入を復元」）
     //   第4.114版（まさちゃん 2026/11/01「拡張パックの値段変える！ 壁紙1500円 結果ボードカスタム1500円 お得パック 壁紙&結果ボードカスタム 2200円」）：1,500円に
     'jp.tengel.app.boardcustom': { kind: 'unlock', what: 'board', points: 0, bonus: 0, name: '結果ボードカスタム', yen: 1500 },
@@ -30,7 +35,8 @@
   //   ⑥マザーボードも1個解放に23000Pにして！ ⑦単勝5連勝も、1レースごとに400P消費するようにして！」・答え「1つずつ 3,000P」）：
   //   初回プレゼント 1,500 → 5,000P・読み込み 200 → 400P・5連の 予想は 1つの 予想で 200P → 1レースごとに 400P（読み込みと 同じ：points_ui.js の readCharge）・
   //   マザーデータの 枠 15,000 → 23,000P・おもちゃ（お世話チャレンジ・TENGERカードバトル）の 解放 1つ 3,000P（toy）
-  var COST = { gift: 5000, read: 400, w5: 400, type: 500, slot: 23000, toy: 3000 };
+  // 第4.230版（まさちゃん 2026/11/27 01:18「1レース読み込み800Pにして！」・答え「5連も800P」）：読み込み 400 → 800P・5連の 予想も 1レースごとに 400 → 800P（同じ レースの 読み直しは 0P の まま・数え方は 前の まま）
+  var COST = { gift: 5000, read: 800, w5: 800, type: 500, slot: 23000, toy: 3000 };
   // 第4.212版：おもちゃ（Pカスタムで 解放する 遊び）。解放の しるしは unlock-toy:<id>。drop＝お世話チャレンジ（トレーニングセンターの 玉を 落とす 台：tc/tc_app.js）・cb＝TENGERカードバトル（cb/cb_launch.js）
   var TOYS = [['drop', 'お世話チャレンジ'], ['cb', 'TENGERカードバトル']];
   function toyName(id) { for (var i = 0; i < TOYS.length; i++) if (TOYS[i][0] === id) return TOYS[i][1]; return ''; }

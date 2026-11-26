@@ -256,7 +256,7 @@ try:
         p5.evaluate("() => __pass(31 * 86400000)"); x1 = p5.evaluate("async () => { await TengelClock.sync(); return [TengelWallet.balance().paid_sub, TengelClock.how()]; }")
         p5.evaluate("() => __setDay(-31)"); x2 = p5.evaluate("async () => { await TengelClock.sync(); return [TengelWallet.balance().paid_sub, TengelClock.how()]; }")
         p5.evaluate("() => __setDay(0)"); p5.evaluate("() => TengelLogin.close()")
-        check(sub >= 9200 and x1 == [0, 'ok'] and x2 == [0, 'back'], f'サブスクの ポイント（{sub:,}P）：31日 たって 期限が 切れた（{x1}）→ iPhone の 日付を 31日 もどしても 使えない（{x2}）')
+        check(sub >= 12500 and x1 == [0, 'ok'] and x2 == [0, 'back'], f'サブスクの ポイント（{sub:,}P）：31日 たって 期限が 切れた（{x1}）→ iPhone の 日付を 31日 もどしても 使えない（{x2}）')
         # 第4.211版（抜け穴を ふさぐ）：トレーニングセンターの お世話トークン（5分で 5個・第4.230版から 8分で 5個・25個 まで）も 時計の 番人で 数える。
         #   前は iPhone の 時計（Date.now）だった ので、時刻を 25分 進める たびに 満タン（＝抽選 25回）に できた
         TKN = ("async (sync) => { if (sync) await TengelClock.sync(); await TengelClock.ready; "      # 第4.212版：トークンを わたす 口（TCGift）は なくした → トレーニングセンターの 部品を 読んで、いまの 数を 読む（tokens.now：ふやさない）

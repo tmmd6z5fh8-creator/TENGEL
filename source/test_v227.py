@@ -92,12 +92,15 @@ try:
 
         def open_ok(c):
             return c['closed'] is None and '締切済み' not in c['chips'] and '締切済み' not in c['msg'] and c['reserve'] == 1
+        # 第4.230版（まさちゃん 2026/11/27 01:18「1レース読み込み800Pにして！」・答え「5連も800P」）：この テストは 9レース 読む（800P × 9 ＝ 7,200P）→ はじめの 5,000P では 足りない ので テスト用に 4,000P 足す
+        g0 = pg.evaluate('TengelWallet.total()')
+        check(pg.evaluate("TengelWallet.grant('test-v227-read', 4000, 'テストの 足し')") is True and pg.evaluate('TengelWallet.total()') == g0 + 4000, f'テスト用に 4,000P 足す（9レース 読む ぶん：{g0} → {g0 + 4000}P）')
         t0 = pg.evaluate('TengelWallet.total()')
         # ① 画面に「まもなく締切」
         c1 = read(lines(9, extra=['まもなく締切']))
         print('   ①', {k: c1[k] for k in ('total', 'closed', 'date', 'start', 'r', 'reserve', 'chips')})
-        check(c1['r'] == '9' and c1['date'] == '2026-10-14' and c1['start'] == '18:05' and open_ok(c1) and c1['total'] == t0 - 400,
-              f'①「まもなく締切」の ある 9R（10月14日 18:05）→ 締切済みに しない・「買い目を予約」が 出る・読み込みは 400P（残り {c1["total"]}P）')
+        check(c1['r'] == '9' and c1['date'] == '2026-10-14' and c1['start'] == '18:05' and open_ok(c1) and c1['total'] == t0 - 800,
+              f'①「まもなく締切」の ある 9R（10月14日 18:05）→ 締切済みに しない・「買い目を予約」が 出る・読み込みは 800P（残り {c1["total"]}P）')
         c1b = read(lines(9, extra=['締切まで あと2分', '間もなく締め切ります']))
         check(c1b['total'] == c1['total'] and open_ok(c1b) and '0P' in c1b['msg'], '①「締切まで あと2分」「間もなく締め切ります」で 読み直しても 締切済みに しない（同じ レース 0P）')
         # ② 前の 日の 日付が 入力に 残って いる・画像に 日付なし・発走 18:05

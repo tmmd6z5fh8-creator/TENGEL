@@ -9,26 +9,27 @@ LEGAL = json.load(open(os.path.join(os.path.dirname(D), 'legal', 'legal.json'), 
 WEB = LEGAL['web']
 EULA = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/'   # Appleの標準の利用規約（自分の規約を作ったら差しかえる）
 
-# ---- ポイントとApp内課金（まさちゃんの指定。値段は税抜で決めたもの → 表示は税込＝×1.1） ----
+# ---- ポイントとApp内課金（まさちゃんの指定。第4.230版〈まさちゃん 2026/11/27 01:07〉から 値段は 税込で 持つ＝App Store の 日本の 値段・お客さんに 出る 値段） ----
 GIFT = 5000
-READ = 400      # 1レースの 読み込み（points.js の COST.read・COST.w5）
-USE = [('レースの判定（画像の読み取りから記録まで）', '1レース400P'), ('単勝5連勝', '1レースごとに400P'),
+READ = 800      # 1レースの 読み込み（points.js の COST.read・COST.w5：第4.230版 400 → 800P）
+USE = [('レースの判定（画像の読み取りから記録まで）', '1レース800P'), ('単勝5連勝', '1レースごとに800P'),
        ('Pカスタム：記録できる券種を増やす', '1つ500P'), ('自分だけのマザーデータを作る', '1つ23,000P'),
        ('おもちゃの解放（お世話チャレンジ・TENGERカードバトル）', '1つ3,000P'),
-       ('着せ替え（壁紙）の解放', '1枚4,500〜9,500P'), ('トレーニングセンターのお世話トークン', '1個100P'),
+       ('着せ替え（壁紙）の解放', '1枚6,500〜11,500P'), ('トレーニングセンターのお世話トークン', '1個100P'),
        ('思い出フィギュア', '1体22,000P（幻の馬＆神様馬は36,000P）')]      # 第4.212版：アプリの 中の 値段と 同じ（points.js の COST・TOKEN_PACKS・kisekae/build_kisekae.py の PRICE・fig_app.js の PRICE）
-PACKS = [  # 製品ID・参照名・表示名・説明・ポイント・税抜
-    ('jp.tengel.app.points500', 'ポイント500', '500ポイント', 'レースの判定などに使える500P', 500, 160),
-    ('jp.tengel.app.points1000', 'ポイント1000', '1,000ポイント', 'レースの判定などに使える1,000P', 1000, 320),
-    ('jp.tengel.app.points2000', 'ポイント2000', '2,000ポイント', 'レースの判定などに使える2,000P', 2000, 640),
-    ('jp.tengel.app.points4000', 'ポイント4000', '4,000ポイント', 'レースの判定などに使える4,000P', 4000, 1280),
+PACKS = [  # 製品ID（前の まま：App Store Connect の ID は かえられない）・参照名・表示名・説明・ポイント・税込（第4.230版：400・800・1,600・3,200P）
+    ('jp.tengel.app.points500', 'ポイント400', '400ポイント', 'レースの判定などに使える400P', 400, 180),
+    ('jp.tengel.app.points1000', 'ポイント800', '800ポイント', 'レースの判定などに使える800P', 800, 350),
+    ('jp.tengel.app.points2000', 'ポイント1600', '1,600ポイント', 'レースの判定などに使える1,600P', 1600, 700),
+    ('jp.tengel.app.points4000', 'ポイント3200', '3,200ポイント', 'レースの判定などに使える3,200P', 3200, 1400),
 ]
-SUBS = [  # 製品ID・参照名・表示名・説明・毎月のポイント・うちボーナス・税抜（1か月・自動更新）
-    ('jp.tengel.app.sub2000', '月2000Pプラン', '月2,000Pプラン', '毎月2,000Pが届く（1か月・自動更新）', 2000, 0, 580),
-    ('jp.tengel.app.sub4400', '月4400Pプラン', '月4,400Pプラン', '毎月4,400P（うちボーナス400P）が届く', 4400, 400, 1160),
-    ('jp.tengel.app.sub9200', '月9200Pプラン', '月9,200Pプラン', '毎月9,200P（うちボーナス1,000P）が届く', 9200, 1000, 1740),
+SUBS = [  # 製品ID（前の まま）・参照名・表示名・説明・毎月のポイント・うちボーナス・税込（1か月・自動更新。第4.230版：3,800・7,600・12,500P／1,250・1,950・3,200円）
+    ('jp.tengel.app.sub2000', '月3800Pプラン', '月3,800Pプラン', '毎月3,800Pが届く（1か月・自動更新）', 3800, 0, 1250),
+    ('jp.tengel.app.sub4400', '月7600Pプラン', '月7,600Pプラン', '毎月7,600Pが届く（1か月・自動更新）', 7600, 0, 1950),
+    ('jp.tengel.app.sub9200', '月12500Pプラン', '月12,500Pプラン', '毎月12,500Pが届く（1か月・自動更新）', 12500, 0, 3200),
 ]
-tax = lambda y: round(y * 1.1)
+tax = lambda y: y                  # 第4.230版：値段は もう 税込（前は 税抜 × 1.1）
+exc = lambda y: round(y / 1.1)     # 税抜の めやす（キットの 表 だけ）
 yen = lambda y: f'{y:,}円'
 
 NAME = 'テンゲル｜競馬予想・オッズ判定'
@@ -107,7 +108,7 @@ REVIEW_NOTES = '''This app analyzes horse-racing odds that the user enters (or r
 No real-money gambling: no betting, no ticket purchase, no link to any betting service, no cash-out. Users only record their own results and spending. For adults (18+); the first-launch notice (confirmed with 「はじめる」) says betting is 20+ in Japan, play responsibly, nothing is sold, no profit is promised.
 
 Points (in-app currency, never convertible to money):
-- 5,000 on first launch. Reading a race (5-race picks: per race): 400. Unlocks: record bet types 500, data slots 23,000, themes 4,500-9,500, the two mini games 3,000 each, care tokens 100 each, 3D memory figures 22,000/36,000. The built-in reference data shows percentages only.
+- 5,000 on first launch. Reading a race (5-race picks: per race): 800. Unlocks: record bet types 500, data slots 23,000, themes 6,500-11,500, the two mini games 3,000 each, care tokens 100 each, 3D memory figures 22,000/36,000. The built-in reference data shows percentages only.
 - Sold as consumable IAPs and monthly auto-renewable subscriptions (Settings > ポイント). Purchased points never expire; subscription points last 30 days. No free trial. Missions and a daily login bonus give points.
 - Points, unlocks and records stay on the device (the app warns before buying that deleting it erases them). Keychain markers stop the same gift being granted twice; a device-only Keychain ID, the system uptime and the Date header of an App Store lookup stop date changes from re-granting bonuses.
 - Non-consumables: 壁紙パック (1,500 yen, 10 themes), 結果ボードカスタム (1,500 yen, 12 board designs, one per 6 races read after buying), お得パック (2,200 yen, both; offered only while the user owns neither). 「購入を復元」 restores them.
@@ -177,9 +178,9 @@ def check():
 
 
 IAP = {
-    'consumable': [{'id': p[0], 'ref': p[1], 'name': p[2], 'desc': p[3], 'points': p[4], 'ex': p[5], 'inc': tax(p[5])} for p in PACKS],
+    'consumable': [{'id': p[0], 'ref': p[1], 'name': p[2], 'desc': p[3], 'points': p[4], 'ex': exc(p[5]), 'inc': tax(p[5])} for p in PACKS],
     'subs_group': 'テンゲル ポイントのサブスク',
-    'subs': [{'id': s[0], 'ref': s[1], 'name': s[2], 'desc': s[3], 'points': s[4], 'bonus': s[5], 'ex': s[6], 'inc': tax(s[6]), 'level': 3 - i} for i, s in enumerate(SUBS)],
+    'subs': [{'id': s[0], 'ref': s[1], 'name': s[2], 'desc': s[3], 'points': s[4], 'bonus': s[5], 'ex': exc(s[6]), 'inc': tax(s[6]), 'level': 3 - i} for i, s in enumerate(SUBS)],
     'use': USE, 'gift': GIFT,
 }
 ANSWERS = {
@@ -194,15 +195,16 @@ ANSWERS = {
         'データを収集していますか？：「いいえ」（記録・設定・画像は端末の中だけ。購入はAppleが処理して、開発者は受け取らない）',
         '紹介特典などでサーバーを使うときは「収集している」に変わる（ID・購入など）。そのときはプライバシーポリシーも直す',
     ],
-    'App内課金（App Store Connect の「App内課金」）': [f'{p[1]}：製品ID {p[0]}・消耗型・表示名「{p[2]}」・説明「{p[3]}」・価格 {yen(tax(p[5]))}（税抜{yen(p[5])}）' for p in PACKS] + [
+    'App内課金（App Store Connect の「App内課金」）': [f'{p[1]}：製品ID {p[0]}・消耗型・表示名「{p[2]}」・説明「{p[3]}」・価格 {yen(tax(p[5]))}（税込）' for p in PACKS] + [
         '非消耗型：製品ID jp.tengel.app.wallpack1・参照名「壁紙パック」・表示名「壁紙パック」・価格 1,500円（第4.92版）',
         '非消耗型：製品ID jp.tengel.app.boardcustom・参照名「結果ボードカスタム」・表示名「結果ボードカスタム」・価格 1,500円（第4.114版：2,200円 → 1,500円に 変える）',
         '非消耗型：製品ID jp.tengel.app.bundle1・参照名「お得パック」・表示名「お得パック（壁紙パックと結果ボードカスタム）」・価格 2,200円（第4.114版：新しく 作る。アプリは 持って いれば 2つとも 持って いる 扱い）',
     ],
-    'サブスクリプション（グループ「テンゲル ポイントのサブスク」）': [f'{s[1]}：製品ID {s[0]}・1か月・表示名「{s[2]}」・説明「{s[3]}」・価格 月額{yen(tax(s[6]))}（税抜{yen(s[6])}）・レベル{3 - i}' for i, s in enumerate(SUBS)],
+    'サブスクリプション（グループ「テンゲル ポイントのサブスク」）': [f'{s[1]}：製品ID {s[0]}・1か月・表示名「{s[2]}」・説明「{s[3]}」・価格 月額{yen(tax(s[6]))}（税込）・レベル{3 - i}' for i, s in enumerate(SUBS)],
     '価格および配信状況': ['配信する国と地域：日本だけ（EUで配信すると住所・電話が製品ページに出る）', 'アプリ本体：無料（ポイントとサブスクで収益）。有料Appの契約・口座・税の登録が先に必要'],
     '先に決めること': [
-        'App Storeで選べる価格に「176円」などがあるか（なければ近い価格に合わせて、説明文と画面写真も直す）',
+        'App Storeで選べる価格：日本の 値段は 50円から 2,000円までは 10円きざみ・100円から 1万5,000円は 100円きざみ → 第4.230版（まさちゃん 11/27 01:17「確実な単価にしていいよ！」）で 選べる 値段に した（176・352・704・1,408円 → 180・350・700・1,400円・3,150円 → 3,200円）。アプリの 画面は App Store の 値段を そのまま 出す',
+        '第4.230版（まさちゃん 11/27 01:07・01:17・01:18）：パック 180・350・700・1,400円で 400・800・1,600・3,200P／サブスク 1,250・1,950・3,200円で 3,800・7,600・12,500P／読み込みは 1レース 800P（単勝5連勝も 1レースごとに 800P）。紹介の 動画（CM第7弾：「初回 1500P」「1レース200P」「5レースまとめて200P」「通常購入：500P 176円（税込）から」「サブスクはボーナスつき」）と 画面写真の 値段は 前の まま → 出す 前に 作り直す',
         'ポイントの期限：審査3.1.1で「買ったポイントは期限切れにできない」。説明文は「購入したポイントは期限なし・サブスクで届いたポイントは30日」にしてある',
         '紹介特典：作り方（サーバー／Appleのオファーコード）と審査3.1.1に合うかを確かめてから、プロモーション用テキストに入れる',
         '結果確認のお知らせ：ローカル通知だけ（プッシュ通知の権限・サーバーは使わない）。App Store Connect の「App のプライバシー」はデータ収集なしのまま',
