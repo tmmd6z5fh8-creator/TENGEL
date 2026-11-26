@@ -782,7 +782,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = CBCpu;
 
 const CBNet = (() => {
   'use strict';
-  const R = CBRules, PROTO = 13, MAXLEN = 20000;      
+  const R = CBRules, PROTO = 14, MAXLEN = 20000;      
   
   const STAKE_MAX = 100;                               
   function stakeOf(k) {
@@ -1590,6 +1590,15 @@ const CBApp = (() => {
 #cbOv .cbc.src::after{box-shadow:0 0 0 2px rgba(255,224,140,.9),0 0 10px 2px rgba(255,186,60,.5)}
 #cbOv .cbc.fl::after{box-shadow:0 0 0 3px rgba(255,248,210,1),0 0 22px 8px rgba(255,208,90,.95);animation:cbfl 1.6s ease-out var(--fld,0s) both}
 #cbOv .cbhand .cbc.tg{transform:translateY(-5px)}
+#cbOv .cbtl{flex:none;display:inline-flex;align-items:center;gap:4px;margin-left:6px;padding:0 7px 0 6px;height:20px;border-radius:10px;background:rgba(20,12,4,.72);border:1px solid rgba(255,226,160,.55);color:#ffe9a8;font-size:12px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+#cbOv .cbtl[hidden]{display:none}
+#cbOv .cbtl i{position:relative;flex:none;width:28px;height:5px;border-radius:3px;background:rgba(255,226,160,.2);overflow:hidden}
+#cbOv .cbtl i::after{content:"";position:absolute;left:0;top:0;bottom:0;width:calc(var(--p,1) * 100%);border-radius:inherit;background:linear-gradient(90deg,#e2a83e,#ffe07a)}
+#cbOv .cbtl .n::after{content:"秒";font-size:9.5px;margin-left:1px;opacity:.85}
+#cbOv .cbtl.lo{border-color:rgba(255,128,96,.95);color:#ffb59c}
+#cbOv .cbtl.lo i::after{background:linear-gradient(90deg,#d8452e,#ff8a5c)}
+#cbOv .cbmod .cbtl.mt{margin:0;height:26px;padding:0 11px 0 9px;font-size:14.5px;border-radius:13px}
+#cbOv .cbmod .cbtl.mt i{width:46px;height:6px}
 @keyframes cbtg{from{opacity:.45}to{opacity:1}}
 @keyframes cbfl{0%{opacity:0}14%{opacity:1}100%{opacity:0}}
 #cbOv .cbuse.on .cd{animation:cbusg .9s ease-in-out infinite alternate}
@@ -1809,6 +1818,7 @@ const CBApp = (() => {
 #cbOv .cbstp>b{min-width:74px;text-align:center;font-size:26px;line-height:1;color:#ffe07a}
 #cbOv .cbstp>b small{font-size:13px;font-weight:400;color:#d9c08c;margin-left:2px}
 #cbOv .cbstkl{margin:0;font-size:14px;color:#f0dfb6}#cbOv .cbstkl b{color:#ffe07a;font-size:16px}
+#cbOv .cbtlh{margin:0;font-size:13px;color:#e8d3a4}
 #cbOv .cbmod .cbstkv{font-size:16px;line-height:1.5;color:#f0dfb6}
 #cbOv .cbmod .cbstkv b{color:#ffe07a;font-size:21px}#cbOv .cbmod .cbstkv i{font-style:normal;color:#c9a35a;margin:0 8px}
 #cbOv .cbmod .cbhave b{color:#ffe07a;font-size:16px}#cbOv .cbmod .cbhave strong{color:#ffb38a}
@@ -2212,14 +2222,14 @@ const CBApp = (() => {
       + '<div class="cbtop"><button type="button" class="cbb dk sm" data-cb="quit">やめる</button><div class="cbturn"></div>'
       + '<div class="qhp" role="img"><img class="l" src="" alt=""><i class="m"></i><img class="r" src="cb_q_hr.webp" alt=""><div class="qbar"><i class="dmg"></i><i class="fill"></i><span class="sg"></span></div><b class="nm"></b><i class="fl"></i></div>'
       + '<button type="button" class="cbb dk sm" data-cb="help" aria-label="遊び方">？</button></div>'
-      + '<div class="cbmidw"><div class="cbopp"><div class="cbohand"></div><div class="cbwho"><b></b><span class="cbpips" data-p="op"></span><span class="ogem" hidden></span><small class="qt"></small></div></div>'
+      + '<div class="cbmidw"><div class="cbopp"><div class="cbohand"></div><div class="cbwho"><b></b><span class="cbpips" data-p="op"></span><span class="cbtl" data-p="op" hidden><i></i><span class="n"></span></span><span class="ogem" hidden></span><small class="qt"></small></div></div>'
       + '<div class="cbboard"><img src="cb_board.webp" alt=""><div class="cbfire"></div><div class="cbglow"></div>'
       + '<div class="cbdeck"><img src="cb_deck.webp" alt=""><b class="cbn"></b></div>'
       + '<button type="button" class="cbdis" data-cb="discard" aria-label="捨て札を 見る"><span class="pl"></span><b class="cbn"></b></button>'
       + '<div class="cbslot op"></div><div class="cbslot my"></div>'
       + '<button type="button" class="cbgear" data-cb="gear" aria-label="メニュー"></button></div>'
       + '<div class="cbmsg" aria-live="polite"></div>'
-      + '<div class="cbme"><div class="cbwho"><b>あなた</b><span class="cbpips" data-p="my"></span></div></div>'
+      + '<div class="cbme"><div class="cbwho"><b>あなた</b><span class="cbpips" data-p="my"></span><span class="cbtl" data-p="my" hidden><i></i><span class="n"></span></span></div></div>'
       + '<div class="cbhand"></div><div class="cbgem" hidden><img class="case" src="cb_gmcase.webp" alt=""><div class="gs"></div></div><div class="cbact"></div></div></section>'
       + '<section class="cbs cbhelp" data-s="help"></section>'
       + '<section class="cbs cbdz" data-s="dz"></section>'
@@ -2380,7 +2390,7 @@ const CBApp = (() => {
       + sec('flow', '3', '1ターンの 流れ')
       + '<ol class="hflow">'
       + `<li><i>1</i><div><b>ターンの 始め</b><span>手札に <b>6 が 2枚</b> ある 人は「6 の 効果」・前の ターンに <b>神様馬・幻の馬</b>で 勝った 人は その 効果を 使えるよ</span></div></li>`
-      + `<li><i>2</i><div><b>セット</b><span>手札から 1枚 選んで <b>伏せて 出す</b>（自分の カードには 数字の 印・タップで 見られる）。<b>セットしたら もう 変えられない</b>よ。<b>7・3 の 効果</b>と <b>決戦宝石</b>は セットの 前に 使えるよ（使った 後で セットする カードを 選べる）</span></div></li>`
+      + `<li><i>2</i><div><b>セット</b><span>手札から 1枚 選んで <b>伏せて 出す</b>（自分の カードには 数字の 印・タップで 見られる）。<b>セットしたら もう 変えられない</b>よ。<b>7・3 の 効果</b>と <b>決戦宝石</b>は セットの 前に 使えるよ（使った 後で セットする カードを 選べる）。<b>友達バトルは ${Math.round(SET_LIMIT / 1000)}秒 まで</b>（すぎたら 自動で 1枚）</span></div></li>`
       + `<li><i>3</i><div><b>効果タイム</b><span>2人とも セットしたら、セットした <b>5 → 4</b> の 順に 効果を 使うか 聞かれるよ（1つ 終わってから 次。同じ 効果を 2人とも 使える ときは、2人とも 決めて から 一緒に 出る）</span></div></li>`
       + `<li><i>4</i><div><b>オープン</b><span>2枚 一緒に めくって 勝ち負け。負けた 人は <b>1・2 の 逆転勝利</b>を 使えるかも</span></div></li>`
       + '</ol>'
@@ -2439,7 +2449,9 @@ const CBApp = (() => {
       + '<li>達成した ときに、その場で もらえるよ（受け取りは いらない）。<b>毎月 1日に リセット</b>（達成も 連勝も 0 に 戻る）</li>'
       + '<li>負けると その 連勝は 0 に 戻るよ（途中で やめた・対戦の 途中で アプリを 閉じた ときも 同じ）。同点は そのまま。友達が 途中で 部屋を 出た・つながりが 切れた ときは 数えないよ</li><li>コンピュータ・友達バトル・決戦調査は 別に 数えるよ（決戦調査の 勝ち負けは いつもの ミッションに 数えない）</li></ul></details>'
       + '<details class="hdt"><summary>音（設定）</summary><ul><li>ボードの 右下の <b>歯車</b>（メニューでは「設定」）を 押すと、<b>BGM</b>・<b>効果音</b>を オン／オフ できるよ</li></ul></details>'
-      + '<details class="hdt"><summary>友達と 対戦（部屋）</summary><ul><li>1人が「部屋を 作る」→ 出て きた <b>部屋番号（4桁）</b>を 友達に 教える</li><li>友達は「部屋に 入る」で その 番号を 入れる</li><li><b>近くに いる 友達</b>と、iPhone 同士で 直接 つながるよ（インターネットは 使わない）。2人とも Wi‑Fi か Bluetooth を オンに してね</li><li>初めて 使う とき「ローカルネットワーク」の 確認が 出たら「許可」を 押してね</li></ul></details>'
+      + '<details class="hdt"><summary>友達と 対戦（部屋）</summary><ul><li>1人が「部屋を 作る」→ 出て きた <b>部屋番号（4桁）</b>を 友達に 教える</li><li>友達は「部屋に 入る」で その 番号を 入れる</li><li><b>近くに いる 友達</b>と、iPhone 同士で 直接 つながるよ（インターネットは 使わない）。2人とも Wi‑Fi か Bluetooth を オンに してね</li><li>初めて 使う とき「ローカルネットワーク」の 確認が 出たら「許可」を 押してね</li>'
+      + `<li>⏱ 友達バトルは、カードを セットする までの 時間が <b>${Math.round(SET_LIMIT / 1000)}秒</b>（名前の よこに 自分と 友達の のこりが 出るよ）。すぎたら 手札から <b>自動で 1枚 セット</b>（タップして 開いて いた カード・なければ ランダム）。相手の 4 の 効果で <b>交換する カードを 選ぶ ときも ${Math.round(SET_LIMIT / 1000)}秒</b>。カードの 動きや 効果の 札が 出て いる 間は 時計が 止まるよ。<b>自動で 出した カードの 効果は 使わない</b>よ。ほかの「効果を 使う？」には 時間の 決まりは ないよ</li>`
+      + '<li>2人とも 同じ 版の アプリで 遊んでね（版が ちがうと「アプリの 版が ちがう」と 出るよ）</li></ul></details>'
       + '<p class="hend">カードの 絵を タップすると 大きく 見られるよ</p>'
       + '</div>';
     show('help');
@@ -2845,12 +2857,14 @@ const CBApp = (() => {
       h += '<h2 class="gold">部屋を 作ったよ</h2><p>この 番号を 友達に 教えてね</p>' + `<div class="num" aria-label="部屋番号 ${r.code}">${r.code}</div>`
         + (r.stake && r.stake.e > 0 ? `<p class="cbstkl">${COINI}参加コイン <b>${r.stake.e}枚</b>・勝者 <b>${r.stake.w}枚</b></p>` : '')
         + (r.gm && r.gm.on ? '<p class="cbstkl">決戦宝石 あり（2人とも 5つ）</p>' : '')      
+        + `<p class="cbtlh">⏱ カードを セットする までは ${Math.round(SET_LIMIT / 1000)}秒（すぎたら 自動で 1枚）</p>`      
         + `<div class="stt">${r.step === 'found' ? '<i class="cbspin"></i>友達が 来たよ！ つないで いるよ…' : r.step === 'fail' ? '部屋を 作れなかったよ' : '<i class="cbspin"></i>友達を 待って いるよ…'}</div>`
         + '<p class="hint">友達は「部屋に 入る」で この 番号を 入れるよ。<br>近くに いる 友達と 直接 つながるよ（2人とも Wi‑Fi か Bluetooth を オンに）</p>';
       if (r.step === 'fail') h += '<button type="button" class="cbb" data-cb="roomre">もう一度 作る</button>';
     } else {
       const busy = r.step === 'wait' || r.step === 'found';
       h += '<h2 class="gold">部屋に 入る</h2><p>友達の 部屋番号（4桁）を 入れてね</p>' + `<div class="num in" aria-label="部屋番号 ${r.code}">${digits(r.code)}</div>`
+        + `<p class="cbtlh">⏱ カードを セットする までは ${Math.round(SET_LIMIT / 1000)}秒（すぎたら 自動で 1枚）</p>`      
         + `<div class="stt">${r.step === 'found' ? '<i class="cbspin"></i>部屋を 見つけたよ！ つないで いるよ…' : r.step === 'wait' ? '<i class="cbspin"></i>部屋を 探して いるよ…' : r.step === 'fail' ? '部屋に 入れなかったよ' : ''}</div>`;
       if (busy) h += '<p class="hint">見つからない ときは、番号と、2人とも Wi‑Fi か Bluetooth が オンか 確かめてね</p>';
       else h += '<div class="cbkeys">' + ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'del', '0', 'go'].map(k => (k === 'del' ? '<button type="button" data-key="del" aria-label="1字 消す">⌫</button>' : k === 'go' ? `<button type="button" data-key="go" aria-label="入る"${r.code.length === 4 ? '' : ' disabled'}>入る</button>` : `<button type="button" data-key="${k}">${k}</button>`)).join('') + '</div>';
@@ -2901,6 +2915,7 @@ const CBApp = (() => {
   function startMatch(m) {
     GEN += 1; match = m; V = null; queue = []; pumping = false; mode = { k: 'idle' }; busy = false; lock = false; ended = false; dealHold = false; fin = false; ends = [];
     FL.clear();      
+    tlStart();       
     m.onUpdate = u => { if (match === m) onEv(u); queue.push(u); pump(); };
     m.onState = s => onNet(s);
     show('game'); closeMod();
@@ -3172,6 +3187,79 @@ const CBApp = (() => {
     const t = performance.now();
     keys.forEach(k => { if (k) FL.set(k, t); });
     applyGlow(); later(applyGlow, FL_MS + 60);
+  }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  const SET_LIMIT = 10000, TL_LOW = 3000;
+  const TL = { my: null, op: null, t: 0, iv: 0, auto: [] };      
+  const tlMax = () => (typeof CBApp._limit === 'number' ? CBApp._limit : SET_LIMIT);
+  const tlRoom = () => !!(match && match.kind !== 'cpu' && !qRun && tlMax() > 0);
+  function tlStart() { clearInterval(TL.iv); TL.my = TL.op = null; TL.auto = []; TL.t = performance.now(); TL.iv = tlRoom() ? setInterval(tlTick, 100) : 0; tlPaint(); }
+  const tlSwap = v => !!(v.pend && v.pend.mine && v.pend.type === 'swap');      
+  const tlOpSwap = v => !!(v.pend && !v.pend.mine && v.pend.type === 'swap');
+  const tlSetAuto = v => !!(v.my.set && TL.auto.some(a => a.g === gameNo && a.t === v.turn && a.u === v.my.set.u));      
+  const tlWasAuto = (t, k) => TL.auto.some(a => a.g === gameNo && a.t === t && k.indexOf(a.k) >= 0);      
+  function tlTick() {
+    if (!tlRoom()) { clearInterval(TL.iv); TL.iv = 0; TL.my = TL.op = null; tlPaint(); return; }
+    const now = performance.now(), dt = Math.max(0, now - TL.t), v = V; TL.t = now;
+    if (!v || ended || v.phase === 'end') { TL.my = TL.op = null; tlPaint(); return; }
+    const run = !busy && !lock && !pumping && !queue.length && !dealHold, key = gameNo + ':' + v.turn, max = tlMax();
+    const mk = v.can.set ? key : tlSwap(v) ? key + ':swap' : '', ok = (v.phase === 'set' && !v.op.set) ? key : tlOpSwap(v) ? key + ':swap' : '';
+    if (mk) { if (!TL.my || TL.my.key !== mk) TL.my = { key: mk, left: max }; if (run) TL.my.left -= dt; }
+    else TL.my = null;
+    if (ok) { if (!TL.op || TL.op.key !== ok) TL.op = { key: ok, left: max }; if (run) TL.op.left -= dt; }
+    else TL.op = null;
+    tlPaint();
+    if (TL.my && TL.my.left <= 0 && run && (TL.my.tries || 0) < 2) tlAuto();      
+    else if (run && TL.auto.length) tlAutoNo(v);
+  }
+  function tlPaint() {
+    if (!ov) return;
+    const max = Math.max(1, tlMax());
+    
+    let mm = modEl ? modEl.querySelector('.cbtl[data-p=mym]') : null;
+    if (TL.my && modEl && modOn()) { if (!mm) { mm = document.createElement('span'); mm.className = 'cbtl mt'; mm.dataset.p = 'mym'; mm.innerHTML = '<i></i><span class="n"></span>'; modEl.prepend(mm); } }
+    else if (mm) { mm.remove(); mm = null; }
+    ['my', 'op', 'mym'].forEach(sd => {
+      const e = sd === 'mym' ? mm : ov.querySelector('.cbtl[data-p=' + sd + ']'), q = TL[sd === 'mym' ? 'my' : sd]; if (!e) return;
+      if (!q) { if (!e.hidden) e.hidden = true; return; }
+      const left = Math.max(0, q.left), n = Math.ceil(left / 1000), b = e.querySelector('.n');
+      e.hidden = false; e.classList.toggle('lo', left <= TL_LOW);
+      e.querySelector('i').style.setProperty('--p', (left / max).toFixed(3));
+      if (b.textContent !== String(n)) { b.textContent = String(n); e.setAttribute('aria-label', (sd === 'op' ? WHO() : 'あなた') + 'の のこり ' + n + '秒'); }
+    });
+  }
+  
+  function tlAuto() {
+    const v = V, sw = !!(v && tlSwap(v)); if (!v || !(v.can.set || sw) || busy || lock || !v.my.hand.length) return;
+    let u = null;
+    if (modOn()) { const b = modEl.querySelector(sw ? '[data-cb=swap][data-u]' : '[data-cb=set][data-u]'); if (b) u = +b.dataset.u; }      
+    if (u == null || !v.my.hand.some(c => c.u === u)) u = v.my.hand[Math.min(v.my.hand.length - 1, Math.floor(Math.random() * v.my.hand.length))].u;
+    const c = v.my.hand.find(x => x.u === u);
+    if (TL.my) { TL.my.left = 0; TL.my.tries = (TL.my.tries || 0) + 1; } tlPaint();      
+    mode = { k: 'idle' }; closeMod();
+    se('tap', 0.6);
+    TL.auto.push({ g: gameNo, t: v.turn, k: c.k, u: u });
+    send(sw ? { t: 'swap', u: u } : { t: 'set', u: u }).then(ok => { if (ok) toast(sw ? `⏱ 時間切れ！\n${nameOf(picK(c))} と 自動で 交換したよ` : `⏱ 時間切れ！\n${nameOf(picK(c))} を 自動で セットしたよ`, 2.6); });
+  }
+  
+  function tlAutoNo(v) {
+    if (!v || busy || lock) return;
+    if (effNow(v) && mode.step === 'ask' && tlSetAuto(v)) { closeMod(); return effSend({}); }      
+    const pd = v.pend && v.pend.mine ? v.pend.type : '';
+    if (pd === 'u5' && tlSetAuto(v)) { closeMod(); return send({ t: 'u5', drop: null }); }      
+    if (pd === 'rev' && tlSetAuto(v)) { closeMod(); return send({ t: 'rev', use: false }); }      
+    if (pd === 'k' && tlWasAuto(v.turn - 1, ['k'])) { closeMod(); return send({ t: 'k', pick: null }); }      
+    if (pd === 'm' && tlWasAuto(v.turn - 1, ['m'])) { closeMod(); mode = { k: 'idle' }; return send({ t: 'm', drop: null }); }      
   }
   function paintAct(asking) {
     const v = V, a = $('.cbact'); let h = '';
@@ -4382,7 +4470,7 @@ const CBApp = (() => {
     open, close, TK_BONUS, tkBonus, COIN, coinFor, coinBonus, MS, PACK, FACES, _rng: null, _randInt: null, _think: null, _link: null, _opt: null, _room: null, _guard: null, _as: null, _now: null, _sl: null,      
     _t: {      
       get view() { return V; }, get screen() { return screen; }, get match() { return match; }, get mode() { return mode; }, get state() { return st; }, get ended() { return ended; },
-      get idle() { return !pumping && !queue.length && !busy && !lock; }, get ask() { return askOn(); }, say, get sets() { return { bgm: bgmOn(), se: seOn(), raw: { bgm: st.bgm, se: st.se }, as: AS }; },
+      get idle() { return !pumping && !queue.length && !busy && !lock; }, get tl() { return { my: TL.my && Object.assign({}, TL.my), op: TL.op && Object.assign({}, TL.op), on: !!TL.iv, max: tlMax(), SET_LIMIT: SET_LIMIT }; }, get ask() { return askOn(); }, say, get sets() { return { bgm: bgmOn(), se: seOn(), raw: { bgm: st.bgm, se: st.se }, as: AS }; },
       qopt: (lv, n) => qOpt(lv, n), qApi, qtPaint: () => qtPaint(), qGu: a => { if (qRun) qRun.gu = a.slice(); }, qmsWin: r => qmsWin(r), get qt() { return st ? Object.assign({ left: qtLeft() }, qtNow()) : null; }, get quest() { return { run: qRun ? Object.assign({}, qRun) : null, st: st ? Object.assign({}, st.q) : null, scene: qs ? { lv: qs.lv, step: qs.step, i: qs.i, typing: !!qs.tw, rv: qs.rv || 0, shown: qs.sy ? qs.sy.n : 0, len: qs.sy ? qs.sy.t.length : 0, cut: !!(qs.sy && qs.sy.m) } : null, data: QUEST, open: st ? qOpen() : 0, track: bg.trk }; },      
       get bgm() { return { on: !!bg.cur, want: bg.want, have: !!bg.buf, gone: bg.gone, pos: bgmPos(), len: BGM.len, pre: BGM.pre, vol: BGM.vol, file: BGM.file, loop: bg.cur ? [bg.cur.s.loopStart, bg.cur.s.loopEnd] : null, ctx: snd.ac ? snd.ac.state : null, off: bg.cur ? bg.cur.off : null, dur: bg.buf ? bg.buf.duration : null, trk: bg.trk }; },
       get qsnd() { return { lv: qa.lv, cur: qa.cur ? { f: qa.cur.f, keep: qa.cur.keep, on: !!qa.cur.s } : null, kept: qa.kept.map(o => o.f), have: Object.keys(qa.buf), data: QSND, bgs: QBG }; },      
