@@ -111,6 +111,14 @@
     var z = await TengelNative.zoom({}).catch(function (e) { return { error: String(e) }; });
     return { total: W.total(), balance: W.balance(), events: W.events().map(function (e) { return e.id + ':' + e.amount; }), counted: W.countedN(), gift: m, zoom: z, viewport: (document.querySelector('meta[name=viewport]') || {}).content, gate: window.__gate };
   }
+  // 第4.225版（まさちゃん 11/26 13:57「②ダブルタップすると拡大される時がある。③タップが重なると…コピーみたいな字が出てくる」）：本物の iPhone の WebKit で、
+  //   ぜんぶの 所が touch-action:manipulation（ダブルタップで 拡大しない）・字を 選べない・長押しの 吹き出し なし・入力欄と pre は 選べる
+  function touchCss() {
+    var cs = function (e) { return getComputedStyle(e); }, us = function (e) { return cs(e).webkitUserSelect || cs(e).userSelect; };
+    var i = document.createElement('input'), pr = document.createElement('pre'), b = document.querySelector('.tabbar button') || document.body; document.body.appendChild(i); document.body.appendChild(pr);
+    var r = { ta: cs(document.body).touchAction, btn: cs(b).touchAction, us: us(b), tc: cs(b).webkitTouchCallout || '', inp: us(i), pre: us(pr) };
+    i.remove(); pr.remove(); return r;
+  }
   function basic() {
     var TL = window.TengelLocal;
     var ls; try { localStorage.setItem('st-ls', '1'); ls = localStorage.getItem('st-ls') === '1'; } catch (e) { ls = String(e); }
@@ -132,6 +140,7 @@
     await ready();
     var R = { phase: 1, device: DEV };
     R.basic = basic();
+    await step(R, 'touch', async function () { return touchCss(); });      // 第4.225版
     await step(R, 'wallet', wallet);
     await step(R, 'clock', clock);      // 第4.191版
     await mark('main');

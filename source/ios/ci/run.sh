@@ -252,6 +252,13 @@ lgok = not lg or lg.get("skip") is True or (l0.get("pause") is True and l0.get("
 lgs = "none" if not lg else "skip" if lg.get("skip") else "pause %s run %s / OK tap run %s %sms" % (l0.get("pause"), l0.get("run"), l1.get("run"), l1.get("ms"))
 print("top run %s / down pause %s run %s / back run %s / cover pause %s run %s / tap-close run %s %sms / login-bonus %s -> %s" % (n, d.get("pause"), d.get("run"), b.get("run"), c.get("pause"), c.get("run"), o.get("run"), o.get("ms"), lgs, "OK" if ok and lgok else "CHECK " + json.dumps({"seen": s, "lg": lg}, ensure_ascii=False)[:360]))
 ' "$OUT/iphone-report-1.json" 2>&1)"
+  # 第4.225版：ダブルタップで 拡大しない・字の 選択を 出さない（ぜんぶの 所が manipulation・字は 選べない・長押しの 吹き出し なし・入力欄と pre は 選べる）
+  [ -f "$OUT/iphone-report-1.json" ] && say "   touch: $(python3 -c '
+import json, sys
+t = json.load(open(sys.argv[1])).get("touch") or {}
+ok = t.get("ta") == "manipulation" and t.get("btn") == "manipulation" and t.get("us") == "none" and t.get("tc") in ("none", "") and t.get("inp") == "text" and t.get("pre") == "text"
+print("%s / %s" % (json.dumps(t, ensure_ascii=False), "OK" if ok else "CHECK"))
+' "$OUT/iphone-report-1.json" 2>&1)"
   # 第4.224版：時計・電池の 帯（ステータスバー）＝ 上の 帯の いちばん 上の 色（いつもの・夕焼け・牧場〈明るい 帯 → 黒い 字〉・マスター帯・いつもの に もどす）。
   #   アプリが 塗った 色（tint）・Webの 画面が 送った 色（js）・はかり直した 色（now）が 同じ・字の 白／黒（statusBarStyle 1 白・3 黒）
   [ -f "$OUT/iphone-report-1.json" ] && say "   status bar: $(python3 -c '
