@@ -108,11 +108,20 @@
     // 頭数
     if ((m = /(\d{1,2})\s*頭/.exec(text))) { var n = +m[1]; if (n >= 2 && n <= 18) H.n = n; }
     // 発走時刻（「発走 18:05」「18:05 発走」。なければ 9:00〜21:59 の時刻が1つだけのとき）：同じレースの読み直しの見分けに使う
+    //   第4.227版（まさちゃん 11/26 17:07「レース判定で、画像を読み込んでから、まもなく締め切りレースが締め切りレースになってる！」）：
+    //   ・スクショの いちばん 上の iPhone の 時計（英数字と 日付 だけの 字の 時刻：clockless）と、オッズの 時刻（「18:00現在」「更新 18:00」）は 発走に しない
+    //     （画面に ほかの 時刻が ないと、スクショを とった 時刻が 発走に なって「発走 ○○ を過ぎている」で 締切済みに なる）
+    //   ・「発走時刻 18:05」「発走予定 18:05」も 読む（前は「発走」の すぐ あとの 時刻 だけ）
     H.start = null;
-    if ((m = /発走\s*[:：]?\s*(\d{1,2}):(\d{2})/.exec(text)) || (m = /(\d{1,2}):(\d{2})\s*発走/.exec(text))) H.start = pad(m[1]) + ':' + m[2];
+    var tt = clockless(rs);
+    if ((m = /発走\s*(?:予定\s*)?(?:時刻|時間)?\s*[:：]?\s*(\d{1,2}):(\d{2})/.exec(tt)) || (m = /(\d{1,2}):(\d{2})\s*発走/.exec(tt))) H.start = pad(m[1]) + ':' + m[2];
     else {
       var times = [], tre = /(?:^|[^\d:])(\d{1,2}):(\d{2})(?![\d:])/g;
-      while ((m = tre.exec(text))) { var hh = +m[1], mm = +m[2]; if (hh >= 9 && hh <= 21 && mm <= 59) times.push(pad(hh) + ':' + m[2]); }
+      while ((m = tre.exec(tt))) {
+        var hh = +m[1], mm = +m[2], te = m.index + m[0].length, ts = te - m[1].length - 3;
+        if (/(?:現在|更新)\s*(?:時刻|時間)?\s*[:：]?\s*$/.test(tt.slice(Math.max(0, ts - 12), ts)) || /^\s*(?:現在|時点|更新)/.test(tt.slice(te, te + 6))) continue;   // オッズの 時刻
+        if (hh >= 9 && hh <= 21 && mm <= 59) times.push(pad(hh) + ':' + m[2]);
+      }
       if (times.length === 1) H.start = times[0];
     }
     // レース名（「第9競走 ○○特別」のように、R のあとに続く言葉。ない・読めないときは null。推測はしない）
@@ -125,12 +134,81 @@
     // 締切済みの印（第4.116版・まさちゃん「画像読み取りで締切済みレースは締切済みレースに記録される」）：画面に 発売が 終わった 言葉が あるか。
     //   読めた 言葉を そのまま 返す（判定は src.html：発走時刻を すぎて いる か・この 言葉が あるか）。
     //   「締切前」「オッズは締切前のものです」「締切 18:05」「締切時刻」「締切予定」「締切まで」「締切間近」は 締切の 前・予定の 表示なので 入れない（締切の あとに 続く 字で 見分ける）
-    H.closed = null;
-    var cre = /締\s*切\s*済\s*み?|締\s*め?\s*切\s*り?\s*ました|発売\s*(?:は\s*)?終了|確定\s*オッズ|オッズ\s*確定|最終\s*オッズ|結果\s*確定|払戻金|(?:発売\s*)?締\s*め?\s*切(?!\s*り?\s*(?:前|直前|間近|が\s*近|時刻|時間|予定|まで|迄|[:：]?\s*\d))(?:\s*り)?/;
-    if ((m = cre.exec(text))) H.closed = m[0].replace(/\s+/g, '');
+    //   第4.227版：締切の 前の 表示（「まもなく締切」など：SOON）が あれば 言葉では 決めない（soon）・「18:03 締切」「締切順」なども 入れない（closedWord）
+    var cw = closedWord(rs, all);
+    H.closed = cw.word; H.soon = cw.soon;
     return H;
   }
   function pad(x) { return String(+x).padStart(2, '0'); }
+
+  // ---- iPhone の 上の 時計（第4.227版）：スクショの いちばん 上（画像の 上から 4.5% まで）の、英数字と 日付 だけの 字（「17:58」「17:58 5G 87」・iPad の「17:58 11月26日(水)」）の 時刻。
+  //   時刻を 読む ときは のぞく（ほかの 日本語の ある 字＝見出し「大井 9R 18:05」「発走 18:05」などは のぞかない）
+  function isBar(it) { return it.yc < 0.045 && /\d{1,2}:\d{2}/.test(it.text) && /^[\x20-\x7e年月日曜火水木金土]*$/.test(it.text); }
+  function clockless(rs) {
+    return rs.map(function (r) { return r.items.map(function (it) { return isBar(it) ? it.text.replace(/\d{1,2}:\d{2}/g, ' ') : it.text; }).join(' '); }).join('\n');
+  }
+
+  // ---- 締切済みの 言葉（第4.116版）と 締切の 前の 表示（第4.227版） ----
+  //   SOON：締切が まだ 来て いない ことが はっきり 分かる 表示。画面に 1つでも あれば、言葉では 締切済みに しない（ほかの レースの「締切」の 札や メニューの「払戻金」が いっしょに 写って いても）
+  //     まもなく締切・間もなく締め切ります・まもなく発売締切・もうすぐ締切／締切まもなく・締切間近・締切直前・締切目前・締切迫る・締切が近い／締切まで あと2分／あと3分で締切・5分後に締切／締め切ります・締切となります
+  //     （「締切 まもなく発走」は 締切の あと なので 入れない）。上下 2段や となりの 字に わかれて 読めた とき（「まもなく」の 下に「締切」）も つなげて 見る
+  var SOON = new RegExp([
+    /(?:ま|間)\s*も\s*(?:な|無)\s*く\s*(?:発売\s*|投票\s*)?締\s*め?\s*切/.source,
+    /(?:もう\s*すぐ|そろそろ|いよいよ)\s*(?:発売\s*|投票\s*)?締\s*め?\s*切/.source,
+    /締\s*め?\s*切\s*り?\s*(?:が\s*)?(?:(?:ま|間)\s*も\s*(?:な|無)\s*く(?!\s*(?:発走|出走|スタート))|もう\s*すぐ|迫|間\s*近|直\s*前|目\s*前|近\s*[いしづく])/.source,
+    /締\s*め?\s*切\s*り?\s*(?:まで|迄)\s*(?:の\s*)?(?:あと|残り|のこり|\d)/.source,
+    /(?:あと|残り|のこり)\s*\d{1,3}\s*(?:分|秒)\s*(?:ほど\s*)?(?:で|後\s*に?)\s*(?:発売\s*|投票\s*)?締\s*め?\s*切/.source,
+    /\d{1,3}\s*分\s*後\s*に?\s*(?:発売\s*|投票\s*)?締\s*め?\s*切/.source,
+    /締\s*め?\s*切\s*り?\s*(?:ま\s*す|[とに]\s*な\s*り\s*ま\s*す)/.source
+  ].join('|'));
+  //   CLOSED：発売が 終わった 言葉（第4.116版の 表）。さいごの「締切」「発売締切」だけの 言葉は、前後の 字も 見る（bare）：
+  //     あとに 前・時刻・予定・まで・時刻（18:05）・順・一覧・案内 など → 入れない／前に 時刻（「18:03 締切」：発走の 時刻の あとは 入れる）・「次の」→ 入れない／
+  //     すぐ 下・となりの 字が 時刻や「前」「まで」など（上下 2段の「締切／18:03」）→ 入れない
+  var CLOSED = /締\s*切\s*済\s*み?|締\s*め?\s*切\s*り?\s*ました|発売\s*(?:は\s*)?終了|確定\s*オッズ|オッズ\s*確定|最終\s*オッズ|結果\s*確定|払戻金|(?:発売\s*)?締\s*め?\s*切(?!\s*り?\s*(?:前|直前|間近|が\s*近|時刻|時間|予定|まで|迄|[:：]?\s*\d|順|一覧|案内|情報|お知らせ|通知|アラーム|設定|予告))(?:\s*り)?/g;
+  var BARE = /^(?:発売\s*)?締\s*め?\s*切(?:\s*り)?$/, AFTER_NG = /^\s*(?:[:：]?\s*\d{1,2}:\d{2}|前|直前|間近|時刻|時間|予定|まで|迄|順|一覧)/;
+  // b が a の すぐ 下（横に 重なる）か すぐ 右（行が わかれて 読めた とき）
+  function near(a, b) {
+    var h = Math.max(a.h, b.h), dy = b.yc - a.yc, ov = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+    if (dy > 0.3 * h && dy <= 1.9 * h && ov > 0) return true;
+    return Math.abs(dy) <= 0.9 * h && b.x >= a.x + a.w - 0.01 && b.x - (a.x + a.w) <= 0.06;
+  }
+  function closedWord(rs, all) {
+    var text = all.join('\n'), items = [], off = 0;
+    rs.forEach(function (r, k) {
+      var o = off;
+      r.items.forEach(function (it) { items.push({ it: it, s: o, e: o + it.text.length }); o += it.text.length + 1; });
+      off += all[k].length + 1;
+    });
+    var soon = SOON.test(text);
+    for (var i = 0; i < items.length && !soon; i++) {
+      for (var j = 0; j < items.length && !soon; j++) {
+        var A = items[i].it, B = items[j].it;
+        if (i !== j && (A.text + B.text).indexOf('切') >= 0 && near(A, B) && SOON.test(A.text + B.text)) soon = true;
+      }
+    }
+    if (soon) return { word: null, soon: true };
+    var re = new RegExp(CLOSED.source, 'g'), m;
+    while ((m = re.exec(text))) {
+      if (BARE.test(m[0]) && !bareOK(m.index)) continue;
+      return { word: m[0].replace(/\s+/g, ''), soon: false };
+    }
+    return { word: null, soon: false };
+
+    function bareOK(p) {
+      var before = text.slice(text.lastIndexOf('\n', p - 1) + 1, p), tb = /(\d{1,2}:\d{2})\s*(?:に|で|まで)?\s*$/.exec(before);
+      if (tb && !/発走\s*(?:予定\s*)?(?:時刻|時間)?\s*[:：]?\s*$/.test(before.slice(0, tb.index))) return false;   // 「18:03 締切」（「発走 18:05 締切」は 入れる）
+      if (/次\s*(?:の|回)?\s*$/.test(before)) return false;                                                        // 「次の締切」
+      var q = p + Math.max(0, text.slice(p).search(/締/)), own = null;
+      items.forEach(function (x) { if (!own && x.s <= q && q < x.e) own = x.it; });
+      if (!own) return true;
+      for (var n = 0; n < items.length; n++) {
+        var o = items[n].it, ot; if (o === own) continue;
+        if (near(own, o) && AFTER_NG.test(o.text)) return false;                                  // すぐ 下・となりが「18:03」「前」「まで」…
+        if (near(o, own) && (((ot = /(\d{1,2}:\d{2})\s*(?:に|で|まで)?$/.exec(o.text)) && !/発走\s*(?:予定\s*)?(?:時刻|時間)?\s*[:：]?\s*$/.test(o.text.slice(0, ot.index))) || /次\s*(?:の|回)?$/.test(o.text))) return false;   // すぐ 上・となりが「18:03」「次の」
+      }
+      return true;
+    }
+  }
 
   // ---- 単勝・複勝の表 ----
   // 行の形：[人気] [枠] 馬番 馬名… 単勝 複勝（1.1-1.3 ／ 1.1 1.3 ／ 1.1）[人気]
@@ -311,13 +389,16 @@
     var all = rs.map(function (r) { return r.text; });
     var H = header(rs, all);
     var hs = horses(rs), tri = trifecta(rs);
-    return { venue: H.venue, date: H.date, r: H.r, dist: H.dist, surface: H.surface, baba: H.baba, n: H.n, start: H.start, rname: H.rname, closed: H.closed, horses: hs, tri: tri, names: nameTable(rs), lines: (lines || []).length };
+    return { venue: H.venue, date: H.date, r: H.r, dist: H.dist, surface: H.surface, baba: H.baba, n: H.n, start: H.start, rname: H.rname, closed: H.closed, soon: H.soon, horses: hs, tri: tri, names: nameTable(rs), lines: (lines || []).length };
   }
   // 画像（1〜3枚）をまとめる：項目ごとに最初に読めたもの。単勝の表は馬の数がいちばん多い画像、3連単は人気順の行がいちばん多い画像
   function parse(images) {
     var docs = (images || []).map(parseOne);
     var D = { venue: null, date: null, r: null, dist: null, surface: null, baba: null, n: null, start: null, rname: null, closed: null, horses: null, s1: null, s5: null, s10: null, names: null };
     ['venue', 'date', 'r', 'dist', 'surface', 'baba', 'n', 'start', 'rname', 'closed'].forEach(function (k) { docs.forEach(function (d) { if (D[k] == null && d[k] != null) D[k] = d[k]; }); });
+    // 第4.227版：どれかの 画像に 締切の 前の 表示（「まもなく締切」など）が あれば、ほかの 画像の 言葉でも 締切済みに しない（同じ レースを つづけて 撮った 写真）
+    D.soon = docs.some(function (d) { return d.soon; });
+    if (D.soon) D.closed = null;
     var best = null; docs.forEach(function (d) { if (d.horses && (!best || d.horses.length > best.length)) best = d.horses; });
     if (best) {
       D.horses = best.map(function (h) { return { no: h.no, tan: h.tan, fuku: h.fuku || null }; });

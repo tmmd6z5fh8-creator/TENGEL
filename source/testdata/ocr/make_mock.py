@@ -1,6 +1,6 @@
 # 画像の読み取り（アプリ版・端末の中の文字認識）のテスト用：架空のオッズ画面（いろいろな並び）を作って、写真（JPEG）と「読めた文字と位置」（DOMから。Visionの代わり）を出す
 # 出したものは testdata/ocr/ に入れておく（test_ocr_local.js・test_native.py が使う。JPEG は ios/ci/ocr/ にもコピーして、GitHubのMacで本物のVisionで読む）
-#   python3 make_mock.py <出力フォルダ>
+#   python3 make_mock.py <出力フォルダ> [画面の 名前 …]
 import json, os, sys
 from playwright.sync_api import sync_playwright
 OUT = sys.argv[1]; os.makedirs(OUT, exist_ok=True)
@@ -23,6 +23,10 @@ CSS = '''<style>*{box-sizing:border-box}body{margin:0;font-family:-apple-system,
 .c{font-size:15px}.c .hd{background:#0d6b3a;color:#fff;padding:14px 12px;font-weight:700}.c .ttl{padding:10px 12px;font-weight:700;border-bottom:2px solid #0d6b3a}
 .c .row{display:grid;grid-template-columns:44px 1fr 90px;padding:10px 12px;border-bottom:1px solid #ddd;align-items:center}.c .row.h{font-size:12px;color:#666;background:#f5f5f5}.c .odds{text-align:right;font-weight:700}
 .c .cb{letter-spacing:1px}.c.arrow .cb{letter-spacing:0}
+.e{font-size:14px}.e .sb{display:flex;justify-content:space-between;align-items:center;height:47px;padding:0 26px 0 34px;font-weight:700;font-size:17px}.e .sb i{font-style:normal;font-size:13px}
+.e .hd{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#1a3a6e;color:#fff;font-weight:700;font-size:17px}
+.e .soon{background:#d00;color:#fff;font-size:12px;line-height:15px;padding:3px 8px;border-radius:4px;text-align:center}.e .meta{padding:8px 12px;font-size:13px;color:#333;background:#eef2f8}
+.e .row{display:grid;grid-template-columns:34px 1fr 60px 84px;align-items:center;padding:9px 10px;border-bottom:1px solid #e3e3e3;font-size:13px}.e .row.h{background:#eee;font-size:11px;color:#555}
 </style>'''
 
 
@@ -47,7 +51,16 @@ def page_c(arrow=False, rank=True):
            f'<div class="row h"><span>順位</span><span>組番</span><span>オッズ</span></div>{rows}</div>'
 
 
-PAGES = {'a_tanfuku_waku': page_a(), 'b_tanfuku_ninki': page_b(), 'c_sanrentan': page_c(), 'd_sanrentan_arrow': page_c(arrow=True, rank=False)}
+# 第4.227版：まもなく 締切の 画面（いちばん 上に iPhone の 時計と 電池・見出しの 右に 2段の 札「まもなく／締切」・発走の 時刻と 日付は ない）
+#   読めた 文字では：締切済みに しない（soon）・時計を 発走に しない（start は null）。JPEG は GitHubのMacの 本物の Vision でも 読む（ios/ci/selftest.js の ocrsoon）
+def page_e():
+    rows = ''.join(f'<div class="row"><span><b>{n}</b></span><span class="nm">{nm}</span><span>{t}</span><span>{f}</span></div>' for n, nm, t, f in HORSES)
+    return f'<div class="e"><div class="sb"><span>17:58</span><i>5G 87</i></div><div class="hd"><span>大井 9R</span><span class="soon">まもなく<br>締切</span></div>' \
+           f'<div class="meta">ダート 1,400m　良　12頭</div><div class="row h"><span>馬番</span><span>馬名</span><span>単勝</span><span>複勝</span></div>{rows}</div>'
+
+
+PAGES = {'a_tanfuku_waku': page_a(), 'b_tanfuku_ninki': page_b(), 'c_sanrentan': page_c(), 'd_sanrentan_arrow': page_c(arrow=True, rank=False), 'e_soon': page_e()}
+ONLY = sys.argv[2:]      # 第4.227版：作る 画面を しぼる（python3 make_mock.py <出力フォルダ> e_soon）。前の 画面の 見本は 作り直さない
 LEAF_JS = '''() => {
   const out = []; const H = document.documentElement.scrollHeight, W = document.documentElement.scrollWidth;
   const walk = n => { for (const c of n.childNodes) { if (c.nodeType === 3) { const t = c.textContent.trim(); if (!t) continue; const r = document.createRange(); r.selectNodeContents(c); const b = r.getBoundingClientRect();
@@ -58,6 +71,7 @@ with sync_playwright() as p:
     b = p.chromium.launch(); ctx = b.new_context(viewport={'width': W, 'height': H}, device_scale_factor=3, locale='ja-JP')
     pg = ctx.new_page()
     for name, body in PAGES.items():
+        if ONLY and name not in ONLY: continue
         pg.set_content('<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">' + CSS + '</head><body>' + body + '</body></html>')
         pg.wait_for_timeout(300)
         d = pg.evaluate(LEAF_JS)

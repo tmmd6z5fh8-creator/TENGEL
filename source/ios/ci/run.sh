@@ -219,6 +219,14 @@ want = {"1": "サンライズゴールド", "2": "テンゲルクイーン", "3"
 same = sum(1 for k, v in want.items() if nm.get(k) == v); bad = {k: nm.get(k) for k in want if nm.get(k) != want[k]}
 print("read %d same %d/12 -> %s%s" % (len(nm), same, "OK" if same >= 10 else "CHECK", ("  not same: " + json.dumps(bad, ensure_ascii=False)) if bad else ""))
 ' "$OUT/iphone-report-1.json" 2>&1)"
+    # 第4.227版：まもなく 締切の 架空の 画面（e_soon.jpg）を 本物の Vision で 読む → 締切済みに しない（soon）・上の 時計（17:58）を 発走に しない・9R・12頭
+    say "   ocr soon: $(python3 -c '
+import json, sys
+o = json.load(open(sys.argv[1])).get("ocrsoon") or {}
+ok = o.get("closed") is None and o.get("soon") is True and o.get("start") is None and o.get("r") == 9 and o.get("horses") == 12
+st = "OK" if ok else ("SKIP " + str(o.get("skipped")) if o.get("skipped") else "CHECK")
+print("closed %s soon %s start %s r %s dist %s n %s horses %s top %s -> %s" % (o.get("closed"), o.get("soon"), o.get("start"), o.get("r"), o.get("dist"), o.get("n"), o.get("horses"), json.dumps(o.get("top"), ensure_ascii=False)[:400], st))
+' "$OUT/iphone-report-1.json" 2>&1)"
     # 第4.172版：テンゲルBGM は なくした → 本物の WebKit で しかけ（window.TengelBgm）と 設定の 札が 入って いない・爆発の 動画の 形（H.264：第4.171版）を 読める
     say "   bgm: $(python3 -c '
 import json, sys

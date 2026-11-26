@@ -1613,8 +1613,12 @@ function closedOf(f, d) {
   if (!d || !(d.date || d.start)) return null;   // 画像に 日付も 発走時刻も なければ、時刻では 決めない（入力に 残って いた 日付で 決めると まちがえる）
   if (!/^\d{4}-\d{2}-\d{2}$/.test(f.date || '')) return null;
   const t = /^\d{2}:\d{2}$/.test(f.start || '') ? f.start : null;
+  // 第4.227版（まさちゃん 11/26 17:07「まもなく締め切りレースが締め切りレースになってる！」）：画像に 日付が ない ときは、入力の 日付が きょうより 前でも
+  //   きょうの レースと みなして 時刻を くらべる（前の 日に 使った 日付が 入力に 残って いると、まもなく 締切の レースが「発走 ○○ を過ぎている」で 締切済みに なって いた）。
+  //   きょう・先の 日付は そのまま（前売りの オッズ）
+  const today = todayJST(), day = d.date || f.date >= today ? f.date : today;
   // レースの 時刻は 日本時間（端末の 時間帯に よらない。お知らせの fireAt と 同じ +09:00）。発走時刻が ないときは その日の 終わりまで 締切前と みなす
-  const when = t ? Date.parse(`${f.date}T${t}:00+09:00`) : Date.parse(`${f.date}T23:59:59+09:00`) + 1000;
+  const when = t ? Date.parse(`${day}T${t}:00+09:00`) : Date.parse(`${day}T23:59:59+09:00`) + 1000;
   if (!isFinite(when)) return null;
   return now.getTime() >= when ? { by: 'time', id, at: now.toISOString(), start: t || '' } : null;
 }
