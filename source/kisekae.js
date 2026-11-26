@@ -13,6 +13,7 @@
 //   第4.219版：上の絵・設定タブの 動く タイル・見本は、画面の 外か ほかの 窓（トレーニングセンター・カードバトル・的中の 演出 など）の 下に ある 間も 止める（下の seen）。
 //   第4.92版：壁紙パック（買い切り 1,500円・10枚〔第4.147版で 11 → 10枚〕：kisekae/pack/）。いちばん 上の 組に 買う ボタンと 解放の 進み具合。買った あとに 読み込んだ レース 5つごとに
 //   1枚ずつ 使える ように なる（TengelWallet.pack）。ポイントでは 解放 できない。帯の 壁紙の ミッションの 枚数に 数える
+//   第4.224版：iPhone の 時計・電池の 帯（ステータスバー）を 上の 帯（header.top）の いちばん 上の 色に そろえる（色を アプリに 知らせる：下の「時計・電池の 帯」）
 //   Web版（ホーム画面のアプリ）では何もしない。
 (function () {
   'use strict';
@@ -603,12 +604,76 @@
     e.preventDefault(); b.click();
   }
 
+  // ---------- 時計・電池の 帯（第4.224版） ----------
+  // まさちゃん 2026/11/26 10:55「青四角のところ色壁紙の色と合わせることって可能？」（iPhone の いちばん 上の 時計・電池の 帯＝ステータスバー）：
+  //   帯は アプリ（Swift の ContentView）が 塗る。ここは すぐ 下の 上の 帯（header.top）の いちばん 上の 色を はかって、アプリに 知らせる だけ
+  //   （TengelNative.call('statusBar', { color: '#RRGGBB', light: 時計の 字を 白に するか })）。着せ替えの テーマ・ダークモードが かわったら はかり直す（同じ なら 送らない）。
+  //   ・上の 帯の 背景は 色 1つ か グラデーション（上に 点や 線の 模様が 重なる テーマも ある）→ いちばん 下の グラデーションの 上はしの 色（すき通る 色は 下の 色と まぜる）
+  //   ・時計の 字は 上の 帯の 字と 同じ 白／黒（帯の 字が 白っぽければ 白）。ただし その 色の 上で 読みにくい（明るさの 差が 3 より 小さい）ときは 反対の 色
+  const SB = { sent: null, key: '', t: 0 };
+  function sbRgba(s) {
+    return (String(s || '').match(/rgba?\([^)]*\)/g) || []).map(c => { const n = (c.match(/[\d.]+/g) || []).map(Number); return [n[0] || 0, n[1] || 0, n[2] || 0, n.length > 3 ? n[3] : 1]; });
+  }
+  function sbLayers(s) {                                   // いちばん 外の「,」で 区切る（かっこの 中の「,」は 区切らない）
+    const out = []; let d = 0, cur = '';
+    for (const ch of String(s || '')) { if (ch === '(') d++; else if (ch === ')') d--; if (ch === ',' && !d) { out.push(cur.trim()); cur = ''; } else cur += ch; }
+    if (cur.trim()) out.push(cur.trim());
+    return out;
+  }
+  function sbTop(layer) {                                  // グラデーションの 上はしの 色（上むき＝to top・0deg などは いちばん 最後・ほかは いちばん 最初の 色）
+    const m = /^(?:repeating-)?linear-gradient\(/i.exec(layer); if (!m) return null;
+    const inner = layer.slice(m[0].length, layer.lastIndexOf(')')), cs = sbRgba(inner); if (!cs.length) return null;
+    const head = sbLayers(inner)[0] || '', a = /^(-?[\d.]+)(deg|grad|rad|turn)$/i.exec(head);
+    let up = false;
+    if (a) up = Math.cos(+a[1] * { deg: 1, grad: .9, rad: 180 / Math.PI, turn: 360 }[a[2].toLowerCase()] * Math.PI / 180) > .01;
+    else if (/^to\s/i.test(head)) up = /\btop\b/i.test(head);
+    return up ? cs[cs.length - 1] : cs[0];
+  }
+  const sbMix = (c, u) => { const a = Math.max(0, Math.min(1, c[3])); return [0, 1, 2].map(i => c[i] * a + u[i] * (1 - a)).concat(1); };
+  function sbColor(hd) {
+    const cs = getComputedStyle(hd), page = sbRgba(getComputedStyle(document.body).backgroundColor)[0], bc = sbRgba(cs.backgroundColor)[0];
+    let under = page ? sbMix(page, [255, 255, 255]) : [255, 255, 255, 1];
+    if (bc) under = sbMix(bc, under);
+    const ls = sbLayers(cs.backgroundImage === 'none' ? '' : cs.backgroundImage);
+    let c = null;
+    for (let i = ls.length - 1; i >= 0 && !c; i--) c = sbTop(ls[i]);
+    return c ? sbMix(c, under) : under;
+  }
+  function sbLum(c) { const f = v => { v /= 255; return v <= .04045 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(c[0]) + .7152 * f(c[1]) + .0722 * f(c[2]); }
+  function sbCon(a, b) { const x = sbLum(a), y = sbLum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); }
+  function sbLight(bg, ink) {
+    const W = [255, 255, 255], K = [0, 0, 0];
+    const w = ink ? sbCon(ink, W) < sbCon(ink, K) : sbCon(bg, W) >= sbCon(bg, K);
+    const mine = sbCon(bg, w ? W : K), other = sbCon(bg, w ? K : W);
+    return mine >= 3 || mine >= other ? w : !w;
+  }
+  function sbMeasure() {
+    const hd = $('header.top'); if (!hd) return null;
+    const c = sbColor(hd), ink = sbRgba(getComputedStyle(hd).color)[0];
+    return { color: '#' + c.slice(0, 3).map(v => Math.round(v).toString(16).padStart(2, '0')).join('').toUpperCase(), light: sbLight(c, ink) };
+  }
+  function sbSync() {
+    SB.t = 0;
+    const N = window.TengelNative; if (!N || !N.call) return;
+    let p = null; try { p = sbMeasure(); } catch (e) { p = null; }
+    if (!p) return;
+    const key = p.color + (p.light ? 'W' : 'K'); if (key === SB.key) return;
+    SB.key = key; SB.sent = p;
+    N.call('statusBar', p).catch(() => { SB.key = ''; });
+  }
+  function sbSoon() { if (!SB.t) SB.t = setTimeout(sbSync, 30); }
+  try { new MutationObserver(sbSoon).observe(document.documentElement, { attributes: true, attributeFilter: ['data-ks', 'data-theme'] }); } catch (e) { /* なし */ }
+  try { const mq = window.matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', sbSoon); else if (mq.addListener) mq.addListener(sbSoon); } catch (e) { /* なし */ }
+  document.addEventListener('tengel:kisekae', sbSoon);
+  window.addEventListener('pageshow', sbSoon);
+
   // ---------- 起動 ----------
   css();
   let saved = 'default', lost = false;
   try { saved = localStorage.getItem(KEY) || 'default'; } catch (e) { saved = 'default'; }
   if (!byId[saved]) { saved = 'default'; lost = true; }      // 一覧に ない テーマ（第4.147版で 外した 壁紙 など）→ いつもの（下で 覚え直す）
   setAttr(saved); curId = saved;             // 色は起動の瞬間から（絵とPUSHは読めてから）
+  sbSoon();                                  // 第4.224版：時計・電池の 帯の 色も 起動の 瞬間から
   const ready = (async () => {
     card();
     await apply(saved, false);
@@ -664,6 +729,8 @@
 
   window.TengelKisekae = {
     on: true, ready: ready, list: () => A.themes.slice(), current: () => curId, apply: id => apply(id, true), usable: usable, unlocked: unlocked, count: count, fx: fx, pushArt: pushArt,
-    loaded: () => curId === 'default' || !!payload, band: Object.assign({}, A.band), paid: A.paid.slice(), motion: motion, phase: phase, live: liveId, pv: () => pv, pack: () => Object.assign({ ids: PK.ids.slice(), order: PK.order.slice() }, packInfo())
+    loaded: () => curId === 'default' || !!payload, band: Object.assign({}, A.band), paid: A.paid.slice(), motion: motion, phase: phase, live: liveId, pv: () => pv, pack: () => Object.assign({ ids: PK.ids.slice(), order: PK.order.slice() }, packInfo()),
+    // 第4.224版：時計・電池の 帯（アプリに 送った 色と 字の 白／黒・いまの 上の 帯で はかり直した 値）
+    statusBar: () => (SB.sent ? Object.assign({}, SB.sent) : null), statusBarNow: () => { try { return sbMeasure(); } catch (e) { return null; } }
   };
 })();
