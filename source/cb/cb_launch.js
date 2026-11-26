@@ -45,7 +45,10 @@
     clearTimeout(qtT); qtT = 0;
     if (!document.getElementById('cbLockCss')) {
       var st = document.createElement('style'); st.id = 'cbLockCss';
-      st.textContent = '#cbFab.lock{position:relative}#cbFab.lock::before{content:"🔒";position:absolute;right:-1px;top:-5px;z-index:1;font-size:15px;line-height:1;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.6));pointer-events:none}';
+      st.textContent = '#cbFab.lock{position:relative}#cbFab.lock::before{content:"🔒";position:absolute;right:-1px;top:-5px;z-index:1;font-size:15px;line-height:1;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.6));pointer-events:none}'
+        // 第4.230版（まさちゃん 2026/11/26 23:25「解放前の鍵マークアイコンから離れ過ぎてるから、ちゃんとアイコンに乗せて！」）：横 1列（#fabCol.rw）では ボタンの 幅が 丸より 広い
+        //   （1つ ぶんの 幅）→ 鍵は 丸の 右上の かどに 乗せる（右＝丸の 右はし・上＝丸の 上はし。大きさは 丸に 合わせる：丸の 25%・15px より 小さく しない）
+        + '#fabCol.rw #cbFab.lock::before{right:calc(50% - var(--fd) / 2);top:0;font-size:max(15px,calc(var(--fd) * .25))}';
       document.head.appendChild(st);
     }
     var on = locked(); fab.classList.toggle('lock', on);

@@ -235,9 +235,9 @@ try:
             check([t['rays'] for t in T['tone']] == sorted(t['rays'] for t in T['tone']) and T['tone'][0]['rays'] == 0 and T['tone'][5]['rays'] > T['tone'][3]['rays'] > 0, '光の すじ：青・緑は なし → 紫 から 増える')
             tone = pg.evaluate("""() => { const f = TCApp._t.dropTone; return [f(null), f({ k: 'pt', v: 10 }), f({ k: 'pt', v: 300 }), f({ k: 'rt', tier: 'normal' }), f({ k: 'rt', tier: 'maboroshi' }), f({ k: 'rt', tier: 'kamisama' }),
               f({ k: 'rt', tier: 'maboroshi', vis: 'maboroshi' }), f({ k: 'zn' }), f({ k: 'zn', vis: 'kamisama' }), f({ k: 'rt', tier: 'kamisama', vis: 'kamisama' }), f({ k: 'tk', n: 1 })]; }""")
-            check(tone == [0, 1, 1, 2, 3, 4, 5, 5, 5, 6, 6], f'色：10〜300P＝青・ルーレット 1/125＝緑・1/245＝紫・1/399＝赤・幻の馬の ルーレット＝金・特化ゾーン＝金・神様馬の ルーレット＝虹・チケット＝虹（{tone}）')
+            check(tone == [0, 1, 1, 2, 3, 4, 5, 5, 5, 6, 6], f'色：10〜300P＝青・ルーレット 1/225＝緑・1/345＝紫・1/499＝赤（第4.230版：分母 ＋100）・幻の馬の ルーレット＝金・特化ゾーン＝金・神様馬の ルーレット＝虹・チケット＝虹（{tone}）')
             odds = pg.evaluate("() => TCApp._t.PRIZES.filter(q => q[1].k === 'rt').map(q => [Math.round(1 / q[0]), q[1].tier])")
-            check(sorted(odds) == [[125, 'normal'], [245, 'maboroshi'], [399, 'kamisama']], f'その ルーレットの 確率は 今の 表の まま（{odds}）')
+            check(sorted(odds) == [[225, 'normal'], [345, 'maboroshi'], [499, 'kamisama']], f'その ルーレットの 確率は 今の 表の まま（第4.230版：1/225・1/345・1/499：{odds}）')
             check(pg.evaluate("async () => await TCApp.test.drop([1], true)") == 'off' and not pg.evaluate("() => TCDrop.isOpen()"), 'App Store版：テスト版の 道具（玉の 結果を 決める）は 動かない')
 
             # --- 入口 ---

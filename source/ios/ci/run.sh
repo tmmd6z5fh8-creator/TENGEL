@@ -124,11 +124,12 @@ CBPY='
 # 第4.196版：メニューに「⚔️ 決戦調査」（ボタンは 9こ：戻る・コンピュータと 対戦・決戦調査・部屋を 作る・部屋に 入る・遊び方・設定・ミッション・デザインカスタム）
 # 第4.212版：勝っても お世話トークンは もらえない（トレーニングセンターの 部品を 読まない＝tokens は None・state に owe は ない）・
 #   TENGERカードバトルは おもちゃ（3,000P で 解放）：解放の 前は 丸い ボタンに 🔒・押すと 解放の 窓（カードバトルは 開かない・本体も 読まない）→「やめる」→ 解放ずみに して 開く
+# 第4.230版：丸い ボタンは 下の タブの すぐ 上に 横 1列（row）・丸は 44〜80px・作戦会議と 着せ替えは 上の 帯の 中（dock：記録 だけ）
 import json, sys
 o = json.load(open(sys.argv[1])).get("cb") or {}
 rm = o.get("room") or {}; rb = o.get("roomBad") or {}; st = o.get("start") or {}; au = o.get("auto") or {}; s = o.get("state") or {}
 fd = o.get("fd") or []
-ok = (o.get("fab") or [])[:4] == ["tcFab", "oshiFab", "cbFab", "figFab"] and (o.get("col") is True or o.get("g2") is True) and len(fd) == 4 and len(set(fd)) == 1 and 36 <= fd[0] <= 66 and o.get("clear") is True and o.get("api") == "object" and rm.get("ok") is True and rm.get("state") == "idle" and rb.get("ok") is False and rb.get("why") == "room" \
+ok = (o.get("fab") or [])[:4] == ["tcFab", "oshiFab", "cbFab", "figFab"] and (o.get("row") is True or o.get("col") is True or o.get("g2") is True) and len(fd) == 4 and len(set(fd)) == 1 and 36 <= fd[0] <= 80 and o.get("clear") is True and o.get("api") == "object" and rm.get("ok") is True and rm.get("state") == "idle" and rb.get("ok") is False and rb.get("why") == "room" \
      and o.get("open") is True and len(o.get("menu") or []) == 9 and o.get("roomBtn") == [True, True] and st.get("hand") == 7 and st.get("op") in (6, 7) and st.get("deck") == 16 and st.get("turn") == 1 and st.get("turns") == 5 and au.get("ended") is True \
      and o.get("res") in ("win", "lose", "draw") and (o.get("discard") or 0) >= 2 * ((o.get("early") or 0) or 5) and bool(o.get("gift")) and (s.get("win", 0) + s.get("lose", 0) + s.get("draw", 0)) == 1 and o.get("closed") is True \
      and o.get("tokens") is None and "owe" not in s and ("バトルコイン %d" % (2 * (o.get("gift0") or 0))) in (o.get("coinl") or "") and o.get("coin0") == 2 * (o.get("gift0") or 0) \
@@ -136,7 +137,7 @@ ok = (o.get("fab") or [])[:4] == ["tcFab", "oshiFab", "cbFab", "figFab"] and (o.
 se = o.get("sets") or {}; bg = o.get("bgm") or {}; fire = o.get("fire") or []
 ok2 = se.get("fx") is False and isinstance(se.get("se"), bool) and isinstance(se.get("bgm"), bool) and bg.get("on") is False and abs((bg.get("len") or 0) - 80.53) < 0.02 and len(fire) == 2 and all(f.startswith("cbfire ") for f in fire) \
       and o.get("gear") == "bgm,se" and o.get("fxBtn") is False and o.get("board") == ["cb_board.webp", False] and not o.get("setsErr")
-print("fab %s column %s 2x2 %s icon %s clear-of-kise %s (view %s kise %s fabs %s) room-api %s bad-room %s open %s start %s played %s res %s wins %s discard %s early %s tokens %s closed %s coin %s->%s gifts %s -> %s" % ((o.get("fab") or [])[:4], o.get("col"), o.get("g2"), fd[:1], o.get("clear"), o.get("view"), o.get("kise"), o.get("fabRect"), rm, rb.get("why"), o.get("open"), st, au.get("kinds"), o.get("res"), o.get("wins"), o.get("discard"), o.get("early"), o.get("tokens"), o.get("closed"), o.get("coin0"), s.get("coin"), len(s.get("gifts") or []), "OK" if ok else "CHECK " + json.dumps(o, ensure_ascii=False)[:400]))
+print("fab %s row %s dock %s column %s 2x2 %s icon %s clear-of-kise %s (view %s kise %s fabs %s) room-api %s bad-room %s open %s start %s played %s res %s wins %s discard %s early %s tokens %s closed %s coin %s->%s gifts %s -> %s" % ((o.get("fab") or [])[:4], o.get("row"), o.get("dock"), o.get("col"), o.get("g2"), fd[:1], o.get("clear"), o.get("view"), o.get("kise"), o.get("fabRect"), rm, rb.get("why"), o.get("open"), st, au.get("kinds"), o.get("res"), o.get("wins"), o.get("discard"), o.get("early"), o.get("tokens"), o.get("closed"), o.get("coin0"), s.get("coin"), len(s.get("gifts") or []), "OK" if ok else "CHECK " + json.dumps(o, ensure_ascii=False)[:400]))
 print("   card battle settings: sets %s bgm %s fire %s gear %s fx-button %s board %s err %s -> %s" % (se, bg, fire, o.get("gear"), o.get("fxBtn"), o.get("board"), o.get("setsErr"), "OK" if ok2 else "CHECK"))
 ty = o.get("toy") or {}; af = ty.get("after") or {}
 ok3 = ty.get("locked") is True and ty.get("lock") is True and "3,000P" in (ty.get("ask") or "") and "TENGERカードバトル" in (ty.get("ask") or "") and ty.get("btn") in ("go,no", "buy,no") and ty.get("cbOpen") is False and ty.get("bundle") is False \

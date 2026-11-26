@@ -45,7 +45,8 @@ const TCGuide = (() => {
   // 第4.165版（まさちゃん 11/13 11:46「お世話でポイントGET 確率少し変える(ここだけ) 1/15で10P 1/25で20P 1/55で50P 1/95で100P」）：10P 1/10 → 1/15・20P 1/20 → 1/25・50P 1/50 → 1/55・100P 1/85 → 1/95（ほかは そのまま）
   // 第4.165版（11/13 12:51「ポイントの特化ゾーンを作る … 特化ゾーンも、トレーニングセンターの説明書に追加」）：ポイント特化ゾーン（tc_app.js の ZONE と 同じ 数：test_tc.py が 見くらべる）
   //   1/699 で 入る（どの 表にも 1行）・スタート 1,000P・レバー 1回ごとに 60% で ＋2,000P・12回 つづけて 上乗せで MAX 25,000P・平均 約3,993P（≒4,000P）
-  const ZONE = { d: 699, start: 1000, add: 2000, rate: 0.6, max: 12 };
+  //   第4.230版（まさちゃん 2026/11/27 00:13「この赤四角の中、当選確率それぞれ100増やして！」）：1/699 → 1/799
+  const ZONE = { d: 799, start: 1000, add: 2000, rate: 0.6, max: 12 };
   const ZV = n => ZONE.start + ZONE.add * n, ZP = n => (n < ZONE.max ? Math.pow(ZONE.rate, n) * (1 - ZONE.rate) : Math.pow(ZONE.rate, ZONE.max));      // 上乗せ n回の 合計・そう なる 確率
   const ZAVG = Array.from({ length: ZONE.max + 1 }, (_, n) => ZV(n) * ZP(n)).reduce((a, b) => a + b, 0);
   const cm = v => Math.round(v).toLocaleString('ja-JP');
@@ -53,7 +54,9 @@ const TCGuide = (() => {
   // 第4.175版（まさちゃん 2026/11/15 13:56「トレーニングセンターに激馬熱馬当選を追加　1/299999 … 40000P」）：激馬熱馬（tc_app.js の GEKI と 同じ 数：test_tc.py が 見くらべる）。どの 表にも 1行
   const GEKI = { d: 299999, v: 40000 };
   const GROW = R(GEKI.d, `<span class="gk">激馬熱馬</span>（${cm(GEKI.v)}P）`);
-  const CARE = [15, 25, 55, 95, 99, 121, 125, 245, 399, 600, ZONE.d, GEKI.d];      // お世話の 当たり ぜんぶ（合わせた ％を 出す）
+  // 第4.230版：ルーレット 1/125・1/245・1/399 → 1/225・1/345・1/499・チケット 1/600 → 1/700（tc_app.js の PRIZES と 同じ 数：test_tc.py が 見くらべる）
+  const RTD = [225, 345, 499], TKD = 700;
+  const CARE = [15, 25, 55, 95, 99, 121, RTD[0], RTD[1], RTD[2], TKD, ZONE.d, GEKI.d];      // お世話の 当たり ぜんぶ（合わせた ％を 出す）
   // 第4.165版：お世話トークンの 購入（組は points.js の TOKEN_PACKS：なければ 同じ 数）・たまる 間（tc_app.js の TOKEN_MIN と 同じ 数：test_tc.py が 見くらべる）
   const TOK = { every: 5, step: 5, max: 25 };
   const PACKS = ((typeof window !== 'undefined' && window.TengelPoints && window.TengelPoints.TOKEN_PACKS) || [[1, 100], [5, 500], [10, 1000], [15, 1500], [20, 2000], [25, 2500]]).map(x => x.slice());
@@ -98,8 +101,8 @@ const TCGuide = (() => {
       <p class="note">途中でアプリを閉じても、たまった当たりはなくならないよ（次に開いたときに「保留結果を見る」から）</p>`],
     ['P', '#e0a020', 'お世話でポイントGETチャンス', `<p>ご飯・お掃除の後の<b>PUSH</b>を押すたびに抽選！</p>
       <table data-tab="care">${R(15, PT(10))}${R(25, PT(20))}${R(55, PT(50))}${R(95, PT(100))}${R(99, PT(200))}${R(121, PT(300))}
-      ${R(125, RT(800, 1600))}${R(245, RT(1600, 3200))}${R(399, RT(3200, 6400))}
-      ${R(600, '<span class="tk">チケット</span>（壁紙 or ' + TKP + 'P・1〜3枚）')}${ZROW}${GROW}</table>
+      ${R(RTD[0], RT(800, 1600))}${R(RTD[1], RT(1600, 3200))}${R(RTD[2], RT(3200, 6400))}
+      ${R(TKD, '<span class="tk">チケット</span>（壁紙 or ' + TKP + 'P・1〜3枚）')}${ZROW}${GROW}</table>
       <p class="note" data-n="sum">全部 合わせて ${pc(1 / CARE.reduce((a, d) => a + 1 / d, 0))}（何か 当たる）</p>
       <p class="note">ルーレットは どちらも 50%</p>
       <p class="note">チケットは 3枚 ${pc(8)}・2枚 ${pc(3)}・1枚 ${pc(24, 13)}</p>

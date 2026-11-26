@@ -185,19 +185,18 @@ def opp(pg, a):
     return r
 
 
-def fab_ok(rc, vw, tab, two=False):
-    """右下の 丸い ボタン（順：トレーニングセンター・推し馬・カードバトル・思い出フィギュア）の ならび。
-       two=False：たてに 1列（上から 順に・まん中が そろう・すきまは 8px まで）／two=True（たての 短い 画面）：2列 × 2段＝左の 列：トレーニングセンターの すぐ 下に 推し馬／右の 列：カードバトルの すぐ 下に 思い出フィギュア。
-       どれも 重ならない・画面の 中・下の タブの 上"""
+def fab_ok(rc, vw, tab):
+    """丸い ボタン（順：トレーニングセンター・推し馬・カードバトル・思い出フィギュア）の ならび（第4.230版：下の タブの すぐ 上に 横 1列）。
+       左から 順に・となり あう（1つ ぶんの 幅は 同じ・すきま なし）・上が そろう・重ならない・画面の 中・下の タブの すぐ 上（3〜5px）"""
     if len(rc) != 4: return False
-    mid = lambda r: (r[0] + r[2]) / 2
-    under = lambda a, b: a[3] <= b[1] + 1 and b[1] - a[3] <= 8 and abs(mid(a) - mid(b)) <= 2
-    tc, oshi, cb, fig = rc
-    if two: ok = under(tc, oshi) and under(cb, fig) and abs(cb[1] - tc[1]) <= 1 and cb[0] >= tc[2] - 1 and cb[0] - tc[2] <= 8 and fig[0] >= oshi[2] - 1
-    else: ok = under(tc, oshi) and under(oshi, cb) and under(cb, fig)
+    ok = all(abs(rc[i][2] - rc[i + 1][0]) <= 1 and abs(rc[i][1] - rc[i + 1][1]) <= 1 and abs((rc[i][2] - rc[i][0]) - (rc[i + 1][2] - rc[i + 1][0])) <= 1 for i in range(3))
     lap = any(a[0] < c[2] - 1 and c[0] < a[2] - 1 and a[1] < c[3] - 1 and c[1] < a[3] - 1 for i, a in enumerate(rc) for c in rc[i + 1:])
-    return bool(ok and not lap and min(r[0] for r in rc) >= 0 and max(r[2] for r in rc) <= vw and max(r[3] for r in rc) <= tab - 3)
+    return bool(ok and not lap and min(r[0] for r in rc) >= 0 and max(r[2] for r in rc) <= vw and 3 <= tab - max(r[3] for r in rc) <= 5)
 
+
+def fdx(w):
+    """横 1列の 丸の 大きさ（tc/tc_launch.js の fabFit と 同じ：1つ ぶんの 幅の 80%・44〜80px・列の 幅は 480px まで）"""
+    return max(44, min(80, int((min(w, 480) - 8) / 4 * 0.8)))
 
 def tap(pg, k):
     """自分の 手札の カード（種類 k）を タップ"""
@@ -227,54 +226,50 @@ try:
         pg.on('request', lambda r: reqs.append(r.url.split('/')[-1].split('?')[0]))
         pg.goto(APP); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(700)
 
-        print('■ 入口：右下の 丸い ボタン（たてに 4つ）の 上から 3番目 ＝ 推し馬の 下・思い出フィギュアの 上')
+        print('■ 入口：下の タブの すぐ 上の 丸い ボタン（第4.230版：横 1列）の 左から 3番目 ＝ 推し馬の 右・思い出フィギュアの 左')
         pg.evaluate("() => { const m = document.getElementById('minibar'); if (m) m.hidden = true; }"); pg.wait_for_timeout(500)
         FAB = """() => { const R = e => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)]; };
-          const ks = [...document.querySelectorAll('#fabCol > button')].sort((a, b) => getComputedStyle(a).order - getComputedStyle(b).order), c = document.querySelector('#cbFab');
-          if (!c) return null; const im = c.querySelector('.fabi img'), ir = c.querySelector('.fabi').getBoundingClientRect();
-          const top = ['planBtn', 'kiseBtn'].map(i => document.getElementById(i)).filter(Boolean).map(R);
-          return { ids: ks.map(k => k.id), rc: ks.map(R), order: getComputedStyle(c).order, iws: ks.map(k => Math.round(k.querySelector('.fabi').getBoundingClientRect().width)), g2: document.querySelector('#fabCol').classList.contains('g2'), lfs: parseFloat(getComputedStyle(c.querySelector('.fabl')).fontSize), name: c.querySelector('.fabl').textContent, aria: c.getAttribute('aria-label'), img: im ? im.getAttribute('src') : '', nat: im ? im.naturalWidth : 0,
-            iw: Math.round(ir.width), tab: Math.round(document.querySelector('.tabbar').getBoundingClientRect().top), hb: Math.round(document.querySelector('header.top').getBoundingClientRect().bottom), top: top, vw: innerWidth, vh: innerHeight, api: typeof window.TengelCB }; }"""
+          const ks = [...document.querySelectorAll('#fabCol > button')].sort((a, b) => getComputedStyle(a).order - getComputedStyle(b).order), c = document.querySelector('#cbFab'), col = document.querySelector('#fabCol');
+          if (!c) return null; const im = c.querySelector('.fabi img'), ir = c.querySelector('.fabi').getBoundingClientRect(), hd = document.querySelector('header.top');
+          const top = ['planBtn', 'kiseBtn'].map(i => document.getElementById(i)).filter(Boolean);
+          return { ids: ks.map(k => k.id), rc: ks.map(R), order: getComputedStyle(c).order, iws: ks.map(k => Math.round(k.querySelector('.fabi').getBoundingClientRect().width)), g2: col.classList.contains('g2'), rw: col.classList.contains('rw'),
+            lfs: parseFloat(getComputedStyle(c.querySelector('.fabl')).fontSize), name: c.querySelector('.fabl').textContent, aria: c.getAttribute('aria-label'), img: im ? im.getAttribute('src') : null, nat: im ? im.naturalWidth : 0,
+            iw: Math.round(ir.width), tab: Math.round(document.querySelector('.tabbar').getBoundingClientRect().top), hb: Math.round(hd.getBoundingClientRect().bottom), top: top.map(R),
+            inHd: top.map(e => e.parentNode === hd && e.classList.contains('dk')), vw: innerWidth, cw: document.documentElement.clientWidth, vh: innerHeight, api: typeof window.TengelCB }; }"""
         pg.wait_for_function("() => !TengelFab.busy()", timeout=8000); pg.wait_for_timeout(300)      # はじめの 2秒は 丸の 大きさを 決め直さない（落ち着いて から）
         fb = pg.evaluate(FAB)
         check(fb is not None and fb['ids'] == ['tcFab', 'oshiFab', 'cbFab', 'figFab'] and fb['order'] == '2' and fb['api'] == 'object',
-              f'順は トレーニングセンター → 推し馬 → カードバトル → 思い出フィギュア（まさちゃん 11/16 00:47）{fb and fb["ids"]}')
+              f'順は 左から トレーニングセンター → 推し馬 → カードバトル → 思い出フィギュア（まさちゃん 11/16 00:47 の 順・第4.230版：横に）{fb and fb["ids"]}')
         low0 = fb['tab'] - max(r[3] for r in fb['rc'])
-        check(fb['name'] == 'TENGER\nカードバトル' and fb['aria'].startswith('TENGERカードバトル') and fb['iws'] == [66] * 4 and not fb['g2'] and fb['lfs'] == 9.5 and fab_ok(fb['rc'], 390, fb['tab']) and 3 <= low0 <= 5,
-              f'たてに 4つ（1列）・丸い 絵は 4つとも 同じ 大きさ（ここは 上の絵が ない ので 元の 66px）・下に 名前の 札「TENGER／カードバトル」（まさちゃん 11/16 01:16・字 {fb["lfs"]}px）・重ならない・'
-              f'列の 下は 下の タブの すぐ 上（すきま {low0}px：下に 空間を あけない）（{fb["rc"]}）')
-        gap0 = min(r[1] for r in fb['rc']) - max(t[3] for t in fb['top'])
-        check(all(r[1] >= t[3] + 3 or r[0] >= t[2] or r[2] <= t[0] for r in fb['rc'] for t in fb['top']) and min(r[1] for r in fb['rc']) > fb['hb'] + 60 and gap0 >= 3,
-              f'右上の「作戦会議」「壁紙&ボード着せ替え」に 重ならない（列の 上 {min(r[1] for r in fb["rc"])}・右上の ボタンの 下 {[t[3] for t in fb["top"]]}。壁紙ごとの すきまは test_plan_entry.py が 測る）')
+        check(fb['name'] == 'TENGER\nカードバトル' and fb['aria'].startswith('TENGERカードバトル') and fb['iws'] == [fdx(fb['cw'])] * 4 and fb['rw'] and not fb['g2'] and 8 <= fb['lfs'] <= 11.5 and fab_ok(fb['rc'], 390, fb['tab']) and 3 <= low0 <= 5,
+              f'第4.230版（まさちゃん 11/26 22:46）：下の タブの すぐ 上に 横 1列（すきま {low0}px）・丸い 絵は 4つとも 同じ 大きさ（幅 390 で {fb["iws"][0]}px：1つ ぶんの 幅の 80%）・'
+              f'下に 名前の 札「TENGER／カードバトル」（字 {fb["lfs"]}px）・重ならない（{fb["rc"]}）')
+        check(len(fb['top']) == 2 and all(fb['inHd']) and all(t[3] <= fb['hb'] + 0.5 for t in fb['top']) and min(r[1] for r in fb['rc']) > fb['hb'] + 300,
+              f'作戦会議・壁紙&ボード着せ替えは 上の 帯の 中（下の はし {[t[3] for t in fb["top"]]} ≦ 帯の 下 {fb["hb"]}）＝ 丸い ボタンの 列（上の はし {min(r[1] for r in fb["rc"])}）とは はなれて いる')
         if HAVE:
             check(fb['img'] == 'cb_icon.webp' and fb['nat'] == 240, f'ボタンの 絵（cb_icon.webp・240×240）')
         else:
             check(pg.locator('#cbFab .fabt').count() == 1 and pg.locator('#cbFab .fabt').inner_text() == 'バトル', '絵が ない とき：字の 丸「バトル」')
         shot(pg, 'cb_fab')
-        # たての 短い 画面（iPhone SE：375×647）でも 重ならない
+        # たての 短い 画面（iPhone SE：375×647）でも 横 1列
         pg2 = ctx.new_page(); pg2.set_viewport_size({'width': 375, 'height': 647}); pg2.goto(APP); pg2.wait_for_timeout(1300); gate(pg2); pg2.wait_for_timeout(600)
         pg2.evaluate("() => { const m = document.getElementById('minibar'); if (m) m.hidden = true; }"); pg2.wait_for_timeout(400)
         pg2.wait_for_function("() => !TengelFab.busy()", timeout=8000); pg2.wait_for_timeout(300)
-        f2 = pg2.evaluate(FAB); g2 = min(r[1] for r in f2['rc']) - max(t[3] for t in f2['top']); low2 = f2['tab'] - max(r[3] for r in f2['rc'])
-        check(f2['ids'] == ['tcFab', 'oshiFab', 'cbFab', 'figFab'] and f2['iws'] == [66] * 4 and not f2['g2'] and fab_ok(f2['rc'], 375, f2['tab']) and 3 <= g2 <= 10 and 3 <= low2 <= 5,
-              f'たての 短い 画面（iPhone SE：375×647・上の絵なし）：たてに 4つ・丸 {f2["iws"][0]}px で「壁紙&ボード着せ替え」の すぐ 下（すきま {g2}px）〜 下の タブの すぐ 上（すきま {low2}px）を ぴったり うめる')
+        f2 = pg2.evaluate(FAB); low2 = f2['tab'] - max(r[3] for r in f2['rc'])
+        check(f2['ids'] == ['tcFab', 'oshiFab', 'cbFab', 'figFab'] and f2['iws'] == [fdx(f2['cw'])] * 4 and f2['rw'] and not f2['g2'] and fab_ok(f2['rc'], 375, f2['tab']) and 3 <= low2 <= 5 and all(f2['inHd']),
+              f'たての 短い 画面（iPhone SE：375×647）：横 1列・丸 {f2["iws"][0]}px・下の タブの すぐ 上（すきま {low2}px）・作戦会議と 着せ替えは 上の 帯の 中')
         shot(pg2, 'cb_fab_small')
-        # 上の絵が ある とき（壁紙。ここでは 同じ 高さの 箱を 入れて ためす：上の絵 160px − 上の よせ 16px ＋ 下の あき 14px）：着せ替えの ボタンが 下がる → 丸を 小さく して ぴったり うめる。
-        #   本物の iPhone の 大きさ（アプリの 画面＝iPhone の 高さ − 上の 時計の 帯・下は ホームバーの ぶん）で：丸の 大きさは 画面ごとに 決まる。iPhone SE は たてに 入らない → 2列 × 2段（判定の 帯の 上）
+        # 上の絵が ある とき（壁紙。ここでは 同じ 高さの 箱を 入れて ためす）：第4.230版から 丸の 大きさは 画面の 幅 だけで 決まる（前は 着せ替えの ボタンの 下に おさまる 大きさ）。
+        #   本物の iPhone の 大きさ（アプリの 画面＝iPhone の 高さ − 上の 時計の 帯・下は ホームバーの ぶん）で
         pg2.evaluate("() => { const v = document.getElementById('v-judge'), s = document.createElement('div'); s.id = 'cbSp'; s.style.height = '158px'; v.insertBefore(s, v.firstChild); }")
         sizes = {}
-        for dn, vw3, vh3, sab3, two3 in (('iPhone SE', 375, 647, 0, True), ('iPhone 12/13 mini', 375, 762, 34, False), ('iPhone 12〜14', 390, 797, 34, False), ('iPhone 16 Pro', 402, 812, 34, False), ('iPhone Plus／Pro Max', 430, 873, 34, False)):
+        for dn, vw3, vh3, sab3 in (('iPhone SE', 375, 647, 0), ('iPhone 12/13 mini', 375, 762, 34), ('iPhone 12〜14', 390, 797, 34), ('iPhone 16 Pro', 402, 812, 34), ('iPhone Plus／Pro Max', 430, 873, 34)):
             pg2.set_viewport_size({'width': vw3, 'height': vh3}); pg2.evaluate("(s) => document.documentElement.style.setProperty('--bottom-inset', s + 'px')", sab3); pg2.wait_for_timeout(500)
             pg2.wait_for_function("() => !TengelFab.busy()", timeout=8000); pg2.wait_for_timeout(300)
-            f3 = pg2.evaluate(FAB); g3 = min(r[1] for r in f3['rc']) - max(t[3] for t in f3['top']); low3 = f3['tab'] - max(r[3] for r in f3['rc']); d3 = f3['iws'][0]; sizes[dn] = d3
-            if two3:
-                check(f3['iws'] == [d3] * 4 and 36 <= d3 <= 66 and f3['g2'] and fab_ok(f3['rc'], vw3, f3['tab'], two=True) and g3 >= 3 and 33 <= low3 <= 50,
-                      f'{dn}（アプリの 画面 {vw3}×{vh3}・上の絵 あり）：たてに 4つは 入らない（丸を 36px に しても）→ 2列 × 2段（左：トレーニングセンター・推し馬／右：カードバトル・思い出フィギュア）・丸 {d3}px・'
-                      f'右上の ボタンに 重ならない（すきま {g3}px）・判定の 帯の 上（下の タブから {low3}px）')
-            else:
-                check(f3['iws'] == [d3] * 4 and 36 <= d3 <= 66 and not f3['g2'] and fab_ok(f3['rc'], vw3, f3['tab']) and (3 <= g3 <= 10 or d3 == 66) and 3 <= low3 <= 5 and f3['lfs'] >= 7,
-                      f'{dn}（アプリの 画面 {vw3}×{vh3}・下の あき {sab3}・上の絵 あり）：たてに 4つ・丸 {d3}px（名前の 字 {round(f3["lfs"], 1)}px）で「壁紙&ボード着せ替え」の すぐ 下（すきま {g3}px）〜 下の タブの すぐ 上（すきま {low3}px）を ぴったり うめる')
-        check(sizes['iPhone 12/13 mini'] < sizes['iPhone 12〜14'] < sizes['iPhone Plus／Pro Max'] and 50 <= sizes['iPhone 12〜14'] <= 62, f'丸の 大きさは 画面が 大きい ほど 大きい {sizes}')
+            f3 = pg2.evaluate(FAB); low3 = f3['tab'] - max(r[3] for r in f3['rc']); d3 = f3['iws'][0]; sizes[dn] = d3
+            check(f3['iws'] == [fdx(f3['cw'])] * 4 and 44 <= d3 <= 80 and f3['rw'] and not f3['g2'] and fab_ok(f3['rc'], vw3, f3['tab']) and 3 <= low3 <= 5 and f3['lfs'] >= 8 and all(f3['inHd']),
+                  f'{dn}（アプリの 画面 {vw3}×{vh3}・下の あき {sab3}・上の絵 あり）：横 1列・丸 {d3}px（名前の 字 {round(f3["lfs"], 1)}px）・下の タブの すぐ 上（すきま {low3}px）')
+        check(sizes['iPhone 12/13 mini'] < sizes['iPhone 12〜14'] < sizes['iPhone Plus／Pro Max'] and 70 <= sizes['iPhone 12〜14'] <= 80 and sizes['iPhone SE'] == sizes['iPhone 12/13 mini'], f'丸の 大きさは 画面の 幅が 広い ほど 大きい（たての 長さには よらない）{sizes}')
         pg2.evaluate("() => { document.documentElement.style.removeProperty('--bottom-inset'); document.getElementById('cbSp').remove(); }")
 
         print('■ おもちゃの 解放（第4.212版：TENGERカードバトルは 3,000P で 解放）')

@@ -183,7 +183,9 @@ try:
             FAM = """() => { const fam = e => getComputedStyle(e).fontFamily.split(',')[0].trim().replace(/"/g, ''), pr = document.createElement('span'); pr.style.fontFamily = 'var(--font-display)'; document.body.appendChild(pr);
               const r = { body: fam(document.querySelector('.card') || document.body), disp: fam(pr), cur: TengelKisekae.current() }; pr.remove(); return r; }"""
             f0 = pg.evaluate(FAM)
+            #   第4.230版：ポイントで 解放する 壁紙は ぜんぶ ＋2,000P（いちばん 安い のが 6,500P）＝ 今の ポイントより 高い ときは、足りない ぶんを テスト用に 足して から 解放する
             th = pg.evaluate("""async () => { const ts = TengelKisekae.list().filter(t => t.id !== 'default' && t.price).sort((a, b) => a.price - b.price), fam = e => getComputedStyle(e).fontFamily.split(',')[0].trim().replace(/"/g, '');
+              if (ts.length && TengelWallet.total() < ts[0].price) await TengelWallet.grant('test-login-wall', ts[0].price - TengelWallet.total(), 'テストの 当たり');
               for (const t of ts.slice(0, 6)) { if (!(TengelKisekae.usable(t.id) || await TengelWallet.unlock('theme:' + t.id, t.price))) continue; await TengelKisekae.apply(t.id, false); await new Promise(r => setTimeout(r, 500));
                 if (fam(document.querySelector('.card') || document.body) !== 'BIZ UDPGothic') return t.id; } return null; }""")
             pg.wait_for_timeout(900); f1 = pg.evaluate(FAM)

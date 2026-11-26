@@ -168,7 +168,9 @@ try:
           return { hb: a.bottom, top: c.top, left: c.left, right: c.right, bottom: c.bottom, tab: R(t).top, ct: cc.top, cb: cc.bottom, cl: cc.left, cr: cc.right, name: l.textContent, lt: q.top, lb: q.bottom, lw: q.width, lh: q.height, ib: ii.bottom, iw: ii.width, ih: ii.height,
             ff: cs.fontFamily, fw: cs.fontWeight, fs: cs.fontSize, bg: cs.backgroundImage + cs.backgroundColor, ink: cs.color, line: cs.borderTopColor, order: getComputedStyle(f).order, bnb: bn && !bn.hidden ? R(bn).bottom : 0,
             oshi: (() => { const o = document.querySelector('#oshiFab'); if (!o) return null; const r = R(o); return [r.top, r.bottom, getComputedStyle(o).order, o.querySelector('.fabl').textContent, r.left, r.right]; })(),
-            cbf: (() => { const o = document.querySelector('#cbFab'); if (!o) return null; const r = R(o); return [r.top, r.bottom, getComputedStyle(o).order, o.querySelector('.fabl').textContent, r.left, r.right]; })() }; }"""
+            cbf: (() => { const o = document.querySelector('#cbFab'); if (!o) return null; const r = R(o); return [r.top, r.bottom, getComputedStyle(o).order, o.querySelector('.fabl').textContent, r.left, r.right]; })(),
+            fig: (() => { const o = document.querySelector('#figFab'); if (!o) return null; const r = R(o); return [r.top, r.bottom, getComputedStyle(o).order, o.querySelector('.fabl').textContent, r.left, r.right]; })(),
+            rw: col.classList.contains('rw'), lab: [...col.children].sort((a, b) => getComputedStyle(a).order - getComputedStyle(b).order).map(b => b.querySelector('.fabl')).map(e => { const r = e.getBoundingClientRect(); return [Math.round(r.width * 10) / 10, Math.round(r.height * 10) / 10, e.classList.contains('l1')]; }) }; }"""
         #   第4.168版（まさちゃん 11/14 02:12「青四角の項目は、表示されるページは画面を上下にスライドしても、位置がずれずそこにいるようにして！」）：列は いつも 同じ 所
         #   ＝判定の 帯（#minibar）が 出る 高さの すぐ 上（下の タブから 約43px 上）。前は 帯が 出ると 上へ・消えると 下へ 動いた（ページを 送ると 帯が 出たり 消えたり する）
         pg.evaluate("() => document.querySelectorAll('.tabbar button')[2].click()"); pg.wait_for_timeout(500)
@@ -177,15 +179,19 @@ try:
         #   第4.176版：カードバトルが 入って 4つ。まさちゃん 11/16 00:34「丸のアイコン組を少し小さくして！ピッタリ収まるようにできない？」・00:47「トレーニングセンターを一番上、カードバトルを思い出フィギュアの上にして」
         #     ＝ たてに 4つ（1列）：上から トレーニングセンター（列の 上）→ 推し馬 → カードバトル（→ 思い出フィギュア）・丸の 大きさは 画面に 合わせる（ここは 上の絵が ない ので もとの 66px）
         #     01:15「この青四角下の空間気になる。大きさ調整して空間があかないようにして！」＝ 列の 下は 下の タブの すぐ 上（前は 判定の 帯の 上＝下の タブから 約43px 上）
-        mx = lambda a, b: (a + b) / 2
-        check(pos is not None and 3 <= pos['tab'] - pos['cb'] <= 6 and pos['cr'] <= 390 and pos['cl'] >= 390 - 4 - 76 and pos['ct'] > pos['hb'] + 150 and pos['oshi'] is not None and pos['cbf'] is not None and abs(pos['top'] - pos['ct']) <= 1
-              and pos['bottom'] <= pos['oshi'][0] + 0.5 and pos['oshi'][0] - pos['bottom'] <= 8 and pos['oshi'][1] <= pos['cbf'][0] + 0.5 and pos['cbf'][0] - pos['oshi'][1] <= 8
-              and abs(mx(pos['left'], pos['right']) - mx(pos['oshi'][4], pos['oshi'][5])) <= 2 and abs(mx(pos['left'], pos['right']) - mx(pos['cbf'][4], pos['cbf'][5])) <= 2 and abs(pos['right'] - pos['cr']) <= 4
-              and [pos['order'], pos['oshi'][2], pos['cbf'][2]] == ['0', '1', '2'] and pos['oshi'][3] == '推し馬' and pos['cbf'][3].replace('\n', '') == 'TENGERカードバトル',
-              f'ボタンの 列は 下の タブの すぐ 上（下の タブから {pos and round(pos["tab"] - pos["cb"])}px）・右はし（上の 帯からは はなれて いる）・たてに 1列（上から トレーニングセンター → 推し馬 → TENGERカードバトル）（{pos and [round(pos["ct"]), round(pos["cb"]), round(pos["tab"]), round(pos["cl"]), round(pos["cr"])]}）')
-        check(pos is not None and pos['name'] == 'トレーニング\nセンター' and pos['ib'] - 9 <= pos['lt'] <= pos['ib'] + 4 and abs(pos['iw'] - 66) < 1 and abs(pos['ih'] - 66) < 1 and 56 <= pos['lw'] <= 76 and 22 <= pos['lh'] <= 32
-              and abs(pos['lb'] - pos['bottom']) < 1 and pos['right'] - pos['left'] <= 76,
-              f'絵（66px）の 下に 名前の 札「トレーニング／センター」（2行・はば {pos and round(pos["lw"])}px＝絵と ほぼ 同じ はば・高さ {pos and round(pos["lh"])}px）')
+        #   第4.230版（まさちゃん 11/26 22:46「紫四角の中のアイコンを、青四角のところに配置して」）：下の タブの すぐ 上に 横 1列（画面の 幅いっぱい・4つで 等分・左から トレーニングセンター → 推し馬 →
+        #     TENGERカードバトル → 思い出フィギュア）。丸は 1つ ぶんの 幅の 80%（幅 390 で 76px：23:16「大きさもう少し隙間なく入るようにして！」）・うしろの 地は なし（前と 同じ）
+        check(pos is not None and 3 <= pos['tab'] - pos['cb'] <= 6 and pos['cl'] == 0 and pos['cr'] == 390 and pos['ct'] > pos['hb'] + 150 and pos['oshi'] is not None and pos['cbf'] is not None and pos['fig'] is not None and abs(pos['top'] - pos['ct']) <= 1
+              and abs(pos['left'] - 4) <= 0.6 and abs(pos['right'] - pos['oshi'][4]) <= 0.6 and abs(pos['oshi'][5] - pos['cbf'][4]) <= 0.6 and abs(pos['cbf'][5] - pos['fig'][4]) <= 0.6 and abs(pos['fig'][5] - 386) <= 0.6
+              and all(abs(x[0] - pos['top']) <= 0.6 for x in (pos['oshi'], pos['cbf'], pos['fig'])) and pos['rw']
+              and [pos['order'], pos['oshi'][2], pos['cbf'][2], pos['fig'][2]] == ['0', '1', '2', '3'] and pos['oshi'][3] == '推し馬' and pos['cbf'][3].replace('\n', '') == 'TENGERカードバトル',
+              f'ボタンの 列は 下の タブの すぐ 上（下の タブから {pos and round(pos["tab"] - pos["cb"])}px）・画面の 幅 いっぱいに 横 1列（左から トレーニングセンター → 推し馬 → TENGERカードバトル → 思い出フィギュア・'
+              f'4つで 等分）（{pos and [round(pos["ct"]), round(pos["cb"]), round(pos["tab"]), round(pos["cl"]), round(pos["cr"])]}）')
+        check(pos is not None and len(pos['lab']) == 4 and len({(w, h) for w, h, _ in pos['lab']}) == 1 and [x[2] for x in pos['lab']] == [False, True, False, False],
+              f'名前の 札は 4つとも 同じ 大きさ（{pos and pos["lab"][0][:2]}）・1行の「推し馬」は 字を 大きく して 札の まん中（まさちゃん 11/26 23:16「推し馬の文字だけ小さく見えるから周りと合わせて！」）')
+        check(pos is not None and pos['name'] == 'トレーニング\nセンター' and pos['ib'] - 9 <= pos['lt'] <= pos['ib'] + 4 and abs(pos['iw'] - 76) < 1 and abs(pos['ih'] - 76) < 1 and 70 <= pos['lw'] <= 95 and 26 <= pos['lh'] <= 38
+              and abs(pos['lb'] - pos['bottom']) < 1 and 90 <= pos['right'] - pos['left'] <= 100,
+              f'絵（76px）の 下に 名前の 札「トレーニング／センター」（2行・はば {pos and round(pos["lw"])}px・高さ {pos and round(pos["lh"])}px）')
         seen = []
         for i in range(5):
             pg.evaluate("(i) => { document.querySelectorAll('.tabbar button')[i].click(); const m = document.getElementById('minibar'); if (m) m.hidden = true; }", i); pg.wait_for_timeout(500)
@@ -216,13 +222,14 @@ try:
         print('■ 列の 下に 隠れた ままに ならない')
         END = """() => { const col = document.querySelector('#fabCol').getBoundingClientRect(), v = [...document.querySelectorAll('main > .view')].find(x => !x.hidden);
           const kids = [...v.children].filter(e => e.getBoundingClientRect().height > 0), last = kids[kids.length - 1].getBoundingClientRect(), mn = document.querySelector('main');
-          return { last: last.bottom, ct: col.top, pb: parseFloat(getComputedStyle(mn).paddingBottom), ch: col.height, tab: document.querySelector('.tabbar').getBoundingClientRect().top, atEnd: Math.abs(scrollY + innerHeight - document.documentElement.scrollHeight) < 2 }; }"""
+          return { last: last.bottom, ct: col.top, pb: parseFloat(getComputedStyle(mn).paddingBottom), ch: col.height, tab: document.querySelector('.tabbar').getBoundingClientRect().top, atEnd: Math.abs(scrollY + innerHeight - document.documentElement.scrollHeight) < 2,
+            mh: (() => { const m = document.getElementById('minibar'), h = m.hidden; m.hidden = false; const r = m.getBoundingClientRect(); m.hidden = h; return [r.top, r.bottom]; })() }; }"""
         ends = []
         for i in range(5):
             pg.evaluate("(i) => document.querySelectorAll('.tabbar button')[i].click()", i); pg.wait_for_timeout(450)
             pg.evaluate("() => window.scrollTo(0, 1e7)"); pg.wait_for_timeout(350); ends.append(pg.evaluate(END))
-        check(all(e['atEnd'] and e['last'] <= e['ct'] + 0.5 and e['pb'] >= e['ch'] + 60 for e in ends),
-              f'5つの タブ：一番 下まで スクロール すると 最後の 中身が 列の 上まで 上がる（main の 下の 余白 {round(ends[0]["pb"])}px ≧ 列の 高さ {round(ends[0]["ch"])}px＋下の タブ）{[[round(e["last"]), round(e["ct"])] for e in ends][:2]}')
+        check(all(e['atEnd'] and e['last'] <= e['ct'] - 6 - 39 and e['last'] <= e['mh'][0] + 0.5 and e['pb'] >= e['ch'] + 60 for e in ends),
+              f'5つの タブ：一番 下まで スクロール すると 最後の 中身が 列の 上の 帯・判定の 帯（{round(ends[0]["mh"][0])}〜{round(ends[0]["mh"][1])}）の 上まで 上がる（main の 下の 余白 {round(ends[0]["pb"])}px ≧ 列の 高さ {round(ends[0]["ch"])}px＋下の タブ＋判定の 帯）{[[round(e["last"]), round(e["ct"])] for e in ends][:2]}')
         pg.evaluate("() => { window.scrollTo(0, 0); document.querySelectorAll('.tabbar button')[0].click(); }"); pg.wait_for_timeout(450)
         # 判定タブの 下の 帯（#minibar：判定の 要点）：出ても 消えても 列は 動かない。第4.176版から 列は 下の タブの すぐ 上（帯と 同じ 高さ）→ 帯は 列の 手前で 終わる（字は ぜんぶ 見える）
         MB = """() => { const m = document.getElementById('minibar'), b = m.getBoundingClientRect(), c = document.querySelector('#fabCol').getBoundingClientRect(), pl = m.hidden ? null : m.querySelector('button').getBoundingClientRect(), z = m.querySelector('.mz');
@@ -236,15 +243,16 @@ try:
         m2 = pg.evaluate(MB)
         check(m0['mt'] is None and 3 <= m0['tab'] - m0['cb'] <= 6 and m1['mt'] is not None and abs(m1['cb'] - m0['cb']) < 0.6 and abs(m2['cb'] - m0['cb']) < 0.6 and m1['pb'] == m0['pb'],
               f'第4.168版：判定タブの 下の 帯（判定の 要点）が 出ても 消えても 列は 動かない（{round(m0["cb"])} → {round(m1["cb"])} → {round(m2["cb"])}）・ページの 下の 余白は 変わらない')
-        check(m1['mt'] is not None and m1['mt'] < m1['cb'] and m1['mbot'] > m1['ct'] and m1['pr'] <= m1['cl'] - 3 and m1['plft'] >= 4 and m1['over'] == 0 and m1['fabn'] and m1['fs'] == '12px',
-              f'第4.176版：列は 下の タブの すぐ 上まで ある（帯と 同じ 高さ）→ 帯は 列の 手前で 終わる（帯の 右 {m1["pr"] and round(m1["pr"])} ＜ 列の 左 {round(m1["cl"])}）・帯の 字は 全部 見える（はみ出し {m1["over"]}px・少し つめる：字 {m1["fs"]}）')
+        check(m1['mt'] is not None and abs(m1['mbot'] - (m1['ct'] - 6)) <= 1 and m1['plft'] >= 12 and m1['pr'] <= 390 - 12 and m1['over'] == 0 and not m1['fabn'] and m1['fs'] == '13px',
+              f'第4.230版：判定の 帯は 丸い ボタンの 列の すぐ 上（帯の 下 {m1["mbot"] and round(m1["mbot"])} ＝ 列の うしろの 帯の 上 {round(m1["ct"] - 6)}）・画面の 幅 いっぱい（{m1["plft"] and round(m1["plft"])}〜{m1["pr"] and round(m1["pr"])}）・'
+              f'帯の 字は 全部 見える（はみ出し {m1["over"]}px・字 {m1["fs"]}：つめない）')
         # 買い目編集の 保存の 帯（変更が ある あいだ 下に はりつく）は 列の 手前で 終わる
         pg.evaluate("() => document.querySelectorAll('.tabbar button')[4].click()"); pg.wait_for_timeout(500)
         zok = pg.evaluate("() => { const b = document.querySelector('.zrow [data-act=down]:not([disabled])'); if (!b) return false; b.scrollIntoView({ block: 'center' }); b.click(); return true; }"); pg.wait_for_timeout(600)
         pg.evaluate("() => { const e = document.querySelector('.zedit'); if (e) e.scrollIntoView({ block: 'start' }); }"); pg.wait_for_timeout(600)
-        zs = pg.evaluate("() => { const z = document.querySelector('.zsave.sticky'), c = document.querySelector('#fabCol').getBoundingClientRect(); if (!z) return null; const r = z.getBoundingClientRect(), bs = [...z.querySelectorAll('button')].map(b => b.getBoundingClientRect().right); return { right: r.right, cl: c.left, btn: Math.max(...bs), top: r.top, bottom: r.bottom, ct: c.top, cb: c.bottom }; }")
-        check(zok and zs is not None and zs['right'] <= zs['cl'] - 3 and zs['btn'] <= zs['right'] and zs['bottom'] > zs['ct'] and zs['top'] < zs['cb'],
-              f'買い目編集の 保存の 帯（下に はりついて 列と 同じ 高さ）は 列の 左で 終わる（帯の 右 {zs and round(zs["right"])} ＜ 列の 左 {zs and round(zs["cl"])}）')
+        zs = pg.evaluate("() => { const z = document.querySelector('.zsave.sticky'), c = document.querySelector('#fabCol').getBoundingClientRect(); if (!z) return null; const r = z.getBoundingClientRect(), bs = [...z.querySelectorAll('button')].map(b => b.getBoundingClientRect().right); return { right: r.right, cl: c.left, btn: Math.max(...bs), top: r.top, bottom: r.bottom, ct: c.top, cb: c.bottom, mr: getComputedStyle(z).marginRight }; }")
+        check(zok and zs is not None and abs(zs['bottom'] - (zs['ct'] - 6)) <= 1 and zs['btn'] <= zs['right'] and zs['right'] >= 390 - 40 and zs['mr'] == '0px',
+              f'第4.230版：買い目編集の 保存の 帯（下に はりつく）は 丸い ボタンの 列の すぐ 上（帯の 下 {zs and round(zs["bottom"])} ＝ 列の うしろの 帯の 上 {zs and round(zs["ct"] - 6)}）・右は ちぢめない（帯の 右 {zs and round(zs["right"])}）')
         pg.evaluate("() => { const b = document.querySelector('.zsave [data-zact=undo]'); if (b) b.click(); }"); pg.wait_for_timeout(400)
         pg.evaluate("() => { window.scrollTo(0, 0); document.querySelectorAll('.tabbar button')[0].click(); }"); pg.wait_for_timeout(450)
         if not HAVE:
@@ -598,12 +606,13 @@ try:
             return (len(rows) == len(want) and all(any(r['d'] == w['d'] and w['key'] in r['lab'] for r in rows) for w in want)
                     and all(r['pc'] == pc(r['d']) and r['fr'] == f"1/{r['d']}" for r in rows))
         check(same(gd['care'], gd['wCare']) and [(r['d'], r['pc']) for r in gd['care']][:6] == [(15, '約6.67%'), (25, '4%'), (55, '約1.82%'), (95, '約1.05%'), (99, '約1.01%'), (121, '約0.83%')] and len(gd['care']) == 12      # 第4.165版：10P 1/15・20P 1/25・50P 1/55・100P 1/95
-              and [(r['d'], r['pc']) for r in gd['care']][6:] == [(125, '0.8%'), (245, '約0.41%'), (399, '約0.25%'), (600, '約0.17%'), (699, '約0.14%'), (299999, '約0.00033%')],      # 第4.142版：ルーレット 1/125・1/245・1/399・チケット 1/600／第4.165版：ポイント特化ゾーン 1/699／第4.175版：激馬熱馬 1/299999
-              f"説明書：お世話の 当たりは 項目ごとに ％（第4.165版：10P 約6.67%・20P 4%・50P 約1.82%・100P 約1.05% … ルーレット 0.8%・約0.41%・約0.25%・チケット 約0.17%・ポイント特化ゾーン 約0.14%・第4.175版：激馬熱馬 約0.00033%）・分数と 中身は 抽選の 表と 同じ（{[(r['pc'], r['fr']) for r in gd['care']]}）")
-        check(same(gd['mab'], gd['wMab']) and same(gd['kami'], gd['wKami']) and [(r['d'], r['pc']) for r in gd['mab']] == [(15, '約6.67%'), (30, '約3.33%'), (60, '約1.67%'), (699, '約0.14%'), (299999, '約0.00033%')] and [(r['d'], r['pc']) for r in gd['kami']] == [(8, '12.5%'), (16, '6.25%'), (32, '約3.13%'), (699, '約0.14%'), (299999, '約0.00033%')],      # 第4.142版／第4.165版：ポイント特化ゾーン 1/699
-              f"説明書：幻の馬・神様馬が いる 間の 当たりも ％（幻の馬 1/15・1/30・1/60／神様馬 1/8・1/16・1/32／どちらも ポイント特化ゾーン 1/699・激馬熱馬 1/299999：{[(r['pc'], r['fr']) for r in gd['mab'] + gd['kami']]}）")
+              and [(r['d'], r['pc']) for r in gd['care']][6:] == [(225, '約0.44%'), (345, '約0.29%'), (499, '約0.2%'), (700, '約0.14%'), (799, '約0.13%'), (299999, '約0.00033%')],      # 第4.230版（まさちゃん 11/27 00:13「この赤四角の中、当選確率それぞれ100増やして！」）：ルーレット 1/225・1/345・1/499・チケット 1/700・ポイント特化ゾーン 1/799／第4.175版：激馬熱馬 1/299999
+              f"説明書：お世話の 当たりは 項目ごとに ％（第4.165版：10P 約6.67%・20P 4%・50P 約1.82%・100P 約1.05% … 第4.230版：ルーレット 約0.44%・約0.29%・約0.2%・チケット 約0.14%・ポイント特化ゾーン 約0.13%・第4.175版：激馬熱馬 約0.00033%）・分数と 中身は 抽選の 表と 同じ（{[(r['pc'], r['fr']) for r in gd['care']]}）")
+        check(same(gd['mab'], gd['wMab']) and same(gd['kami'], gd['wKami']) and [(r['d'], r['pc']) for r in gd['mab']] == [(15, '約6.67%'), (30, '約3.33%'), (60, '約1.67%'), (799, '約0.13%'), (299999, '約0.00033%')] and [(r['d'], r['pc']) for r in gd['kami']] == [(8, '12.5%'), (16, '6.25%'), (32, '約3.13%'), (799, '約0.13%'), (299999, '約0.00033%')],      # 第4.142版／第4.165版：ポイント特化ゾーン（第4.230版：1/699 → 1/799）
+              f"説明書：幻の馬・神様馬が いる 間の 当たりも ％（幻の馬 1/15・1/30・1/60／神様馬 1/8・1/16・1/32／どちらも ポイント特化ゾーン 1/799・激馬熱馬 1/299999：{[(r['pc'], r['fr']) for r in gd['mab'] + gd['kami']]}）")
         od = gd['odds']; D = lambda k: round(1 / od[k])
-        wantTx = ['全部 合わせて 約17.1%', 'ルーレットは どちらも 50%', '3枚 12.5%・2枚 約33.3%・1枚 約54.2%', 'チケット（壁紙 or 7,000P・1〜3枚）', 'チケット1枚で、カギの壁紙を1つ解放するか、7,000Pに変えるか、選べるよ', 'お世話（ご飯・お掃除）を5回すると、リセットのタイマーがスタート', 'タイマーが5分たつとリセット → 次の馬を抽選', 'それ以外は いつもの馬のまま', 'お世話をしないと 馬は変わらないよ（開いているだけでは 抽選しないよ）', 'お世話の途中は リセットしないよ',
+        wantTx = ['全部 合わせて 約16.6%',      # 第4.230版：約17.1% → 約16.6%（ルーレット・チケット・ポイント特化ゾーンの 分母 ＋100）
+                   'ルーレットは どちらも 50%', '3枚 12.5%・2枚 約33.3%・1枚 約54.2%', 'チケット（壁紙 or 7,000P・1〜3枚）', 'チケット1枚で、カギの壁紙を1つ解放するか、7,000Pに変えるか、選べるよ', 'お世話（ご飯・お掃除）を5回すると、リセットのタイマーがスタート', 'タイマーが5分たつとリセット → 次の馬を抽選', 'それ以外は いつもの馬のまま', 'お世話をしないと 馬は変わらないよ（開いているだけでは 抽選しないよ）', 'お世話の途中は リセットしないよ',
                   '抽選（お世話の後のPUSH）は、幻の馬 最大10回・神様馬 最大5回まで。使い切ると帰るよ',      # 第4.168版（まさちゃん 11/14 01:26「幻の馬は、抽選最大10回まで 神様馬は、抽選最大5回まで」）
                   '帰るのは、抽選を使い切ったとき・お世話5回のあと5分（リセット）・来てから30分（タイムリミット）の 一番早いとき', '左上の「仲良し」の下に「タイムリミット・抽選の回数・切り替わりタイマー」が出るよ', '約1.52%・1/66', '約33.3%ずつ・1/3', 'ニンジンの約3.33%・1/30',
                   f'{pc(D("poop"))}（1/{D("poop")}）', f'うんちの{pc(D("gold"))}・1/{D("gold")}', f'高確ゾーン {pc(D("high"))}（1/{D("high")}', f'幻の馬 {pc(D("mab"))}（1/{D("mab")}）', f'神様馬 {pc(D("kami"))}（1/{D("kami")}）']
@@ -617,9 +626,9 @@ try:
           const T = TCApp._t, Z = T.ZONE, rows = [...z.querySelectorAll('table[data-tab=zone] tr')].map(r => [+r.dataset.n, r.cells[0].textContent, r.cells[1].textContent]);
           const P = n => n < Z.max ? Math.pow(Z.rate, n) * (1 - Z.rate) : Math.pow(Z.rate, Z.max); let avg = 0, sum = 0; for (let n = 0; n <= Z.max; n++) { avg += T.zoneV(n) * P(n); sum += P(n); }
           return { text: z.textContent, rows, heads: s.map(x => x.querySelector('h3').textContent), zavg: +z.querySelector('[data-n=zavg]').dataset.v, avg, sum, zone: Z, vs: rows.map(r => T.zoneV(r[0])), ps: rows.map(r => P(r[0])) }; }""")
-        zt = ['約0.14%（1/699）で突入', 'いつもの馬・幻の馬・神様馬の どのときも', 'スタートは1,000P', '「レバーを押し込め！」', 'タップするたびに60%で＋2,000P 上乗せ', '虹色の光', '上乗せに失敗（40%）したら そこでおしまい', '12回つづけて上乗せするとMAX 25,000P', 'ゾーン1回の平均は約4,000P']
-        check(gz is not None and gz['heads'].index('虹ポイント特化ゾーン') == gz['heads'].index('Pお世話でポイントGETチャンス') + 1 and all(x in gz['text'] for x in zt) and gz['zone'] == {'d': 699, 'start': 1000, 'add': 2000, 'rate': 0.6, 'max': 12},
-              f"説明書：項目「ポイント特化ゾーン」（お世話でポイントGETチャンスの すぐ 下）：1/699・スタート 1,000P・レバーを押し込め！で 60% ＋2,000P・失敗で おしまい・12回で MAX 25,000P・平均 約4,000P（ない もの {gz and [x for x in zt if x not in gz['text']]}）")
+        zt = ['約0.13%（1/799）で突入', 'いつもの馬・幻の馬・神様馬の どのときも', 'スタートは1,000P', '「レバーを押し込め！」', 'タップするたびに60%で＋2,000P 上乗せ', '虹色の光', '上乗せに失敗（40%）したら そこでおしまい', '12回つづけて上乗せするとMAX 25,000P', 'ゾーン1回の平均は約4,000P']
+        check(gz is not None and gz['heads'].index('虹ポイント特化ゾーン') == gz['heads'].index('Pお世話でポイントGETチャンス') + 1 and all(x in gz['text'] for x in zt) and gz['zone'] == {'d': 799, 'start': 1000, 'add': 2000, 'rate': 0.6, 'max': 12},
+              f"説明書：項目「ポイント特化ゾーン」（お世話でポイントGETチャンスの すぐ 下）：1/799（第4.230版）・スタート 1,000P・レバーを押し込め！で 60% ＋2,000P・失敗で おしまい・12回で MAX 25,000P・平均 約4,000P（ない もの {gz and [x for x in zt if x not in gz['text']]}）")
         zpc = ['40%', '24%', '14.4%', '8.64%', '約5.18%', '約3.11%', '約1.87%', '約1.12%', '約0.67%', '約0.4%', '約0.24%', '約0.15%', '約0.22%']
         check(gz is not None and [r[0] for r in gz['rows']] == list(range(13)) and [r[1] for r in gz['rows']] == zpc and gz['vs'] == [1000 + 2000 * n for n in range(13)]
               and all(f'上乗せ {n}回 → {1000 + 2000 * n:,}P' in gz['rows'][n][2] for n in range(13)) and gz['rows'][12][2].endswith('（MAX）') and all(r[1] == pc(1 / q) for r, q in zip(gz['rows'], gz['ps']))
@@ -770,22 +779,23 @@ try:
         #   第4.142版（11/10 17:20 まさちゃん「ノーマルのルーレット抽選、幻の馬ルーレット当選と神様馬ルーレット抽選の確率だけ変えたい！」）：ルーレット 1/125・1/245・1/399・チケット 1/600（ポイントの 当たりは そのまま）
         #   第4.165版（11/13 11:46 まさちゃん「お世話でポイントGET 確率少し変える(ここだけ) 1/15で10P 1/25で20P 1/55で50P 1/95で100P」）：10P・20P・50P・100P だけ（200P・300P・ルーレット・チケットは そのまま）
         #   第4.165版（11/13 12:51「ポイントの特化ゾーンを作る … 1回の抽選の1/699で入る」）：表の あたまに ポイント特化ゾーン 1/699（いつもの 表・幻の馬・神様馬の どれにも）
-        check(tabS == ['299999:gk:', '699:zn:', '600:tk:', '399:rt:kamisama', '245:rt:maboroshi', '125:rt:normal', '121:pt:300', '99:pt:200', '95:pt:100', '55:pt:50', '25:pt:20', '15:pt:10'], f'お世話の 抽選の 表：ルーレット 1/125・1/245・1/399・チケット 1/600・200P 1/99・300P 1/121 は そのまま／第4.165版：10P 1/15・20P 1/25・50P 1/55・100P 1/95・ポイント特化ゾーン 1/699／第4.175版：あたまに 激馬熱馬 1/299999（{tabS}）')
+        #   第4.230版（11/27 00:13 まさちゃん「この赤四角の中、当選確率それぞれ100増やして！少し当たりにくくして！」）：ルーレット 1/225・1/345・1/499・チケット 1/700・ポイント特化ゾーン 1/799
+        check(tabS == ['299999:gk:', '799:zn:', '700:tk:', '499:rt:kamisama', '345:rt:maboroshi', '225:rt:normal', '121:pt:300', '99:pt:200', '95:pt:100', '55:pt:50', '25:pt:20', '15:pt:10'], f'お世話の 抽選の 表：第4.230版：ルーレット 1/225・1/345・1/499・チケット 1/700・ポイント特化ゾーン 1/799／200P 1/99・300P 1/121 は そのまま／第4.165版：10P 1/15・20P 1/25・50P 1/55・100P 1/95／第4.175版：あたまに 激馬熱馬 1/299999（{tabS}）')
         tabV = pg.evaluate("() => { const T = TCApp._t, f = t => t.map(([p, z]) => Math.round(1 / p) + ':' + (z.v ? z.v.join('/') : z.k)), sum = t => t.reduce((a, [p]) => a + p, 0); return { mab: f(T.PRIZES_VISIT.maboroshi), kami: f(T.PRIZES_VISIT.kamisama), rt: T.RT, x: T.ODDS.highX, sums: [sum(T.PRIZES), sum(T.PRIZES_VISIT.maboroshi), sum(T.PRIZES_VISIT.kamisama)] }; }")
-        check(tabV['mab'] == ['299999:gk', '699:zn', '60:3200/6400', '30:1600/3200', '15:800/1600'] and tabV['kami'] == ['299999:gk', '699:zn', '32:10000/20000', '16:5000/10000', '8:2000/4000'] and tabV['rt'] == {'normal': [800, 1600], 'maboroshi': [1600, 3200], 'kamisama': [3200, 6400]},
-              f"幻の馬・神様馬の 表：1/15・1/30・1/60／1/8・1/16・1/32（ポイントの 数は そのまま）＋ ポイント特化ゾーン 1/699 ＋ 激馬熱馬 1/299999（{tabV['mab']}・{tabV['kami']}）")
-        check(all(x * tabV['x'] < 1 for x in tabV['sums']) and abs(tabV['sums'][0] - 0.169995 - 1 / 699 - 1 / 299999) < 0.0001 and abs(tabV['sums'][1] - 7 / 60 - 1 / 699 - 1 / 299999) < 1e-9 and abs(tabV['sums'][2] - 7 / 32 - 1 / 699 - 1 / 299999) < 1e-9,
+        check(tabV['mab'] == ['299999:gk', '799:zn', '60:3200/6400', '30:1600/3200', '15:800/1600'] and tabV['kami'] == ['299999:gk', '799:zn', '32:10000/20000', '16:5000/10000', '8:2000/4000'] and tabV['rt'] == {'normal': [800, 1600], 'maboroshi': [1600, 3200], 'kamisama': [3200, 6400]},
+              f"幻の馬・神様馬の 表：1/15・1/30・1/60／1/8・1/16・1/32（ポイントの 数は そのまま）＋ ポイント特化ゾーン 1/799 ＋ 激馬熱馬 1/299999（{tabV['mab']}・{tabV['kami']}）")
+        check(all(x * tabV['x'] < 1 for x in tabV['sums']) and abs(tabV['sums'][0] - 0.164516 - 1 / 799 - 1 / 299999) < 0.0001 and abs(tabV['sums'][1] - 7 / 60 - 1 / 799 - 1 / 299999) < 1e-9 and abs(tabV['sums'][2] - 7 / 32 - 1 / 799 - 1 / 299999) < 1e-9,
               f"高確ゾーン（×{tabV['x']}）でも 当たりの 合計は 1 を 超えない（いつも {tabV['sums'][0] * tabV['x']:.1%}・幻の馬 {tabV['sums'][1] * tabV['x']:.1%}・神様馬 {tabV['sums'][2] * tabV['x']:.1%}）")
         nm = lot['normal']; rate = lambda c, k: c.get(k, 0) / 20000
-        check(abs(rate(nm, 'pt:10') - 1 / 15) < 0.007 and abs(rate(nm, 'pt:20') - 0.04) < 0.0055 and abs(rate(nm, 'pt:50') - 1 / 55) < 0.004 and abs(rate(nm, 'pt:100') - 1 / 95) < 0.0035 and abs(1 - rate(nm, '-') - 0.1714) < 0.011 and abs(rate(nm, 'zn:') - 1 / 699) < 0.0013
-              and abs(rate(lot['mab'], 'zn:') - 1 / 699) < 0.0013 and abs(rate(lot['kami'], 'zn:') - 1 / 699) < 0.0013
-              and abs(rate(nm, 'rt:normal') - 1 / 125) < 0.003 and abs(rate(nm, 'rt:maboroshi') - 1 / 245) < 0.0022 and abs(rate(nm, 'rt:kamisama') - 1 / 399) < 0.0018 and abs(rate(nm, 'tk:') - 1 / 600) < 0.0015,
-              f"2万回 ひくと：10P {rate(nm, 'pt:10'):.1%}・20P {rate(nm, 'pt:20'):.1%}・50P {rate(nm, 'pt:50'):.1%}・100P {rate(nm, 'pt:100'):.2%}・ルーレット {rate(nm, 'rt:normal'):.2%}（0.8%）・{rate(nm, 'rt:maboroshi'):.2%}（約0.41%）・{rate(nm, 'rt:kamisama'):.2%}（約0.25%）・チケット {rate(nm, 'tk:'):.2%}（約0.17%）・ポイント特化ゾーン {rate(nm, 'zn:'):.2%}（約0.14%：幻の馬 {rate(lot['mab'], 'zn:'):.2%}・神様馬 {rate(lot['kami'], 'zn:'):.2%}）・何か 当たる {1 - rate(nm, '-'):.1%}（約17.1%：第4.165版）")
+        check(abs(rate(nm, 'pt:10') - 1 / 15) < 0.007 and abs(rate(nm, 'pt:20') - 0.04) < 0.0055 and abs(rate(nm, 'pt:50') - 1 / 55) < 0.004 and abs(rate(nm, 'pt:100') - 1 / 95) < 0.0035 and abs(1 - rate(nm, '-') - 0.1658) < 0.011 and abs(rate(nm, 'zn:') - 1 / 799) < 0.0013
+              and abs(rate(lot['mab'], 'zn:') - 1 / 799) < 0.0013 and abs(rate(lot['kami'], 'zn:') - 1 / 799) < 0.0013
+              and abs(rate(nm, 'rt:normal') - 1 / 225) < 0.0025 and abs(rate(nm, 'rt:maboroshi') - 1 / 345) < 0.002 and abs(rate(nm, 'rt:kamisama') - 1 / 499) < 0.0016 and abs(rate(nm, 'tk:') - 1 / 700) < 0.0014,
+              f"2万回 ひくと：10P {rate(nm, 'pt:10'):.1%}・20P {rate(nm, 'pt:20'):.1%}・50P {rate(nm, 'pt:50'):.1%}・100P {rate(nm, 'pt:100'):.2%}・ルーレット {rate(nm, 'rt:normal'):.2%}（約0.44%）・{rate(nm, 'rt:maboroshi'):.2%}（約0.29%）・{rate(nm, 'rt:kamisama'):.2%}（約0.2%）・チケット {rate(nm, 'tk:'):.2%}（約0.14%）・ポイント特化ゾーン {rate(nm, 'zn:'):.2%}（約0.13%：幻の馬 {rate(lot['mab'], 'zn:'):.2%}・神様馬 {rate(lot['kami'], 'zn:'):.2%}）・何か 当たる {1 - rate(nm, '-'):.1%}（約16.6%：第4.230版）")
         hz = pg.evaluate("""() => { const T = TCApp._t, st = TCApp.state, S = TCCare.S, n = 20000, c = {}; st.visit = null;
           for (let i = 0; i < n; i++) { S.high = 3; const z = T.draw(); const k = z ? z.k + ':' + (z.k === 'pt' ? z.v : (z.tier || '')) : '-'; c[k] = (c[k] || 0) + 1; }
           S.high = 0; st.high = 0; return c; }""")
-        check(abs(rate(hz, 'pt:10') - 4 / 15) < 0.014 and abs(rate(hz, 'pt:100') - 4 / 95) < 0.006 and abs(1 - rate(hz, '-') - 0.6857) < 0.013 and abs(rate(hz, 'rt:normal') - 4 / 125) < 0.006 and abs(rate(hz, 'tk:') - 4 / 600) < 0.003 and abs(rate(hz, 'zn:') - 4 / 699) < 0.0027,
-              f"高確ゾーン（4倍）：10P {rate(hz, 'pt:10'):.1%}（約26.7%）・100P {rate(hz, 'pt:100'):.1%}（約4.2%）・ルーレット {rate(hz, 'rt:normal'):.1%}（3.2%）・チケット {rate(hz, 'tk:'):.2%}（約0.67%）・ポイント特化ゾーン {rate(hz, 'zn:'):.2%}（約0.57%）・何か 当たる {1 - rate(hz, '-'):.1%}（約68.6%：1 を 超えない ので まれな 当たりも 4倍の まま）")
+        check(abs(rate(hz, 'pt:10') - 4 / 15) < 0.014 and abs(rate(hz, 'pt:100') - 4 / 95) < 0.006 and abs(1 - rate(hz, '-') - 0.6631) < 0.013 and abs(rate(hz, 'rt:normal') - 4 / 225) < 0.0045 and abs(rate(hz, 'tk:') - 4 / 700) < 0.0027 and abs(rate(hz, 'zn:') - 4 / 799) < 0.0025,
+              f"高確ゾーン（4倍）：10P {rate(hz, 'pt:10'):.1%}（約26.7%）・100P {rate(hz, 'pt:100'):.1%}（約4.2%）・ルーレット {rate(hz, 'rt:normal'):.1%}（約1.8%）・チケット {rate(hz, 'tk:'):.2%}（約0.57%）・ポイント特化ゾーン {rate(hz, 'zn:'):.2%}（約0.5%）・何か 当たる {1 - rate(hz, '-'):.1%}（約66.3%：1 を 超えない ので まれな 当たりも 4倍の まま）")
         print('■ 当たりを とりこぼさない・トークンの 数え方（第4.140版の バグ直し）')
         #   当たりは お世話の はじめに 決まる → すぐ 保存（pend）→ 演出の あとで わたして 消す
         pd = pg.evaluate("""async () => { const T = TCApp._t, st = TCApp.state, S = TCCare.S, W = TengelWallet, rnd = Math.random; st.visit = null; S.high = 0; st.high = 0; st.pend = null;

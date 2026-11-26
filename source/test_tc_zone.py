@@ -36,7 +36,7 @@ def check(c, label):
 
 _tc = open(os.path.join(W, 'test_tc.py'), encoding='utf8').read()
 FAKE = _tc.split('FAKE = """')[1].split('"""')[0]                      # アプリの 窓口の にせもの（test_tc.py と 同じ）
-D, START, ADD, RATE, MAX = 699, 1000, 2000, 0.6, 12                    # まさちゃんの きまり（tc/tc_app.js の ZONE と 同じ）
+D, START, ADD, RATE, MAX = 799, 1000, 2000, 0.6, 12                    # まさちゃんの きまり（tc/tc_app.js の ZONE と 同じ。第4.230版：1/699 → 1/799〈まさちゃん 11/27 00:13「当選確率それぞれ100増やして！」〉）
 ZV = lambda n: START + ADD * n
 ZP = lambda n: RATE ** n * (1 - RATE) if n < MAX else RATE ** MAX      # 上乗せ n回で おわる 確率
 ZN = dict(ready=1.3, cyc=1.5, buf=0.3, r0=0.16, fail=1.9, maxEnd=1.75, auto=20, hold=1.0, close=3.2)      # 演出の 時間の きまり（tc/tc_fx.js の ZN と 同じ）
@@ -136,14 +136,14 @@ try:
     # ---------- 中身の 見くらべ・数の 確かめ（絵が なくても）----------
     print('■ 中身と 数')
     sb = open(os.path.join(SRV, 'STORE', 'tc_bundle.js'), encoding='utf8').read()
-    check('const ZONE = { d: 699, start: 1000, add: 2000, rate: 0.6, max: 12 }' in sb and "[1 / ZONE.d, { k: 'zn' }]" in sb and sb.count("[1 / ZONE.d, { k: 'zn' }]") == 3 and "'tc_se_zn_up.m4a'" in sb and "'tc_se_zn_down.m4a'" in sb
+    check('const ZONE = { d: 799, start: 1000, add: 2000, rate: 0.6, max: 12 }' in sb and "[1 / ZONE.d, { k: 'zn' }]" in sb and sb.count("[1 / ZONE.d, { k: 'zn' }]") == 3 and "'tc_se_zn_up.m4a'" in sb and "'tc_se_zn_down.m4a'" in sb
           and 'tc_zn_geom.json' in sb and 'ポイント特化ゾーン' in sb and 'レバーを押し込め！' in sb,
-          'tc_bundle.js（App Store版）：きまり（1/699・スタート 1,000P・＋2,000P・60%・12回）・3つの 表（いつも・幻の馬・神様馬）・上乗せ／失敗の 音・レバーの 絵・説明書の 言葉が 入って いる')
+          'tc_bundle.js（App Store版）：きまり（1/799・スタート 1,000P・＋2,000P・60%・12回）・3つの 表（いつも・幻の馬・神様馬）・上乗せ／失敗の 音・レバーの 絵・説明書の 言葉が 入って いる')
     E = sum(ZV(n) * ZP(n) for n in range(MAX + 1))
     check(abs(sum(ZP(n) for n in range(MAX + 1)) - 1) < 1e-12 and ZV(0) == 1000 and ZV(MAX) == 25000 and abs(E - 3993.47) < 0.01 and round(E / 100) * 100 == 4000 and abs(ZP(MAX) - 0.002177) < 1e-6,
           f'数：スタート 1,000P・12回 つづけて 上乗せで MAX 25,000P（そう なるのは {ZP(MAX):.3%}）・ゾーン 1回の 平均 {E:,.1f}P（＝約4,000P）・確率を 足すと 1')
     per = E / D
-    check(abs(per - 5.713) < 0.01, f'1回の 抽選あたり ＋{per:.2f}P（1/699 × 平均 {E:,.0f}P）')
+    check(abs(per - 4.998) < 0.01, f'1回の 抽選あたり ＋{per:.2f}P（1/799 × 平均 {E:,.0f}P）')
     src = open(os.path.join(W, 'tc', 'tc_fx.js'), encoding='utf8').read()
     zsrc = src.split('// ================= ポイント特化ゾーン')[1]
     check('confirm(' not in zsrc and 'alert(' not in zsrc and 'Date.now' not in zsrc.split('function znDraw')[1].split('const znZ')[0] and 'performance.now' not in zsrc.split('function znDraw')[1].split('const znZ')[0] and 'Math.random' not in zsrc,
@@ -175,13 +175,13 @@ try:
             print('■ 抽選の 表と 決め方')
             tb = pg.evaluate("""() => { const T = TCApp._t, f = t => t.map(([p, z]) => [Math.round(1 / p), z.k]); return { n: f(T.PRIZES)[1], m: f(T.PRIZES_VISIT.maboroshi)[1], k: f(T.PRIZES_VISIT.kamisama)[1], g: [f(T.PRIZES)[0], f(T.PRIZES_VISIT.maboroshi)[0], f(T.PRIZES_VISIT.kamisama)[0]], zone: T.ZONE, odds: T.ODDS.zone, x: T.ODDS.highX,
               vs: Array.from({ length: 13 }, (_, n) => T.zoneV(n)), edge: [T.zoneV(-3), T.zoneV(99), T.zoneV('x'), T.zoneV(2.4)] }; }""")
-            check(tb['n'] == [699, 'zn'] and tb['m'] == [699, 'zn'] and tb['k'] == [699, 'zn'] and tb['g'] == [[299999, 'gk']] * 3 and tb['zone'] == {'d': D, 'start': START, 'add': ADD, 'rate': RATE, 'max': MAX} and tb['vs'] == [ZV(n) for n in range(13)] and tb['edge'] == [1000, 25000, 1000, 5000],
-                  f'いつもの 表・幻の馬・神様馬の どの 表にも ポイント特化ゾーン 1/699（第4.175版：その 前の 行は 激馬熱馬 1/299,999）・合計は 1,000P ＋ 2,000P × 回数（0〜12回：{tb["vs"][0]:,}P 〜 {tb["vs"][12]:,}P・おかしな 数は 0〜12に まるめる）')
+            check(tb['n'] == [799, 'zn'] and tb['m'] == [799, 'zn'] and tb['k'] == [799, 'zn'] and tb['g'] == [[299999, 'gk']] * 3 and tb['zone'] == {'d': D, 'start': START, 'add': ADD, 'rate': RATE, 'max': MAX} and tb['vs'] == [ZV(n) for n in range(13)] and tb['edge'] == [1000, 25000, 1000, 5000],
+                  f'いつもの 表・幻の馬・神様馬の どの 表にも ポイント特化ゾーン 1/799（第4.175版：その 前の 行は 激馬熱馬 1/299,999）・合計は 1,000P ＋ 2,000P × 回数（0〜12回：{tb["vs"][0]:,}P 〜 {tb["vs"][12]:,}P・おかしな 数は 0〜12に まるめる）')
             dr = pg.evaluate("""() => { const T = TCApp._t, st = TCApp.state, S = TCCare.S, R = Math.random, one = (r, kind, high) => { st.visit = kind ? { kind, until: Date.now() + 6e5 } : null; S.high = high ? 3 : 0; Math.random = () => r; let z; try { z = T.draw(); } finally { Math.random = R; } return z ? z.k : null; };
-              const o = { in: one(0.0005, null), edge: one(0.00142, null), out: one(0.00145, null), mab: one(0.0005, 'maboroshi'), mabOut: one(0.00145, 'maboroshi'), kami: one(0.0005, 'kamisama'), kamiOut: one(0.00145, 'kamisama'),
-                hi: one(0.0056, null, true), hiOut: one(0.0058, null, true), hiMab: one(0.0056, 'maboroshi', true) }; st.visit = null; S.high = 0; st.high = 0; return o; }""")
+              const o = { in: one(0.0005, null), edge: one(0.00124, null), out: one(0.00127, null), mab: one(0.0005, 'maboroshi'), mabOut: one(0.00127, 'maboroshi'), kami: one(0.0005, 'kamisama'), kamiOut: one(0.00127, 'kamisama'),
+                hi: one(0.0049, null, true), hiOut: one(0.0051, null, true), hiMab: one(0.0049, 'maboroshi', true) }; st.visit = null; S.high = 0; st.high = 0; return o; }""")
             check(dr == {'in': 'zn', 'edge': 'zn', 'out': 'tk', 'mab': 'zn', 'mabOut': 'rt', 'kami': 'zn', 'kamiOut': 'rt', 'hi': 'zn', 'hiOut': 'tk', 'hiMab': 'zn'},
-                  f'くじの 数が 1/699（0.00143）より 小さいと 特化ゾーン（いつも・幻の馬・神様馬）・高確ゾーンの 間は ほかの 当たりと 同じ 4倍（0.00572 まで）{dr}')
+                  f'くじの 数が 1/799 ＋ 1/299999（0.00125）より 小さいと 特化ゾーン（いつも・幻の馬・神様馬）・高確ゾーンの 間は ほかの 当たりと 同じ 4倍（0.00502 まで）{dr}')
             rl = pg.evaluate("""() => { const T = TCApp._t, c = new Array(14).fill(0); let sum = 0; for (let i = 0; i < 40000; i++) { const n = T.zoneRoll(); c[Math.min(13, n)]++; sum += T.zoneV(n); } return { c, avg: sum / 40000 }; }""")
             okr = all(abs(rl['c'][n] / 40000 - ZP(n)) < max(0.012 * ZP(n) ** 0.5 * 2, 0.0012) for n in range(13)) and rl['c'][13] == 0
             check(okr and abs(rl['avg'] - E) < 110 and 30 <= rl['c'][12] <= 160,

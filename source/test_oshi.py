@@ -208,7 +208,7 @@ try:
 
         # 第4.165版（まさちゃん 2026/11/13 12:47「推し馬はすぐに確認できるように、トレーニングセンターと思い出フィギュアのアイコンのところの1番上に配置して！
         #   推し馬のアイコンをタップしたら、推し馬の欄に飛ぶように設定して！」）：右下の 丸い ボタンの 列（#fabCol）の 1番 上に 推し馬 → 押すと 作戦会議が 開いて「推し馬」の 欄が 上に 出る
-        print('■ 右下の 丸い ボタン：推し馬の アイコン（第4.176版から 上から 2番目：トレーニングセンターの すぐ 下・カードバトルの すぐ 上）')
+        print('■ 丸い ボタン：推し馬の アイコン（第4.176版から 2番目。第4.230版：下の タブの すぐ 上の 横 1列 ＝ トレーニングセンターの 右・カードバトルの 左）')
         FABS = """() => { const R = e => { const r = e.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }, ks = [...document.querySelectorAll('#fabCol > button')].sort((a, b) => getComputedStyle(a).order - getComputedStyle(b).order);
           const o = document.querySelector('#oshiFab'), im = o && o.querySelector('.fabi img'), ft = o && o.querySelector('.fabt'), ir = o ? o.querySelector('.fabi').getBoundingClientRect() : null;
           return { ids: ks.map(b => b.id), rects: ks.map(R), name: o && o.querySelector('.fabl').textContent, aria: o && o.getAttribute('aria-label'), img: im ? [im.getAttribute('src'), im.naturalWidth, im.naturalHeight] : null, fb: ft ? ft.textContent : null,
@@ -224,12 +224,12 @@ try:
         fb = pg.evaluate(FABS); rc = fb['rects']
         # 第4.176版：カードバトル（#cbFab）が 入って 4つ。まさちゃん 11/16 00:34「丸のアイコン組を少し小さくして！ピッタリ収まるようにできない？」・00:47「①トレーニングセンター ②推し馬 ③カードバトル ④思い出フィギュア」
         #   ＝ たてに 4つ（1列）・丸の 大きさは 画面に 合わせる（ここは 上の絵が ない ので もとの 66px）・列の 下は 下の タブの すぐ 上（01:15「この青四角下の空間気になる」）
-        mid = lambda r: (r[0] + r[2]) / 2
-        g_ok = (len(rc) == 4 and all(rc[i][3] <= rc[i + 1][1] + 1 and rc[i + 1][1] - rc[i][3] <= 8 and abs(mid(rc[i]) - mid(rc[i + 1])) <= 2 for i in range(3))
+        #   第4.230版（まさちゃん 11/26 22:46「紫四角の中のアイコンを、青四角のところに配置して」）：下の タブの すぐ 上に 横 1列（左から 同じ 順）・丸は 画面の 幅で 決まる（幅 390 で 76px）
+        g_ok = (len(rc) == 4 and all(abs(rc[i][2] - rc[i + 1][0]) <= 1 and abs(rc[i][1] - rc[i + 1][1]) <= 1 for i in range(3))
                 and not any(a[0] < c[2] - 1 and c[0] < a[2] - 1 and a[1] < c[3] - 1 and c[1] < a[3] - 1 for i, a in enumerate(rc) for c in rc[i + 1:]))
         check(fb['ids'] == ['tcFab', 'oshiFab', 'cbFab', 'figFab'] and g_ok and max(r[3] for r in rc) <= fb['tab'] - 3 and max(r[2] for r in rc) <= 390 and min(r[0] for r in rc) >= 0
-              and fb['name'] == '推し馬' and '推し馬' in (fb['aria'] or '') and fb['iw'] and abs(fb['iw'][0] - 66) < 1 and abs(fb['iw'][1] - 66) < 1 and fb['vis'] and fb['tab'] - max(r[3] for r in rc) <= 6,
-              f'並び（たてに 4つ）：上から トレーニングセンター → 推し馬 → カードバトル → 思い出フィギュア（{fb["ids"]}）・重ならない・下の タブの すぐ 上・絵は 66px・名前「推し馬」')
+              and fb['name'] == '推し馬' and '推し馬' in (fb['aria'] or '') and fb['iw'] and abs(fb['iw'][0] - 76) < 1 and abs(fb['iw'][1] - 76) < 1 and fb['vis'] and fb['tab'] - max(r[3] for r in rc) <= 6,
+              f'並び（横 1列）：左から トレーニングセンター → 推し馬 → カードバトル → 思い出フィギュア（{fb["ids"]}）・重ならない・下の タブの すぐ 上・絵は 76px・名前「推し馬」（1行：札は ほかの ボタンと 同じ 大きさ）')
         if HAVE:
             check(fb['img'] == ['tc_icon_oshi.webp', 240, 240] and fb['fb'] is None, f'絵：まさちゃんの 推し馬の アイコン（tc_icon_oshi.webp・240×240：他の 2つと 同じ 作り方）{fb["img"]}')
             from PIL import Image as _Im

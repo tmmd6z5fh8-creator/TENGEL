@@ -220,7 +220,7 @@ table.t .g{color:var(--ok);font-weight:700}
 .stat-grid .card+.card{margin-top:0}
 .stat-grid>*,.judge-grid>*{min-width:0}
 .ledit .fields{max-width:760px}
-.minibar{position:fixed;left:0;right:0;bottom:calc(58px + var(--sab,0px));z-index:25;padding-inline:12px;display:flex;justify-content:center;pointer-events:none}
+.minibar{position:fixed;left:0;right:0;bottom:max(calc(58px + var(--sab,0px)), var(--fabt, 0px));z-index:25;padding-inline:12px;display:flex;justify-content:center;pointer-events:none}
 .minibar button{pointer-events:auto;display:flex;align-items:center;gap:10px;max-width:100%;border:0;cursor:pointer;background:var(--night);color:var(--night-ink);border-radius:999px;padding:7px 8px 7px 7px;box-shadow:0 6px 20px rgba(0,0,0,.28);font-size:13px;text-align:left}
 .minibar .lb{flex:none}
 .minibar .mz{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -235,7 +235,7 @@ table.t .g{color:var(--ok);font-weight:700}
 .bar i{display:block;height:100%;background:var(--primary)}
 .pi .pd{font-size:12px;color:var(--muted);margin-top:3px}
 
-.toast{position:fixed;left:50%;bottom:calc(118px + var(--sab,0px));transform:translateX(-50%);background:var(--night);color:var(--night-ink);padding:9px 16px;border-radius:18px;font-size:13.5px;z-index:50;box-shadow:0 6px 24px rgba(0,0,0,.25);width:max-content;max-width:calc(100vw - 32px)}
+.toast{position:fixed;left:50%;bottom:max(calc(118px + var(--sab,0px)), calc(var(--fabt, 0px) + 52px));transform:translateX(-50%);background:var(--night);color:var(--night-ink);padding:9px 16px;border-radius:18px;font-size:13.5px;z-index:50;box-shadow:0 6px 24px rgba(0,0,0,.25);width:max-content;max-width:calc(100vw - 32px)}
 @media (min-width:900px){.toast{bottom:28px}}
 .spin{width:16px;height:16px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:sp .8s linear infinite;display:inline-block}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -307,7 +307,7 @@ table.t tr.cur td{background:var(--surface-2);font-weight:700}
 .zsum{margin-top:12px;padding:10px 12px;border-radius:10px;border:1px dashed var(--line);font-size:13px}
 .zsum b{font-family:var(--font-mono)}
 .zsave{margin-top:14px;padding:10px;border-radius:12px;background:var(--surface);border:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.zsave.sticky{position:sticky;bottom:calc(64px + var(--sab,0px));z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.14);border-color:var(--lamp)}
+.zsave.sticky{position:sticky;bottom:max(calc(64px + var(--sab,0px)), var(--fabt, 0px));z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.14);border-color:var(--lamp)}
 @media (min-width:900px){.zsave.sticky{bottom:12px}}
 .zsave .msg{font-size:12.5px;color:var(--muted);flex:1 1 12em}
 .setsec+.setsec{margin-top:var(--gap)}
@@ -1323,6 +1323,7 @@ const oldLineText = J => `第12の帯：${J.c.band12}　` + J.oldSet.map((z, i) 
 //   → ①上の 帯・下の タブの 下に かくれた 所は 見えて いない と 数える（rootMargin）②見えて いる＝48px 以上（判定が 低い ときは 半分）・見えて いない＝16px より 少ない
 //     （その 間は 前の まま：行ったり 来たり しない）③いちばん 上・下から さらに 引っぱって いる 間（はね返り）は 数え直さない → 止まって から 見直す
 //     ④判定が 上に ある（下へ 進んで 判定を 通りすぎた）ときは「判定へ↑」⑤帯を 押したら 判定の 上の はしが 上の 帯の すぐ 下に 来る（前は 帯の 下に 少し かくれた）
+//   第4.230版：帯は 丸い ボタンの 横 1列の すぐ 上（.minibar の bottom：--fabt）。列の 下に かくれた 所も 見えて いない と 数える
 let resultVisible = false, miniIO = null, miniTop = -1, miniBot = -1, miniSettle = 0, miniHTML = '';
 const miniOver = () => { const y = window.scrollY, max = document.documentElement.scrollHeight - window.innerHeight; return y < -1 || y > max + 1; };      // はね返りの とちゅう（iPhone）
 function miniSeen(px, h) {
@@ -1340,7 +1341,8 @@ function miniCheck() {                      // いまの 場所で 見直す（�
 function miniWatch() {
   const hd = document.querySelector('header.top'), tb = document.querySelector('.tabbar');
   const top = hd ? Math.max(0, Math.round(hd.getBoundingClientRect().bottom)) : 0;
-  const tr = tb && getComputedStyle(tb).display !== 'none' ? tb.getBoundingClientRect() : null, bot = tr && tr.height ? Math.max(0, Math.round(window.innerHeight - tr.top)) : 0;
+  const tr = tb && getComputedStyle(tb).display !== 'none' ? tb.getBoundingClientRect() : null, ft = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--fabt')) || 0;
+  const bot = Math.max(tr && tr.height ? Math.max(0, Math.round(window.innerHeight - tr.top)) : 0, Math.round(ft));      // 第4.230版：下の タブ と 丸い ボタンの 横 1列（--fabt：tc_launch.js）の 下に かくれた 所も 見えて いない
   if (miniIO && top === miniTop && bot === miniBot) return;
   miniTop = top; miniBot = bot;
   try {
@@ -1355,6 +1357,7 @@ function miniWatch() {
 miniWatch();
 try { if (window.ResizeObserver) { const ro = new ResizeObserver(() => miniWatch()); [document.querySelector('header.top'), document.querySelector('.tabbar')].forEach(e => { if (e) ro.observe(e); }); } } catch {}
 window.addEventListener('resize', () => miniWatch());
+window.addEventListener('tengel:fab', () => miniWatch());      // 第4.230版：丸い ボタンの 横 1列の 場所が かわった（tc_launch.js の clear）
 let miniJ = null, miniRaf = 0;
 function updateMini() {
   const bar = $('#minibar'), J = miniJ;

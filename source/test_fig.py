@@ -99,16 +99,17 @@ try:
         FAB = """() => { const R = e => e ? e.getBoundingClientRect() : null, t = document.querySelector('#tcFab'), f = document.querySelector('#figFab'), h = document.querySelector('header.top'), tb = document.querySelector('.tabbar');
           if (!t || !f || !h || !tb) return null; const a = R(t), c = R(f), l = f.querySelector('.fabl'), i = f.querySelector('.fabi'), q = R(l), ii = R(i);
           const cbf = R(document.querySelector('#cbFab'));
-          return { hb: R(h).bottom, tab: R(tb).top, bottom: c.bottom, tcTop: a.top, tcBottom: a.bottom, tcCx: (a.left + a.right) / 2, top: c.top, right: c.right, cx: (c.left + c.right) / 2, name: l.textContent, lt: q.top, ib: ii.bottom, iw: ii.width, cbBottom: cbf ? cbf.bottom : null,
+          return { hb: R(h).bottom, tab: R(tb).top, bottom: c.bottom, tcTop: a.top, tcBottom: a.bottom, tcCx: (a.left + a.right) / 2, top: c.top, right: c.right, left: c.left, cx: (c.left + c.right) / 2, name: l.textContent, lt: q.top, ib: ii.bottom, iw: ii.width, cbBottom: cbf ? cbf.bottom : null, cbRight: cbf ? cbf.right : null, cbTop: cbf ? cbf.top : null,
             aria: f.getAttribute('aria-label'), img: (i.querySelector('img') || {}).src || '' }; }"""
         #   第4.168版：列は 判定の 帯（#minibar）が 出ても 消えても 同じ 所（帯の 上の 高さ：test_tc.py）。ここは 帯を かくして 見る
         pg.evaluate("() => { const m = document.getElementById('minibar'); if (m) m.hidden = true; }"); pg.wait_for_timeout(600)
         fb = pg.evaluate(FAB)
         #   第4.176版（まさちゃん 11/16 00:47「①トレーニングセンター ②推し馬 ③カードバトル ④思い出フィギュア」）：たてに 4つの いちばん 下＝カードバトルの すぐ 下。丸は 画面に 合わせた 大きさ（ここは 上の絵が ない ので 66px）・
         #     01:15「この青四角下の空間気になる」：列の 下は 下の タブの すぐ 上（前は 判定の 帯の 上＝下の タブから 約43px 上）
-        check(fb is not None and pg.locator('#figFab').is_visible() and fb['cbBottom'] is not None and 0 <= fb['top'] - fb['cbBottom'] <= 10 and fb['top'] > fb['tcBottom'] + 60 and abs(fb['cx'] - fb['tcCx']) < 1 and fb['right'] <= 390 and 3 <= fb['tab'] - fb['bottom'] <= 6 and fb['tcTop'] > fb['hb'] + 200,      # 第4.176版：列の 下は 下の タブの すぐ 上（帯が 出ても 消えても 動かない のは 同じ）
-              f'右下の ボタン：列の 一番 下（カードバトルの すぐ 下・トレーニングセンターと 同じ 列）に 思い出フィギュア・その すぐ 下が 下の タブ（{fb and [round(fb["tcTop"]), round(fb["tcBottom"]), round(fb["top"]), round(fb["bottom"]), round(fb["tab"])]}）')
-        check(fb is not None and fb['name'] == '思い出\nフィギュア' and fb['ib'] - 9 <= fb['lt'] <= fb['ib'] + 4 and abs(fb['iw'] - 66) < 1 and 'フィギュアブース' in fb['aria'], '絵（66px）の 下に 名前の 札「思い出／フィギュア」（2行）')
+        #   第4.230版（まさちゃん 11/26 22:46）：下の タブの すぐ 上に 横 1列 ＝ 思い出フィギュアは いちばん 右（カードバトルの すぐ 右）・上は ほかの ボタンと そろう・丸は 幅 390 で 76px
+        check(fb is not None and pg.locator('#figFab').is_visible() and fb['cbRight'] is not None and abs(fb['left'] - fb['cbRight']) <= 1 and abs(fb['top'] - fb['cbTop']) <= 1 and abs(fb['top'] - fb['tcTop']) <= 1 and fb['left'] > fb['tcCx'] + 200 and 380 <= fb['right'] <= 390 and 3 <= fb['tab'] - fb['bottom'] <= 6 and fb['tcTop'] > fb['hb'] + 200,
+              f'丸い ボタンの 横 1列の いちばん 右（カードバトルの すぐ 右・上は そろう）に 思い出フィギュア・その すぐ 下が 下の タブ（{fb and [round(fb["left"]), round(fb["top"]), round(fb["right"]), round(fb["bottom"]), round(fb["tab"])]}）')
+        check(fb is not None and fb['name'] == '思い出\nフィギュア' and fb['ib'] - 9 <= fb['lt'] <= fb['ib'] + 4 and abs(fb['iw'] - 76) < 1 and 'フィギュアブース' in fb['aria'], '絵（76px）の 下に 名前の 札「思い出／フィギュア」（2行）')
         pg.evaluate(SEED); pg.wait_for_timeout(800)
         pg.evaluate("() => { const b = document.querySelector('.tabbar [data-tab=rec]') || [...document.querySelectorAll('.tabbar button')].find(x => /記録/.test(x.textContent)); b.click(); }"); pg.wait_for_timeout(900)
         L = pg.evaluate("() => TengelMem.list()")

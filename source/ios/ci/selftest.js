@@ -687,6 +687,7 @@
       return out;
     });
     // 第4.176版：馬カードバトル（cb/）を 本物の WebKit で：入口の ボタン（たてに 4つの 上から 3番目）・本体を 読む・コンピュータと さいごまで 対戦・ごほうび・アプリの 部屋の 窓口（Room.swift）の 返事
+    //   第4.230版：入口の ボタンは 下の タブの すぐ 上の 横 1列の 左から 3番目（out.row）・作戦会議・着せ替えは 上の 帯の 中（out.dock）
     await step(R, 'cb', async function () {
       // 右下の 丸い ボタン：順（order：上から トレーニングセンター → 推し馬 → カードバトル → 思い出フィギュア）・場所（たてに 1列＝col。たての 短い 画面 だけ 2列 × 2段＝g2）・丸の 大きさ（fd：画面に 合わせる）
       var ks = Array.prototype.slice.call(document.querySelectorAll('#fabCol > button')).sort(function (a, b) { return (+getComputedStyle(a).order) - (+getComputedStyle(b).order); });
@@ -697,6 +698,9 @@
       out.fd = ks.map(function (k) { var i = k.querySelector('.fabi'); return i ? Math.round(i.getBoundingClientRect().width) : 0; });
       out.col = rr.length === 4 && under(rr[0], rr[1]) && under(rr[1], rr[2]) && under(rr[2], rr[3]);
       out.g2 = !!fc && fc.classList.contains('g2') && rr.length === 4 && under(rr[0], rr[1]) && under(rr[2], rr[3]) && Math.abs(rr[2][1] - rr[0][1]) <= 1 && rr[2][0] >= rr[0][2] - 1;
+      // 第4.230版（まさちゃん 2026/11/26 22:46）：下の タブの すぐ 上に 横 1列（左から 同じ 順・上が そろう・となり あう）。作戦会議・着せ替えは 上の 帯の 中（dock）
+      out.row = !!fc && fc.classList.contains('rw') && rr.length === 4 && rr.every(function (r, i) { return i === 0 || (Math.abs(r[1] - rr[0][1]) <= 1 && r[0] >= rr[i - 1][2] - 1); });
+      out.dock = !!kb && kb.parentNode === document.querySelector('header.top') && kb.classList.contains('dk');
       out.clear = !out.kise || rr.every(function (r) { return r[1] >= out.kise[3] + 2 || r[0] >= out.kise[2] || r[2] <= out.kise[0]; });      // 「壁紙&ボード着せ替え」に 重ならない（本物の 画面の 大きさで）
       if (!window.TengelCB) return out;
       out.room = await TengelNative.call('room', { op: 'state' }).catch(function (e) { return { error: String(e && (e.message || e)) }; });
