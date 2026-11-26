@@ -10,6 +10,7 @@
 //   第4.188版：PROTO 9（効果の 順 6 → 7 → 3 → 5 → 4）・部屋で 4 は いちばん あと：ゲストの 5 の 効果で 山札から ふせた カードを、ホストの 4 で 交換
 //   第4.190版：PROTO 10（6 は ターンの はじめ・効果タイムは 1つずつ）・1ターン目の はじめの 6 は 配った 知らせと いっしょ（deal,sixt）
 //   第4.202版：PROTO 13（7 の 3まい 交換・3 は セットの 前・決着したら 試合終了）
+//   第4.226版：PROTO 14（友達バトルは セットまで 10秒：時計は 画面〈cb_app.js〉・やりとりの 形は 同じ）
 //   第4.203版：相手の 手札は いつも 本当の 手札（見た カードを セットしたら 手札から 消える：ホストが 作る 見え方。ルールは 同じ ＝ PROTO 13 の まま）
 //   第4.197版：PROTO 11（決戦宝石）・部屋を 作る 人が「決戦宝石 あり」→ あいさつで ゲストへ → 参加 → 2人とも 5つ（まさちゃん 20:21「お友達バトルは1試合で5個使える！」）・おたがいに 見える
 //   第4.211版（まさちゃん 2026/11/22 21:36「不正に…手に入れる抜け穴は無いか全部細かく徹底的に確認して！」）：部屋の 相手が にせもの でも ズルが できない
@@ -64,7 +65,7 @@ async function playOut(pairs, rng, guard) {
     H.start(); await tick();
     check(hs.ups.length === 0 && w.log.length === 0, 'ホストは 友だちの あいさつが 届く まで 配らない');
     G.start(); await tick(); await tick(); await tick();
-    check(w.log[0][0] === 'g' && JSON.parse(w.log[0][1]).t === 'hello' && JSON.parse(w.log[0][1]).v === N.PROTO && N.PROTO === 13 && JSON.parse(w.log[1][1]).t === 'hello' && hs.states.join() === 'ready' && gs.states.join() === 'ready,stake'
+    check(w.log[0][0] === 'g' && JSON.parse(w.log[0][1]).t === 'hello' && JSON.parse(w.log[0][1]).v === N.PROTO && N.PROTO === 14 && JSON.parse(w.log[1][1]).t === 'hello' && hs.states.join() === 'ready' && gs.states.join() === 'ready,stake'
       && JSON.stringify(JSON.parse(w.log[1][1]).stake) === '{"e":0,"w":0}' && JSON.stringify(G.stake) === '{"e":0,"w":0}' && hs.ups.length === 0,
       'はじめに おたがいに あいさつ（hello・版の 番号 11：第4.197版）・ホストの あいさつに 部屋の 決まり（参加コイン 0）→ ゲストに「決まりが 届いた」（まだ 配らない）');
     G.join(); await tick(); await tick(); await tick();
@@ -331,7 +332,7 @@ async function playOut(pairs, rng, guard) {
     check(H.opDz === null && G.opDz === null, 'はじめは 相手の デザインは まだ ない（opDz＝null）');
     H.start(); G.start(); await tick(); await tick(); await tick();
     const gh = JSON.parse(w.log[0][1]), hh = JSON.parse(w.log[1][1]);
-    check(w.log[0][0] === 'g' && gh.t === 'hello' && gh.v === 13 && JSON.stringify(gh.dz) === '{"b":"star","f":{"3":"3b","m":"mb"}}' && hh.t === 'hello' && JSON.stringify(hh.dz) === '{"b":"sky","f":{"6":"6a","k":"ka"}}' && N.PROTO === 13,
+    check(w.log[0][0] === 'g' && gh.t === 'hello' && gh.v === 14 && JSON.stringify(gh.dz) === '{"b":"star","f":{"3":"3b","m":"mb"}}' && hh.t === 'hello' && JSON.stringify(hh.dz) === '{"b":"sky","f":{"6":"6a","k":"ka"}}' && N.PROTO === 14,
       'あいさつ（hello）に 自分が えらんだ デザイン（dz：うら・おもて）・版の 番号 10（第4.190版：6 は ターンの はじめ・効果タイムは 1つずつ：ルールが かわった）');
     check(JSON.stringify(H.opDz) === '{"b":"star","f":{"3":"3b","m":"mb"}}' && JSON.stringify(G.opDz) === '{"b":"sky","f":{"6":"6a","k":"ka"}}' && hs.states.join() === 'ready' && gs.states.join() === 'ready,stake',
       'おたがいの デザインが 届く（match.opDz）・あいさつの 流れは 前と 同じ');

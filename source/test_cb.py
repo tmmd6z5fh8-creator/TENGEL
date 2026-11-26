@@ -130,7 +130,7 @@ def open_cb(pg, speed=0.03):
     open_toys(pg, ('cb',))      # 第4.212版：おもちゃ（3,000P で 解放）。ここでは 0P で 解放した ことに する（解放の 窓は「■ 入口」で 本物の 流れを 見る）
     pg.locator('#cbFab .fabi').click()
     pg.wait_for_function("() => !!window.CBApp && !!document.querySelector('#cbOv.on')", timeout=30000)
-    pg.evaluate(f"() => {{ CBApp._t.speed({speed}); CBApp._guard = 0; }}"); pg.wait_for_timeout(150)      # _guard 0：聞く 窓が 出て すぐでも 押せる（テストは すぐ 押す。うっかり 押し 防止は 下で 別に 見る）
+    pg.evaluate(f"() => {{ CBApp._t.speed({speed}); CBApp._guard = 0; CBApp._limit = 0; }}"); pg.wait_for_timeout(150)      # 第4.226版：_limit 0＝友達バトルの セットの 時間を 止める（ここの 部屋の 場面は 時間で 自動に ならない ように：時間の 決まりは test_v226.py）。_guard 0：聞く 窓が 出て すぐでも 押せる（テストは すぐ 押す。うっかり 押し 防止は 下で 別に 見る）
     # 出て すぐ 消える ことば（帯＝.cbban・ふきだし＝.cbtoast）を 覚えて おく（said() で 読んで 空に する）
     pg.evaluate("""() => { if (window.__said) return; window.__said = [];
       const W = (sel, tag) => { const e = document.querySelector('#cbOv ' + sel); let last = ''; new MutationObserver(() => { const s = e.classList.contains('on') ? e.textContent : ''; if (s && s !== last) window.__said.push(tag + ':' + s); last = s; }).observe(e, { childList: true, subtree: true, attributes: true, characterData: true }); };
