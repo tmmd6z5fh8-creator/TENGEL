@@ -463,6 +463,8 @@
   }
   var planRaf = 0;
   function planSoon() { if (!planRaf) planRaf = requestAnimationFrame(function () { planRaf = 0; planPlace(); }); }
+  // 第4.231版：大きさの 見張り（ResizeObserver）から：上の 帯の 中に 置く／置いて いる ときは 次の 描画の 前・カードの 右上は その場で
+  function planRO() { if ((planB && planB.classList.contains('dk')) || dockArea()) planSoon(); else planPlace(); }
   function planPlace() {
     var b = planB, card = planCard; if (!b || !card) return;
     var da = dockArea(); if (da) { planVis(true); dockPut(da); return; }                                    // 第4.230版：上の 帯の 中（どの タブでも 出す）
@@ -591,7 +593,9 @@
     try { if (vj && window.MutationObserver) new MutationObserver(dockSync).observe(vj, { attributes: true, attributeFilter: ['hidden'] }); } catch (e) { /* なし */ }      // タブを かえた
     try {
       if (window.ResizeObserver) {
-        ro = new ResizeObserver(planPlace); ro.observe(card); ro.observe(h);
+        // 第4.231版：上の 帯の 中に 置く とき（dockPut）は 帯の 下の 余白を かえる ＝ 見張って いる 帯の 高さが その場で かわる → 次の 描画の 前（planSoon）に まわす
+        //   （その場で かえると「ResizeObserver loop completed with undelivered notifications」：GitHub の Mac run 206 の 報告に 出た）。前の 場所（カードの 右上）は 前の とおり その場で
+        ro = new ResizeObserver(planRO); ro.observe(card); ro.observe(h);
         // カードより 上の もの（上の 帯・壁紙の 上の絵・お知らせ）の 高さが かわると カードの 場所が かわる（第4.168版：ボタンは 画面に 止まって いる ので 測り直す）
         var hd = document.querySelector('header.top'); if (hd) ro.observe(hd);
         for (var el = card; el && el !== document.body; el = el.parentNode) for (var p = el.previousElementSibling; p; p = p.previousElementSibling) if (p !== hd && !/^(SCRIPT|STYLE|LINK)$/.test(p.tagName)) ro.observe(p);
