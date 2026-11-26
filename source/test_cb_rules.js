@@ -14,6 +14,8 @@
 //   まさちゃんの 直し（第4.202版・2026/11/18 23:42「手札から使える効果は、カードセット前に使えるようにして！」・23:55「５ターンのうち、どちらかが３ターン勝利したら、試合終了にして！
 //     数値的にターンを回しても勝てないなら、勝っている方の勝ちになるようにして！」）：7 の 3まい 交換・3 は セットの 前（手 x7・x3：手札は セットする 前で 数える）・効果タイムは 5 → 4 だけ・
 //     決着（のこりを ぜんぶ 勝っても 追いつけない）したら その 場で おわり。下の G（3ターンの 場面）は テスト用の full（さいごの ターンまで）・GE は 本番と 同じ（決着で おわり）
+//   まさちゃんの 直し（第4.229版・2026/11/26 22:19「テンゲルカードバトルの3の効果は、相手の見えてるカードに対しても使用できるようにして！」）：3 の 交換で もらう カードに
+//     見えて いる カード（もう 見た カード）も えらべる（トークン いがい）・相手の 手札が ぜんぶ 見えて いても 使える・コンピュータは 見えて いる 強い カードを もらう
 //   ＋ 見せて いい こと だけを 渡して いるか（相手の 手札・ふせた カード）・でたらめに 2万回 あそんでも カードが 30まいの まま か
 const R = require('./cb/cb_rules.js'), C = require('./cb/cb_cpu.js'), CPU = C;      // CPU：ブロックの 中で C を 別の 名前に 使う ところ 用
 let fails = [];
@@ -400,21 +402,47 @@ console.log('■ 3：手札に 3 が 3まい → 3まいを 見せて、その 1
   const want = P1.p[1].hand.find(c => c.k === 'k'), rp = R.act(P1, 0, { t: 'x3', pick: want.u });
   check(rp.ok && rp.ev[0].take.u === want.u && rp.ev[0].take.k === 'k' && P1.p[0].hand.some(c => c.u === want.u) && !P1.p[1].hand.some(c => c.u === want.u),
     'えらんだ うらの カード（ここでは 中に 神様馬）が そのまま 来る（くじで かわらない）');
+  // 第4.229版（まさちゃん 11/26 22:19「3の効果は、相手の見えてるカードに対しても使用できるようにして！」）：見えて いる カード（もう 見た カード）も えらべる
   const P2 = mk(); P2.p[0].known.push(P2.p[1].hand.find(c => c.k === '4').u, P2.p[1].hand.find(c => c.k === 'k').u);      // 4 と 神様馬は もう 見た（表）
-  const pv2 = R.view(P2, 0).can.x3p, k4 = P2.p[1].hand.find(c => c.k === '4').u;
-  check(pv2.length === 3 && pv2.indexOf(k4) < 0 && R.act(P2, 0, { t: 'x3', pick: k4 }).why === 'pick' && R.act(P2, 0, { t: 'x3', pick: pv2[0] }).ok,
-    'もう 見た カード（表：4・神様馬）は えらべない ＝ うらの 3まい だけ（何が 来るか わからない）');
+  const v2 = R.view(P2, 0), pv2 = v2.can.x3p, k4 = P2.p[1].hand.find(c => c.k === '4').u, kk = P2.p[1].hand.find(c => c.k === 'k').u;
+  check(pv2.length === 5 && pv2.indexOf(k4) >= 0 && pv2.indexOf(kk) >= 0 && v2.op.hand.filter(c => c.k != null).map(c => c.k).sort().join('') === '4k' && pv2.join() === v2.op.hand.map(c => c.u).join(),
+    `第4.229版：もう 見た カード（表：4・神様馬）も えらべる ＝ 相手の 手札 5まい ぜんぶ（${pv2.length}）`);
+  const r2 = R.act(P2, 0, { t: 'x3', pick: kk }), e2 = r2.ev && r2.ev[0], v2b = R.view(P2, 0), v2c = R.view(P2, 1);
+  check(r2.ok && e2.take.u === kk && e2.take.k === 'k' && P2.p[0].hand.some(c => c.u === kk && c.k === 'k') && !P2.p[1].hand.some(c => c.u === kk) && P2.p[1].hand.some(c => c.u === e2.give.u)
+    && v2b.my.hand.find(c => c.u === kk).seen === true && v2b.op.hand.filter(c => c.k != null).map(c => c.k).sort().join('') === '34' && v2c.op.hand.some(c => c.u === kk && c.k === 'k') && sane(P2),
+    '見えて いる 神様馬を えらぶ → その 神様馬が 来る（相手に 知られた カード：目の しるし）・相手の 手札には 見えて いる 4 と わたした 3');
+  const P2b = mk(); P2b.p[0].known.push(P2b.p[1].hand.find(c => c.k === '4').u); const k4b = P2b.p[1].hand.find(c => c.k === '4').u, r2b = R.act(P2b, 0, { t: 'x3', pick: k4b });
+  check(r2b.ok && r2b.ev[0].take.k === '4' && P2b.p[0].hand.some(c => c.u === k4b), '見えて いる 4 を えらぶ → 4 が 来る（くじで かわらない）');
   const P3 = mk(); P3.p[1].hand.forEach(c => P3.p[0].known.push(c.u));
-  check(R.view(P3, 0).can.x3 === false && R.view(P3, 0).can.x3p.length === 0 && R.legal(P3, 0).join() === 'set', '相手の 手札が ぜんぶ もう 見た カード（うらが ない）→ 3 の 効果は 使えない（聞かれない）');
+  const v3 = R.view(P3, 0), lg3 = R.legal(P3, 0).join(), r3 = R.act(P3, 0, { t: 'x3', pick: P3.p[1].hand.find(c => c.k === '7').u });
+  check(v3.can.x3 === true && v3.can.x3p.length === 5 && lg3 === 'set,x3' && r3.ok && r3.ev[0].take.k === '7' && P3.p[0].hand.some(c => c.k === '7') && sane(P3),
+    '第4.229版：相手の 手札が ぜんぶ もう 見た カード（うらが ない）でも 使える（前は 使えなかった）・えらんだ 7 が 来る');
   const P4 = mk(); P4.p[0].known.push(P4.p[1].hand.find(c => c.k === '4').u); set(P4, 1, '4');      // 相手が 見た カード（4）を ふせて セット → 見え方は セットする 前の 手札から うらを 1まい へらした 形
   const v4 = R.view(P4, 0), pv4 = v4.can.x3p, back4 = v4.op.hand.filter(c => c.k == null).map(c => c.u);
   check(pv4.length === 4 && pv4.join() === back4.join() && pv4.every(u => P4.p[1].hand.some(c => c.u === u)) && !v4.op.hand.some(c => c.k === '4') && R.act(P4, 0, { t: 'x3', pick: pv4[3] }).ok,
-    `相手が 見た カード（4）を ふせて セットした あと：4 は 相手の 手札から 消えて、えらべるのは 見えて いる うらの カード（${pv4.length}まい：本当の 手札）`);
+    `相手が 見た カード（4）を ふせて セットした あと：4 は 相手の 手札から 消えて、えらべるのは 相手の 手札の カード（${pv4.length}まい：本当の 手札）`);
   const got = {}; for (let sd = 1; sd <= 500; sd++) { const X = mk(), q = x3(X, 0, rngOf(sd)); got[q.ev[0].take.k] = (got[q.ev[0].take.k] || 0) + 1; }
   check(Object.keys(got).sort().join('') === '4567k' && Object.values(got).every(n => n > 60 && n < 140), `うらの カードを でたらめに えらぶと 500回で 5まいの どれも 同じ ぐらい（${JSON.stringify(got)}）`);
   const C3 = G('33312', '4567k'); let cpk = 0, cbad = 0; const cg = {};
   for (let sd = 1; sd <= 2000; sd++) { const x = CPU.decide(R.view(C3, 0), rngOf(sd)); if (x.t !== 'x3') continue; cpk++; if (R.view(C3, 0).can.x3p.indexOf(x.pick) < 0) cbad++; const kk = C3.p[1].hand.find(c => c.u === x.pick); cg[kk ? kk.k : '?'] = (cg[kk ? kk.k : '?'] || 0) + 1; }
   check(cpk > 400 && cbad === 0 && Object.keys(cg).sort().join('') === '4567k' && Object.values(cg).every(n => n > cpk / 5 * 0.7 && n < cpk / 5 * 1.3), `コンピュータが 3 を 使う ときも うらの カードから ランダムに 1まい えらぶ（中身は 見ない：${cpk}回 ${JSON.stringify(cg)}）`);
+  // 第4.229版：コンピュータ（cb_cpu.js の x3Pick）：見えて いる 強い カード（神様馬・幻の馬・1・2。強さ 逆転ちゅうは 7・6）が あれば それを もらう
+  const pickK = (S, n, sd0) => { const o = {}; let m = 0; for (let sd = sd0 || 1; sd < (sd0 || 1) + n; sd++) { const x = CPU.decide(R.view(S, 0), rngOf(sd)); if (x.t !== 'x3') continue; m++; const c = S.p[1].hand.find(q => q.u === x.pick); const k = c ? c.k : '?'; o[k] = (o[k] || 0) + 1; } return { o, m }; };
+  const C4 = G('33312', '4567k'); C4.p[0].known.push(C4.p[1].hand.find(c => c.k === 'k').u, C4.p[1].hand.find(c => c.k === '7').u);
+  const q4 = pickK(C4, 600);
+  check(q4.m > 100 && q4.o.k === q4.m, `第4.229版：コンピュータは 見えて いる 強い カード（神様馬）が あれば かならず それを もらう（${JSON.stringify(q4.o)}）`);
+  const C5 = G('33312', '4567k'); C5.p[0].known.push(C5.p[1].hand.find(c => c.k === '6').u, C5.p[1].hand.find(c => c.k === '7').u);
+  const q5 = pickK(C5, 1500);
+  check(q5.m > 300 && Object.keys(q5.o).sort().join('') === '45k' && Object.values(q5.o).every(n => n > q5.m / 3 * 0.7 && n < q5.m / 3 * 1.3), `見えて いる カードが 弱い（6・7）→ 前と 同じ 裏の 3まいから ランダム（中身は 見ない：${JSON.stringify(q5.o)}）`);
+  const C6 = G('33312', '45677'); C6.p[1].hand.forEach(c => C6.p[0].known.push(c.u));
+  const q6 = pickK(C6, 600);
+  check(q6.m > 100 && q6.o['4'] === q6.m && R.view(C6, 0).can.x3p.length === 5, `ぜんぶ 見えて いて 強い カードが ない → 見えて いる 中で 1番 強い カード（4：${JSON.stringify(q6.o)}）`);
+  const C7 = G('33312', '45677'); C7.rv = true; C7.p[0].known.push(C7.p[1].hand.find(c => c.k === '7').u);
+  const q7 = pickK(C7, 600), k7 = C7.p[0].known[0], w7 = (() => { for (let sd = 1; sd < 600; sd++) { const x = CPU.decide(R.view(C7, 0), rngOf(sd)); if (x.t === 'x3') return x.pick; } return null; })();
+  check(q7.m > 100 && q7.o['7'] === q7.m && w7 === k7, `強さ 逆転ちゅう：見えて いる 7 は 強い → その 7 を もらう（${JSON.stringify(q7.o)}）`);
+  const C8 = G('33312', '4567m'); C8.p[0].known.push(C8.p[1].hand.find(c => c.k === 'm').u, C8.p[1].hand.find(c => c.k === '4').u);
+  const r8 = (() => { for (let sd = 1; sd < 600; sd++) { const x = CPU.decide(R.view(C8, 0), rngOf(sd)); if (x.t === 'x3') return R.act(C8, 0, x, rngOf(sd)); } return null; })();
+  check(r8 && r8.ok && r8.ev[0].take.k === 'm' && C8.p[0].hand.some(c => c.k === 'm') && sane(C8), 'コンピュータの 手（x3・pick＝見えて いる 幻の馬）は ルールが 受けつける → 幻の馬が 来る');
   const F4 = G('33331', '4567k'); x3(F4, 0);
   check(F4.p[0].hand.filter(c => c.k === '3').length === 3 && R.view(F4, 0).can.x3 === false && x3(F4, 0).why === 'x3', '1ターンに 1回（3 が まだ 3まい あっても 2回目は ない）');
   set(F4, 0, '1'); set(F4, 1, '6');
@@ -1410,6 +1438,18 @@ console.log('■ 第4.197版：決戦宝石（まさちゃん 18:58「呼び寄�
     set(S, 0, '1'); const r2 = set(S, 1, '1'), tg = r2.ev.find(e => e.e === 'tokgone' && e.who === 0);
     check(x3e && x3e.give.u === real3.u && !x3e.give.tok && !x3e.take.tok && x3e.three.indexOf(t3.u) >= 0 && !S.p[1].hand.some(c => c.u === t3.u) && S.p[1].hand.some(c => c.u === real3.u) && tg && tg.u.indexOf(t3.u) >= 0,
       '相手に わたすのは 本物の 3（トークンは 手元に のこる：ターンで 消える）・もらうのも 本物の カード');
+  }
+  // 第4.229版：友達バトル（おたがいに 見える）で 見えて いる トークンは 3 の 交換で えらべない（ターンで 消える：わたす のも もらう のも 本物 だけ）
+  {
+    const S = GG('3331245', '1234566', '1245677', [[], R.GEMS], true);
+    turn(S, '5', '6'); gem(S, 1, 'k'); const tk = S.p[1].hand.find(c => c.tok);
+    no6(S);
+    const v = R.view(S, 0), op = tk && v.op.hand.find(c => c.u === tk.u);
+    check(tk && op && op.k === 'k' && op.tok && v.can.x3 === true && v.can.x3p.indexOf(tk.u) < 0 && v.can.x3p.length === S.p[1].hand.length - 1 && R.act(S, 0, { t: 'x3', pick: tk.u }).why === 'pick'
+      && S.p[0].hand.filter(c => c.k === '3').length === 3 && S.p[0].x3 !== S.turn,
+      `第4.229版：友達バトルで 見えて いる トークン（神様馬トークン）は 3 の 交換で えらべない・ほかの カード（${v.can.x3p.length}まい）は えらべる`);
+    const real = S.p[1].hand.find(c => !c.tok && c.k === '1'), r = R.act(S, 0, { t: 'x3', pick: real.u });
+    check(r.ok && r.ev[0].take.u === real.u && S.p[0].hand.some(c => c.u === real.u) && S.p[1].hand.some(c => c.u === tk.u) && saneG(S), '（本物の カードは えらべる：1 が 来る・トークンは 相手の 手札に のこる）');
   }
   // 7トークン（3頭分）：7 の 効果（第4.199版・まさちゃん 22:01：トークンを 見せて 捨てる → 山札から 3まい 引く）
   {

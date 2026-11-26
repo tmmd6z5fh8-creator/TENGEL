@@ -25,11 +25,23 @@
 //     ・第4.202版（まさちゃん 23:42「手札から使える効果は、カードセット前に使えるようにして！」）：7 の 3まい 交換・3 の 交換は セットの 前（v.can.x7 → { t:'x7' }・v.can.x3 → { t:'x3' }）。
 //       考え方は 前と 同じ：7 が 3まい → 交換する（逆転ちゅうは しない）／3 が 3まい → 1ターン目は 3回に 1回・2ターン目からは 半分 ほど。使った あとの 手札で セットする カードを えらぶ。
 //       効果タイムは 5 → 4 だけ。3 で もらう カードは 相手の 手札の うらの カード（v.can.x3p）から ランダムに 1まい（00:38「CPUが勝手に選ぶ形にならないようにして！」：使う 人が えらぶ 決まり）
+//     ・第4.229版（まさちゃん 11/26 22:19「3の効果は、相手の見えてるカードに対しても使用できるようにして！」：見えて いる カードも えらべる）：3 で もらう カード（x3Pick）は、
+//       見えて いる 強い カード（神様馬・幻の馬・1・2。強さ 逆転ちゅうは 7・6）が あれば その 中で 1番 強い もの。なければ 前と 同じ 裏の カードから ランダム（中身は 見ない）。
+//       裏の カードが ない（ぜんぶ 見えて いる）ときは 見えて いる 中で 1番 強い もの。使うか どうか（1ターン目 35%・2ターン目から 55%）は 前と 同じ
 const CBCpu = (() => {
   'use strict';
   const power = (k, rv) => (k === 'k' || k === 'm' ? 0 : rv ? 8 - +k : +k);      // 小さい ほど 強い（rv＝強さ 逆転ちゅう：第4.185版）
   const byStrong = (hand, rv) => hand.slice().sort((a, b) => power(a.k, rv) - power(b.k, rv) || a.u - b.u);      // 強い 順
   const pick = (a, rng) => a[Math.floor(rng() * a.length)];
+  // 第4.229版：3 の 交換で もらう カード（v.can.x3p の 番号）。強い＝神様馬・幻の馬・強さ 1・2（power が 2 以下：強さ 逆転ちゅうは 7・6）
+  function x3Pick(v, rng) {
+    const rv = !!v.rv, ok = c => v.can.x3p.indexOf(c.u) >= 0;
+    const vis = v.op.hand.filter(c => c.k != null && !c.tok && ok(c)).sort((a, b) => power(a.k, rv) - power(b.k, rv) || a.u - b.u);
+    const back = v.op.hand.filter(c => c.k == null && ok(c));
+    if (vis.length && power(vis[0].k, rv) <= 2) return vis[0].u;      // 見えて いる 強い カード
+    if (back.length) return pick(back, rng).u;                         // 前と 同じ：裏の カードから ランダム（中身は 見ない）
+    return vis.length ? vis[0].u : pick(v.can.x3p, rng);               // ぜんぶ 見えて いる：1番 強い もの
+  }
 
   function decide(v, rng) {
     rng = rng || Math.random;
@@ -68,7 +80,7 @@ const CBCpu = (() => {
     if (v.phase !== 'set' || !v.can.set) return null;
     if (v.can.x7r) return { t: 'x7r' };                 // 第4.187版：7 が 4まい → セットの 前に 4まい 見せて 逆転（7 が 1番 強く なる）→ その あと セット
     if (v.can.x7 && !rv) return { t: 'x7' };            // 第4.202版：7 が 3まい → セットの 前に 交換（逆転ちゅうの 7 は 強い ので 交換しない）
-    if (v.can.x3 && v.can.x3p.length && rng() < (v.turn >= 2 ? 0.55 : 0.35)) return { t: 'x3', pick: pick(v.can.x3p, rng) };      // 第4.202版：3 が 3まい → セットの 前（手の 内を 見せる ので 毎回は 使わない）・もらう カードは 相手の うらの カードから ランダムに 1まい（中身は 見ない）
+    if (v.can.x3 && v.can.x3p.length && rng() < (v.turn >= 2 ? 0.55 : 0.35)) return { t: 'x3', pick: x3Pick(v, rng) };      // 第4.202版：3 が 3まい → セットの 前（手の 内を 見せる ので 毎回は 使わない）・もらう カードは 相手の うらの カードから ランダムに 1まい（中身は 見ない）。第4.229版：見えて いる 強い カードが あれば それ（x3Pick）
     const s = byS(hand), left = v.turns - v.turn + 1;          // のこりの ターン（この ターンも 入れて）
     const top = s.slice(0, Math.min(left, s.length));
     if (hand.length - 2 >= v.turns - v.turn && hand.length - 1 >= 1 && v.deckN >= 1) {          // 5 の 効果を ねらう（第4.177版：5 を 出して、手札を 1まい 捨てても のこりの ターンに 足りる）

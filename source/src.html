@@ -1316,16 +1316,61 @@ const bandName = k => ({ A: '固定', B: '固定', C0: '非該当', C1: '第1段
 const oldLineText = J => `第12の帯：${J.c.band12}　` + J.oldSet.map((z, i) => '①②③'[i] + z.label).join('　');
 
 // スマホ用：入力中でも判定の要点が見える下のバー
-let resultVisible = false;
-try { new IntersectionObserver(es => { resultVisible = es.some(e => e.isIntersecting); updateMini(); }, { threshold: 0.05 }).observe($('#result')); } catch {}
-let miniJ = null;
+//   第4.229版（まさちゃん 11/26 22:27「1番下までスクロールして、更に下にスクロールするとなんか重くなる！ 判定は下には無いのに、判定へ↓が表示されてる！」）：
+//   前は 判定（#result）が 画面に 少しでも 入って いれば「見えて いる」と 数えて いた。上に くっつく 帯（header.top）の 下に かくれた 判定の 下の はしも 入る ＝
+//   締切済みの カードなど 下の カードが 短い ときは、いちばん 下で 判定の 下の はしが 帯の 下に のこり、さらに 下へ 引っぱる（はね返り）たびに 判定が 画面から 出て 帯が 出る →
+//   もどると 消える を くり返して いた（帯が 出る たびに 右の 丸い ボタンの 場所も 測り直す ＝ 重い）。帯の 字は いつも「判定へ↓」だった。
+//   → ①上の 帯・下の タブの 下に かくれた 所は 見えて いない と 数える（rootMargin）②見えて いる＝48px 以上（判定が 低い ときは 半分）・見えて いない＝16px より 少ない
+//     （その 間は 前の まま：行ったり 来たり しない）③いちばん 上・下から さらに 引っぱって いる 間（はね返り）は 数え直さない → 止まって から 見直す
+//     ④判定が 上に ある（下へ 進んで 判定を 通りすぎた）ときは「判定へ↑」⑤帯を 押したら 判定の 上の はしが 上の 帯の すぐ 下に 来る（前は 帯の 下に 少し かくれた）
+let resultVisible = false, miniIO = null, miniTop = -1, miniBot = -1, miniSettle = 0, miniHTML = '';
+const miniOver = () => { const y = window.scrollY, max = document.documentElement.scrollHeight - window.innerHeight; return y < -1 || y > max + 1; };      // はね返りの とちゅう（iPhone）
+function miniSeen(px, h) {
+  if (!(h > 0)) { resultVisible = false; return; }                     // 判定タブが かくれて いる
+  if (px >= Math.min(48, h * 0.5)) resultVisible = true;
+  else if (px < Math.min(16, h * 0.2)) resultVisible = false;
+}
+function miniCheck() {                      // いまの 場所で 見直す（はね返りが 止まった あと）
+  clearTimeout(miniSettle); miniSettle = 0;
+  if (miniOver()) { miniSettle = setTimeout(miniCheck, 250); return; }
+  const r = $('#result').getBoundingClientRect();
+  if (r.height > 0) miniSeen(Math.max(0, Math.min(r.bottom, window.innerHeight - Math.max(0, miniBot)) - Math.max(r.top, Math.max(0, miniTop))), r.height); else resultVisible = false;
+  updateMini();
+}
+function miniWatch() {
+  const hd = document.querySelector('header.top'), tb = document.querySelector('.tabbar');
+  const top = hd ? Math.max(0, Math.round(hd.getBoundingClientRect().bottom)) : 0;
+  const tr = tb && getComputedStyle(tb).display !== 'none' ? tb.getBoundingClientRect() : null, bot = tr && tr.height ? Math.max(0, Math.round(window.innerHeight - tr.top)) : 0;
+  if (miniIO && top === miniTop && bot === miniBot) return;
+  miniTop = top; miniBot = bot;
+  try {
+    if (miniIO) miniIO.disconnect();
+    miniIO = new IntersectionObserver(es => {
+      if (miniOver()) { clearTimeout(miniSettle); miniSettle = setTimeout(miniCheck, 250); return; }
+      const e = es[es.length - 1]; miniSeen(e.isIntersecting ? e.intersectionRect.height : 0, e.boundingClientRect.height); updateMini();
+    }, { threshold: [0, 0.005, 0.01, 0.02, 0.03, 0.05, 0.1, 0.2, 0.3, 0.5], rootMargin: `-${top}px 0px -${bot}px 0px` });
+    miniIO.observe($('#result'));
+  } catch { miniIO = null; }
+}
+miniWatch();
+try { if (window.ResizeObserver) { const ro = new ResizeObserver(() => miniWatch()); [document.querySelector('header.top'), document.querySelector('.tabbar')].forEach(e => { if (e) ro.observe(e); }); } } catch {}
+window.addEventListener('resize', () => miniWatch());
+let miniJ = null, miniRaf = 0;
 function updateMini() {
   const bar = $('#minibar'), J = miniJ;
-  if (!J || !J.ok || st.tab !== 'judge' || resultVisible) { bar.hidden = true; return; }
-  $('#miniBtn').innerHTML = `<span class="lb L${J.c.L}">${J.c.L}</span><span class="mz">${esc(J.x.r + 'R ' + J.set.map((z, i) => '第' + (i + 1) + ' ' + z.label).join('・'))}</span><span class="go">判定へ↓</span>`;
-  bar.hidden = false;
+  // 出す／かくすは かわる ときだけ 書く（同じ 値を 書いても 右の 丸い ボタンの 列が 場所を 測り直す：tc_launch.js の MutationObserver）
+  if (!J || !J.ok || st.tab !== 'judge' || resultVisible) { if (!bar.hidden) bar.hidden = true; return; }
+  const r = $('#result').getBoundingClientRect(), up = r.top + r.bottom < Math.max(0, miniTop) + window.innerHeight - Math.max(0, miniBot);   // 判定の まん中が 見えて いる 所の まん中より 上 ＝ 判定は 上
+  const html = `<span class="lb L${J.c.L}">${J.c.L}</span><span class="mz">${esc(J.x.r + 'R ' + J.set.map((z, i) => '第' + (i + 1) + ' ' + z.label).join('・'))}</span><span class="go">判定へ${up ? '↑' : '↓'}</span>`;
+  if (html !== miniHTML || !$('#miniBtn').innerHTML) { $('#miniBtn').innerHTML = html; miniHTML = html; }
+  if (bar.hidden) bar.hidden = false;
 }
-$('#miniBtn').addEventListener('click', () => $('#result').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }));
+// 帯が 出て いる 間は、動かした あとの 場所で ↑・↓ を 見直す（判定を 一気に とびこえた ときは 判定が 画面に 入らない ので IntersectionObserver が 知らせない）
+window.addEventListener('scroll', () => { if (miniRaf || $('#minibar').hidden) return; miniRaf = requestAnimationFrame(() => { miniRaf = 0; if (!miniOver()) updateMini(); }); }, { passive: true });
+$('#miniBtn').addEventListener('click', () => {
+  const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches, r = $('#result').getBoundingClientRect();
+  window.scrollTo({ top: Math.max(0, window.scrollY + r.top - Math.max(0, miniTop) - 8), behavior: smooth ? 'smooth' : 'auto' });
+});
 // 判定の ゾーンの 枠（第4.122版）：枠複・枠単の 解放が かわったら 判定を 描き直す（設定タブで 解放して 判定タブに もどった とき）
 const wakuSig = () => { if (!NATIVE_APP) return ''; try { return ['枠複', '枠単'].filter(t => !typeLocked(t)).join(); } catch { return '?'; } };   // 読みこみの 途中（typeLocked の 前）は '?'
 function renderResult() {
