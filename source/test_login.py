@@ -103,7 +103,7 @@ try:
     check('ログインボーナス' in man and all(f'{i + 1}日目 {BONUS[i]:,}P' in man for i in range(7)) and '7日で一回り' in man.replace(' ', ''),
           '説明書（ポイントの もらい方）に ログインボーナスの 行（1日目 500P 〜 7日目 3,000P・7日で ひとまわり）')
     pu = open(os.path.join(W, 'points_ui.js'), encoding='utf8').read()
-    check("/^(rel-)?back-(theme|fig):|^login-/.test(String(e.id)) ? '' : 'ミッション：'" in pu, 'ポイントの 履歴：ログインボーナスには「ミッション：」を つけない（第4.176版から 思い出フィギュアの 返した ぶんも）')
+    check("/^(rel-)?back-(theme|fig):|^login-|^cbwin-/.test(String(e.id)) ? '' : 'ミッション：'" in pu, 'ポイントの 履歴：ログインボーナスには「ミッション：」を つけない（第4.176版から 思い出フィギュアの 返した ぶんも・第4.230版から カードバトルの 連勝ポイントも）')
 
     with sync_playwright() as p:
         b = p.chromium.launch(args=['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'])
