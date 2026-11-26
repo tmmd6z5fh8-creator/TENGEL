@@ -445,6 +445,17 @@
         venue: d.venue, date: d.date, r: d.r, dist: d.dist, surface: d.surface, baba: d.baba, n: d.n, horses: hs.length, h6: hs.find(function (h) { return h.no === 6; }) || null, h12: hs.find(function (h) { return h.no === 12; }) || null,
         s1: d.s1, s5: d.s5, s10: d.s10, docs: d._docs, lines: d._lines, names: d.names || null };      // 第4.170版：names＝画像に 写って いた 馬の 名前（馬番ごと）
     });
+    // 第4.227版（まさちゃん 11/26 17:07「まもなく締め切りレースが締め切りレースになってる！」）：まもなく 締切の 架空の 画面（上に 時計「17:58」と「5G 87」・
+    //   見出しの 右に 2段の 札「まもなく／締切」・発走と 日付は なし：testdata/ocr/make_mock.py の e_soon）を 本物の Vision で 読む → 締切済みに しない（soon）・時計を 発走に しない
+    await step(R, 'ocrsoon', async function () {
+      var res = await fetch('__selftest/e_soon.jpg', { cache: 'no-store' });
+      if (!res.ok) return { skipped: 'no sample e_soon.jpg (' + res.status + ')' };
+      var f = new File([await res.blob()], 'e_soon.jpg', { type: 'image/jpeg' });
+      var raw = await TengelNative.readText(await new Promise(function (ok, ng) { var fr = new FileReader(); fr.onload = function () { ok(String(fr.result).split(',')[1]); }; fr.onerror = ng; fr.readAsDataURL(f); }));
+      var d = await (await window.claude.use('sample')).json('', { images: [f] });
+      var top = (raw && raw.lines || []).filter(function (l) { return l.y < 0.12; }).map(function (l) { return [l.text, Math.round(l.x * 1000) / 1000, Math.round(l.y * 1000) / 1000, Math.round(l.h * 1000) / 1000]; });
+      return { closed: d.closed, soon: !!d.soon, start: d.start, r: d.r, dist: d.dist, n: d.n, horses: (d.horses || []).length, top: top };
+    });
     // 第4.172版（まさちゃん 11/14 22:05「やっぱりテンゲルBGMも消して！無しでいいや！」）：テンゲルBGM は なくした → しかけ（window.TengelBgm）と 設定の 札が 入って いない ことを 見る。
     //   ルーレットの 爆発の 動画（H.264 High：第4.171版）を この WebKit が 読める 形かも 見る
     await step(R, 'bgm', async function () {
