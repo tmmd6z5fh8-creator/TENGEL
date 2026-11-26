@@ -2613,7 +2613,7 @@ try:
         c6 = pC.evaluate(CI); h3 = pC.evaluate(HC)
         rel = pC.evaluate("TengelWallet.events().filter(e => e.from === 'hold').map(e => ({ id: e.id, kind: e.kind, bucket: e.bucket, amount: e.amount, days: Math.round((Date.parse(e.expires) - Date.parse(e.at)) / 86400000), product: e.product }))")
         check(c6['total'] == 99999 and c6['sub'] == 500 and c6['hold'] == {'total': 12000, 'paid_sub': 12000, 'paid_pack': 0, 'free': 0} and c6['badge'] == '1' and '補充したよ' in c6['toast'] and '500P' in c6['toast'] and '残り 12,000P' in c6['toast']
-              and len(rel) == 1 and rel[0]['id'].startswith('rel-tx-test-') and rel[0]['id'].endswith('-1') and rel[0]['kind'] == 'sub' and rel[0]['bucket'] == 'paid_sub' and rel[0]['amount'] == 500 and rel[0]['days'] == 30 and rel[0]['product'] == 'jp.tengel.app.sub12500'
+              and len(rel) == 1 and rel[0]['id'].startswith('rel-tx-test-') and rel[0]['id'].endswith('-1') and rel[0]['kind'] == 'sub' and rel[0]['bucket'] == 'paid_sub' and rel[0]['amount'] == 500 and rel[0]['days'] == 30 and rel[0]['product'] == 'jp.tengel.app.sub9200'      # 第4.230版：月12,500Pプランの 製品ID は 前の まま（sub9200）
               and '預かり中 12,000P' in h3['t'] and h3['dis'] is True,
               f'「補充する」→ 500P が サブスクポイントに 入って 99,999P・預かり 12,000P（期限は 補充した 日から 30日・上の 数は 2 → 1）（{c6["toast"]}・{rel}）')
         pC.evaluate("TengelWallet.closeMissions()"); pC.wait_for_timeout(200)
