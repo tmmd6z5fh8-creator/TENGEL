@@ -443,7 +443,7 @@
       var hs = d.horses || [];
       return { local: !!sample.local, ms: Date.now() - t0, raw: { ok: raw && raw.ok, n: raw && raw.lines ? raw.lines.length : -1, ms: raw && raw.ms, sample: (raw && raw.lines || []).slice(0, 6).map(function (l) { return l.text; }) },
         venue: d.venue, date: d.date, r: d.r, dist: d.dist, surface: d.surface, baba: d.baba, n: d.n, horses: hs.length, h6: hs.find(function (h) { return h.no === 6; }) || null, h12: hs.find(function (h) { return h.no === 12; }) || null,
-        s1: d.s1, s5: d.s5, s10: d.s10, docs: d._docs, lines: d._lines, names: d.names || null };      // 第4.170版：names＝画像に 写って いた 馬の 名前（馬番ごと）
+        s1: d.s1, s5: d.s5, s10: d.s10, docs: d._docs, lines: d._lines, names: d.names || null, re: d._re || null };      // 第4.170版：names＝画像に 写って いた 馬の 名前（馬番ごと）・第4.228版：re＝読み直し
     });
     // 第4.227版（まさちゃん 11/26 17:07「まもなく締め切りレースが締め切りレースになってる！」）：まもなく 締切の 架空の 画面（上に 時計「17:58」と「5G 87」・
     //   見出しの 右に 2段の 札「まもなく／締切」・発走と 日付は なし：testdata/ocr/make_mock.py の e_soon）を 本物の Vision で 読む → 締切済みに しない（soon）・時計を 発走に しない
@@ -455,9 +455,24 @@
       var d = await (await window.claude.use('sample')).json('', { images: [f] });
       var at = function (l) { return [l.text, Math.round(l.x * 1000) / 1000, Math.round(l.y * 1000) / 1000, Math.round(l.w * 1000) / 1000, Math.round(l.h * 1000) / 1000]; };
       var top = (raw && raw.lines || []).filter(function (l) { return l.y < 0.12; }).map(at);
-      // run 202：表の 馬が 12頭の うち 11頭 → 読めた 馬番と、表の 所の 読めた 字（位置つき）も 出す（どの 行が なぜ 落ちたか 見る）
+      // run 202：表の 馬が 12頭の うち 11頭 → 読めた 馬番と、表の 所の 読めた 字（位置つき）も 出す（どの 行が なぜ 落ちたか 見る）。
+      //   run 203 で 11番の「11」が 読まれて いなかった → 第4.228版：その 所を 切り取って 読み直す（pwa_shim.js の fixGaps）。re＝読み直しの 数・読めた 馬番
       var body = (raw && raw.lines || []).filter(function (l) { return l.y >= 0.12; }).map(at);
-      return { closed: d.closed, soon: !!d.soon, start: d.start, r: d.r, dist: d.dist, n: d.n, horses: (d.horses || []).length, nos: (d.horses || []).map(function (h) { return h.no; }), top: top, body: body };
+      // 読み直しの 読み方ごとに、本物の Vision で 何が 読めるか（つぎの 直しの ために：その 行の 所・上と 下の 行も 入れた 所 × 大きさ・読み方）
+      var tries = [];
+      var gs = (window.TengelOCR && TengelOCR.gaps) ? TengelOCR.gaps(raw && raw.lines || []) : [];
+      if (gs.length) {
+        var b64 = await new Promise(function (ok, ng) { var fr = new FileReader(); fr.onload = function () { ok(String(fr.result).split(',')[1]); }; fr.onerror = ng; fr.readAsDataURL(f); });
+        var E = [['crop', 1], ['crop', 2], ['crop', 3, true, ['en-US']], ['crop', 3, false, ['en-US']], ['wide', 2, false, ['en-US']], ['wide', 2], ['wide', 3, true, ['en-US']]];
+        for (var i = 0; i < E.length; i++) {
+          var g = gs[0], e = E[i], crop = g[e[0]]; if (!crop) { tries.push({ e: e, skipped: true }); continue; }
+          var opt = { crop: crop, scale: e[1] }; if (e[2]) opt.fast = true; if (e[3]) opt.langs = e[3];
+          var t1 = Date.now(), rr = await TengelNative.readText(b64, opt), hit = rr && rr.ok ? TengelOCR.gapHit(g, rr.lines || []) : null;
+          tries.push({ e: e, ok: rr && rr.ok, err: rr && rr.error || '', ms: Date.now() - t1, read: (rr && rr.lines || []).map(at), hit: hit ? hit.text : null });
+        }
+      }
+      return { closed: d.closed, soon: !!d.soon, start: d.start, r: d.r, dist: d.dist, n: d.n, horses: (d.horses || []).length, nos: (d.horses || []).map(function (h) { return h.no; }),
+        re: d._re || null, gaps: gs.map(function (g) { return { crop: g.crop, wide: g.wide, prev: g.prev, next: g.next }; }), tries: tries, top: top, body: body };
     });
     // 第4.172版（まさちゃん 11/14 22:05「やっぱりテンゲルBGMも消して！無しでいいや！」）：テンゲルBGM は なくした → しかけ（window.TengelBgm）と 設定の 札が 入って いない ことを 見る。
     //   ルーレットの 爆発の 動画（H.264 High：第4.171版）を この WebKit が 読める 形かも 見る

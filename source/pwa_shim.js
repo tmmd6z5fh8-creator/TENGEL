@@ -44,7 +44,8 @@ if (window.__NATIVE) (function () {
     // App Storeに出ている版（アプリがAppleに聞く）：{ found, version, url, notes, date }
     storeInfo: function () { return call('store', {}); },
     // 画像の文字を、この端末の中で読む（AppleのVision）。{ ok, lines:[{text,x,y,w,h,conf}], w, h, ms }。画像はどこにも送らない
-    readText: function (b64) { return call('ocr', { data: b64 }); },
+    //   第4.228版：opt＝読み直し（{ crop:[x,y,w,h]（左上が 原点・0〜1）, scale:大きく する 倍, fast:速い 読み方, langs:言葉 }。読めた 位置は 画像 全体の 位置で 返る）
+    readText: function (b64, opt) { return call('ocr', opt ? { data: b64, opt: opt } : { data: b64 }); },
     // テスト用：時計・電波・ホームバーに重なる分の測り方
     layout: function () { return call('layout', {}); },
     loadBackup: function () { return fetch('__native/autobackup.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }); },
@@ -573,26 +574,57 @@ if (window.__NATIVE) (function () {
   /*@/web-only*/
   // アプリ版：画像の文字はこの端末の中で読む（AppleのVision。APIキーも料金もいらない・どこにも送らない）。表の組み立ては ocr_local.js
   // 画像（1〜3枚）→ 読めた文字と位置（画像ごと）
-  function readAllLocal(files) {
+  //   log（第4.228版・オッズの 画面 だけ）：あれば 読めなかった 馬番の 所を 読み直す（fixGaps）。log に 数を 入れる
+  function readAllLocal(files, log) {
     if (!window.TengelOCR) return Promise.reject({ code: 'ocr_failed', message: 'no parser' });
     return Promise.all(files.map(function (f) { return toJpeg(f, 2600, 0.92); })).then(function (imgs) {
       var one = function (i) {
         if (i >= imgs.length) return Promise.resolve([]);
         return window.TengelNative.readText(imgs[i]).then(function (r) {
           if (!r || !r.ok) throw { code: r && r.error === 'image_rejected' ? 'image_rejected' : 'ocr_failed', message: r && r.error };
-          return one(i + 1).then(function (rest) { return [r.lines || []].concat(rest); });
+          return (log ? fixGaps(imgs[i], r.lines || [], log) : Promise.resolve(r.lines || [])).then(function (ls) {
+            return one(i + 1).then(function (rest) { return [ls].concat(rest); });
+          });
         });
       };
       return one(0);
     });
   }
+  // 第4.228版：単勝の 表で 馬番 だけ 読めなかった 行（細い「11」を Vision が 読まない ことが ある）は、その 所を 切り取り 大きく して 読み直す。
+  //   読み方を かえて 3回まで（その 行の 所・速い 読み方〈英数字〉・上と 下の 行の 馬番も 入れた 所）。読めた 数字は 画面の 字 だけ（ocr_local.js の gapHit）
+  var GAP_TRIES = [{ scale: 2 }, { scale: 3, fast: true, langs: ['en-US'] }, { wide: true, scale: 2, langs: ['en-US'] }];
+  function fixGaps(b64, lines, log) {
+    var O = window.TengelOCR, gs = O.gaps ? O.gaps(lines) : [], add = [], k = 0;
+    log.gaps = (log.gaps || 0) + gs.length; log.hits = log.hits || []; log.miss = log.miss || 0;
+    var next = function () {
+      if (k >= gs.length) return Promise.resolve(add.length ? lines.concat(add) : lines);
+      var g = gs[k++], t = 0;
+      var tryOne = function () {
+        if (t >= GAP_TRIES.length) { log.miss++; return next(); }
+        var T = GAP_TRIES[t++], crop = T.wide ? g.wide : g.crop;
+        if (!crop) return tryOne();
+        var opt = { crop: crop, scale: T.scale }; if (T.fast) opt.fast = true; if (T.langs) opt.langs = T.langs;
+        return window.TengelNative.readText(b64, opt).then(function (r) {
+          var hit = r && r.ok ? O.gapHit(g, r.lines || []) : null;
+          if (!hit) return tryOne();
+          g.have.push(+hit.text);                       // 同じ 画像の ほかの 行で 同じ 馬番を 使わない（have は 行どうしで 共通）
+          add.push(hit); log.hits.push({ no: +hit.text, t: t - 1 });
+          return next();
+        }, function () { return tryOne(); });
+      };
+      return tryOne();
+    };
+    return next();
+  }
   var sample = window.__NATIVE ? {
     local: true,
     limits: function () { return Promise.resolve({ images: { maxCount: 3, mediaTypes: ['image/*'] } }); },
     json: function (prompt, opt) {
-      return readAllLocal(((opt && opt.images) || []).slice(0, 3)).then(function (all) {
+      var log = { gaps: 0, hits: [], miss: 0 };
+      return readAllLocal(((opt && opt.images) || []).slice(0, 3), log).then(function (all) {
         var d = window.TengelOCR.parse(all);
         d._lines = all.map(function (l) { return l.length; });
+        d._re = log;      // 第4.228版：読めなかった 馬番の 所の 数・読み直しで 読めた 馬番（t＝何回目の 読み方）・読めなかった 数
         return d;
       });
     },

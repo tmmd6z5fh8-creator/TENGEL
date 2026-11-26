@@ -177,6 +177,50 @@ for (const [name, lines] of [['C 3連単 人気順（セルごと）', c], ['C 3
     }
   }
 }
+// 第4.228版：馬番 だけ 読めなかった 行（GitHub の Mac の 本物の Vision で、e_soon の 細い「11」が 読まれなかった：testdata/ocr/e_soon_vision.json）。
+//   gaps：その 行の 馬番の 所（読み直す 所）を 出す・gapHit：読み直しで 読めた 字から 馬番を 1つ 選ぶ（画面の 字 だけ・順番から 決めない）。
+//   horses：馬番が 読めず 前の 整数（枠・人気）を 馬番と まちがえた 行は 外す（前は 同じ 馬番が 2つで 表 ぜんぶが 読めなかった）
+{
+  const J = o => JSON.stringify(o);
+  const V = load('e_soon_vision'), E = load('e_soon');
+  const rv = O.parse([V]);
+  check(rv.horses.length === 11 && !rv.horses.some(h => h.no === 11) && rv.n === 12 && rv.closed === null && rv.soon === true && rv.start === null && rv.r === 9,
+    '本物の Vision（run 203）：11番の「11」が ない → 11頭・まもなく締切・時計は 発走に しない ' + J(rv.horses.map(h => h.no)));
+  const g = O.gaps(V);
+  check(g.length === 1 && g[0].prev === 10 && g[0].next === 12 && g[0].asc === true && g[0].crop[0] === 0 && g[0].crop[0] + g[0].crop[2] < 0.097 && g[0].crop[1] < 0.669 && g[0].crop[1] + g[0].crop[3] > 0.687
+    && g[0].wide && g[0].wide[1] < 0.624 && g[0].wide[1] + g[0].wide[3] > 0.731 && J(g[0].have) === J([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12]),
+    '読み直す 所：11番の 行の 馬番の 列（名前に かからない）・上と 下の 行（10・12）も 入れた 所 ' + J(g[0] && g[0].crop.map(v => +v.toFixed(3))));
+  const hit = O.gapHit(g[0], [{ text: '11', x: 0.022, y: 0.669, w: 0.04, h: 0.016 }]);
+  const rf = O.parse([V.concat([hit])]);
+  check(hit && hit.text === '11' && rf.horses.length === 12 && J(rf.horses.find(h => h.no === 11)) === J({ no: 11, tan: 14.7, fuku: '3.3-5.1' }), '読み直しで「11」→ 12頭（11番の 単勝 14.7）');
+  const H = (t, x = 0.022, y = 0.669, w = 0.04, h = 0.016) => ({ text: t, x, y, w, h });
+  check(O.gapHit(g[0], [H('10')]) === null && O.gapHit(g[0], [H('12')]) === null, 'もう 表に ある 馬番（10・12）は 使わない');
+  check(O.gapHit(g[0], [H('13')]) === null && O.gapHit(g[0], [H('9')]) === null, '馬番の 順の 表：10 と 12 の 間 だけ（13・9 は 使わない）');
+  check(O.gapHit(g[0], [H('11', 0.2)]) === null && O.gapHit(g[0], [H('11', 0.022, 0.62)]) === null && O.gapHit(g[0], [H('11.4')]) === null && O.gapHit(g[0], [H('ll')]) === null && O.gapHit(g[0], [H('19')]) === null,
+    '馬番の 列・その 行の 高さ・整数 1〜18 だけ（ほかの 所・小数・英字の l・19 は 使わない）');
+  check(O.gapHit(g[0], [H('10', 0.022, 0.624, 0.047, 0.017), H('11', 0.024, 0.67, 0.04, 0.017), H('12', 0.022, 0.715, 0.044, 0.016)]).text === '11'
+    && O.gapHit(g[0], [H('11 ス', 0.022, 0.669, 0.09, 0.017)]).text === '11', '上と 下の 行も 入れた 所（10・11・12）から 11・名前の はじめと いっしょでも 11');
+  check(O.gaps(E).length === 0 && ['a_tanfuku_waku', 'b_tanfuku_ninki', 'c_sanrentan', 'd_sanrentan_arrow'].every(n => O.gaps(load(n)).length === 0) && O.gaps(merged(a)).length === 0 && O.gaps(merged(b)).length === 0,
+    '馬番が ぜんぶ 読めた 画面・3連単の 画面は 読み直さない（gaps なし）');
+  // DOM の 見本から「11」を ぬいた もの（e_soon・人気順〈B〉・枠つき〈A〉）
+  const E2 = E.filter(l => l.text !== '11'), ge = O.gaps(E2);
+  check(O.parse([E2]).horses.length === 11 && ge.length === 1 && ge[0].prev === 10 && ge[0].next === 12, 'e_soon から 11 を ぬく → 11頭・読み直す 所 1つ');
+  const b11 = b.find(l => l.text === '11' && l.x > 0.1), B2 = b.filter(l => l !== b11), gb = O.gaps(B2);      // 11番の 馬番（左の「11」は 人気の 11位）
+  const rb2 = O.parse([B2]);
+  check(rb2.horses && rb2.horses.length === 11 && !rb2.horses.some(h => h.no === 11) && J(rb2.horses.find(h => h.no === 6)) === J({ no: 6, tan: 2.4, fuku: '1.1-1.3' }),
+    '人気順の 表（[人気] [枠] 馬番）で 馬番 だけ ない 行：枠の「6」を 馬番に しない → 11頭（前は 6番が 2つで 表 ぜんぶ null）');
+  check(gb.length === 1 && gb[0].asc === false && O.gapHit(gb[0], [b11]).text === '11' && O.parse([B2.concat([O.gapHit(gb[0], [b11])])]).horses.length === 12,
+    '人気順の 表：読み直す 所 1つ（順は 見ない）→ 読み直しで 11 → 12頭');
+  const wk = b.find(l => l.text === '6' && Math.abs(l.y - b11.y) < 0.01);
+  check(wk && O.gapHit(gb[0], [wk]) === null, '人気順の 表：読み直しで 枠の「6」しか 読めなくても 使わない（馬番の 列で ない）');
+  const A2 = a.filter(l => !(l.text === '11' && l.x > 0.08)), ra2 = O.parse([A2]);
+  check(ra2.horses.length === 11 && !ra2.horses.some(h => h.no === 11) && O.gaps(A2).length === 1, '枠つきの 表（[枠] 馬番）で 馬番 だけ ない 行：枠の 数字を 馬番に しない → 11頭・読み直す 所 1つ');
+  // 枠と 馬番が くっついて 読めた「47」は 今までどおり 7番（外さない）
+  const r47 = O.parse([[{ text: '枠 馬番 馬名 単勝', x: 0.02, y: 0.25, w: 0.7, h: 0.02 }].concat([[1, 1, 'サンライズゴールド', '12.4'], [2, 2, 'テンゲルクイーン', '4.1'], [3, 3, 'ナイトレイン', '31.5'], [4, 7, 'ハッピーデイズ', '7.6'], [5, 9, 'ドリームキャッチャー', '25.9']]
+    .flatMap((r, k) => k === 3 ? [{ text: '47', x: 0.03, y: 0.3 + 0.05 * k, w: 0.09, h: 0.02 }, { text: r[2], x: 0.15, y: 0.3 + 0.05 * k, w: 0.3, h: 0.02 }, { text: r[3], x: 0.6, y: 0.3 + 0.05 * k, w: 0.06, h: 0.02 }]
+      : [{ text: String(r[0]), x: 0.03, y: 0.3 + 0.05 * k, w: 0.02, h: 0.02 }, { text: String(r[1]), x: 0.1, y: 0.3 + 0.05 * k, w: 0.02, h: 0.02 }, { text: r[2], x: 0.15, y: 0.3 + 0.05 * k, w: 0.3, h: 0.02 }, { text: r[3], x: 0.6, y: 0.3 + 0.05 * k, w: 0.06, h: 0.02 }]))]);
+  check(r47.horses && J(r47.horses.map(h => h.no)) === J([1, 2, 3, 7, 9]), '枠と 馬番が くっついて 読めた「47」は 今までどおり 7番（外さない） ' + J(r47.horses && r47.horses.map(h => h.no)));
+}
 // 第4.170版（まさちゃん 2026/11/14「名前は読み込んだ画像から割り出せる？」）：馬の 名前（names＝{ 馬番: 名前 }）。表の 行「[人気／着順] [枠] 馬番 馬名 …」から。
 //   名前の 一覧は 持たない（画面の 字 だけ）・人の 名前（騎手）は 読まない（数字より あとは 見ない）・2頭 以上 読めた とき だけ
 {

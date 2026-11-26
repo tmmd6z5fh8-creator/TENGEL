@@ -210,6 +210,20 @@
     }
   }
 
+  // ---- 馬番の 列（第4.228版）----
+  //   表の 行の 先頭の 整数（[人気] [枠] 馬番）の 数で いちばん 多い 数（L）の 行の、いちばん 右の 整数の 位置（cx）と 幅（cw）。3行 以上 なければ null
+  //   list：[{ n：先頭の 整数の 数, x・xe：いちばん 右の 整数の 左と 右 }]
+  function med(a) { a = a.slice().sort(function (p, q) { return p - q; }); return a[a.length >> 1]; }
+  function numCol(list) {
+    var cnt = {};
+    list.forEach(function (x) { if (x.n) cnt[x.n] = (cnt[x.n] || 0) + 1; });
+    var L = +Object.keys(cnt).sort(function (a, b) { return cnt[b] - cnt[a] || b - a; })[0] || 0;
+    var std = list.filter(function (x) { return x.n === L; });
+    if (!L || std.length < 3) return null;
+    var cw = Math.max(0.008, med(std.map(function (x) { return x.xe - x.x; })));
+    return { L: L, cx: med(std.map(function (x) { return (x.x + x.xe) / 2; })), cw: cw, tol: Math.max(0.6 * cw, 0.015) };
+  }
+
   // ---- 単勝・複勝の表 ----
   // 行の形：[人気] [枠] 馬番 馬名… 単勝 複勝（1.1-1.3 ／ 1.1 1.3 ／ 1.1）[人気]
   function horses(rs) {
@@ -227,6 +241,7 @@
       if (hasCombo(tk)) return;   // 3連単などの組番の行
       while (i < tk.length && tk[i].k === 'int') { lead.push(+tk[i].t); i++; }
       if (!lead.length) return;
+      var i0 = i;
       // 馬番は、先頭に並ぶ整数のいちばん右（[人気] [枠] 馬番 の順で出るので）。枠と馬番がくっついて読めたとき（「47」）は後ろを馬番にする
       var no = lead[lead.length - 1];
       if (no > 18 && lead.length === 1) { var sn = String(no); no = sn.length === 2 ? +sn[1] : +sn.slice(1); }
@@ -244,8 +259,13 @@
       if (scratched) { cand.push({ no: no, scratched: true }); return; }
       if (!vals.length) return;
       if (vals.length === 1 && vals[0].k === 'range') { fukuOnly[no] = fukuOnly[no] || vals[0].v; return; }   // 複勝だけの行（別の表）
-      cand.push({ no: no, vals: vals, lead: lead.length });
+      cand.push({ no: no, vals: vals, lead: lead.length, lx: tk[i0 - 1].x, lxe: tk[i0 - 1].xe });
     });
+    // 第4.228版：馬番が 読めず、前の 整数（枠・人気）を 馬番と まちがえた 行は 外す（先頭の 整数が ほかの 行より 少なく、いちばん 右の 整数が 馬番の 列まで とどいて いない）。
+    //   外さないと 同じ 馬番が 2つに なって 表 ぜんぶを 使えなく なる。外した 馬は 入力で「読めなかった：単勝の○番」と 出る（gaps で 読み直しも する）。
+    //   枠と 馬番が くっついて 読めた「47」は 馬番の 列まで とどいて いる ので 外さない
+    var col = numCol(cand.filter(function (c) { return !c.scratched; }).map(function (c) { return { n: c.lead, x: c.lx, xe: c.lxe }; }));
+    if (col) cand = cand.filter(function (c) { return c.scratched || c.lead >= col.L || c.lxe >= col.cx - col.cw / 2; });
     var live = cand.filter(function (c) { return !c.scratched; });
     if (live.length < 2) return null;
     // 斤量（55.0 など）が単勝の前に写っているときは外す（半数以上の行で、最初の数が 49〜63 の .0/.5）
@@ -476,7 +496,72 @@
     var pt = Object.keys(D.pay); if (pt.length) D.got.push('払戻（' + pt.join('・') + '）');
     return D;
   }
-  var API = { parse: parse, parseOne: parseOne, parseResult: parseResult, rows: rows, tokens: tokens, norm: norm, kataName: kataName, nameTable: nameTable };
+  // ---- 読めなかった 馬番の 所（第4.228版）----
+  //   単勝の 表で、馬名と 単勝は 読めたのに 前の 馬番が 読めなかった 行（GitHub の Mac の 本物の Vision で、細い 数字の「11」だけ 読まれなかった）。
+  //   その 行の 馬番の 所だけ 切り取って もう一度 読む（アプリの 窓口 readText の crop：pwa_shim.js の fixGaps）。
+  //   使う 馬番は、読み直しで 画面から 読めた 数字 だけ（行の 順番から 決めない）。読めなければ その 馬は 入れない（入力で「読めなかった」と 知らせる）
+  //   gaps(lines) → [{ crop:[x,y,w,h]（その 行の 馬番の 所）, wide:[…]（上と 下の 行の 馬番も 入れた 所・なければ null）, cx, cw, yc, h, have:[読めた 馬番], prev, next, asc }]（多くて 4つ）
+  function gaps(lines) {
+    var info = [];
+    rows(lines).forEach(function (r) {
+      var tk = r.toks, i = 0, lead = [];
+      if (!tk.length || hasCombo(tk)) return;
+      while (i < tk.length && tk[i].k === 'int') { lead.push(tk[i]); i++; }
+      if (!tk.slice(i).some(function (t) { return t.k === 'dec'; })) return;      // 単勝（小数）の ない 行は 表の 行で ない
+      if (lead.length > 3 || !nameAfter(tk, i - 1)) return;                         // 馬番（または 行の はじめ）の すぐ あとが 馬の 名前の 行 だけ
+      var lt = lead[lead.length - 1];
+      info.push({ n: lead.length, no: lt ? +lt.t : null, x: lt ? lt.x : null, xe: lt ? lt.xe : null, yc: r.yc, h: r.h, nameX: tk[i].x });
+    });
+    var col = numCol(info);
+    if (!col) return [];
+    var num = info.filter(function (x) { return x.n && x.no >= 1 && x.no <= 18 && Math.abs((x.x + x.xe) / 2 - col.cx) <= col.tol; });
+    var cand = info.filter(function (x) { return !x.n || (x.n < col.L && x.xe < col.cx - col.cw / 2); });   // 馬番の 列に 数字が ない 行（horses で 外す 行と 同じ）
+    if (num.length < 3 || !cand.length) return [];
+    var cx = col.cx, cw = col.cw, have = num.map(function (n) { return n.no; });
+    var byY = num.slice().sort(function (a, b) { return a.yc - b.yc; });
+    var asc = byY.every(function (n, k) { return !k || n.no > byY[k - 1].no; });                  // 馬番の 順に 並んだ 表か
+    var nh = med(num.map(function (n) { return n.h; })), gapsY = [];
+    byY.forEach(function (n, k) { if (k && n.yc - byY[k - 1].yc > 0.5 * nh) gapsY.push(n.yc - byY[k - 1].yc); });
+    var pitch = Math.max(gapsY.length ? med(gapsY) : 3 * nh, 0.01);                               // 行の 間かく（読めた 馬番の 行から）
+    var top = byY[0].yc, bot = byY[byY.length - 1].yc, out = [];
+    cand.forEach(function (c) {
+      if (out.length >= 4 || c.yc < top - 1.6 * pitch || c.yc > bot + 1.6 * pitch) return;     // 表の 中（読めた 馬番の 行の 間・前後 1行）だけ
+      if (c.nameX <= cx + cw / 2) return;                                                       // 名前が 馬番の 所に かかって いる（馬番の 列が ない）
+      var prev = null, next = null;
+      byY.forEach(function (n) { if (n.yc < c.yc) prev = n; else if (!next && n.yc > c.yc) next = n; });
+      var m = Math.max(cw, 0.02), x0 = Math.max(0, cx - cw / 2 - m), x1 = Math.min(c.nameX - 0.002, cx + cw / 2 + m);
+      var h = Math.max(c.h, nh, 0.01), y0 = Math.max(0, c.yc - 1.2 * h), y1 = Math.min(1, c.yc + 1.2 * h);
+      if (x1 - x0 < 0.01) return;
+      var near = function (n) { return n && Math.abs(n.yc - c.yc) <= 1.6 * pitch; };
+      var w0 = near(prev) ? Math.max(0, prev.yc - 1.2 * h) : y0, w1 = near(next) ? Math.min(1, next.yc + 1.2 * h) : y1;
+      out.push({ crop: [x0, y0, x1 - x0, y1 - y0], wide: w0 < y0 || w1 > y1 ? [x0, w0, x1 - x0, w1 - w0] : null, cx: cx, cw: cw, yc: c.yc, h: h,
+        have: have, prev: prev ? prev.no : null, next: next ? next.no : null, asc: asc });
+    });
+    return out;
+  }
+  // 読み直しで 読めた 字（画像 全体の 位置）から、その 行の 馬番を 1つ 選ぶ。なければ null
+  //   ・馬番の 列（cx）の 所・その 行の 高さ（yc）の 整数 1〜18　・もう 表に ある 馬番は 使わない（読みまちがい）
+  //   ・馬番の 順の 表なら、上と 下の 行の 馬番の 間（10 と 12 の 間なら 11 だけ）
+  function gapHit(g, lines) {
+    var best = null;
+    (lines || []).forEach(function (l) {
+      var text = norm(l && l.text); if (!text) return;
+      var x0 = +l.x || 0, w = +l.w || 0, h = +l.h || 0.01, yc = (+l.y || 0) + h / 2;
+      var ts = tokens(text), len = Math.max(1, ts.join(' ').length), off = 0;
+      ts.forEach(function (t) {
+        var x = x0 + w * off / len, xe = x0 + w * (off + t.length) / len, c = (x + xe) / 2; off += t.length + 1;
+        if (kind(t) !== 'int') return;
+        var no = +t;
+        if (!(no >= 1 && no <= 18) || g.have.indexOf(no) >= 0) return;
+        if (Math.abs(c - g.cx) > Math.max(0.6 * g.cw, 0.015) || Math.abs(yc - g.yc) > 0.8 * g.h) return;
+        if (g.asc && ((g.prev != null && no <= g.prev) || (g.next != null && no >= g.next))) return;
+        var d = Math.abs(c - g.cx) + Math.abs(yc - g.yc);
+        if (!best || d < best.d) best = { d: d, it: { text: String(no), x: x, y: yc - h / 2, w: xe - x, h: h } };
+      });
+    });
+    return best ? best.it : null;
+  }
+  var API = { parse: parse, parseOne: parseOne, parseResult: parseResult, rows: rows, tokens: tokens, norm: norm, kataName: kataName, nameTable: nameTable, gaps: gaps, gapHit: gapHit };
   root.TengelOCR = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);

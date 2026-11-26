@@ -63,6 +63,7 @@ FAKE = """
 window.__NATIVE_INFO = { version: '1.0', build: '7', device: 'phone' };
 window.__ocrLines = [];
 window.webkit = { messageHandlers: { tengel: { postMessage: function (m) {
+  if (m.name === 'ocr' && m.payload && m.payload.opt) { var vr = typeof window.__ocrCrop === 'function' ? window.__ocrCrop(m.payload.opt) : { ok: true, lines: [], w: 1170, h: 2532, ms: 40 }; setTimeout(function () { window.__nativeReply(m.id, true, vr); }, 20); return; }   // 第4.228版：読み直し
   if (m.name === 'ocr') { var L = window.__ocrLines.shift(), val = L ? { ok: true, lines: L, w: 1170, h: 2532, ms: 900 } : { ok: false, error: 'image_rejected' }; setTimeout(function () { window.__nativeReply(m.id, true, val); }, 20); return; }
   window.__py({ id: m.id, name: m.name, payload: m.payload && m.payload.data ? null : m.payload }).then(function (v) { if (m.id > 0 && window.__nativeReply) window.__nativeReply(m.id, true, v); });
 } } } };

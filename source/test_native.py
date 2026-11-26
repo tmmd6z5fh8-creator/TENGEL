@@ -95,11 +95,13 @@ window.__iap = { products: [
   { id: 'jp.tengel.app.bundle1', title: 'お得パック', price: '¥2,200', kind: 'unlock' }],   // 第4.114版：結果ボードカスタム 2,200 → 1,500円・お得パック（2つの セット）2,200円
   buy: {}, unfinished: [], finished: [], current: [], active: [] };
 window.webkit = { messageHandlers: { tengel: { postMessage: function (m) {
-  window.__bridge.push({ name: m.name, payload: m.payload && m.payload.data ? { data: '(' + m.payload.data.length + ')' } : m.payload });
+  window.__bridge.push({ name: m.name, payload: m.payload && m.payload.data ? (m.payload.opt ? { data: '(' + m.payload.data.length + ')', opt: m.payload.opt } : { data: '(' + m.payload.data.length + ')' }) : m.payload });
   var P = m.payload, val = true;
   if (m.name === 'backup') window.__saveBackup(P.text);
   if (m.name === 'share') val = !window.__shareCancel;
-  if (m.name === 'ocr') { var L = window.__ocrLines.shift(); val = L ? { ok: true, lines: L, w: 1170, h: 2532, ms: 900 } : { ok: false, error: 'image_rejected' }; }
+  // 第4.228版：opt（読み直し：切り取った 所）は window.__ocrCrop（なければ 何も 読めない）。__ocrLines は 減らさない
+  if (m.name === 'ocr' && P && P.opt) { (window.__ocrRe = window.__ocrRe || []).push(P.opt); val = typeof window.__ocrCrop === 'function' ? window.__ocrCrop(P.opt) : { ok: true, lines: [], w: 1170, h: 2532, ms: 40 }; }
+  else if (m.name === 'ocr') { var L = window.__ocrLines.shift(); val = L ? { ok: true, lines: L, w: 1170, h: 2532, ms: 900 } : { ok: false, error: 'image_rejected' }; }
   if (m.name === 'zoom') { window.__zoom.push(P); val = { zoom: 1, pinch: !P.lock }; }
   if (m.name === 'iap') {
     var I = window.__iap;

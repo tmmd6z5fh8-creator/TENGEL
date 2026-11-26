@@ -1672,6 +1672,13 @@ function ocrPick(d) {
   // App Store版（NATIVE_APP）は 複勝を 読まない（第4.65版・まさちゃん「複勝読み取り機能は無くして！別に無くて大丈夫！」：読めない ことが 多く、判定にも いらない）。Web版は 今までどおり
   if (hs.length) { f.rows = hs.map(h => ({ no: N(h.no), tan: String(N(h.tan)), fuku: NATIVE_APP || h.fuku == null ? '' : String(h.fuku) })); got.push(`単勝${hs.length}頭`); if (!NATIVE_APP && !hs.some(h => h.fuku)) miss.push('複勝'); }
   else miss.push('単勝');
+  // 第4.228版：画面の 頭数より 単勝の 表の 馬が 少ない（馬番が 読めなかった 行・写って いない 馬）ときは、足りない 馬番を「読めなかった」に 出す（手で 入れて もらう。順番から 決めて 入れない）
+  const nn = N(d.n);
+  if (hs.length && nn && nn <= 18 && hs.length < nn) {
+    const have = new Set(hs.map(h => N(h.no))), lack = [];
+    for (let k = 1; k <= nn; k++) if (!have.has(k)) lack.push(k);
+    miss.push(lack.length === nn - hs.length ? `単勝の${lack.join('・')}番` : `単勝${nn - hs.length}頭ぶん`);
+  }
   for (const [k, lab] of [['s1', '3連単1位'], ['s5', '3連単5位'], ['s10', '3連単10位']]) {
     const o = d[k]; const v = o && N(o.odds);
     if (v) { f[k] = String(v); f[k + 'combo'] = o.combo ? String(o.combo) : ''; got.push(lab); } else miss.push(lab);

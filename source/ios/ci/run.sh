@@ -226,7 +226,9 @@ o = json.load(open(sys.argv[1])).get("ocrsoon") or {}
 ok = o.get("closed") is None and o.get("soon") is True and o.get("start") is None and o.get("r") == 9 and o.get("horses") == 12
 st = "OK" if ok else ("SKIP " + str(o.get("skipped")) if o.get("skipped") else "CHECK")
 miss = [k for k in range(1, 13) if k not in (o.get("nos") or [])]
-print("closed %s soon %s start %s r %s dist %s n %s horses %s missing %s top %s -> %s" % (o.get("closed"), o.get("soon"), o.get("start"), o.get("r"), o.get("dist"), o.get("n"), o.get("horses"), miss, json.dumps(o.get("top"), ensure_ascii=False)[:400], st))
+re_ = o.get("re") or {}
+tr = " ".join("%s%s%s:%s" % (t.get("e", ["?"])[0][0], t.get("e", ["", 0])[1], "f" if len(t.get("e", [])) > 2 and t["e"][2] else "", t.get("hit") or ("-" if t.get("ok") else "x")) for t in (o.get("tries") or []))
+print("closed %s soon %s start %s r %s dist %s n %s horses %s missing %s reread gaps %s hits %s miss %s tries [%s] -> %s" % (o.get("closed"), o.get("soon"), o.get("start"), o.get("r"), o.get("dist"), o.get("n"), o.get("horses"), miss, re_.get("gaps"), json.dumps(re_.get("hits")), re_.get("miss"), tr, st))
 ' "$OUT/iphone-report-1.json" 2>&1)"
     # 第4.172版：テンゲルBGM は なくした → 本物の WebKit で しかけ（window.TengelBgm）と 設定の 札が 入って いない・爆発の 動画の 形（H.264：第4.171版）を 読める
     say "   bgm: $(python3 -c '

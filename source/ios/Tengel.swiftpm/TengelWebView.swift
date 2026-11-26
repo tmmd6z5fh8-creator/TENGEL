@@ -283,8 +283,10 @@ final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
                 reply(id, ok: true, value: ["ok": false, "error": "image_rejected"])
                 return
             }
+            // 第4.228版：opt＝読み直し（画像の 一部 だけ を 大きく して 読む。馬番 だけ 読めなかった 行）
+            let options = ReadOptions((payload as? [String: Any])?["opt"] as? [String: Any])
             Task { [weak self] in
-                let result = await TextReader.read(base64: image)
+                let result = await TextReader.read(base64: image, options: options)
                 self?.reply(id, ok: true, value: result.dictionary)
             }
         case "layout":
