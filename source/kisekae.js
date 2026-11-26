@@ -451,10 +451,32 @@
       + (tkAsk ? `<span class="kstb"><button class="btn primary" type="button" data-ksact="tkpt2">1枚を ${esc(pts(TKP()))}に 変える</button><button class="btn ghost" type="button" data-ksact="tkpt0">やめる</button></span>`
         : `<span class="kstb"><button class="btn" type="button" data-ksact="tkpt1">${esc(pts(TKP()))}に 変える</button></span>`) + '</div>';
   }
+  // 第4.230版（まさちゃん 2026/11/27 02:16「チケットを7000Pに変えるときの音が無いと分からないから、音追加して！」）：
+  //   チケットを ポイントに 変えた とき、コインの 音（cb_se_coin.m4a：カードバトルで コインを もらう「ジャラッ・チャリーン」＝ アプリに ある 音・ファイルは ふやさない）。
+  //   音の 出口は 的中の 演出と 同じ（TengelFx.audio：的中の演出の「音」が オフの ときは 鳴らない・消音スイッチでは 鳴らない〈ambient〉）。
+  //   押した 操作の 中で 出口を 起こして 音を 読み はじめ、ポイントが 入ったら 鳴らす（入らなかった ときは 鳴らさない）
+  const TK_SE = 'cb_se_coin.m4a', TK_GAIN = 2;
+  const tkSnd = { buf: null, n: 0 };
+  function tkSeReady() {
+    let c = null;
+    try { if (navigator.audioSession && 'type' in navigator.audioSession) navigator.audioSession.type = 'ambient'; } catch (e) { /* 使えない iOS */ }
+    try { const fx = window.TengelFx; c = fx && fx.audio ? fx.audio() : null; } catch (e) { c = null; }
+    if (c && !tkSnd.buf) tkSnd.buf = fetch(TK_SE).then(r => (r.ok ? r.arrayBuffer() : null)).then(b => (b ? new Promise(ok => { try { const q = c.decodeAudioData(b, ok, () => ok(null)); if (q && q.catch) q.catch(() => ok(null)); } catch (e) { ok(null); } }) : null)).catch(() => null);
+    return c;
+  }
+  function tkSePlay(c) {
+    if (!c || !tkSnd.buf) return;
+    tkSnd.n += 1;
+    tkSnd.buf.then(buf => {
+      if (!buf) { tkSnd.buf = null; return; }      // 読めなかった：次は 読み直す
+      try { const s = c.createBufferSource(), g = c.createGain(); g.gain.value = TK_GAIN; s.buffer = buf; s.connect(g); g.connect(c.destination); s.start(0); } catch (e) { /* 音なし */ }
+    });
+  }
   // チケット 1枚 → 7,000P（獲得ポイント）。先に チケットを 1枚 使ってから 足す（足せなければ もどす）。上限を こえる ぶんは あずかりポイントへ（points_ui.js の grant）
   async function ticketToPoints() {
     const w = wallet(); if (actBusy || !w || typeof w.grant !== 'function' || !(tickets() > 0)) return false;
     actBusy = true;
+    const ac = tkSeReady();      // 第4.230版：コインの 音の 用意（押した 操作の 中）
     let ok = false, used = false;
     const held0 = typeof w.hold === 'function' ? w.hold().total : 0;
     try {
@@ -463,6 +485,7 @@
       if (used && !ok) { try { window.TCInfo.backTicket(); } catch (x) { /* なし */ } }
     } finally { actBusy = false; }
     const held = (typeof w.hold === 'function' ? w.hold().total : 0) - held0;
+    if (ok) tkSePlay(ac);      // 第4.230版：コインの 音（預かった ときも）
     if (ok && !(held > 0)) toast(`🎫 チケット 1枚を ${pts(TKP())}に 変えたよ（合計 ${pts(w.total())}・チケット 残り ${tickets()}枚）`, 4200);      // あずかった ときは 財布の お知らせ（うち ○P は あずかったよ）が 出る
     else if (!ok) toast('チケットを ポイントに 変えられなかったよ', 3000);
     return ok;
@@ -731,6 +754,7 @@
     on: true, ready: ready, list: () => A.themes.slice(), current: () => curId, apply: id => apply(id, true), usable: usable, unlocked: unlocked, count: count, fx: fx, pushArt: pushArt,
     loaded: () => curId === 'default' || !!payload, band: Object.assign({}, A.band), paid: A.paid.slice(), motion: motion, phase: phase, live: liveId, pv: () => pv, pack: () => Object.assign({ ids: PK.ids.slice(), order: PK.order.slice() }, packInfo()),
     // 第4.224版：時計・電池の 帯（アプリに 送った 色と 字の 白／黒・いまの 上の 帯で はかり直した 値）
-    statusBar: () => (SB.sent ? Object.assign({}, SB.sent) : null), statusBarNow: () => { try { return sbMeasure(); } catch (e) { return null; } }
+    statusBar: () => (SB.sent ? Object.assign({}, SB.sent) : null), statusBarNow: () => { try { return sbMeasure(); } catch (e) { return null; } },
+    tkSe: () => tkSnd.n      // 第4.230版：チケットを ポイントに 変えた ときの 音を 鳴らした 数（テスト）
   };
 })();

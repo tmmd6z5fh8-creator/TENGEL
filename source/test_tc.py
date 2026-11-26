@@ -1384,14 +1384,22 @@ try:
         pg.locator('#setKisekae [data-ksact=tkpt0]').click(); pg.wait_for_timeout(300)
         k2 = pg.evaluate("() => [[...document.querySelectorAll('#setKisekae .kstk button')].map(x => x.textContent), TCInfo.tickets(), TengelWallet.total()]")
         check(k1 == ['1枚を 7,000Pに 変える', 'やめる'] and k2 == [['7,000Pに 変える'], 2, k0['total']], f'1回 押すと「1枚を 7,000Pに 変える」「やめる」・やめると 戻る（チケットも ポイントも そのまま）（{k1}・{k2}）')
+        # 第4.230版（まさちゃん 11/27 02:16「チケットを7000Pに変えるときの音が無いと分からないから、音追加して！」）：変えた ときに コインの 音（cb_se_coin.m4a）
+        pg.evaluate("() => { window.__fu = []; const f0 = window.fetch; window.fetch = function (u) { try { window.__fu.push(String(u && u.url || u)); } catch (e) { /* なし */ } return f0.apply(this, arguments); }; }")
+        se0 = pg.evaluate("() => TengelKisekae.tkSe()")
         pg.locator('#setKisekae [data-ksact=tkpt1]').click(); pg.wait_for_timeout(300); pg.locator('#setKisekae [data-ksact=tkpt2]').click(); pg.wait_for_timeout(1300)
         k3 = pg.evaluate("() => { const b = document.querySelector('#setKisekae .kstk'), ev = TengelWallet.events().filter(e => /^tkp-/.test(e.id)); return { total: TengelWallet.total(), tk: TCInfo.tickets(), toast: document.querySelector('#toast').textContent, box: b ? b.innerText.replace(/\\s+/g, ' ') : '', ev: ev.map(e => [e.kind, e.bucket, e.amount, e.what]), free: TengelWallet.balance().free }; }")
         check(k3['total'] == k0['total'] + 7000 and k3['tk'] == 1 and 'チケット 1枚を 7,000Pに 変えたよ' in k3['toast'] and 'チケット 残り 1枚' in k3['toast'] and '🎫 チケット 1枚' in k3['box']
               and k3['ev'] == [['mission', 'free', 7000, 'チケットを ポイントに 変えた']],
               f'チケット 1枚 → +7,000P（獲得ポイント）・チケットは 1枚 減る・箱は「チケット 1枚」（{k3}）')
+        se1 = pg.evaluate("() => [TengelKisekae.tkSe(), window.__fu.filter(u => /cb_se_coin\\.m4a$/.test(u)).length]")
+        check(se0 == 0 and se1 == [1, 1], f'第4.230版：変えた ときに コインの 音（cb_se_coin.m4a を 読んで 1回 鳴らす）（{se0} → {se1}）')
+        pg.evaluate("() => TengelFx.set({ sound: false })")      # 的中の演出の「音」オフ → 鳴らさない（次の 1枚）
         pg.locator('#setKisekae [data-ksact=tkpt1]').click(); pg.wait_for_timeout(300); pg.locator('#setKisekae [data-ksact=tkpt2]').click(); pg.wait_for_timeout(1300)
         k4 = pg.evaluate("() => ({ total: TengelWallet.total(), tk: TCInfo.tickets(), box: document.querySelectorAll('#setKisekae .kstk').length, n: TengelWallet.events().filter(e => /^tkp-/.test(e.id)).length })")
         check(k4 == {'total': k0['total'] + 14000, 'tk': 0, 'box': 0, 'n': 2}, f'もう 1枚 変える → +7,000P・チケットが 0枚に なると 箱は 消える（{k4}）')
+        check(pg.evaluate("() => TengelKisekae.tkSe()") == 1, '第4.230版：的中の演出の「音」が オフの ときは コインの 音を 鳴らさない（ポイントは 入る）')
+        pg.evaluate("() => TengelFx.set({ sound: true })")
         print('■ アプリを 閉じても 当たりは 消えない（第4.140版）')
         #   お世話の 途中・ルーレットの 途中で アプリを 閉じた ことに する：保存に 当たり（ルーレット 1600P）が 残って いる → 開き直して トレーニングセンターを ひらくと もらえる（1回だけ）
         w0 = pg.evaluate("TengelWallet.total()")
