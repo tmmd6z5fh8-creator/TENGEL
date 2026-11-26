@@ -57,7 +57,7 @@ DESCRIPTION = f'''【スクショを入れるだけで、レースを判定！�
 ・的中の演出と結果ボード：結果を記録すると、的中・デカ的中などの演出と、券種ごとの的中ボード（結果ボードカスタムは買い切り）
 ・レースの予約とお知らせ：買い目を予約すると、発走15分後に「結果を確認しよう！」のお知らせ
 ・ミッション・ログインボーナス：レースの記録や毎日のログインでポイントがもらえます
-・TENGERカードバトル：コンピュータや、近くの友達のiPhoneと対戦するカードゲーム（ポイントで解放。バトルコインは遊んでもらうもので、購入はできません）
+・TENGERカードバトル：コンピュータや、近くの友達のiPhoneと対戦するカードゲーム（ポイントで解放。バトルコインは遊んでもらうもので、購入はできません。コンピュータに連勝するとポイントももらえます。友達との対戦・決戦調査はポイントなし）
 ・トレーニングセンター：馬のお世話でポイントが当たるチャンス（お世話トークンはポイントで購入・当たりの確率はアプリの中に掲載。お世話チャレンジはポイントで解放）
 ・思い出フィギュア：記録したレースを、ポイントで3Dのフィギュアにして飾れます
 
@@ -109,24 +109,24 @@ No real-money gambling: no betting, no ticket purchase, no link to any betting s
 
 Points (in-app currency, never convertible to money):
 - 5,000 on first launch. Reading a race (5-race picks: per race): 800. Unlocks: record bet types 500, data slots 23,000, themes 6,500-11,500, the two mini games 3,000 each, care tokens 100 each, 3D memory figures 22,000/36,000. The built-in reference data shows percentages only.
-- Sold as consumable IAPs and monthly auto-renewable subscriptions (Settings > ポイント). Purchased points never expire; subscription points last 30 days. No free trial. Missions and a daily login bonus give points.
-- Points, unlocks and records stay on the device (the app warns before buying that deleting it erases them). Keychain markers stop the same gift being granted twice; a device-only Keychain ID, the system uptime and the Date header of an App Store lookup stop date changes from re-granting bonuses.
-- Non-consumables: 壁紙パック (1,500 yen, 10 themes), 結果ボードカスタム (1,500 yen, 12 board designs, one per 6 races read after buying), お得パック (2,200 yen, both; offered only while the user owns neither). 「購入を復元」 restores them.
+- Sold as consumable IAPs and monthly auto-renewable subscriptions (Settings > ポイント). Purchased points never expire; subscription points last 30 days. No free trial. Missions, a daily login bonus and Card Battle win streaks give points.
+- Points, unlocks and records stay on the device (the app warns that deleting it erases them). Keychain markers, the system uptime and the Date header of an App Store lookup stop gifts and bonuses being re-granted.
+- Non-consumables: 壁紙パック (1,500 yen, 10 themes), 結果ボードカスタム (1,500 yen, 12 boards, one per 6 races read after buying), お得パック (2,200 yen, both; offered only while the user owns neither). 「購入を復元」 restores them.
 - Themes (Settings > 着せ替え): 30 cosmetic themes; 16 unlock with points, 3 reward owning 5/10/15 themes, 10 come with 壁紙パック.
 
-Reservations and results: after a judgment the user picks horses and taps 「買い目を予約」 (stored on the device only). A LOCAL notification ("結果を確認しよう！") comes 15 minutes after the start time (UNUserNotificationCenter, no server). The user enters the result and sees hit/miss per bet type with a short animation and board (never money). Flashing stays under 3 per second; effects can be reduced or turned off (Settings > 的中の演出, iOS Reduce Motion).
+Reservations and results: after a judgment the user picks horses and taps 「買い目を予約」 (stored on the device only). A LOCAL notification ("結果を確認しよう！") comes 15 minutes after the start time (no server). The user enters the result and sees hit/miss per bet type with a short animation and board (never money). Flashing stays under 3 per second; effects can be reduced or turned off (Settings > 的中の演出, iOS Reduce Motion).
 
 Mini games (no real money):
-- TENGER Card Battle (3,000-point unlock): vs the computer, or vs a nearby friend's iPhone directly over the local network (Network framework + Bonjour; local network permission is asked only for a two-player room). Battle coins are earned by playing, missions and the login bonus; they cannot be bought. Card packs cost coins and show the odds (「出る 確率」).
-- Training Center (トレーニングセンター): care for virtual horses with care tokens bought with points; some cares grant points or tickets by chance, and the odds are shown before buying (「説明書を 見る（当たりの 確率）」). Its ball-drop game お世話チャレンジ needs a 3,000-point unlock.
-- 思い出フィギュア: a 3D figure booth for saved races (bundled models; unlocked with points).
+- TENGER Card Battle (3,000-point unlock): vs the computer, or vs a nearby friend's iPhone directly over the local network (Network framework + Bonjour; local network permission is asked only for a two-player room). Battle coins come from play, missions and the login bonus and cannot be bought. Card packs cost coins; odds are shown (「出る 確率」). Win streaks vs the computer give points (400 at 4, 800 at 6, then 300 per win); rooms and the quest give none; nothing is staked.
+- Training Center (トレーニングセンター): care for virtual horses with care tokens bought with points; some cares grant points or tickets by chance, with odds shown before buying (「説明書を 見る（当たりの 確率）」). Its ball-drop game お世話チャレンジ needs a 3,000-point unlock.
+- 思い出フィギュア: a 3D figure booth for saved races (unlocked with points).
 
 How to review (no account needed):
 1. 判定 tab > 「入力例を入れる」 shows a full judgment for a fictional race.
 2. 「オッズ画像から読み取る」 reads text in the user's screenshots on the device (Vision). Nothing leaves the device.
 3. Records work offline (ones older than 3 years are deleted after a 30-day in-app notice unless marked 思い出); backup, CSV export and a blank .xlsx template (no macros) use the iOS share sheet.
 4. Settings > データの更新 downloads updated past-race data (JSON only, no code) from our GitHub Pages site; Settings > アプリの更新 checks the App Store version. No user data is sent.
-5. Card Battle (3,000-point unlock; the first-launch gift covers it) can be tried alone vs the computer; the two-player mode needs two iPhones on the same Wi-Fi.
+5. Card Battle (the first-launch gift covers its 3,000-point unlock) can be tried alone vs the computer; two-player needs two iPhones on the same Wi-Fi.
 
 iPhone-only, portrait (iPad runs it in compatibility mode).'''
 

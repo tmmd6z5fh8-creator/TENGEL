@@ -162,6 +162,14 @@ const CBApp = (() => {
   const COIN = { win: 2, bonus: [[3, 6], [5, 10]], day: 2, day7: 10, max: 9999 };
   const coinBonus = streak => COIN.bonus.reduce((a, t) => a + (streak > 0 && streak % t[0] === 0 ? t[1] : 0), 0);      // 連勝の ボーナス（3連勝 ごとに ＋6・5連勝 ごとに ＋10）
   const coinFor = streak => COIN.win + coinBonus(streak);
+  // 第4.230版（まさちゃん 2026/11/27 01:46「カードバトルの通常バトルCPUに4連勝したら400P、6連勝800P獲得できるようにできる？ 決戦調査と友達バトルはPは一切絡ませないで！」・答え「7連勝以降は毎回300P獲得」）：
+  //   コンピュータに 連勝で ポイント（アプリの 獲得ポイント：TengelWallet.grant）＝ 4連勝 400P・6連勝 800P・7連勝から 1勝ごとに 300P（5連勝は なし）。
+  //   数えるのは コンピュータとの 対戦 だけの 連勝（st.cps）：友達バトル・決戦調査は ポイントなし・この 連勝にも 数えない（勝っても 負けても かわらない）。
+  //   コンピュータに 負け・とちゅうで やめた・アプリを 閉じた ＝ 0・同点 ＝ そのまま。ポイントは 決まった とき すぐ「まだ 入れて いない ポイント」（st.pq）に 書いて から 財布へ（同じ id は 2回 入らない）
+  const PT_STREAK = [[4, 400], [6, 800]], PT_EACH = [7, 300];
+  const ptBonus = n => (n >= PT_EACH[0] ? PT_EACH[1] : (PT_STREAK.find(t => t[0] === n) || [0, 0])[1]);
+  const ptNext = n => { const t = PT_STREAK.find(x => x[0] > n); return t ? [t[0] - n, t[1]] : [1, PT_EACH[1]]; };      // 次の ポイント：[あと 何勝, 何P]
+  const ptRule = () => `コンピュータに ${PT_STREAK.map(t => `<b>${t[0]}</b>連勝で <b>${t[1]}P</b>`).join('・')}・<b>${PT_EACH[0]}</b>連勝から 1勝ごとに <b>${PT_EACH[1]}P</b>`;
   const coinHow = () => `コンピュータに 勝つと ${COIN.win}枚（${COIN.bonus.map(t => `${t[0]}連勝 ＋${t[1]}枚`).join('・')}）`;      // メニューの 小さい 字
   const coinDay = () => `毎日の ログインボーナスで ${COIN.day}枚（7日目 ＋${COIN.day7}枚）`;
   const GK = 'tengel.cbgift';                         // 第4.188版：ログインボーナスの バトルコイン（login_bonus.js が ためる）
@@ -239,7 +247,7 @@ const CBApp = (() => {
 
   // ---------- 保存（連勝・勝ち負けの 数）----------
   let st = null;
-  const DEF = () => ({ v: 1, streak: 0, win: 0, lose: 0, draw: 0, bgm: null, se: null, coin: 0, stake: null, backs: [], faces: [], back: '', face: {}, boards: [], board: '', ms: null, gifts: [], pkh: [], packs: 0, q: null, rg: null });      // 第4.197版：rg＝部屋の 決戦宝石 { on, g }（決戦調査は いつも あり）
+  const DEF = () => ({ v: 1, streak: 0, win: 0, lose: 0, draw: 0, bgm: null, se: null, coin: 0, stake: null, backs: [], faces: [], back: '', face: {}, boards: [], board: '', ms: null, gifts: [], pkh: [], packs: 0, q: null, rg: null, cps: 0, pq: [] });      // 第4.230版：cps・pq（コンピュータに 連勝の ポイント）      // 第4.197版：rg＝部屋の 決戦宝石 { on, g }（決戦調査は いつも あり）
   let lostStake = 0;                                   // 前の 対戦が とちゅうで 終わって、もどらなかった 参加コイン（メニューで 1回 知らせる）
   let lostMs = '';                                     // 第4.183版：前の 対戦が とちゅうで 終わって 0 に もどった ミッションの 連勝の 種類（メニューで 1回 知らせる）
   let lostLive = -1;                                   // 第4.191版：前の 対戦が とちゅうで 終わって 負けに 数えた（その ときの 連勝・−1＝なし：メニューで 1回 知らせる）
@@ -247,6 +255,8 @@ const CBApp = (() => {
   function load() {
     try { const s = JSON.parse(localStorage.getItem(SK) || 'null'); st = Object.assign(DEF(), s && s.v === 1 ? s : {}); } catch (e) { st = DEF(); }
     ['streak', 'win', 'lose', 'draw'].forEach(k => { st[k] = Math.max(0, Math.floor(+st[k] || 0)); });
+    st.cps = Math.max(0, Math.min(9999, Math.floor(+st.cps || 0)));      // 第4.230版：コンピュータに 連勝（ポイント用）
+    st.pq = (Array.isArray(st.pq) ? st.pq : []).filter(q => q && typeof q.id === 'string' && /^cbwin-[0-9a-z]+-[0-9a-z]*$/.test(q.id) && q.id.length <= 48 && PT_STREAK.concat([PT_EACH]).some(t => t[1] === q.n) && q.s >= 1).slice(-30);      // まだ 財布に 入れて いない ポイント
     delete st.owe;      // 第4.212版：まだ わたして いない お世話トークン（前の 版）は なくした
     ['bgm', 'se'].forEach(k => { st[k] = st[k] === true || st[k] === false ? st[k] : null; });      // 設定（第4.178版）：null＝まだ 決めて いない
     delete st.fx;                                      // 第4.185版：エフェクトの 設定は なくした（前の 版で 決めた 形は すてる）
@@ -265,7 +275,7 @@ const CBApp = (() => {
     delete st.gq;
     { const r0 = st.rg && typeof st.rg === 'object' ? st.rg : {}; st.rg = { on: r0.on === true }; }      // 第4.197版（20:21）：あり の 部屋は 2人とも 5つ（持ち込む 宝石を えらぶ のは なくした）
     // 対戦の とちゅうで アプリが 閉じられて いた：とちゅうで やめた のと 同じ（ミッションの 連勝は 0・第4.191版：負けに 数えて いつもの 連勝も 0）
-    if (st.ms.live) { if (st.ms[st.ms.live] > 0) lostMs = st.ms.live; st.ms[st.ms.live] = 0; st.ms.live = ''; lostLive = st.streak; st.lose += 1; st.streak = 0; save(); }
+    if (st.ms.live) { if (st.ms.live === 'cpu') st.cps = 0; if (st.ms[st.ms.live] > 0) lostMs = st.ms.live; st.ms[st.ms.live] = 0; st.ms.live = ''; lostLive = st.streak; st.lose += 1; st.streak = 0; save(); }
     msRoll();
     // デザインカスタム（第4.182版）：解放した もの（backs・faces）・えらんだ もの（back・face）。ない 名前・解放して いない ものは すてる
     const bids = BACKS.map(b => b.id), fids = FACES.map(f => f.id);
@@ -342,11 +352,40 @@ const CBApp = (() => {
     if (res === 'win') { st.win += 1; st.streak += 1; if (cpu) { coin = COIN.win; cb = coinBonus(st.streak); tk = tkBonus(st.streak); } ms = msWin(mk); }
     else if (res === 'lose') { st.lose += 1; st.streak = 0; msRoll(); st.ms[mk] = 0; }
     else { st.draw += 1; msRoll(); }
+    const pt = cpu ? ptCount(res) : 0;      // 第4.230版：コンピュータに 連勝の ポイント（友達バトルは 数えない・決戦調査は 上の qSettle）
     if (k) { pot = { e: k.e, w: k.w, add: res === 'win' ? k.w : res === 'draw' ? k.e : 0 }; st.stake = null; }
     const msc = ms.reduce((a, x) => a + x.c, 0), want = coin + cb + (pot ? pot.add : 0) + msc, c0 = st.coin; addCoin(want);
     save();
     const tkGot = tk ? qtAdd(tk) : 0;      // 調査隊切符（15枚 まで）
-    return { res: res, cpu: cpu, streak: st.streak, coin: coin, cb: cb, tk: tk, tkGot: tkGot, tks: tk ? qtNow().n : 0, pot: pot, coins: st.coin, full: st.coin - c0 < want, ms: ms, msc: msc, mk: mk, mst: st.ms[mk] };
+    if (pt) ptFlush();
+    return { pt: pt, cps: st.cps, res: res, cpu: cpu, streak: st.streak, coin: coin, cb: cb, tk: tk, tkGot: tkGot, tks: tk ? qtNow().n : 0, pot: pot, coins: st.coin, full: st.coin - c0 < want, ms: ms, msc: msc, mk: mk, mst: st.ms[mk] };
+  }
+  // 第4.230版：コンピュータに 連勝の ポイント。勝ち＝連勝 ＋1（4連勝 400P・6連勝 800P・7連勝から 毎回 300P を st.pq に 書く）・負け＝0・同点＝そのまま
+  function ptCount(res) {
+    if (res === 'lose') { st.cps = 0; return 0; }
+    if (res !== 'win') return 0;
+    st.cps = Math.min(9999, (Math.floor(+st.cps) || 0) + 1);
+    const n = ptBonus(st.cps);
+    if (n) (Array.isArray(st.pq) ? st.pq : (st.pq = [])).push({ id: 'cbwin-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8), n: n, s: st.cps });
+    return n;
+  }
+  // まだ 財布に 入れて いない ポイント（st.pq）を 入れる（TengelWallet.grant：同じ id は 2回 入らない・上限を こえる ぶんは 財布が 預かる）。
+  //   入った／もう 入って いた ものは 消す。財布が まだ ない とき（読み込みの とちゅう）は のこして、次に 開いた とき
+  let ptBusy = false;
+  async function ptFlush() {
+    const w = window.TengelWallet;
+    if (ptBusy || !st || !Array.isArray(st.pq) || !st.pq.length || !w || typeof w.grant !== 'function') return 0;
+    ptBusy = true; let got = 0;
+    try {
+      for (const q of st.pq.slice()) {
+        let ok = false;
+        try { ok = await w.grant(q.id, q.n, `TENGERカードバトル（コンピュータに ${q.s}連勝）`); } catch (e) { ok = false; }
+        const has = ok || (typeof w.events === 'function' && w.events().some(e => e && e.id === q.id));
+        if (!has) break;
+        st.pq = st.pq.filter(x => x.id !== q.id); save(); if (ok) got += q.n;
+      }
+    } finally { ptBusy = false; }
+    return got;
   }
   // 配った：対戦 ちゅうの しるし（とちゅうで アプリが 閉じられたら、つぎに 開いた とき その 連勝を 0 に：第4.183版）
   function msLive() { if (!match) return; msRoll(); st.ms.live = qRun ? 'qc' : msKind(match); save(); }      // 第4.196版：決戦調査の 戦は 'qc'
@@ -674,7 +713,7 @@ const CBApp = (() => {
 #cbOv .cbend h3{font-size:40px;line-height:1.15}
 #cbOv .cbend .sc{font-family:"Dela Gothic One","Hiragino Sans",sans-serif;font-size:26px;color:#ffe9a8;letter-spacing:.08em}
 #cbOv .cbend .sc small{font-family:"BIZ UDPGothic","Hiragino Sans",sans-serif;font-size:12px;color:#d9c08c;letter-spacing:0;display:block}
-#cbOv .cbend .gift{min-height:204px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:14px;line-height:1.6;color:#fff1cf}
+#cbOv .cbend .gift{min-height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:14px;line-height:1.6;color:#fff1cf}
 #cbOv .cbend .gift b{color:#ffe07a;font-size:17px}
 @keyframes cbget{from{transform:scale(.5);opacity:0}to{transform:none;opacity:1}}
 #cbOv .cbtoast{position:absolute;left:50%;top:calc(var(--sat,env(safe-area-inset-top)) + 54px);z-index:9;transform:translate(-50%,-8px);width:max-content;max-width:86%;box-sizing:border-box;padding:9px 16px;border-radius:16px;background:rgba(20,12,6,.94);border:1.5px solid #c9a35a;color:#fff1cf;font-size:13.5px;font-weight:700;line-height:1.5;text-align:center;white-space:pre-line;box-shadow:0 6px 16px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
@@ -980,6 +1019,9 @@ const CBApp = (() => {
 #cbOv .cbend .gift .cbmsn b,#cbOv .cbend .gift .cbsbn b,#cbOv .qvic .gift .cbmsn b{color:#ffe07a;font-size:15px}
 #cbOv .cbend .gift .cbmsn .cbci,#cbOv .cbend .gift .cbsbn .cbci,#cbOv .qvic .gift .cbmsn .cbci{width:1.25em;height:1.25em;vertical-align:-.28em;margin-right:0}
 #cbOv .cbend .gift .cbsbn{border-color:#ff9f4a;background:rgba(255,140,60,.16)}
+#cbOv .cbend .gift .cbptn{display:inline-flex;align-items:center;flex-wrap:wrap;justify-content:center;gap:0 5px;box-sizing:border-box;max-width:100%;padding:3px 14px 4px;border-radius:16px;border:1.5px solid #8fd6ff;background:rgba(110,190,255,.15);font-size:13.5px;line-height:1.5;color:#fff1cf;animation:cbget .45s cubic-bezier(.2,1.4,.4,1) 1 both}
+#cbOv .cbend .gift .cbptn i{font-style:normal}#cbOv .cbend .gift .cbptn b{color:#ffe07a;font-size:15px}
+@media (prefers-reduced-motion: reduce){#cbOv .cbend .gift .cbptn{animation:none}}
 /* 第4.196版：決戦調査（メニューの ボタン・マップ・エリアの 窓・フィールド・敵HP ゲージ・戦の あいだ・勝利の 演出）*/
 #cbOv .cbmenu .cbb.qb{background:linear-gradient(180deg,#8a3aa0,#4a1660);color:#fff0fb;border-color:#e6b4ff;box-shadow:0 3px 0 #22072c,0 6px 12px rgba(0,0,0,.45),0 0 12px rgba(206,130,255,.35)}
 #cbOv .cbmenu .cbb.qb small{color:#f3dcff}
@@ -1305,7 +1347,7 @@ const CBApp = (() => {
     closeMod(); show('menu'); msRoll();
     const tot = st.win + st.lose + st.draw;
     $('.rec', scr.menu).innerHTML = (tot ? `<b>${st.win}</b>勝 <b>${st.lose}</b>敗 <b>${st.draw}</b>分` + (st.streak > 0 ? `　今 <b>${st.streak}</b>連勝！` : '') + '<br>' : '')
-      + `コンピュータに ${TK_BONUS.map(t => `<b>${t[0]}</b>連勝 ごとに 調査隊切符 <b>${t[1]}</b>枚`).join('・')}`;
+      + `コンピュータに ${TK_BONUS.map(t => `<b>${t[0]}</b>連勝 ごとに 調査隊切符 <b>${t[1]}</b>枚`).join('・')}<br>${ptRule()}`;      // 第4.230版：ポイント
     $('.cbcoinl', scr.menu).innerHTML = `${COINI}<span>バトルコイン <b>${st.coin}</b>枚</span><small>${coinHow()}<br>${coinDay()}</small>`;
     $('[data-cb=ms] .msn', scr.menu).textContent = `今月 ${msDone()}／${MS_ALL} 達成`;      // 第4.183版：ミッション
     qRoll(); $('[data-cb=quest] .qsn', scr.menu).textContent = st.q.clr >= QN ? `今月は 全部 討伐！（${QN}／${QN}）` : `今月 ${st.q.clr}／${QN} 討伐・次は レベル${qOpen()}`;      // 第4.196版：決戦調査
@@ -1411,7 +1453,7 @@ const CBApp = (() => {
       + sec('etc', '6', 'そのほか')
       + '<details class="hdt"><summary>見た カード・見られた カード</summary><ul><li>効果で 見た 相手の カードは、相手の 手札に ある 間 表で 見えるよ</li><li>相手に 見られた 自分の カードには 目の 印が 付くよ</li><li>セットした カードは <b>裏</b>（4 の 効果で 見せる か、オープン するまで）。相手の 手札は いつも <b>本当の 手札</b>の まま 見えるよ（見た カードを 相手が セットしたら、その カードは 相手の 手札から 消える）</li></ul></details>'
       + '<details class="hdt"><summary>捨て札</summary><ul><li>ボードの「<b>捨て札</b>」を タップすると、捨て札を 見られるよ</li><li><b>終わった ターンの 捨て札</b>（2人が 出した カード）と、<b>効果で 捨てた カード</b>に 分けて 出るよ</li></ul></details>'
-      + `<details class="hdt"><summary>ご褒美・調査隊切符</summary><ul><li>コンピュータに 勝つと <b>バトルコイン</b>（下の「バトルコイン」）</li><li>コンピュータに ${TK_BONUS.map(t => `<b>${t[0]}連勝 ごとに 調査隊切符 ${t[1]}枚</b>`).join('・')}（${TK_BONUS.reduce((a, t) => a * t[0], 1)}連勝 など、両方の ときは 両方。調査隊切符は ${QT.max}枚 まで）</li><li>負けると 連勝は 0 に 戻るよ。同点は そのまま。対戦の 途中で やめた・アプリを 閉じた ときも 負けに なるよ</li></ul></details>`
+      + `<details class="hdt"><summary>ご褒美・調査隊切符</summary><ul><li>コンピュータに 勝つと <b>バトルコイン</b>（下の「バトルコイン」）</li><li>コンピュータに ${TK_BONUS.map(t => `<b>${t[0]}連勝 ごとに 調査隊切符 ${t[1]}枚</b>`).join('・')}（${TK_BONUS.reduce((a, t) => a * t[0], 1)}連勝 など、両方の ときは 両方。調査隊切符は ${QT.max}枚 まで）</li><li>${ptRule()}（アプリの ポイントに 入るよ。数えるのは コンピュータとの 連勝 だけ：友達バトル・決戦調査は ポイントなし・この 連勝にも 数えないよ）</li><li>負けると 連勝は 0 に 戻るよ。同点は そのまま。対戦の 途中で やめた・アプリを 閉じた ときも 負けに なるよ</li></ul></details>`
       + `<details class="hdt"><summary>バトルコイン</summary><ul><li><b>コンピュータに 勝つと ${COIN.win}枚</b> もらえるよ。連勝すると ボーナス：${COIN.bonus.map(t => `<b>${t[0]}連勝 ごとに ＋${t[1]}枚</b>`).join('・')}（${COIN.bonus.reduce((a, t) => a * t[0], 1)}連勝 など、両方の ときは 両方）</li>`
       + `<li><b>毎日の ログインボーナス</b>でも <b>${COIN.day}枚</b>（<b>7日目は ＋${COIN.day7}枚</b>）もらえるよ。<b>買う ことは できない</b>よ</li>`
       + '<li>友達と 対戦する 部屋を 作る とき、<b>参加コイン</b>と <b>勝者の 獲得コイン</b>（参加コインの 2倍 まで）を 決められるよ</li><li>部屋に 入る 人は、同じ 数の 参加コインを 持って いないと 入れないよ</li>'
@@ -1796,7 +1838,8 @@ const CBApp = (() => {
   const msApi = {
     win: kd => { const g = msWin(kd), c = g.reduce((a, x) => a + x.c, 0); addCoin(c); save(); showMs(kd); toast(g.length ? `🧪 ${MS_WHO[kd]}で 1勝 → ミッション達成！\n${g.map(x => `${x.n}連勝 ＋${x.c}枚`).join('・')}（今 ${st.coin}枚）` : `🧪 ${MS_WHO[kd]}で 1勝（今 ${st.ms[kd]}連勝）`, 2.6); },
     lose: kd => { msRoll(); st.ms[kd] = 0; save(); showMs(kd); toast(`🧪 ${MS_WHO[kd]}で 負け（連勝 0）`, 2); },
-    next: () => { st.ms.m = '2000-01'; msRoll(); showMs(); toast('🧪 月が 変わった ことに したよ（ミッションを リセット）', 2.4); }
+    next: () => { st.ms.m = '2000-01'; msRoll(); showMs(); toast('🧪 月が 変わった ことに したよ（ミッションを リセット）', 2.4); },
+    cps: n => { st.cps = Math.max(0, Math.floor(+n || 0)); save(); const nx = ptNext(st.cps); toast(`🧪 コンピュータに ${st.cps}連勝 に したよ（あと ${nx[0]}勝で ${nx[1]}P）`, 2.6); }      // 第4.230版
   };
 
   // ---------- 部屋（作る・入る）----------
@@ -2840,13 +2883,16 @@ const CBApp = (() => {
     //   第4.212版：調査隊切符の 連勝ボーナス（3連勝 ごとに 1枚・5連勝 ごとに 2枚）も 同じ 札に（コインの 右）。15枚で 止まった ときは 下に 1行
     //     足せた 枚数（tkGot）が 0（もう 15枚）の ときは 札には 出さずに、下の 行で「いっぱい なので 増えなかった」と 知らせる
     if (r.cb || r.tkGot) h += `<div class="cbsbn" role="status" aria-label="${r.streak}連勝 ボーナス${r.cb ? ` バトルコイン ${r.cb}枚` : ''}${r.tkGot ? ` 調査隊切符 ${r.tkGot}枚` : ''}"><i aria-hidden="true">🔥</i><span>${r.streak}連勝 ボーナス！</span>${r.cb ? `${COINI}<b>＋${r.cb}枚</b>` : ''}${r.tkGot ? `${TKI}<b>＋${r.tkGot}枚</b>` : ''}</div>`;
+    //   第4.230版：コンピュータに 連勝の ポイント「🎁 コンピュータに ○連勝！ ＋○P」（切符の 行の 下）
+    if (r.pt) h += `<div class="cbptn" role="status" aria-label="コンピュータに ${r.cps}連勝 ポイント ${r.pt}P"><i aria-hidden="true">🎁</i><span>コンピュータに ${r.cps}連勝！</span><b>＋${r.pt.toLocaleString('ja-JP')}P</b></div>`;
     if (r.tk) h += `<div class="cbtkl">${TKI}` + (r.tkGot ? `調査隊切符 今 ${r.tks}枚` + (r.tkGot < r.tk ? `（${QT.max}枚 まで なので ${r.tkGot}枚 だけ）` : '') : `調査隊切符は いっぱい（${QT.max}枚）なので、今回は 増えなかったよ`) + '</div>';
     h += r.ms.map(m => `<div class="cbmsn" role="status" aria-label="ミッション達成 ${m.n}連勝 バトルコイン ${m.c}枚"><i aria-hidden="true">🎯</i><span>ミッション達成！</span><b>${m.n}連勝</b>${COINI}<b>＋${m.c}枚</b></div>`).join('');
     if (r.pot) h += `<div class="cbcl">${COINI}${x.res === 'win' ? `<b>バトルコイン ＋${r.pot.w}枚</b>` : x.res === 'draw' ? `同点：参加コイン ${r.pot.e}枚 戻ったよ` : `参加コイン ${r.pot.e}枚は 戻らないよ`}${now}</div>`;
     else if (r.coin) h += `<div class="cbcl">${COINI}<b>バトルコイン ＋${r.coin}枚</b>${now}</div>`;      // いつもの ＋2枚（連勝の ボーナスは 上の 札・いまの 数は ぜんぶ 入れた 数）
     else if (r.ms.length) h += `<div class="cbcl">${COINI}バトルコイン${now}</div>`;      // 友だちバトル（コインなしの 部屋）で ミッション達成
     g.innerHTML = h;
-    if (g.querySelector('.cbmsn') || g.querySelector('.cbsbn')) se('magic', 0.7);
+    if (g.querySelector('.cbmsn') || g.querySelector('.cbsbn') || g.querySelector('.cbptn')) se('magic', 0.7);
+    if (r.cpu && x.res !== 'lose' && r.cps > 0) { const g2 = $('.cbend .gift2'), nx = ptNext(r.cps); if (g2) g2.textContent = `🎁 コンピュータに ${r.cps}連勝中・あと ${nx[0]}勝で ${nx[1].toLocaleString('ja-JP')}P`; }      // 第4.230版：次の ポイントまで
     // 部屋の「もう 1回」：参加コインが 足りなければ できない
     const k = match && match.stake;
     if (k && k.e > 0 && st.coin < k.e) { const ab = $('.cbend [data-cb=again]'), g2 = $('.cbend .gift2'); if (ab) ab.disabled = true; if (g2) g2.textContent = `バトルコインが 足りない ので、もう 1回は できないよ`; }
@@ -2861,7 +2907,7 @@ const CBApp = (() => {
   // 対戦を はなれる（count＝とちゅうで やめた → 負けに 数える）
   function leave(count) {
     const m = match; match = null; queue = []; GEN += 1;      // 第4.190版：世代を かえる（この 対戦の 動きの つづきは 止まる）
-    if (m) { if (count && !ended && !fin && V && !qRun) { st.lose += 1; st.streak = 0; msRoll(); st.ms[msKind(m)] = 0; save(); } try { m.leave(); } catch (e) { /* なし */ } }      // 第4.209版：決戦調査は 数えない（いつもの 負けにも ミッションにも）      // 第4.183版：ミッションの 連勝も 0（第4.191版：結果を もう 数えた〈fin〉 ときは 足さない）
+    if (m) { if (count && !ended && !fin && V && !qRun) { st.lose += 1; st.streak = 0; if (m.kind === 'cpu') st.cps = 0; msRoll(); st.ms[msKind(m)] = 0; save(); } try { m.leave(); } catch (e) { /* なし */ } }      // 第4.209版：決戦調査は 数えない（いつもの 負けにも ミッションにも）      // 第4.183版：ミッションの 連勝も 0（第4.191版：結果を もう 数えた〈fin〉 ときは 足さない）
     fin = false; ends = [];
     if (st && st.stake) { st.stake = null; save(); }      // 第4.179版：とちゅうで やめた → 出した 参加コインは もどらない
     if (st && st.ms && st.ms.live) { st.ms.live = ''; save(); }      // 第4.183版：対戦 ちゅうの しるしを 消す
@@ -3443,6 +3489,7 @@ const CBApp = (() => {
     boardImg();                                        // 第4.185版：えらんだ プレイボード
     actx(); applySets();                               // 音の 出口を 起こす（押した 操作の 中）・設定を 効かせる（BGM）
     showMenu();
+    ptFlush();      // 第4.230版：前に 入れられなかった ポイント
     clearInterval(qtTick); qtTick = setInterval(qtPaint, 1000);      // 第4.203版：調査隊切符（たまる 時間・ボタン）を 1秒 ごとに
   }
   function close() {
@@ -3458,7 +3505,7 @@ const CBApp = (() => {
   //   メニューを 見て いる ときは 書き直して 知らせる（ほかの 画面の ときは つぎに メニューを 出す とき）
   document.addEventListener('tengel:cbgift', () => { if (!st || !takeGift()) return; if (ov && ov.classList.contains('on') && screen === 'menu' && !modOn()) showMenu(); });
   return {
-    open, close, TK_BONUS, tkBonus, COIN, coinFor, coinBonus, MS, PACK, FACES, _rng: null, _randInt: null, _think: null, _link: null, _opt: null, _room: null, _guard: null, _as: null, _now: null, _sl: null,      // _rng・_think・_link・_opt・_room・_guard・_as・_now・_sl（第4.210版：フィールドの 音の 記録）：テスト・見本 用（ふだんは 空）
+    open, close, TK_BONUS, tkBonus, COIN, coinFor, coinBonus, PT_STREAK, PT_EACH, ptBonus, ptNext, MS, PACK, FACES, _rng: null, _randInt: null, _think: null, _link: null, _opt: null, _room: null, _guard: null, _as: null, _now: null, _sl: null,      // _rng・_think・_link・_opt・_room・_guard・_as・_now・_sl（第4.210版：フィールドの 音の 記録）：テスト・見本 用（ふだんは 空）
     _t: {      // テスト・見本の 写真 用
       get view() { return V; }, get screen() { return screen; }, get match() { return match; }, get mode() { return mode; }, get state() { return st; }, get ended() { return ended; },
       get idle() { return !pumping && !queue.length && !busy && !lock; }, get tl() { return { my: TL.my && Object.assign({}, TL.my), op: TL.op && Object.assign({}, TL.op), on: !!TL.iv, max: tlMax(), SET_LIMIT: SET_LIMIT }; }, get ask() { return askOn(); }, say, get sets() { return { bgm: bgmOn(), se: seOn(), raw: { bgm: st.bgm, se: st.se }, as: AS }; },
@@ -3466,6 +3513,7 @@ const CBApp = (() => {
       get bgm() { return { on: !!bg.cur, want: bg.want, have: !!bg.buf, gone: bg.gone, pos: bgmPos(), len: BGM.len, pre: BGM.pre, vol: BGM.vol, file: BGM.file, loop: bg.cur ? [bg.cur.s.loopStart, bg.cur.s.loopEnd] : null, ctx: snd.ac ? snd.ac.state : null, off: bg.cur ? bg.cur.off : null, dur: bg.buf ? bg.buf.duration : null, trk: bg.trk }; },
       get qsnd() { return { lv: qa.lv, cur: qa.cur ? { f: qa.cur.f, keep: qa.cur.keep, on: !!qa.cur.s } : null, kept: qa.kept.map(o => o.f), have: Object.keys(qa.buf), data: QSND, bgs: QBG }; },      // 第4.210版：フィールドの 音
       get mySets() { return mySets; }, setMySets: n => { mySets = Math.max(0, Math.floor(+n || 0)); },      // 第4.211版：この 対戦で 自分が セットした 数
+      ptFlush, ptCount,      // 第4.230版
       setSet, speed: k => { SPEED = k; }, manual: on => { clk.manual = !!on; }, tick, get now() { return clk.now; }, start: m => startMatch(m), menu: () => { leave(false); showMenu(); }, settle, load, save, takeGift, modOn, pkDraw, pkPool, pkGroup, randInt, get pk() { return pk; }, dz: t => showDz(t), dzApi, msKey: () => monthKey(), msRoll, ms: tab => showMs(tab), pic
     }
   };

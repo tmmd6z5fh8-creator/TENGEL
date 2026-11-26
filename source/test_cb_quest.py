@@ -189,6 +189,7 @@ try:
         pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.goto(APP); pg.wait_for_timeout(1500); gate(pg); pg.wait_for_timeout(5200)
         open_cb(pg); pg.evaluate("() => { CBApp._t.load(); CBApp._t.menu(); }"); pg.wait_for_timeout(200)
+        pg.evaluate("() => { CBApp._t.state.cps = 2; CBApp._t.save(); }")      # 第4.230版：コンピュータに 2連勝（ポイント用）から：決戦調査では かわらない
         s0 = st(pg)
         print('■ メニュー → マップ')
         qb = pg.locator('#cbOv .cbmenu [data-cb=quest]')
@@ -331,7 +332,7 @@ try:
         check(pg.evaluate("() => [document.querySelector('#cbOv .qv').className, document.querySelectorAll('#cbOv .qpt .cf').length, document.querySelectorAll('#cbOv .qpt .cn').length]") == ['qv t1', 0, 0], 'レベル1〜5：1段階目（光の 筋・紙吹雪 なし）')
         s1 = st(pg)
         check(s1['coin'] == s0['coin'] + 10 and s1['q']['clr'] == 1 and s1['ms']['cpu'] == s0['ms']['cpu'], f'コイン ＋10（{s0["coin"]} → {s1["coin"]}）・討伐 1・いつもの ミッションの 連勝は そのまま（第4.209版：決戦調査は 数えない）')
-        check([s1[x] for x in ('win', 'lose', 'draw', 'streak')] == [s0[x] for x in ('win', 'lose', 'draw', 'streak')] and 'owe' not in s1, 'いつもの 勝ち負け・連勝は かわらない（第4.212版：お世話トークンの ごほうびは もう ない）')
+        check([s1[x] for x in ('win', 'lose', 'draw', 'streak', 'cps')] == [s0[x] for x in ('win', 'lose', 'draw', 'streak', 'cps')] and s1['cps'] == 2 and not s1['pq'] and 'owe' not in s1 and pg.evaluate("() => TengelWallet.events().filter(e => /^cbwin-/.test(e.id)).length") == 0, 'いつもの 勝ち負け・連勝は かわらない（第4.212版：お世話トークンの ごほうびは もう ない）')
         shot(pg, 'q06_victory1')
         said(pg)
         pg.locator('#cbOv .cbmod [data-cb=qmapgo]').click(); pg.wait_for_timeout(400)
@@ -393,7 +394,7 @@ try:
         pg.locator('#cbOv .cbmod [data-cb=quitgo]').click(); pg.wait_for_timeout(300)
         s3 = st(pg)
         check(scr(pg) == 'qmap' and s3['ms']['cpu'] == 2 and s3['lose'] == s2['lose'] and s3['streak'] == s2['streak'] and s3['q']['clr'] == 2, 'やめた → マップ・いつもの ミッションの 連勝（2）も 負けも そのまま（第4.209版）')
-        check([s3[x] for x in ('win', 'lose', 'draw', 'streak')] == [s0[x] for x in ('win', 'lose', 'draw', 'streak')], 'ここまで いつもの 勝ち負け・連勝は かわらない')
+        check([s3[x] for x in ('win', 'lose', 'draw', 'streak', 'cps')] == [s0[x] for x in ('win', 'lose', 'draw', 'streak', 'cps')] and not s3['pq'], 'ここまで いつもの 勝ち負け・連勝・コンピュータに 連勝（ポイント：第4.230版）は かわらない・ポイントも なし')
 
         print('■ 確定カード（レベル 5〜12）')
         want = {5: {4: ['1']}, 6: {4: ['1', '1']}, 7: {4: ['2', '2'], 5: ['2', '2']}, 8: {5: ['2', '2', '2']}, 9: {5: ['1', '1'], 6: ['1', '1']}, 10: {5: ['1', '1', '1'], 6: ['1', '1', '1']},
@@ -503,13 +504,13 @@ try:
         # 戦の とちゅうで アプリを 閉じた（live 'qc'）→ つぎに 開いた とき：調査 失敗・ミッションの 連勝 0・いつもの 負けには 数えない
         go_field(pg, 1); pg.locator('#cbOv .qfw').click()
         pg.wait_for_function("() => CBApp._t.screen === 'game' && CBApp._t.view && CBApp._t.view.can.set", timeout=20000); idle(pg)
-        sv = pg.evaluate("() => { CBApp._t.state.ms.cpu = 4; CBApp._t.save(); return JSON.parse(localStorage.getItem('tengel.cb')); }")
+        sv = pg.evaluate("() => { CBApp._t.state.ms.cpu = 4; CBApp._t.state.cps = 3; CBApp._t.save(); return JSON.parse(localStorage.getItem('tengel.cb')); }")
         check(sv['ms']['live'] == 'qc', f'決戦調査の 戦の とちゅうの しるし（live＝{sv["ms"]["live"]!r}）')
         pg.evaluate("() => { CBApp._t.state.ms.live = 'qc'; CBApp._t.save(); }")
         s4 = st(pg); said(pg)
         pg.evaluate("() => { CBApp._t.load(); CBApp._t.menu(); }"); pg.wait_for_timeout(300)
         s5 = st(pg); tw = said(pg)
-        check(s5['ms']['cpu'] == 4 and s5['ms']['live'] == '' and s5['lose'] == s4['lose'] and s5['streak'] == s4['streak'], 'つぎに 開いた とき：いつもの ミッションの 連勝（4）は そのまま・いつもの 負けには 数えない（第4.209版）')
+        check(s5['ms']['cpu'] == 4 and s5['ms']['live'] == '' and s5['lose'] == s4['lose'] and s5['streak'] == s4['streak'] and s5['cps'] == 3, 'つぎに 開いた とき：いつもの ミッションの 連勝（4）は そのまま・いつもの 負けには 数えない（第4.209版）')
         check(any('決戦調査は 失敗に なったよ' in x and 'ミッション' not in x for x in tw), f'メニューで 知らせる（決戦調査の 失敗 だけ）：{tw[:1]}')
 
         print('■ 決戦調査ミッション・討伐した エリアに もう 一度（第4.209版・まさちゃん 11/21 01:11「通常連勝ミッションと決戦調査の連勝ミッション分けてほしい！ … 決戦調査は、クリアしたエリアも調査に行けるようにして！ ただクリア報酬は、最初の1回しか貰えないようにして！」・01:12・01:15）')
@@ -1212,6 +1213,12 @@ try:
         pg.wait_for_function("() => CBApp._t.screen === 'game' && CBApp._t.view && CBApp._t.view.can.set", timeout=20000); idle(pg)
         v = pg.evaluate("() => [CBApp._t.view.turns, CBApp._t.view.my.hand.map(c => c.k).sort().join('')]")
         check(v[0] == 1 and v[1] == ''.join(sorted('k112233')), f'🧪「1ターンで 勝てる 手札」：1ターン・あなたは 神様馬・1・2・3 {v}')
+        # 第4.230版：ミッションの 画面の テスト版の 道具「コンピュータの 連勝を 3に・5に・6に（ポイント）」＝ 1勝で 400P・800P・300P を 試せる
+        pg.evaluate("() => CBApp._t.menu()"); pg.wait_for_timeout(200); pg.locator('#cbOv .cbmenu [data-cb=ms]').click(); pg.wait_for_timeout(300)
+        mp = [pg.locator(f'#cbOv [data-cb=tstm][data-t={t}]').count() for t in ('mp3', 'mp5', 'mp6')]
+        pg.locator('#cbOv [data-cb=tstm][data-t=mp3]').click(); pg.wait_for_timeout(200); c3 = st(pg)['cps']
+        pg.locator('#cbOv [data-cb=tstm][data-t=mp6]').click(); pg.wait_for_timeout(200); c6 = st(pg)['cps']
+        check(mp == [1, 1, 1] and c3 == 3 and c6 == 6, f'🧪 ミッションの 画面：「コンピュータの 連勝を 3に・5に・6に（ポイント）」（3 → {c3}・6 → {c6}）')
         ctx.close()
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1, locale='ja-JP', timezone_id='Asia/Tokyo')
         ctx.add_init_script(FAKE)

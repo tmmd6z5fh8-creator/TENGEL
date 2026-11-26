@@ -311,14 +311,14 @@ try:
         m = pg.evaluate("() => ({ scr: CBApp._t.screen, h1: document.querySelector('#cbOv .cbmenu h1').textContent, rec: document.querySelector('#cbOv .cbmenu .rec').textContent, btn: [...document.querySelectorAll('#cbOv .cbmenu .cbb')].map(b => b.textContent.replace(/\\s+/g, ' ').trim()), dis: [...document.querySelectorAll('#cbOv .cbmenu .cbb')].map(b => b.disabled), lg: document.querySelector('#cbOv .cbmenu .lg').naturalWidth })")
         check(m['scr'] == 'menu' and m['h1'].replace('\n', '').replace(' ', '') == 'TENGERカードバトル' and m['btn'] == ['← 戻る', 'コンピュータと 対戦', '⚔️ 決戦調査今月 0／12 討伐・次は レベル1', '部屋を 作る友達と 対戦', '部屋に 入る友達と 対戦', '遊び方', '設定BGM・効果音', '🎯ミッション今月 0／23 達成', 'デザインカスタムカードパック・裏・ボード'] and not any(m['dis']),
               f'メニュー：コンピュータと 対戦・⚔️ 決戦調査（第4.196版）・部屋を 作る・部屋に 入る・遊び方・設定（第4.178版）・ミッション（第4.183版）・デザインカスタム（第4.182版）（{m["btn"]}）')
-        check(m['rec'] == 'コンピュータに 3連勝 ごとに 調査隊切符 1枚・5連勝 ごとに 調査隊切符 2枚' and 'お世話トークン' not in m['rec'] and (not HAVE or m['lg'] == 720), f'ご褒美の 説明（第4.212版：お世話トークンは なし・連勝で 調査隊切符）（{m["rec"]}）')
+        check(m['rec'] == 'コンピュータに 3連勝 ごとに 調査隊切符 1枚・5連勝 ごとに 調査隊切符 2枚コンピュータに 4連勝で 400P・6連勝で 800P・7連勝から 1勝ごとに 300P' and 'お世話トークン' not in m['rec'] and (not HAVE or m['lg'] == 720), f'ご褒美の 説明（第4.212版：お世話トークンは なし・連勝で 調査隊切符）（{m["rec"]}）')
         cl = pg.evaluate("() => { const e = document.querySelector('#cbOv .cbmenu .cbcoinl'); return e ? [e.textContent, e.querySelectorAll('img[src=\"cb_coin.webp\"]').length] : null; }")
         check(cl == ['バトルコイン 0枚コンピュータに 勝つと 2枚（3連勝 ＋6枚・5連勝 ＋10枚）毎日の ログインボーナスで 2枚（7日目 ＋10枚）', 1], f'メニューに バトルコイン（第4.179版：コインの 絵・持って いる 数・もらい方 → 第4.188版：勝つと 2枚・3連勝 ＋6・5連勝 ＋10・ログインボーナス）（{cl}）')
         check(reqs.count('cb_bundle.js') == 1 and 'cb_bundle.js' not in reqs[:reqs.index('cb_bundle.js')][:5], '本体（cb_bundle.js）は ボタンを 押した ときに 1回 だけ 読む')
         shot(pg, 'cb_menu')
         pg.locator('#cbOv .cbmenu [data-cb=help]').click(); pg.wait_for_timeout(200)
         ht = pg.evaluate("() => document.querySelector('#cbOv .cbhelp .bd').textContent")      # 第4.225版：「そのほか」は 開いて 読む（閉じて いても 中の 字は ある）
-        need = ['5ターン 終わって', '2枚は 使わずに 残るよ', '勝った 数が 多い 人の 勝ち', '1 が 一番 強くて、7 が 一番 弱い', '4 同士で 2人とも 4 の 効果を 使った ときは ドロー', '1〜7 が 4枚 ずつ・神様馬 1枚・幻の馬 1枚', 'セットしたら もう 変えられない', '同じ 効果を 2人とも 使える ときは、2人とも 決めて から 一緒に 出る',
+        need = ['コンピュータに 4連勝で 400P・6連勝で 800P・7連勝から 1勝ごとに 300P（アプリの ポイントに 入るよ。数えるのは コンピュータとの 連勝 だけ：友達バトル・決戦調査は ポイントなし・この 連勝にも 数えないよ）', '5ターン 終わって', '2枚は 使わずに 残るよ', '勝った 数が 多い 人の 勝ち', '1 が 一番 強くて、7 が 一番 弱い', '4 同士で 2人とも 4 の 効果を 使った ときは ドロー', '1〜7 が 4枚 ずつ・神様馬 1枚・幻の馬 1枚', 'セットしたら もう 変えられない', '同じ 効果を 2人とも 使える ときは、2人とも 決めて から 一緒に 出る',
                 '終わった ターンの 捨て札', '効果で 捨てた カード', '【3枚】と【4枚】は 1ターンに どちらか 1つ', 'セットした カードは 裏（4 の 効果で 見せる か、オープン するまで）', '相手の 手札は いつも 本当の 手札の まま 見えるよ（見た カードを 相手が セットしたら、その カードは 相手の 手札から 消える）',
                 '効果を 使うと、ボードの 真ん中に 誰が・どの 効果を・何を するかの 札が 出るよ（タップすると すぐ 次へ）', '残りの ターンの 数より 少なく ならない とき', '最後の ターンは、手札が 1枚 あれば 使える', '4：見せて 強制交換', 'コンピュータに 勝つと バトルコイン', 'コンピュータに 3連勝 ごとに 調査隊切符 1枚・5連勝 ごとに 調査隊切符 2枚（15連勝 など、両方の ときは 両方。調査隊切符は 15枚 まで）',
                 '部屋番号（4桁）', '近くに いる 友達', 'もう 見た カード だけの ときは 使えないよ', 'まだ 見て いない カードが ある とき', 'メニューの「デザインカスタム」で、カードの 表・裏と プレイボードの デザインを 変えられるよ', 'コンピュータと 対戦する ときは、コンピュータの カード（裏・表）も あなたが 選んだ デザインに なるよ',
@@ -1186,6 +1186,17 @@ try:
         #   勝っても お世話トークンは もらえない（トレーニングセンターの 部品も 読まない）・コンピュータに 3連勝 ごとに 調査隊切符 1枚・5連勝 ごとに 2枚（15枚 まで）。ここは 切符 10枚から
         QTN = "() => CBApp._t.qt.n"
         pg.evaluate("() => { localStorage.removeItem('tengel.cb'); CBApp._t.load(); const T = CBApp._t; T.state.qt = { n: 10, at: Date.now() }; T.save(); }")
+        # 第4.230版（まさちゃん 11/27 01:46「カードバトルの通常バトルCPUに4連勝したら400P、6連勝800P獲得できるようにできる？ 決戦調査と友達バトルはPは一切絡ませないで！」・答え「7連勝以降は毎回300P獲得」）：
+        #   コンピュータに 連勝で ポイント（4連勝 400P・6連勝 800P・7連勝から 1勝ごとに 300P）。財布の「cbwin-…」の できごとで 見る（入れるのは 結果を 数えた すぐ あと：待つ）
+        CBW = "() => TengelWallet.events().filter(e => /^cbwin-/.test(e.id)).map(e => [e.amount, e.what])"
+        G2 = "() => (document.querySelector('#cbOv .cbend .gift2') || {}).textContent || ''"
+        PTN = "() => { const b = document.querySelector('#cbOv .cbend .gift .cbptn'); return b ? [b.textContent, b.getAttribute('aria-label')] : null; }"
+        TOT = "() => TengelWallet.total()"
+        w0 = pg.evaluate(CBW); pt0 = pg.evaluate(TOT)
+        def pt_got(k):
+            pg.wait_for_function("(k) => TengelWallet.events().filter(e => /^cbwin-/.test(e.id)).length >= k && !CBApp._t.state.pq.length", arg=len(w0) + k, timeout=10000)
+            return pg.evaluate(CBW)[len(w0):]
+        check(pg.evaluate("() => [CBApp._t.state.cps, CBApp._t.state.pq.length]") == [0, 0], 'ここから：コンピュータに 連勝（ポイント）は 0・まだ 入れて いない ポイント なし')
         def win_game():
             start(pg, 'k1236', '23567'); play(pg, 'k'); opp(pg, {'t': 'set', 'k': 6}); pg.locator('#cbOv [data-cb=kskip]').click(); idle(pg)      # 2ターン目の はじめ：神様馬の 効果は 使わない
             play(pg, '1'); opp(pg, {'t': 'set', 'k': 7}); play(pg, '2'); opp(pg, {'t': 'set', 'k': 3})
@@ -1198,17 +1209,20 @@ try:
         check(e['h'] == 'あなたの 勝ち！' and e['sc'].startswith('3 － 0') and t1 == t0 and e['st']['streak'] == 1 and e['st']['win'] == 1 and 'owe' not in e['st'] and 'お世話トークン' not in e['g'] and 'GET' not in e['g'] and '1連勝中！' in e['g'] and 'あと 2勝で 調査隊切符' in e['g']
               and pg.evaluate(QTN) == 10 and pg.locator('#cbOv .cbend .cbget').count() == 0 and pg.locator('#cbOv .cbend .cbtkl').count() == 0 and pg.evaluate("() => !window.TCApp && typeof window.TCGift === 'undefined'") and 'tc_bundle.js' not in reqs,
               f'勝ち：お世話トークンは もらえない（第4.212版で 廃止：{t0} の まま・トレーニングセンターの 部品も 読まない・わたす 口 TCGift も ない）・1連勝中・あと 2勝で 調査隊切符（切符は 10枚の まま）（{e["g"]}）')
+        check(e['st']['cps'] == 1 and pg.evaluate(PTN) is None and pg.evaluate(G2) == '🎁 コンピュータに 1連勝中・あと 3勝で 400P' and pg.evaluate(CBW) == w0 and pg.evaluate(TOT) == pt0,
+              f'第4.230版：コンピュータに 1連勝 → ポイントは まだ（札も ない）・下に「あと 3勝で 400P」（{pg.evaluate(G2)}）')
         # 第4.212版：お世話トークンの 札（第4.177版の「お世話トークン ＋1こ GET！」）は もう 出ない。ごほうびの 場所は 先に あけて ある（高さ 204px：札が 出ても まわりは 動かない）
         pg.wait_for_timeout(300)
         gb = pg.evaluate("""() => { const m = document.querySelector('#cbOv .cbmod.cbend'), g = m.querySelector('.gift'), R = e => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)]; };
           return { gift: R(g), minh: parseFloat(getComputedStyle(g).minHeight), h3: R(m.querySelector('h3')), again: R(m.querySelector('[data-cb=again]')), vh: innerHeight, get: m.querySelectorAll('.cbget').length, css: /#cbOv \\.cbget\\{/.test([...document.querySelectorAll('style')].map(x => x.textContent).join('')) }; }""")
-        check(gb['get'] == 0 and not gb['css'] and gb['gift'][3] - gb['gift'][1] == gb['minh'] == 204 and gb['again'][3] <= gb['vh'] and gb['h3'][1] >= 0,
+        check(gb['get'] == 0 and not gb['css'] and gb['gift'][3] - gb['gift'][1] == gb['minh'] == 240 and gb['again'][3] <= gb['vh'] and gb['h3'][1] >= 0,
               f'最後の 画面に お世話トークンの 札は 出ない（形の きまりも ない）・ごほうびの 場所は 先に あけて ある（高さ {gb["minh"]}px：「あなたの 勝ち！」や ボタンは 動かない）')
         shot(pg, 'cb_end_win')
         pg.locator('#cbOv .cbend [data-cb=again]').click(); idle(pg)
         check(pg.evaluate(V)['turn'] == 1 and pg.evaluate(V)['phase'] == 'set' and not pg.evaluate("() => CBApp._t.ended") and pg.evaluate(PIPS) == '0-0' and not pg.evaluate("() => CBApp._t.modOn()"), '「もう 1回」→ すぐ 新しい 対戦（印も 0 に）')
         e = win_game()
         check(e['st']['coin'] == 4 and 'バトルコイン ＋2枚（今 4枚）' in e['g'] and pg.locator('#cbOv .cbend .gift .cbsbn').count() == 0 and 'あと 1勝で 調査隊切符' in e['g'] and pg.evaluate(QTN) == 10, f'2連勝目：バトルコイン ＋2枚（今 {e["st"]["coin"]}枚）・ボーナスの 札は 出ない・あと 1勝で 調査隊切符')
+        check(e['st']['cps'] == 2 and pg.evaluate(PTN) is None and pg.evaluate(G2) == '🎁 コンピュータに 2連勝中・あと 2勝で 400P' and pg.evaluate(CBW) == w0, '2連勝：ポイントは まだ・「あと 2勝で 400P」')
         e = win_game()
         sb3 = pg.evaluate("""() => { const g = document.querySelector('#cbOv .cbend .gift'), b = g.querySelector('.cbsbn'), m = g.querySelector('.cbmsn'), R = e => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)]; };
           return b ? { t: b.textContent, lab: b.getAttribute('aria-label'), img: b.querySelectorAll('img[src="cb_coin.webp"]').length, tki: b.querySelectorAll('img.tki').length, tkl: (g.querySelector('.cbtkl') || {}).textContent || '', tklbox: g.querySelector('.cbtkl') ? R(g.querySelector('.cbtkl')) : null, anim: getComputedStyle(b).animationName + '/' + getComputedStyle(b).animationIterationCount, box: R(b), mbox: m ? R(m) : null,
@@ -1218,9 +1232,20 @@ try:
               f'3連勝目（第4.188版）：いつもの 2枚 ＋ 3連勝 ボーナス 6枚 ＋ ミッション 30枚（2＋2＋8＋30＝{e["st"]["coin"]}枚）・最後の 画面に「🔥 3連勝 ボーナス！ 🪙＋6枚 🎫＋1枚」の 札（ミッションの 札の 上・1回 ふくらむ だけ・札の 場所に おさまる {sb3 and sb3["h"]}／{sb3 and sb3["minh"]}px）')
         check(pg.evaluate(QTN) == 11 and sb3 and sb3['tkl'] == '調査隊切符 今 11枚' and sb3['tklbox'] and sb3['box'][3] <= sb3['tklbox'][1] and sb3['tklbox'][3] <= sb3['mbox'][1] and 'あと 2勝で 調査隊切符' in e['g'],
               f'第4.212版：3連勝で 調査隊切符 ＋1枚（10 → {pg.evaluate(QTN)}枚）・札の 下に「調査隊切符 今 11枚」・次は あと 2勝（5連勝）')
+        check(e['st']['cps'] == 3 and pg.evaluate(PTN) is None and pg.evaluate(G2) == '🎁 コンピュータに 3連勝中・あと 1勝で 400P' and pg.evaluate(CBW) == w0, '3連勝：ポイントは まだ（3連勝は 調査隊切符 だけ）・「あと 1勝で 400P」')
         shot(pg, 'cb_end_bonus3')
-        win_game()
+        e4 = win_game(); got = pt_got(1)      # 4連勝
+        check(pg.evaluate(PTN) == ['🎁コンピュータに 4連勝！＋400P', 'コンピュータに 4連勝 ポイント 400P'] and got == [[400, 'TENGERカードバトル（コンピュータに 4連勝）']] and pg.evaluate(G2) == '🎁 コンピュータに 4連勝中・あと 2勝で 800P'
+              and pg.evaluate(TOT) == pt0 + 400 and e4['st']['cps'] == 4 and pg.evaluate("() => CBApp._t.state.pq.length") == 0 and pg.evaluate("() => { const g = document.querySelector('#cbOv .cbend .gift'); return Math.round(g.getBoundingClientRect().height) === parseFloat(getComputedStyle(g).minHeight); }"),
+              f'第4.230版：コンピュータに 4連勝 →「🎁 コンピュータに 4連勝！ ＋400P」の 札・財布に ＋400P（獲得ポイント「TENGERカードバトル（コンピュータに 4連勝）」）・下に「あと 2勝で 800P」・ごほうびの 場所は ふくらまない（{got}）')
+        ptb = pg.evaluate("""() => { const g = document.querySelector('#cbOv .cbend .gift'), b = g.querySelector('.cbptn'), R = e => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)]; };
+          return b ? { box: R(b), cl: g.querySelector('.cbcl') ? R(g.querySelector('.cbcl')) : null, vw: innerWidth, bc: getComputedStyle(b).borderTopColor, anim: getComputedStyle(b).animationName, lines: Math.round(b.getBoundingClientRect().height / parseFloat(getComputedStyle(b).lineHeight)) } : null; }""")
+        check(ptb and ptb['box'][0] >= 0 and ptb['box'][2] <= ptb['vw'] and ptb['cl'] and ptb['box'][3] <= ptb['cl'][1] and ptb['bc'] == 'rgb(143, 214, 255)' and ptb['anim'] == 'cbget' and ptb['lines'] == 1,
+              f'ポイントの 札：画面の 中・1行・バトルコインの 行の 上・水色の ふち（ほかの 札と 見分ける）・1回 ふくらむ（{ptb}）')
+        shot(pg, 'cb_end_pt4')
         e = win_game(); t5 = pg.evaluate(TC)
+        check(pg.evaluate(PTN) is None and pg.evaluate(CBW) == w0 + [[400, 'TENGERカードバトル（コンピュータに 4連勝）']] and pg.evaluate(G2) == '🎁 コンピュータに 5連勝中・あと 1勝で 800P' and e['st']['cps'] == 5,
+              f'5連勝：ポイントは なし（5連勝は ない）・「あと 1勝で 800P」（{pg.evaluate(G2)}）')
         check(e['st']['coin'] == 116 and 'バトルコイン ＋2枚（今 116枚）' in e['g'] and '🔥5連勝 ボーナス！＋10枚' in e['g'] and '🎯ミッション達成！5連勝＋60枚' in e['g'] and e['st']['ms']['cpu'] == 5 and e['st']['ms']['got']['cpu'] == [3, 5],
               f'バトルコイン：5連勝目は 2枚 ＋ 5連勝 ボーナス 10枚（2・2・8・2・12）＋ ミッション（3連勝 30枚・5連勝 60枚：第4.183版）＝ {e["st"]["coin"]}枚・最後の 画面に「🔥 5連勝 ボーナス！ ＋10枚」「🎯 ミッション達成！ 5連勝 ＋60枚」')
         check(e['st']['streak'] == 5 and e['st']['win'] == 5 and t5 == t0 and pg.evaluate(QTN) == 13 and '🔥5連勝 ボーナス！＋10枚＋2枚' in e['g'] and '調査隊切符 今 13枚' in e['g'] and '5連勝中！' in e['g'] and 'あと 1勝で 調査隊切符' in e['g'] and 'お世話トークン' not in e['g']
@@ -1228,12 +1253,22 @@ try:
         e = win_game()
         check(e['st']['streak'] == 6 and pg.evaluate(QTN) == 14 and 'あと 3勝で 調査隊切符' in e['g'] and '調査隊切符 今 14枚' in e['g'] and e['st']['coin'] == 214 and 'バトルコイン ＋2枚（今 214枚）' in e['g'] and '🔥6連勝 ボーナス！＋6枚＋1枚' in e['g'] and '🎯ミッション達成！6連勝＋90枚' in e['g'],
               '6連勝目（3連勝 ごと）：調査隊切符 ＋1枚（14枚）・バトルコインは ＋2 と 3連勝 ごとの ボーナス ＋6・ミッション 6連勝 ＋90枚')
+        got = pt_got(2)
+        check(pg.evaluate(PTN) == ['🎁コンピュータに 6連勝！＋800P', 'コンピュータに 6連勝 ポイント 800P'] and got == [[400, 'TENGERカードバトル（コンピュータに 4連勝）'], [800, 'TENGERカードバトル（コンピュータに 6連勝）']]
+              and pg.evaluate(G2) == '🎁 コンピュータに 6連勝中・あと 1勝で 300P' and pg.evaluate(TOT) == pt0 + 1200 and pg.evaluate("() => { const g = document.querySelector('#cbOv .cbend .gift'); return Math.round(g.getBoundingClientRect().height) === parseFloat(getComputedStyle(g).minHeight); }"),
+              f'6連勝：＋800P（合わせて 1,200P）・連勝ボーナス・切符・ミッション・ポイントの 札が ぜんぶ 出ても ごほうびの 場所に おさまる・「あと 1勝で 300P」（{got}）')
+        shot(pg, 'cb_end_pt6')
         # 7連勝：切符の ボーナスは ない（3 でも 5 でも 割りきれない）
         e = win_game()
         check(e['st']['streak'] == 7 and pg.evaluate(QTN) == 14 and pg.locator('#cbOv .cbend .cbtkl').count() == 0 and pg.locator('#cbOv .cbend .cbsbn').count() == 0 and 'あと 2勝で 調査隊切符' in e['g']
               and pg.evaluate("() => { const g = document.querySelector('#cbOv .cbend .gift'); return Math.round(g.getBoundingClientRect().height) === parseFloat(getComputedStyle(g).minHeight); }"),
               f'7連勝：調査隊切符の ボーナスは ない（14枚の まま・連勝ボーナスの 札も ない）（{e["g"]}）')
-        win_game()      # 8連勝
+        got = pt_got(3)
+        check(pg.evaluate(PTN) == ['🎁コンピュータに 7連勝！＋300P', 'コンピュータに 7連勝 ポイント 300P'] and got[-1] == [300, 'TENGERカードバトル（コンピュータに 7連勝）'] and pg.evaluate(G2) == '🎁 コンピュータに 7連勝中・あと 1勝で 300P' and pg.evaluate(TOT) == pt0 + 1500,
+              f'7連勝：ここから 1勝ごとに ＋300P（{got}）')
+        e = win_game(); got = pt_got(4)      # 8連勝
+        check(pg.evaluate(PTN) == ['🎁コンピュータに 8連勝！＋300P', 'コンピュータに 8連勝 ポイント 300P'] and got[-1] == [300, 'TENGERカードバトル（コンピュータに 8連勝）'] and pg.evaluate(G2) == '🎁 コンピュータに 8連勝中・あと 1勝で 300P' and pg.evaluate(TOT) == pt0 + 1800,
+              f'8連勝：また ＋300P（8連勝でも 400P は ない：4連勝 だけ）（{got}）')
         # 上限 15枚：もう いっぱいの とき（9連勝＝3連勝 ごと ＋1）→ 増えない・札には 出さずに 1行で 知らせる
         pg.evaluate("() => { const T = CBApp._t; T.state.qt = { n: 15, at: Date.now() }; T.save(); }")
         e = win_game()
@@ -1241,25 +1276,33 @@ try:
               and pg.locator('#cbOv .cbend .cbsbn').get_attribute('aria-label') == '9連勝 ボーナス バトルコイン 6枚'
               and pg.evaluate("() => { const g = document.querySelector('#cbOv .cbend .gift'); return Math.round(g.getBoundingClientRect().height) === parseFloat(getComputedStyle(g).minHeight); }"),
               f'調査隊切符が 15枚の とき：増えない（連勝ボーナスの 札は バトルコイン だけ・「いっぱい なので 増えなかった」の 1行）（{e["g"]}）')
+        got = pt_got(5)
+        check(pg.evaluate(PTN) == ['🎁コンピュータに 9連勝！＋300P', 'コンピュータに 9連勝 ポイント 300P'] and got[-1] == [300, 'TENGERカードバトル（コンピュータに 9連勝）'] and pg.evaluate(TOT) == pt0 + 2100, f'9連勝：＋300P（{got[-1]}）')
         pg.evaluate("() => { const T = CBApp._t; T.state.qt = { n: 14, at: Date.now() }; T.save(); }")
         e = win_game()      # 10連勝：＋2 の はずが、あと 1枚 しか 入らない
         check(e['st']['streak'] == 10 and pg.evaluate(QTN) == 15 and '🔥10連勝 ボーナス！＋10枚＋1枚' in e['g'] and '調査隊切符 今 15枚（15枚 まで なので 1枚 だけ）' in e['g'] and pg.evaluate(TC) == t0
               and pg.evaluate("() => { const g = document.querySelector('#cbOv .cbend .gift'); return Math.round(g.getBoundingClientRect().height) === parseFloat(getComputedStyle(g).minHeight); }"), f'10連勝（＋2）で あと 1枚 しか 入らない とき：入る 分 だけ（{e["g"]}）')
         check(e['st']['coin'] == 1008 and 'バトルコイン ＋2枚（今 1008枚）' in e['g'] and '🔥10連勝 ボーナス！＋10枚' in e['g'] and '🎯ミッション達成！10連勝＋300枚' in e['g'] and e['st']['ms']['got']['cpu'] == [3, 5, 6, 7, 8, 9, 10] and e['st']['ms']['cpu'] == 10,
               f'10連勝目は バトルコイン 2枚 ＋ 5連勝 ごとの ボーナス 10枚 ＋ ミッション 10連勝 300枚（勝つ 分 2×10＝20・ボーナス 6×3＋10×2＝38・ミッション 950：今 {e["st"]["coin"]}枚）・字は 札の 場所に おさまる')
+        got = pt_got(6)
+        check(pg.evaluate(PTN) == ['🎁コンピュータに 10連勝！＋300P', 'コンピュータに 10連勝 ポイント 300P'] and [g[0] for g in got] == [400, 800, 300, 300, 300, 300] and pg.evaluate(TOT) == pt0 + 2400 and e['st']['cps'] == 10 and pg.evaluate("() => CBApp._t.state.pq.length") == 0,
+              f'10連勝：＋300P（4〜10連勝で 400＋800＋300×4 ＝ 2,400P・財布は {pt0:,} → {pg.evaluate(TOT):,}P）')
         shot(pg, 'cb_end_coin')
         # 負け：連勝 0
         start(pg, '23677', '12356'); play(pg, '3'); opp(pg, {'t': 'set', 'k': 1}); play(pg, '6'); opp(pg, {'t': 'set', 'k': 2}); play(pg, '7'); opp(pg, {'t': 'set', 'k': 3})
         pg.wait_for_function("() => { const g = document.querySelector('#cbOv .cbend .gift'); return CBApp._t.ended && g && g.textContent.length > 3; }", timeout=30000)
         e = pg.evaluate("() => ({ h: document.querySelector('#cbOv .cbend h3').textContent, g: document.querySelector('#cbOv .cbend .gift').textContent, st: Object.assign({}, CBApp._t.state) })")
         check(e['h'] == 'あなたの 負け…' and e['st']['streak'] == 0 and e['st']['lose'] == 1 and '連勝は 0 に 戻ったよ' in e['g'] and pg.evaluate(TC) == t0 and pg.evaluate(QTN) == 15 and pg.locator('#cbOv .cbend .cbget').count() == 0 and pg.locator('#cbOv .cbend .cbtkl').count() == 0, f'負け：連勝は 0 に 戻る・お世話トークンも 調査隊切符も 変わらない・札は 出ない（{e["g"]}）')
+        check(e['st']['cps'] == 0 and pg.evaluate(PTN) is None and pg.evaluate(G2) == '' and len(pg.evaluate(CBW)) == len(w0) + 6 and pg.evaluate(TOT) == pt0 + 2400, '第4.230版：コンピュータに 負け → ポイントの 連勝も 0（ポイントは 減らない・下の「あと ○勝」も 出ない）')
         pg.locator('#cbOv .cbend [data-cb=menu]').click(); pg.wait_for_timeout(120)
         rec = pg.locator('#cbOv .cbmenu .rec').inner_text()
         check(pg.evaluate("() => CBApp._t.screen") == 'menu' and '10勝 1敗 0分' in rec.replace('\n', ' '), f'メニューに 勝ち負けの 数（{rec!r}）')
+        check('コンピュータに 4連勝で 400P・6連勝で 800P・7連勝から 1勝ごとに 300P' in rec.replace('\n', ''), f'第4.230版：メニューに ポイントの 決まり（{rec!r}）')
         check(e['st']['coin'] == 1008 and 'バトルコイン' not in e['g'] and 'バトルコイン 1008枚' in pg.locator('#cbOv .cbmenu .cbcoinl').inner_text() and e['st']['ms']['cpu'] == 0 and e['st']['ms']['got']['cpu'] == [3, 5, 6, 7, 8, 9, 10],
               '負け：バトルコインは 変わらない（減らない）・メニューに 今の 数（1008枚）・ミッションの 連勝は 0（達成した ものは 残る）')
 
         print('■ 途中で やめる')
+        pg.evaluate("() => { const T = CBApp._t; T.state.cps = 3; T.save(); }")      # 第4.230版：コンピュータに 3連勝 から
         start(pg, '12367', '23567'); play(pg, '1')
         s0 = pg.evaluate("() => Object.assign({}, CBApp._t.state)")
         pg.locator('#cbOv .cbtop [data-cb=quit]').click(); pg.wait_for_timeout(80)
@@ -1275,6 +1318,7 @@ try:
         pg.locator('#cbOv .cbtop [data-cb=quit]').click(); pg.locator('#cbOv .cbmod [data-cb=quitgo]').click(); pg.wait_for_timeout(120)
         s1 = pg.evaluate("() => Object.assign({}, CBApp._t.state)")
         check(pg.evaluate("() => CBApp._t.screen") == 'menu' and s1['lose'] == s0['lose'] + 1 and s1['streak'] == 0 and pg.evaluate("() => CBApp._t.match") is None, '途中で やめた → 負けに 数える・メニューへ')
+        check(s0['cps'] == 3 and s1['cps'] == 0, '第4.230版：コンピュータとの 対戦を 途中で やめた → ポイントの 連勝も 0（3 → 0）')
         pg.locator('#cbOv .cbmenu [data-cb=close]').click(); pg.wait_for_timeout(120)
         check(pg.evaluate("() => !document.querySelector('#cbOv').classList.contains('on')") and pg.locator('#cbFab').is_enabled(), '「← 戻る」→ カードバトルを 閉じる（ボタンは また 押せる）')
 
@@ -1434,6 +1478,8 @@ try:
         COINS = "() => [CBApp._t.state.coin, CBApp._t.state.stake ? CBApp._t.state.stake.e + '/' + CBApp._t.state.stake.w : null]"
         MSZ = "() => { const s = CBApp._t.state.ms; s.cpu = 0; s.fr = 0; s.got = { cpu: [], fr: [] }; s.live = ''; }"      # 第4.183版：ミッションを 0 から（この 場面の コインの 数を ミッションで かえない）
         pg.evaluate(MSZ); gp.evaluate(MSZ)
+        for q in (pg, gp): q.evaluate("() => { const T = CBApp._t; T.state.cps = 3; T.save(); }")      # 第4.230版：友達バトルは ポイントの 連勝に 数えない（3 の まま）
+        rw0 = [q.evaluate("() => TengelWallet.events().filter(e => /^cbwin-/.test(e.id)).length") for q in (pg, gp)]
         def make_room(e, w=None):
             pg.locator('#cbOv .cbmenu [data-cb=host]').click(); pg.wait_for_timeout(200)
             pg.locator(f'#cbOv .cbroom [data-cb=stke][data-n="{e}"]').click()
@@ -1488,6 +1534,9 @@ try:
               f'作った 人の 勝ち（2 － 0）：勝者の 獲得コイン 6枚（7 → 13枚）（{eh["g"]}）')
         check(eg['h'] == 'あなたの 負け…' and '参加コイン 3枚は 戻らないよ（今 2枚）' in eg['g'] and gp.evaluate(COINS) == [2, None] and eg['again'] and eg['g2'] == 'バトルコインが 足りない ので、もう 1回は できないよ' and gp.evaluate("() => { const g = document.querySelector('#cbOv .cbend .gift2'); return Math.round(g.getBoundingClientRect().height) <= 20; }"),
               f'入った 人の 負け：参加コインは 戻らない（今 2枚）・バトルコインが 足りない ので「もう 1回」は 押せない（{eg["g2"]}）')
+        rw1 = [q.evaluate("() => [CBApp._t.state.cps, CBApp._t.state.pq.length, TengelWallet.events().filter(e => /^cbwin-/.test(e.id)).length, (document.querySelector('#cbOv .cbend .gift .cbptn') ? 1 : 0)]") for q in (pg, gp)]
+        check(rw1 == [[3, 0, rw0[0], 0], [3, 0, rw0[1], 0]] and 'コンピュータに' not in eh['g'] and 'コンピュータに' not in eg['g2'],
+              f'第4.230版：友達バトルは ポイントなし（勝った 人も 負けた 人も）・コンピュータの 連勝（3）も かわらない（{rw1}）')
         shot(gp, 'cb_room_coin_lose')
         gp.locator('#cbOv .cbend [data-cb=menu]').click(); gp.wait_for_timeout(200)
         pg.wait_for_function("() => CBApp._t.modOn() && /部屋を 出たよ/.test(document.querySelector('#cbOv .cbmod').textContent)", timeout=20000)
@@ -1994,12 +2043,13 @@ try:
         l3 = [pg.evaluate("() => CBApp._t.view.res"), pg.evaluate(MST)]
         check(d3 == ['draw', 3] and l3[0] == 'lose' and l3[1]['cpu'] == 0 and l3[1]['got']['cpu'] == [3] and pg.evaluate("() => CBApp._t.state.coin") == 32, f'同点 → 連勝は そのまま（{d3}）・負け → 0（達成した 3連勝と コインは 残る）')
         # とちゅうで やめる → 0
-        pg.evaluate("() => { const T = CBApp._t; T.state.ms.cpu = 4; T.save(); }")
+        pg.evaluate("() => { const T = CBApp._t; T.state.ms.cpu = 4; T.state.cps = 4; T.save(); }")
         start(pg, 'k1234', '76543'); pg.locator('#cbOv .cbtop [data-cb=quit]').click(); pg.locator('#cbOv .cbmod [data-cb=quitgo]').click(); pg.wait_for_timeout(150)
         q0 = pg.evaluate(MST)
         check(q0['cpu'] == 0 and q0['live'] == '' and pg.evaluate("() => CBApp._t.screen") == 'menu', f'対戦の 途中で やめた → ミッションの 連勝も 0（{q0["cpu"]}）')
+        check(pg.evaluate("() => CBApp._t.state.cps") == 0, '第4.230版：途中で やめた → ポイントの 連勝も 0（4 → 0）')
         # 対戦の とちゅうで アプリが 閉じられた（つぎに 開いた とき）→ 0・知らせる（第4.191版：負けに 数えて いつもの 連勝も 0）
-        pg.evaluate("() => { const T = CBApp._t; T.state.ms.cpu = 4; T.state.streak = 4; T.save(); }")
+        pg.evaluate("() => { const T = CBApp._t; T.state.ms.cpu = 4; T.state.streak = 4; T.state.cps = 4; T.save(); }")
         start(pg, 'k1234', '76543'); ckey(pg, 'k')
         sv2 = json.loads(pg.evaluate("() => localStorage.getItem('tengel.cb')")); lv2 = sv2['ms']
         pg.evaluate("() => { CBApp._t.load(); CBApp._t.menu(); }"); pg.wait_for_timeout(150); tt = pg.evaluate(TOAST); q1 = pg.evaluate(MST); sq1 = pg.evaluate("() => [CBApp._t.state.streak, CBApp._t.state.lose, CBApp._t.state.win]")
@@ -2007,6 +2057,7 @@ try:
               f'第4.191版：対戦 ちゅうに アプリが 閉じられた ＝「やめる」と 同じ：負けに 数える・いつもの 連勝（4）も 0（前は ミッションの 連勝 だけ）・「負けに 数えたよ（4連勝は 0 に 戻ったよ）」（{sq1}）')
         check(lv2['live'] == 'cpu' and lv2['cpu'] == 4 and q1['cpu'] == 0 and q1['live'] == '' and '前の 対戦が 途中で 終わった ので、' in tt and 'ミッションの 連勝（コンピュータ）は 0 に 戻ったよ' in tt,
               f'対戦 ちゅうに アプリが 閉じられた → 次に 開いた とき ミッションの 連勝は 0・「ミッションの 連勝（コンピュータ）は 0 に 戻ったよ」（{tt!r}）')
+        check(sv2['cps'] == 4 and pg.evaluate("() => CBApp._t.state.cps") == 0, '第4.230版：コンピュータとの 対戦 ちゅうに アプリが 閉じられた → 次に 開いた とき ポイントの 連勝も 0（4 → 0）')
         # 第4.191版：結果は 決まった とき（'end' が 届いた とき）すぐ 数える → 最後の 札の とちゅうで アプリが 閉じられても 勝ちは 勝ち（負けを 足さない）
         sv0 = pg.evaluate("() => { const T = CBApp._t, s = T.state; return { coin: s.coin, win: s.win, lose: s.lose, draw: s.draw, streak: s.streak, owe: s.owe }; }")      # この 場面の あとで もとに もどす（あとの 場面の コインの 数を かえない）
         pg.evaluate("() => { const T = CBApp._t; T.state.ms.cpu = 0; T.state.streak = 2; T.save(); }"); w0 = pg.evaluate("() => [CBApp._t.state.win, CBApp._t.state.lose]")

@@ -24,7 +24,7 @@ const CBTest = (() => {
     else if (t === 'reset') api.reset();
     else if (/^pk(r|gr|sr|gsr)$/.test(t) && api.pk) api.pk(t.slice(2));
   }
-  const M = [['mcw', 'コンピュータで 1勝'], ['mcl', 'コンピュータで 負け'], ['mfw', '友達バトルで 1勝'], ['mfl', '友達バトルで 負け'], ['mnx', '月が 変わった ことに（リセット）']];
+  const M = [['mcw', 'コンピュータで 1勝'], ['mcl', 'コンピュータで 負け'], ['mfw', '友達バトルで 1勝'], ['mfl', '友達バトルで 負け'], ['mnx', '月が 変わった ことに（リセット）'], ['mp3', 'コンピュータの 連勝を 3に（ポイント）'], ['mp5', 'コンピュータの 連勝を 5に（ポイント）'], ['mp6', 'コンピュータの 連勝を 6に（ポイント）']];      // 第4.230版：ポイント
   function msHtml() {
     return '<div class="cbtst"><b>🧪 テスト版の 道具</b><small>App Store版には ないよ（対戦 しなくても、ミッションの 達成と リセットを 試せる）</small><div class="r">'
       + M.map(([t, l]) => `<button type="button" class="cbb dk sm" data-cb="tstm" data-t="${t}">${l}</button>`).join('') + '</div></div>';
@@ -36,6 +36,7 @@ const CBTest = (() => {
     else if (t === 'mcl') api.lose('cpu');
     else if (t === 'mfl') api.lose('fr');
     else if (t === 'mnx') api.next();
+    else if (/^mp\d$/.test(t) && api.cps) api.cps(+t.slice(2));      // 第4.230版：次に 1勝で 400P（3）・800P（5）・300P（6）
   }
   // 第4.196版：決戦調査の マップの 右上「🧪」→ テスト版の 道具：次の エリアを 討伐済みに・全部 討伐済みに・討伐を 0 に・月が 変わった ことに・戦を「1ターンで 勝てる 手札」に（切りかえ）
   //   ＝ レベル 12 まで 52勝 しなくても、強い 敵・確定カード・勝利の 演出（3段階）を 試せる。CBTest.qHtml(easy)・CBTest.qAct(t, api)　api＝cb_app.js の qApi（clr・all・zero・next・easy）
