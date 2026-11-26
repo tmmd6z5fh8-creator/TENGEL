@@ -411,8 +411,16 @@ if r.returncode == 0:
           and 'var framed: Bool { PhoneFrame.isWide(bounds.width) }' in wvc and 'let frame = wide ? phoneRect() : bounds' in wvc and 'framed ? (0, 0) : overlap' in wvc
           and 'backgroundColor = wide ? .black : .tengelPage' in wvc and '"framed": framed' in wvc and '"webWidth": webView.frame.width' in wvc
           and 'WideBackdrop()' in apc and 'struct WideBackdrop: View' in apc and 'PhoneFrame.isWide(geo.size.width)' in apc and '.opacity(wide ? 1 : 0)' in apc and '.statusBarHidden(wide)' in apc
-          and apc.index('Color(uiColor: .tengelPage)') < apc.index('WideBackdrop()') < apc.index('TengelWebView()') and 'TengelWebView()\n                .ignoresSafeArea(edges: .bottom)' in ap2,
+          and apc.index('Color(uiColor: tint.color)') < apc.index('WideBackdrop()') < apc.index('TengelWebView()') and 'TengelWebView()\n                .ignoresSafeArea(edges: .bottom)' in ap2,
           '第4.156版：広い 画面（iPad の 画面いっぱいの 窓）では アプリを iPhone の 大きさ（390×844）で まん中に（まわりは 黒・重なりの あきは 0）・iPhone（幅 480pt まで）は 今までどおり 窓いっぱい')
+    # 第4.224版（まさちゃん 2026/11/26 10:55「青四角のところ色壁紙の色と合わせることって可能？」）：時計・電池の 帯＝上の 帯の いちばん 上の 色（Webの 画面が 知らせる）・字の 白／黒
+    check('final class StatusBarTint: ObservableObject' in apc and 'ContentView(tint: StatusBarTint.shared)' in apc and '@ObservedObject var tint: StatusBarTint' in apc
+          and 'color = .tengelNight' in apc and 'UIColor(tengelHex:' in apc and 'forKey: Self.colorKey' in apc
+          and 'enum StatusBarStyle' in apc and '#selector(getter: UIViewController.preferredStatusBarStyle)' in apc and 'class_addMethod(cls, sel, imp, types)' in apc
+          and 'root.setNeedsStatusBarAppearanceUpdate()' in apc and 'StatusBarStyle.current = white ? .lightContent : .darkContent' in apc
+          and 'case "statusBar":' in wvc and 'StatusBarTint.shared.set(hex:' in wvc and 'StatusBarStyle.apply(in: window)' in wvc and '"statusBarStyle": w?.windowScene?.statusBarManager?.statusBarStyle.rawValue' in wvc
+          and "call('statusBar', p)" in html and 'ks-sb-light' in ci_run and 'status bar:' in ci_run and "res.sb.ranch = await sbar()" in ci_st,
+          '第4.224版：時計・電池の 帯は 上の 帯の 色（StatusBarTint：Webの 画面が 知らせる・端末に 覚える）・字の 白／黒（StatusBarStyle）・CI で 確かめる（status bar・ks-sb-light）')
     check("supportedDeviceFamilies: [.pad, .phone]" in ci_run and 'phase "$IPAD" ipadwide 4 1000 wide-main report-4' in ci_run and 'L.get("framed") is True' in ci_run and 'b.get("w") == 390' in ci_run
           and 'async function phase4()' in ci_st and "PH === 4 ? phase4" in ci_st and "report('4', R)" in ci_st and "await mark('wide-main')" in ci_st
           and '.pad' not in open(os.path.join(out, 'Tengel.swiftpm', 'Package.swift'), encoding='utf8').read().split('supportedDeviceFamilies')[1].split(']')[0],
