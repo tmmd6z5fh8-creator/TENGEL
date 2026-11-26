@@ -66,6 +66,8 @@ final class WebHostView: UIView {
         super.didMoveToWindow()
         setNeedsLayout()
         pushInsets()
+        // 第4.224版：時計・電池の 字の 白／黒（覚えて いる 値）を 窓に 出た ときから
+        StatusBarStyle.apply(in: window)
     }
 
     /// iPhone の 大きさの 置き場：時計の 帯・ホームバーに 重ならない 範囲の まん中（高さが 足りない ときは その 範囲の 高さ まで）。点の ずれが 出ない ように 整数の 位置に 置く
@@ -121,7 +123,9 @@ final class WebHostView: UIView {
                 // 第4.156版：iPhone の 大きさで 置いたか（iPad の 広い 窓）・Webの 画面の 置き場
                 "framed": framed, "hostWidth": bounds.width, "windowWidth": w?.bounds.width ?? -1,
                 "webX": webView.frame.minX, "webY": webView.frame.minY, "webWidth": webView.frame.width, "webHeight": webView.frame.height,
-                "statusBarHidden": w?.windowScene?.statusBarManager?.isStatusBarHidden ?? false]
+                "statusBarHidden": w?.windowScene?.statusBarManager?.isStatusBarHidden ?? false,
+                // 第4.224版：時計・電池の 帯の 色と 字（statusBarStyle：1＝白い 字・3＝黒い 字）
+                "statusBarStyle": w?.windowScene?.statusBarManager?.statusBarStyle.rawValue ?? -1, "tint": StatusBarTint.shared.info]
     }
 }
 
@@ -323,6 +327,11 @@ final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
             } else {
                 reply(id, ok: true, value: Clock.sample())
             }
+        case "statusBar":
+            // 第4.224版：時計・電池の 帯の 色（"#RRGGBB"）と 字を 白に するか（light）。Webの 画面が 上の 帯の いちばん 上の 色を はかって 知らせる（kisekae.js）
+            let p = payload as? [String: Any] ?? [:]
+            let ok = StatusBarTint.shared.set(hex: p["color"] as? String ?? "", light: (p["light"] as? NSNumber)?.boolValue ?? true, window: webView?.window)
+            reply(id, ok: ok, value: ok ? StatusBarTint.shared.info : "色の 形が ちがうよ")
         case "unseal":
             // 「データの更新」の ファイルを 開く（iOS に 入って いる 暗号＝Apple CryptoKit の AES-GCM。アプリは 自分の 暗号の 計算を 持たない：DataSeal.swift）
             if let text = DataSeal.open(payload as? [String: Any] ?? [:]) {

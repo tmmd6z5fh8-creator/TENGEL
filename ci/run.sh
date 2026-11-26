@@ -203,7 +203,7 @@ phase() {
 }
 applog() { xcrun simctl spawn "$1" log show --last 15m --style compact --predicate 'process CONTAINS "テンゲル" OR (process CONTAINS "WebContent" AND eventMessage CONTAINS[c] "error")' 2>/dev/null | tail -400 > "$OUT/$2-log.txt"; }
 
-P1="gate-first main rsv-ov fx-push fx-board fx-fz-push fx-fz-result fx-sgd-still fx-sd fx-sd-board fx-gk fx-gk-board board-carry board-carry-slip board-carry-miss ks-judge ks-push ks-board ks-set ks-conf ks-tengel ks-pack ks-pack-wall points unlock-conf fab-marks plan-soon settings backup about rec numpad manual-ov manual-ov-item cb-toy cb-menu cb-game cb-end report-1 manual manual-item report-manual back report-back"
+P1="gate-first main rsv-ov fx-push fx-board fx-fz-push fx-fz-result fx-sgd-still fx-sd fx-sd-board fx-gk fx-gk-board board-carry board-carry-slip board-carry-miss ks-judge ks-push ks-board ks-set ks-conf ks-sb-light ks-tengel ks-pack ks-pack-wall points unlock-conf fab-marks plan-soon settings backup about rec numpad manual-ov manual-ov-item cb-toy cb-menu cb-game cb-end report-1 manual manual-item report-manual back report-back"
 # 4) iPhone
 if [ -n "$IPHONE" ]; then
   xcrun simctl boot "$IPHONE" > /dev/null 2>&1; xcrun simctl bootstatus "$IPHONE" -b > /dev/null 2>&1
@@ -251,6 +251,21 @@ lg = k.get("lg"); l0 = (lg or {}).get("before") or {}; l1 = (lg or {}).get("afte
 lgok = not lg or lg.get("skip") is True or (l0.get("pause") is True and l0.get("run") == 0 and l1.get("pause") is False and (l1.get("run") or 0) > 0 and (l1.get("ms") or 9999) < 1500 and l1.get("gone") is True)
 lgs = "none" if not lg else "skip" if lg.get("skip") else "pause %s run %s / OK tap run %s %sms" % (l0.get("pause"), l0.get("run"), l1.get("run"), l1.get("ms"))
 print("top run %s / down pause %s run %s / back run %s / cover pause %s run %s / tap-close run %s %sms / login-bonus %s -> %s" % (n, d.get("pause"), d.get("run"), b.get("run"), c.get("pause"), c.get("run"), o.get("run"), o.get("ms"), lgs, "OK" if ok and lgok else "CHECK " + json.dumps({"seen": s, "lg": lg}, ensure_ascii=False)[:360]))
+' "$OUT/iphone-report-1.json" 2>&1)"
+  # 第4.224版：時計・電池の 帯（ステータスバー）＝ 上の 帯の いちばん 上の 色（いつもの・夕焼け・牧場〈明るい 帯 → 黒い 字〉・マスター帯・いつもの に もどす）。
+  #   アプリが 塗った 色（tint）・Webの 画面が 送った 色（js）・はかり直した 色（now）が 同じ・字の 白／黒（statusBarStyle 1 白・3 黒）
+  [ -f "$OUT/iphone-report-1.json" ] && say "   status bar: $(python3 -c '
+import json, sys
+k = json.load(open(sys.argv[1])).get("kisekae") or {}; s = k.get("sb") or {}
+want = {"first": True, "sunset": True, "ranch": False, "tengel": True, "back": True}
+out, ok = [], True
+for name, white in want.items():
+    e = s.get(name) or {}; js = e.get("js") or {}; now = e.get("now") or {}; t = e.get("tint") or {}
+    good = bool(js.get("color")) and js.get("color") == now.get("color") == t.get("color") and js.get("light") is white and t.get("light") is white and e.get("style") == (1 if white else 3)
+    ok = ok and good
+    out.append("%s %s %s style %s%s" % (name, t.get("color"), "W" if t.get("light") else "K", e.get("style"), "" if good else "!"))
+ok = ok and ((s.get("first") or {}).get("tint") or {}).get("color") == "#16203D" and ((s.get("back") or {}).get("tint") or {}).get("color") == "#16203D"
+print(" / ".join(out) + " -> " + ("OK" if ok else "CHECK " + json.dumps(s, ensure_ascii=False)[:700]))
 ' "$OUT/iphone-report-1.json" 2>&1)"
   # 第4.212版：値段（初回 5,000P・読み込み 400P・5連も 1レース 400P・マザーデータの 枠 23,000P・おもちゃ 3,000P）・Pカスタムの「おもちゃを購入」（2つ）・
   #   設定の「古い台帳をリセットする」の カード（バックアップの すぐ 下・注意書き）・まとめて 消す 口（TengelLocal.delBets）が 本物の アプリの 画面に ある

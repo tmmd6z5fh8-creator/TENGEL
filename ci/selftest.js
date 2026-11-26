@@ -293,6 +293,13 @@
       var K = window.TengelKisekae; if (!K) return { on: false };
       await K.ready;
       var res = { list: K.list().length, groups: Array.from(new Set(K.list().map(function (t) { return t.group; }))), current0: K.current(), count: K.count(), usableSunset: K.usable('sunset'), usableGone: K.usable('sakura'), band: K.band, files: {} };
+      // 第4.224版：時計・電池の 帯（アプリが 塗った 色・字の 白／黒＝statusBarStyle 1 白・3 黒）と Webの 画面が はかった 上の 帯の 色
+      var sbar = async function () {
+        await sleep(250);
+        var L = null; try { L = await TengelNative.layout(); } catch (e) { L = { exception: String(e && (e.message || e)) }; }
+        return { ks: document.documentElement.dataset.ks || 'default', js: K.statusBar ? K.statusBar() : null, now: K.statusBarNow ? K.statusBarNow() : null, tint: L && L.tint, style: L && L.statusBarStyle };
+      };
+      res.sb = { first: await sbar() };
       for (var k of ['ks_sunset.json', 'ks_banner_ranch.svg', 'fonts/KaiseiOpti-700.woff2', 'ks_5f93d2cbb5295e4148858bf5daf03c5a.webp', 'ks_sakura.json']) { try { var r = await fetch(k, { cache: 'no-store' }); res.files[k] = r.status; } catch (e) { res.files[k] = String(e); } }
       await K.apply('sunset'); await sleep(900);
       document.querySelector('.tabbar [data-tab=judge]').click(); await sleep(400);
@@ -311,6 +318,7 @@
       res.sunset = { ks: document.documentElement.dataset.ks, loaded: K.loaded(), bnr: bn ? { hidden: bn.hidden, h: bn.getBoundingClientRect().height, w: bn.getBoundingClientRect().width, k: bn.style.getPropertyValue('--ksk'), anims: bn.getAnimations({ subtree: true }).length, inner: !!bn.querySelector('.ssw') } : null,
         bg: getComputedStyle(document.body).backgroundColor, font: getComputedStyle(document.body).fontFamily.slice(0, 40), hfont: getComputedStyle(document.querySelector('.brand h1')).fontFamily.slice(0, 30),
         fontLoaded: document.fonts.check('700 16px "Kaisei Opti"'), themeCss: !!document.querySelector('#ksTheme') && document.querySelector('#ksTheme').textContent.length, scrollW: document.documentElement.scrollWidth };
+      res.sb.sunset = await sbar();
       await mark('ks-judge');
       var F = window.TengelFx;
       F.show({ r: 8, n: 14, rows: [{ t: '馬単', state: '的中', hits: [[6, 2]], n: 9 }, { t: '単勝', state: '的中', hits: [[6]], n: 3 }], ranks: { 6: 1, 2: 2 }, force: 'hit' }); await sleep(600);
@@ -355,9 +363,15 @@
         res.conf.closed = !card.querySelector('.ksconf');
         res.conf.pvClosed = !card.querySelector('.kspv');
       } else { res.conf = null; await mark('ks-conf'); }
+      // 第4.224版：明るい 上の 帯（牧場：うすい 緑・字は 濃い 緑）→ 時計・電池の 帯も うすい 緑で 黒い 字
+      await K.apply('ranch'); await sleep(900);
+      document.querySelector('.tabbar [data-tab=judge]').click(); await sleep(400); window.scrollTo(0, 0);
+      res.sb.ranch = await sbar();
+      await mark('ks-sb-light');
       await K.apply('tengel'); await sleep(900);
       document.querySelector('.tabbar [data-tab=judge]').click(); await sleep(400);
       res.tengel = { ks: document.documentElement.dataset.ks, bg: getComputedStyle(document.body).backgroundColor, anims: (document.querySelector('#ksBnr') || { getAnimations: function () { return []; } }).getAnimations({ subtree: true }).length, scrollW: document.documentElement.scrollWidth };
+      res.sb.tengel = await sbar();
       await mark('ks-tengel');
       // 第4.219版：上の絵は 見えて いる 間 だけ 動く（本物の WebKit で：一番 上＝動く → 下へ スクロール＝止まる → もどす＝動く → 画面 ぜんぶを おおう 窓＝止まる → タップで 閉じる＝すぐ 動く）
       var sb = document.querySelector('#ksBnr'), runN = function () { return sb ? sb.getAnimations({ subtree: true }).filter(function (a) { return a.playState === 'running'; }).length : -1; }, isP = function () { return !!(sb && sb.classList.contains('pause')); };
@@ -394,6 +408,7 @@
       }
       await K.apply('default'); await sleep(400);
       res.back = { ks: document.documentElement.dataset.ks || null, bnrHidden: (document.querySelector('#ksBnr') || {}).hidden };
+      res.sb.back = await sbar();
       return res;
     });
     await sleep(2800);
