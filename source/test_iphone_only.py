@@ -452,10 +452,10 @@ if r.returncode == 0:
           and len(ksd['themes']) == 30 and not any(t['id'] in GONE for t in ksd['themes']) and len(ksd['paid']) == 16 and not (set(ksd['paid']) & set(GONE))
           and ksd['pack']['ids'] == ksd['pack']['order'] == ['pirate', 'course', 'space', 'paddock', 'deepsea', 'dino', 'kirie', 'ukiyoe', 'steam', 'future'] and ksd['pack']['every'] == 5
           and "var WALLPACK = { product: 'jp.tengel.app.wallpack1', every: 5, n: 10 };" in _pjs and 'var WALL_TOTAL = 29;' in _pjs and ksd['band'] == {'silver': 5, 'golden': 10, 'tengel': 15}
-          and sorted(t['price'] for t in ksd['themes'] if t.get('price')) == [4500] * 6 + [5500] * 3 + [6500] * 4 + [9500] * 3
+          and sorted(t['price'] for t in ksd['themes'] if t.get('price')) == [8500] * 6 + [9500] * 3 + [10500] * 4 + [13500] * 3      # 第4.230版：＋2,000P を 2回
           and not any(('ks_' + b + '.webp') in res or ('ks_' + b + '.svg') in res for b in gone_blobs - keep_blobs)
           and not any(f in res for f in ('KaiseiDecol-700.woff2', 'YujiSyuku-400.woff2', 'YuseiMagic-400.woff2', 'ReggaeOne-400.woff2', 'Murecho-800.woff2', 'ZenOldMincho-900.woff2')),
-          f'第4.147版・第4.160版：外した 壁紙 11枚（{"・".join(GONE)}）は アプリに 入って いない（ks_<名前>.json・テーマの 変数・一覧・その 壁紙 だけの 絵と 字）・のこりは 30テーマ（ポイント 16枚＝2,000P×6・3,000P×3・4,000P×4・7,000P×3／壁紙パック 10枚／帯 5・10・15枚）')
+          f'第4.147版・第4.160版：外した 壁紙 11枚（{"・".join(GONE)}）は アプリに 入って いない（ks_<名前>.json・テーマの 変数・一覧・その 壁紙 だけの 絵と 字）・のこりは 30テーマ（ポイント 16枚＝8,500P×6・9,500P×3・10,500P×4・13,500P×3：第4.230版／壁紙パック 10枚／帯 5・10・15枚）')
     rsvg = open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_banner_ranch.svg'), encoding='utf8').read(); gsvg = open(os.path.join(out, 'Tengel.swiftpm', 'Resources', 'ks_banner_gold.svg'), encoding='utf8').read()
     check('*{animation:none!important}</style>' in rsvg and '*{animation:none!important}</style>' in gsvg and '.kslive{' in html and '.kslv{' in html and 'rescope' in html and 'rbwSvg' in html and 'mask-type:alpha' in html,
           '第4.89版：選ぶ画面の 牧場・ぷりけつの 小さな絵は 止めた SVG・選んだ タイルだけ 動く 壁紙（.kslive）・形の ある PUSH の 虹は SVG の 中（rbwSvg・mask）')

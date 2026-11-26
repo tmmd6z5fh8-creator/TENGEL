@@ -15,7 +15,7 @@ READ = 800      # 1レースの 読み込み（points.js の COST.read・COST.w5
 USE = [('レースの判定（画像の読み取りから記録まで）', '1レース800P'), ('単勝5連勝', '1レースごとに800P'),
        ('Pカスタム：記録できる券種を増やす', '1つ500P'), ('自分だけのマザーデータを作る', '1つ23,000P'),
        ('おもちゃの解放（お世話チャレンジ・TENGERカードバトル）', '1つ3,000P'),
-       ('着せ替え（壁紙）の解放', '1枚6,500〜11,500P'), ('トレーニングセンターのお世話トークン', '1個100P'),
+       ('着せ替え（壁紙）の解放', '1枚8,500〜13,500P'), ('トレーニングセンターのお世話トークン', '1個100P'),
        ('思い出フィギュア', '1体22,000P（幻の馬＆神様馬は36,000P）')]      # 第4.212版：アプリの 中の 値段と 同じ（points.js の COST・TOKEN_PACKS・kisekae/build_kisekae.py の PRICE・fig_app.js の PRICE）
 PACKS = [  # 製品ID（前の まま：App Store Connect の ID は かえられない）・参照名・表示名・説明・ポイント・税込（第4.230版：400・800・1,600・3,200P）
     ('jp.tengel.app.points500', 'ポイント400', '400ポイント', 'レースの判定などに使える400P', 400, 180),
@@ -108,7 +108,7 @@ REVIEW_NOTES = '''This app analyzes horse-racing odds that the user enters (or r
 No real-money gambling: no betting, no ticket purchase, no link to any betting service, no cash-out. Users only record their own results and spending. For adults (18+); the first-launch notice (confirmed with 「はじめる」) says betting is 20+ in Japan, play responsibly, nothing is sold, no profit is promised.
 
 Points (in-app currency, never convertible to money):
-- 5,000 on first launch. Reading a race (5-race picks: per race): 800. Unlocks: record bet types 500, data slots 23,000, themes 6,500-11,500, the two mini games 3,000 each, care tokens 100 each, 3D memory figures 22,000/36,000. The built-in reference data shows percentages only.
+- 5,000 on first launch. Reading a race (5-race picks: per race): 800. Unlocks: record bet types 500, data slots 23,000, themes 8,500-13,500, the two mini games 3,000 each, care tokens 100 each, 3D memory figures 22,000/36,000. The built-in reference data shows percentages only.
 - Sold as consumable IAPs and monthly auto-renewable subscriptions (Settings > ポイント). Purchased points never expire; subscription points last 30 days. No free trial. Missions, a daily login bonus and Card Battle win streaks give points.
 - Points, unlocks and records stay on the device (the app warns that deleting it erases them). Keychain markers, the system uptime and the Date header of an App Store lookup stop gifts and bonuses being re-granted.
 - Non-consumables: 壁紙パック (1,500 yen, 10 themes), 結果ボードカスタム (1,500 yen, 12 boards, one per 6 races read after buying), お得パック (2,200 yen, both; offered only while the user owns neither). 「購入を復元」 restores them.

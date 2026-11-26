@@ -1194,30 +1194,30 @@ try:
               f'9.1 の名前と並び（ポイント壁紙カスタム 17：いつもの・牧場 … 星座〔第4.160版：ネオンを 外した・第4.221版：組を 1つに〕・帯3）：{names[:7]}…')
         locks = ks.locator('.kst .kslock').all_inner_texts()
         check(locks.count('🔒 1,000P') == 0 and locks.count('🔒 2,000P') == 0 and locks.count('🔒 3,000P') == 0 and locks.count('🔒 4,000P') == 0 and locks.count('🔒 7,000P') == 0
-              and locks.count('🔒 6,500P') == 6 and locks.count('🔒 7,500P') == 3 and locks.count('🔒 8,500P') == 4 and locks.count('🔒 11,500P') == 3 and locks.count('🔒 4,500P') == 0 and locks.count('🔒 5,500P') == 0 and locks.count('🔒 9,500P') == 0 and locks.count('🔒 壁紙を5枚あつめると') == 1 and locks.count('🔒 壁紙を10枚あつめると') == 1 and locks.count('🔒 壁紙を15枚あつめると') == 1 and locks.count('🔒 壁紙を16枚あつめると') == 0 and locks.count('🔒 壁紙パック') == NPK
+              and locks.count('🔒 8,500P') == 6 and locks.count('🔒 9,500P') == 3 and locks.count('🔒 10,500P') == 4 and locks.count('🔒 13,500P') == 3 and locks.count('🔒 6,500P') == 0 and locks.count('🔒 7,500P') == 0 and locks.count('🔒 11,500P') == 0 and locks.count('🔒 4,500P') == 0 and locks.count('🔒 5,500P') == 0 and locks.count('🔒 9,500P') == 0 and locks.count('🔒 壁紙を5枚あつめると') == 1 and locks.count('🔒 壁紙を10枚あつめると') == 1 and locks.count('🔒 壁紙を15枚あつめると') == 1 and locks.count('🔒 壁紙を16枚あつめると') == 0 and locks.count('🔒 壁紙パック') == NPK
               and '0/26枚（ポイント・壁紙パック。5・10・15枚で 帯の壁紙がミッションでもらえるよ）' in ks.inner_text(),
-              '値段（9.1・第4.230版：ぜんぶ ＋2,000P〈まさちゃん 11/27 00:18「壁紙もポイントで購入するタイプはそれぞれ2000P増やして！」〉）：6,500P×6・7,500P×3・8,500P×4・11,500P×3（前の 4,500・5,500・9,500P の 札は ない）・帯は 5・10・15枚・壁紙パック（買い切り）・解放した壁紙 0/26枚')
+              '値段（9.1・第4.230版：ぜんぶ ＋2,000P〈まさちゃん 11/27 00:18「壁紙もポイントで購入するタイプはそれぞれ2000P増やして！」〉・さらに ＋2,000P〈02:23「更に2000P高くして！」〉）：8,500P×6・9,500P×3・10,500P×4・13,500P×3（前の 4,500・5,500・9,500P の 札は ない）・帯は 5・10・15枚・壁紙パック（買い切り）・解放した壁紙 0/26枚')
         check(ks.locator('.kst[data-ks=sunset] .ksth').get_attribute('src') == 'ks_5f93d2cbb5295e4148858bf5daf03c5a.webp' and ks.locator('.kst[data-ks=ranch] .ksth').get_attribute('src') == 'ks_banner_ranch.svg' and ks.locator('.kst[data-ks=default] .ksth').get_attribute('src') == 'ks_1a751ea1ce289886fc010bcfa4df9bf7.webp',
               '小さな絵：新しいテーマは止まった上の絵（WebP）・定番は SVG・いつものは見本と同じ')
-        # 招き馬（11,500P・いま 11,500P）→ タップした タイルの 中（カギの 下）に 確認が出る（第4.64版：前は 一覧の 上の 帯）→ やめる。
-        #   第4.212版：壁紙は ぜんぶ ＋2,500P → 第4.230版：さらに ＋2,000P（招き馬 9,500 → 11,500P・夕焼け 4,500 → 6,500P）。いま 9,900P（第4.230版：ポイントの 数）なので、先に 足りない ときの 確認（「Pが足りないよ」「ポイントを買う」）を 見てから、
-        #   1,600P を 足して（トレーニングセンターの 当たりと 同じ 口）ちょうど 11,500P に する（このあとの 合計は 前の 版と 同じ 数に なる：夕焼けの あと 5,000P）
+        # 招き馬（13,500P・いま 13,500P）→ タップした タイルの 中（カギの 下）に 確認が出る（第4.64版：前は 一覧の 上の 帯）→ やめる。
+        #   第4.212版：壁紙は ぜんぶ ＋2,500P → 第4.230版：さらに ＋2,000P を 2回（招き馬 9,500 → 13,500P・夕焼け 4,500 → 8,500P）。いま 9,900P（第4.230版：ポイントの 数）なので、先に 足りない ときの 確認（「Pが足りないよ」「ポイントを買う」）を 見てから、
+        #   3,600P を 足して（トレーニングセンターの 当たりと 同じ 口）ちょうど 13,500P に する（このあとの 合計は 前の 版と 同じ 数に なる：夕焼けの あと 5,000P）
         ks.locator('.kst[data-ks=lucky]').click(); pg.wait_for_timeout(300)
         cf0 = ks.locator('.ksconf')
-        check(cf0.count() == 1 and '11,500P' in cf0.inner_text() and '今 9,900P' in cf0.inner_text() and cf0.locator('[data-ksact=unlock]').count() == 0 and 'ポイントを買う' in cf0.inner_text() and pg.evaluate('TengelWallet.total()') == 9900,
-              f'足りない とき（招き馬 11,500P・今 9,900P）：「解放する」は 出ない・「ポイントを買う」（{cf0.inner_text()[:60]!r}）')
+        check(cf0.count() == 1 and '13,500P' in cf0.inner_text() and '今 9,900P' in cf0.inner_text() and cf0.locator('[data-ksact=unlock]').count() == 0 and 'ポイントを買う' in cf0.inner_text() and pg.evaluate('TengelWallet.total()') == 9900,
+              f'足りない とき（招き馬 13,500P・今 9,900P）：「解放する」は 出ない・「ポイントを買う」（{cf0.inner_text()[:60]!r}）')
         ks.locator('.kst[data-ks=lucky]').click(position={'x': 10, 'y': 10}); pg.wait_for_timeout(200)
-        check(pg.evaluate("TengelWallet.grant('tc-test-212', 1600, 'テストの 当たり')") is True and pg.evaluate('TengelWallet.total()') == 11500 and pg.evaluate('TengelWallet.balance().free') == 2300, 'テスト用に 1,600P を 足す → 11,500P（獲得ポイント 2,300P）')
+        check(pg.evaluate("TengelWallet.grant('tc-test-212', 3600, 'テストの 当たり')") is True and pg.evaluate('TengelWallet.total()') == 13500 and pg.evaluate('TengelWallet.balance().free') == 4300, 'テスト用に 3,600P を 足す → 13,500P（獲得ポイント 4,300P）')
         pg.wait_for_timeout(200)
         check(ks.locator('.kst').first.evaluate("e => e.tagName + '/' + e.getAttribute('role') + '/' + e.tabIndex") == 'DIV/button/0', '壁紙の タイルは <div role=button tabindex=0>（中に 本物の ボタンを 置くため）')
         ks.locator('.kst[data-ks=lucky]').click(); pg.wait_for_timeout(300)
         cf = ks.locator('.ksconf')
         check(cf.count() == 1 and ks.locator('.kst[data-ks=lucky].cf .ksconf').count() == 1 and ks.locator('.kst[data-ks=lucky]').get_attribute('aria-expanded') == 'true'
-              and '11,500Pを使って解放する？' in cf.inner_text() and '今 11,500P' in cf.inner_text() and cf.locator('[data-ksact=unlock]').count() == 1 and cf.locator('[data-ksact=cancel]').count() == 1,
+              and '13,500Pを使って解放する？' in cf.inner_text() and '今 13,500P' in cf.inner_text() and cf.locator('[data-ksact=unlock]').count() == 1 and cf.locator('[data-ksact=cancel]').count() == 1,
               f'カギの壁紙をタップ → その タイルの 中に 「○○Pを使って解放する？ 今 △△P」「解放する」「やめる」（{cf.inner_text()[:50]!r}）')
         cfb = ks.locator('.kst[data-ks=lucky]').bounding_box(); unb = cf.locator('[data-ksact=unlock]').bounding_box(); lkb = ks.locator('.kst[data-ks=lucky] .kslock').bounding_box()
         check(cfb and unb and lkb and unb['y'] > lkb['y'] + lkb['height'] - 1 and unb['x'] >= cfb['x'] and unb['x'] + unb['width'] <= cfb['x'] + cfb['width'] + 1 and unb['y'] + unb['height'] <= cfb['y'] + cfb['height'] + 1,
-              '「解放する」は カギ（🔒 11,500P）の 下・タイルの 中')
+              '「解放する」は カギ（🔒 13,500P）の 下・タイルの 中')
         check(ks.locator('.ksbody > .ksconf').count() == 0 and ks.locator('.ksbody > div.ksconf').count() == 0, '一覧の 上の 確認の 帯は ない')
         # 第4.89版：選ぶ画面の 壁紙は ふだん 止まった 絵。タップして 選んだ タイル（解放前＝確認を 開いた タイル）だけ、判定タブと 同じ 動く 壁紙を 小さく 重ねて 動かす
         pg.wait_for_timeout(900)
@@ -1260,7 +1260,7 @@ try:
         check(not pv0['p'] and pv0['n'] == 0 and pv0['pv'] == '' and pv0['css'] == '', f'第4.218版：もう一度 タップ → 見本も 閉じる（見本の CSS も 消える）（{pv0}）')
         ks.locator('.kst[data-ks=lucky]').click(); pg.wait_for_timeout(300)
         ks.locator('.ksconf [data-ksact=cancel]').click(); pg.wait_for_timeout(200)
-        check(ks.locator('.ksconf').count() == 0 and pg.evaluate('TengelWallet.total()') == 11500 and pg.evaluate("TengelKisekae.current()") == 'default', 'やめると何も変わらない')
+        check(ks.locator('.ksconf').count() == 0 and pg.evaluate('TengelWallet.total()') == 13500 and pg.evaluate("TengelKisekae.current()") == 'default', 'やめると何も変わらない')
         check(ks.locator('.kspv').count() == 0 and pg.evaluate("TengelKisekae.pv()") == '', '第4.218版：「やめる」で 見本も 閉じる')
         # 第4.218版：行の まん中の タイル（定番の 1行目：いつもの・牧場・かわいいお馬さん の 牧場）でも、見本は その 行の 下（行は 欠けない：grid の dense）
         ks.locator('.kst[data-ks=ranch]').click(); pg.wait_for_timeout(1400)
@@ -1288,12 +1288,12 @@ try:
         pg.click('.tabbar button[data-tab=set]'); pg.wait_for_timeout(400)
         check(pvt == [0, '', 0] and ks.locator('.kspv').count() == 0 and ks.locator('.ksconf').count() == 1, f'第4.218版：ほかの タブへ 行くと 見本は 閉じる（もどっても 閉じた まま・解放の 確認は 前と 同じく のこる）（{pvt}）')
         ks.locator('.ksconf [data-ksact=cancel]').click(); pg.wait_for_timeout(200)
-        # 夕焼け（6,500P：第4.230版）を解放 → 着せ替わる（第4.147版：桜を 外した ので、のこった「季節・行事」の 夕焼けで）
+        # 夕焼け（8,500P：第4.230版）を解放 → 着せ替わる（第4.147版：桜を 外した ので、のこった「季節・行事」の 夕焼けで）
         ks.locator('.kst[data-ks=sunset]').click(); pg.wait_for_timeout(300)
         ks.locator('.ksconf [data-ksact=unlock]').click(); pg.wait_for_timeout(1200)
         check(pg.evaluate('TengelWallet.total()') == 5000 and pg.evaluate("TengelWallet.unlocked('theme:sunset')") and pg.evaluate("document.documentElement.dataset.ks") == 'sunset' and pg.evaluate("TengelKisekae.current()") == 'sunset' and pg.evaluate("TengelKisekae.loaded()")
               and ks.locator('.kst.on').get_attribute('data-ks') == 'sunset' and ks.locator('.kst[data-ks=sunset] .kslock').count() == 0 and ks.locator('.kst[data-ks=sunset] .ksbadge').inner_text() == '使用中' and '壁紙：1/26枚' in ks.inner_text() and pg.evaluate("localStorage.getItem('tengel.kisekae')") == 'sunset',
-              f'解放する → 6,500P 使って（11,500 → 5,000P）夕焼けに着せ替わる（台帳 unlock-theme:sunset・使用中・1/26枚（ポイントの 16枚＋壁紙パックの 10枚）・端末に覚える）')
+              f'解放する → 8,500P 使って（13,500 → 5,000P）夕焼けに着せ替わる（台帳 unlock-theme:sunset・使用中・1/26枚（ポイントの 16枚＋壁紙パックの 10枚）・端末に覚える）')
         check(pg.evaluate("getComputedStyle(document.body).backgroundColor") == 'rgb(255, 243, 234)' and 'Zen Kaku Gothic New' in pg.evaluate("getComputedStyle(document.body).fontFamily") and 'Kaisei Opti' in pg.evaluate("getComputedStyle(document.querySelector('.brand h1')).fontFamily")
               and pg.evaluate("getComputedStyle(document.querySelector('.tabbar button[aria-selected=true]')).backgroundColor") == 'rgba(255, 154, 92, 0.16)',
               '夕焼けの色と字：背景・本文（Zen Kaku Gothic New）・見出し（Kaisei Opti）・タブ')
@@ -1309,7 +1309,7 @@ try:
         ks.locator('.kst[data-ks=silver]').click(); pg.wait_for_timeout(300)
         check('壁紙を5枚あつめて、ミッションで受け取ると使えるよ（今 1枚）' in pg.locator('#toast').inner_text() and pg.evaluate("TengelKisekae.current()") == 'sunset', '帯の壁紙をタップ → ミッションの案内（5枚・今 1枚）')
         pg.locator('#setPoints [data-pt=show][data-v=hist]').click(); pg.wait_for_timeout(300)
-        check('解放：壁紙「夕焼け」' in pg.locator('#setPoints .pthist').inner_text() and '-6,500P' in pg.locator('#setPoints .pthist').inner_text() and '-4,500P' not in pg.locator('#setPoints .pthist').inner_text(), 'ポイントの履歴に「解放：壁紙「夕焼け」」（−6,500P）')
+        check('解放：壁紙「夕焼け」' in pg.locator('#setPoints .pthist').inner_text() and '-8,500P' in pg.locator('#setPoints .pthist').inner_text() and '-6,500P' not in pg.locator('#setPoints .pthist').inner_text() and '-4,500P' not in pg.locator('#setPoints .pthist').inner_text(), 'ポイントの履歴に「解放：壁紙「夕焼け」」（−8,500P）')
         pg.locator('#setPoints [data-pt=show][data-v=hist]').click(); pg.wait_for_timeout(200)
         pg.screenshot(path=os.path.join(W, 't4', 'native_kisekae_set.png'), full_page=False)
         # 判定タブ：上の帯 → 夕焼けの上の絵（動く壁紙・390×160）→ レース情報
