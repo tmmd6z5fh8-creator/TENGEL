@@ -133,6 +133,9 @@ FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel
 # 第4.109版：BIZ UDPGothic と Dela Gothic One は 字は そのままで WOFF2 に（ios/fonts/make_woff2.py・約11.8MB → 約5.6MB・しぼらない）。
 #   IBM Plex Mono は 予約名「Plex」が ある ので もとの TTF の まま（OFL 1.1：形式を かえるのは 改変）
 APP_FONT_FILES = ['BIZUDPGothic-Regular.woff2', 'BIZUDPGothic-Bold.woff2', 'DelaGothicOne-Regular.woff2', 'IBMPlexMono-Medium.ttf', 'IBMPlexMono-SemiBold.ttf']
+# 第4.225版：App Store版（アプリの 中の 画面・説明書）だけ：ダブルタップで 拡大しない（すべての 要素：スクロールする 箱の 中でも）・字を 選ぶ／コピーの 吹き出しを 出さない（入力欄は 選べる）
+APP_TOUCH = ('*{touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}'
+             'input,textarea,select,pre,pre *,[contenteditable],[contenteditable] *{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}')      # pre：判定の 全文・ライセンスの 文（長押しで コピーできる まま）
 APP_FONTS = ('<style>'
              "@font-face{font-family:'BIZ UDPGothic';src:url('fonts/BIZUDPGothic-Regular.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}"
              "@font-face{font-family:'BIZ UDPGothic';src:url('fonts/BIZUDPGothic-Bold.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap}"
@@ -359,7 +362,7 @@ def build(mode, out, app_ver='2026.10.12-4', mother=None):
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>テンゲル 説明書</title>
 {APP_FONTS}
-<style>:root{{--sat:max(env(safe-area-inset-top,0px),var(--top-inset,0px));--sab:max(env(safe-area-inset-bottom,0px),var(--bottom-inset,0px));padding-top:var(--sat);padding-bottom:var(--sab)}}body{{margin:0}}[hidden]{{display:none!important}}
+<style>:root{{--sat:max(env(safe-area-inset-top,0px),var(--top-inset,0px));--sab:max(env(safe-area-inset-bottom,0px),var(--bottom-inset,0px));padding-top:var(--sat);padding-bottom:var(--sab)}}body{{margin:0}}[hidden]{{display:none!important}}{APP_TOUCH}
 {css}
 </style></head><body>
 {body}</body></html>

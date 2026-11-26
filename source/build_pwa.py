@@ -65,12 +65,15 @@ if os.path.exists(os.path.join(CM_SRC, 'tengel3_cm.mp4')):
         CM['srcApp'] = 'cm/tengel3_cm_app.mp4?v=' + _h('tengel3_cm_app.mp4')
 # App Store版だけ：アプリを開いた時の画面（19章）の入れ物を最初から出しておく（画面が一瞬見えないように。中身は points_ui.js）・
 # 2本指の拡大はOK・ダブルタップでは拡大しない（touch-action: manipulation）
+# 第4.225版（まさちゃん 2026/11/26 13:57「②ダブルタップすると拡大される時がある。」「③タップが重なると、web版のようにコピーみたいな字が出てくることがある。」）：
+#   前は body だけ（スクロールする 箱の 中では 効かない：WebKit は スクロールする 箱で 決まりを 切る）→ すべての 要素に（_bm.APP_TOUCH）。
+#   字を 選ぶ・コピーの 吹き出しも 止める（入力欄は 今までどおり 選べる）。説明書（manual.html）も 同じ
 # 第4.139版（App Store版だけ）：ページの 中に 字と して 入った HTML から スクリプトを 動かせない ように する 守り（Content-Security-Policy）。
 #   script-src-attr 'none'＝タグに 書いた onclick・onerror などは 動かさない（アプリは addEventListener だけを 使う：test_native が 確かめる）・
 #   base-uri 'none'＝<base> で 読み込み先を かえさせない・object-src 'none'＝<object>・<embed> を 使わせない。
 #   ふつうの <script>（このページの 中の もの・tc_bundle.js・fig_bundle.js）は 今までどおり 動く
 APP_CSP = '<meta http-equiv="Content-Security-Policy" content="script-src-attr \'none\'; base-uri \'none\'; object-src \'none\'">\n'
-APP_HEAD = (APP_CSP + '<style>body{touch-action:manipulation}#gate{position:fixed;inset:0;z-index:70;background:#16203D;color:#F3F0E6;display:flex;align-items:center;justify-content:center;font-family:"Dela Gothic One","Hiragino Sans",sans-serif;font-size:40px;letter-spacing:.06em}#gate em{font-style:normal;color:#E2A23B;font-family:"Hiragino Sans",sans-serif}</style>'
+APP_HEAD = (APP_CSP + '<style>' + _bm.APP_TOUCH + '#gate{position:fixed;inset:0;z-index:70;background:#16203D;color:#F3F0E6;display:flex;align-items:center;justify-content:center;font-family:"Dela Gothic One","Hiragino Sans",sans-serif;font-size:40px;letter-spacing:.06em}#gate em{font-style:normal;color:#E2A23B;font-family:"Hiragino Sans",sans-serif}</style>'
             if TARGET == 'app' else '')
 # App Store版だけ：買い目の組と判定（reserve.js）・買い目カスタムの%（custom_rate.js）。画面（src.html）より先に読む
 APP_LIBS = ('\n<script>\n' + open('reserve.js', encoding='utf8').read() + '\n</script>\n<script>\n' + open('custom_rate.js', encoding='utf8').read() + '\n</script>') if TARGET == 'app' else ''

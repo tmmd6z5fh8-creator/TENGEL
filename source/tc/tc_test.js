@@ -13,9 +13,10 @@
 //     ・12:51「ポイントの特化ゾーンを作る」：② に「🌈 ポイント特化ゾーン」（上乗せの 回数を えらぶ：0・1・3・6・11・12回〈MAX〉・くじどおり）。いまの 馬の まま 出る
 //   TCTest.open(el, api)・TCTest.close()・TCTest.isOpen()　api＝tc_app.js の TEST
 const TCTest = (() => {
+  // 第4.225版：窓の 中も ダブルタップで 拡大しない（touch-action:auto → manipulation：スクロールと 2本指の 拡大は できる）
   const CSS = `
 #tcOv .tctt{flex:none;height:34px;padding:0 10px;border-radius:17px;border:2px dashed #b98a4a;background:#fff4d6;color:#7a4520;font:700 13px/1 "BIZ UDPGothic","Hiragino Sans",sans-serif;white-space:nowrap}
-#tct{position:absolute;inset:0;z-index:25;display:none;align-items:flex-end;justify-content:center;pointer-events:auto;touch-action:auto;font-family:"BIZ UDPGothic",BIZ,"Hiragino Sans","Noto Sans CJK JP",sans-serif}
+#tct{position:absolute;inset:0;z-index:25;display:none;align-items:flex-end;justify-content:center;pointer-events:auto;touch-action:manipulation;font-family:"BIZ UDPGothic",BIZ,"Hiragino Sans","Noto Sans CJK JP",sans-serif}
 #tct .ttk{position:absolute;inset:0;background:rgba(30,18,6,.5)}
 #tct .tth{position:relative;width:calc(100% - 16px);height:90%;margin-bottom:8px;background:#fff8ec;border-radius:18px 18px 14px 14px;box-shadow:0 6px 18px rgba(0,0,0,.35);overflow:hidden;display:flex;flex-direction:column}
 #tct .ttd{flex:none;display:flex;align-items:center;justify-content:space-between;padding:10px 12px 8px;background:linear-gradient(#f6e3bf,#efd6a8);border-bottom:2px dashed #b98a4a}

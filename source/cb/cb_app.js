@@ -569,6 +569,16 @@ const CBApp = (() => {
 #cbOv .cbhand .cbc.off{filter:brightness(.55) drop-shadow(0 2px 3px rgba(0,0,0,.5))}
 #cbOv .cbhand .cbc.new{animation:cbin .4s ease-out both}
 @keyframes cbin{from{transform:translateY(-30px) scale(.8);opacity:0}to{transform:none;opacity:1}}
+#cbOv .cbc.tg::after,#cbOv .cbc.src::after,#cbOv .cbc.fl::after{content:"";position:absolute;inset:-2px;border-radius:inherit;pointer-events:none}
+#cbOv .cbc.tg::after{box-shadow:0 0 0 2px rgba(255,238,170,.95),0 0 14px 4px rgba(255,198,64,.85);animation:cbtg .85s ease-in-out infinite alternate}
+#cbOv .cbc.src::after{box-shadow:0 0 0 2px rgba(255,224,140,.9),0 0 10px 2px rgba(255,186,60,.5)}
+#cbOv .cbc.fl::after{box-shadow:0 0 0 3px rgba(255,248,210,1),0 0 22px 8px rgba(255,208,90,.95);animation:cbfl 1.6s ease-out var(--fld,0s) both}
+#cbOv .cbhand .cbc.tg{transform:translateY(-5px)}
+@keyframes cbtg{from{opacity:.45}to{opacity:1}}
+@keyframes cbfl{0%{opacity:0}14%{opacity:1}100%{opacity:0}}
+#cbOv .cbuse.on .cd{animation:cbusg .9s ease-in-out infinite alternate}
+@keyframes cbusg{from{filter:drop-shadow(0 4px 8px rgba(0,0,0,.6)) drop-shadow(0 0 2px rgba(255,222,120,.55))}to{filter:drop-shadow(0 4px 8px rgba(0,0,0,.6)) drop-shadow(0 0 11px rgba(255,212,84,1))}}
+@media (prefers-reduced-motion:reduce){#cbOv .cbc.tg::after,#cbOv .cbuse.on .cd{animation:none}}
 #cbOv .cbact{flex:none;height:48px;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:nowrap;padding:4px 10px 6px;box-sizing:border-box}
 #cbOv .cbact .cbb{flex:0 1 auto;white-space:nowrap}
 
@@ -661,14 +671,101 @@ const CBApp = (() => {
 #cbOv .cbhelp .hd{flex:none;height:48px;display:flex;align-items:center;gap:8px;padding:0 12px}
 #cbOv .cbhelp .hd b{flex:1;text-align:center;font-size:17px;color:#ffe9a8;margin-right:64px}
 #cbOv .cbhelp .bd{flex:1 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:4px 18px 26px;font-size:13.5px;line-height:1.75;color:#f0dfb6}
-#cbOv .cbhelp h4{margin:16px 0 6px;font-size:15px;color:#ffe2a0;border-left:4px solid #e2a83e;padding-left:8px}
+#cbOv .cbhelp h4{display:flex;align-items:center;gap:8px;margin:24px 0 8px;font-size:16px;color:#ffe2a0;scroll-margin-top:6px}
+#cbOv .cbhelp h4::before{content:attr(data-n);flex:none;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#ffe9a8,#e2a83e);color:#3a2206;font-size:14px;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.5)}
+#cbOv .cbhelp .hhero{margin:6px 0 4px;padding:12px 8px 10px;border-radius:16px;background:radial-gradient(120% 90% at 50% 0%,rgba(255,214,120,.16),rgba(255,214,120,.03));border:1px solid rgba(255,226,160,.3)}
+#cbOv .cbhelp .hlead{margin:0 0 8px;text-align:center;font-weight:700;color:#ffe9a8;font-size:13.5px;line-height:1.5}
+#cbOv .cbhelp .hpts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+#cbOv .cbhelp .hpt{display:flex;flex-direction:column;align-items:center;text-align:center;gap:1px;min-width:0}
+#cbOv .cbhelp .hpt b{font-size:14.5px;color:#ffe07a;line-height:1.3}
+#cbOv .cbhelp .hpt span{font-size:10.5px;line-height:1.35;color:#e8d3a4}
+#cbOv .cbhelp .hpic{height:56px;width:100%;display:flex;align-items:center;justify-content:center}
+#cbOv .cbhelp .hturns{gap:3px;flex-wrap:wrap;align-content:center}
+#cbOv .cbhelp .hturns i{flex:none;font-style:normal;width:19px;height:19px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;color:#3a2206;background:linear-gradient(180deg,#ffe9a8,#e2a83e);box-shadow:0 1px 3px rgba(0,0,0,.5)}
+#cbOv .cbhelp .hfan img{flex:none;width:24px;height:36px;margin-left:-13px;border-radius:2px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
+#cbOv .cbhelp .hfan img:first-child{margin-left:0}
+#cbOv .cbhelp .hvs img{flex:none;width:32px;height:48px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
+#cbOv .cbhelp .hvs em{font-style:normal;font-weight:700;color:#ff9b6a;margin:0 3px;font-size:11.5px}
+#cbOv .cbhelp .htoc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:12px 0 2px}
+#cbOv .cbhelp .htoc button{min-height:38px;border-radius:12px;border:1px solid rgba(255,226,160,.4);background:rgba(255,236,190,.08);color:#ffe9a8;font:inherit;font-size:13px;font-weight:700;text-align:left;padding:4px 10px}
+#cbOv .cbhelp .hcd{position:relative;flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:0;margin:0;border:0;background:none;color:inherit;font:inherit}
+#cbOv .cbhelp .hcd img{display:block;width:100%;height:auto;aspect-ratio:2/3;filter:drop-shadow(0 2px 4px rgba(0,0,0,.6))}
+#cbOv .cbhelp .hcd small{width:100%;text-align:center;font-size:10.5px;line-height:1.25;color:#ffe9a8}
+#cbOv .cbhelp .hrank{margin:6px 0 4px;padding:10px 4px;border-radius:14px;background:rgba(255,236,190,.05);border:1px solid rgba(255,226,160,.2)}
+#cbOv .cbhelp .hrk{display:flex;align-items:flex-start;justify-content:center;gap:2px;margin:4px 0}
+#cbOv .cbhelp .hrk .hcd{width:min(17vw,64px)}
+#cbOv .cbhelp .hrk0{position:relative;padding-top:20px}
+#cbOv .cbhelp .hrk0 .hcd{width:min(22vw,84px)}
+#cbOv .cbhelp .hrk>i{flex:none;font-style:normal;color:#e2a83e;font-weight:700;font-size:14px;align-self:center;margin-top:-14px}
+#cbOv .cbhelp .hrk>i.eq{color:#ffe07a;font-size:18px}
+#cbOv .cbhelp .hcrown{position:absolute;left:50%;top:0;transform:translateX(-50%);padding:0 10px;border-radius:10px;background:linear-gradient(180deg,#ffe9a8,#e2a83e);color:#3a2206;font-size:11.5px;font-weight:700;line-height:18px;white-space:nowrap}
+#cbOv .cbhelp .hdir{display:flex;align-items:center;gap:6px;margin:8px 10px 4px;font-size:11px;color:#d9c08c}
+#cbOv .cbhelp .hdir i{flex:1;height:2px;position:relative;background:linear-gradient(90deg,#ffe07a,rgba(255,224,122,.15))}
+#cbOv .cbhelp .hdir i::after{content:"";position:absolute;right:-2px;top:-4px;border:5px solid transparent;border-left:7px solid rgba(255,224,122,.45)}
+#cbOv .cbhelp .hnote{margin:6px 0}
+#cbOv .cbhelp .hsteps{display:flex;flex-direction:column;gap:8px;margin:6px 0}
+#cbOv .cbhelp .hst{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:rgba(255,236,190,.05);border:1px solid rgba(255,226,160,.18)}
+#cbOv .cbhelp .hst .hpic{flex:none;width:100px;height:54px}
+#cbOv .cbhelp .hst .hturns{gap:2px;flex-wrap:nowrap}
+#cbOv .cbhelp .hst .hturns i{width:17px;height:17px;font-size:10px}
+#cbOv .cbhelp .hst p{margin:0;flex:1;min-width:0;font-size:12.5px;line-height:1.6}
+#cbOv .cbhelp .hscore b{font-family:"Dela Gothic One","Hiragino Sans",sans-serif;font-weight:400;font-size:26px;color:#ffe07a}
+#cbOv .cbhelp .hscore i{font-style:normal;color:#d9c08c;margin:0 4px}
+#cbOv .cbhelp .hflow{list-style:none;margin:6px 0;padding:0;display:flex;flex-direction:column;gap:8px}
+#cbOv .cbhelp .hflow li{display:flex;gap:10px;align-items:flex-start;margin:0}
+#cbOv .cbhelp .hflow li>i{flex:none;font-style:normal;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#3a2410;border:1.5px solid #e2a83e;color:#ffe9a8;font-weight:700;font-size:13px;margin-top:2px}
+#cbOv .cbhelp .hflow li>div>b{display:block;color:#ffe9a8;font-size:14px}
+#cbOv .cbhelp .hflow span{display:block;font-size:12.5px;line-height:1.6}
+#cbOv .cbhelp .hflow span b{color:#ffe9a8}
+#cbOv .cbhelp .hsub{margin:4px 0 8px;font-size:12.5px;line-height:1.65}
+#cbOv .cbhelp .hglow{color:#ffe07a;text-shadow:0 0 8px rgba(255,200,70,.9)}
+#cbOv .cbhelp .hring{color:#ffe2a0;border:1px solid rgba(255,224,140,.9);border-radius:4px;padding:0 3px}
+#cbOv .cbhelp .hef{display:flex;gap:10px;align-items:flex-start;margin:8px 0;padding:10px;border-radius:14px;background:rgba(255,236,190,.06);border:1px solid rgba(255,226,160,.24)}
+#cbOv .cbhelp .hef>.hcd{width:72px}
+#cbOv .cbhelp .hefr{flex:1;min-width:0}
+#cbOv .cbhelp .hefr>b{display:block;color:#ffe9a8;font-size:14.5px;line-height:1.4}
+#cbOv .cbhelp .hwhen{display:inline-block;margin:4px 0 2px;padding:0 8px;border-radius:9px;background:#3a2410;border:1px solid #c9a35a;color:#ffd98a;font-size:11px;font-weight:700;line-height:18px}
+#cbOv .cbhelp .hneed{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:4px 0}
+#cbOv .cbhelp .hmany{display:flex}
+#cbOv .cbhelp .hmany img{flex:none;width:22px;height:33px;margin-left:-8px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
+#cbOv .cbhelp .hmany img:first-child{margin-left:0}
+#cbOv .cbhelp .hneed em{font-style:normal;font-size:11.5px;color:#e8d3a4}
+#cbOv .cbhelp .hefr p{margin:2px 0 0;font-size:12.5px;line-height:1.65}
+#cbOv .cbhelp .hefr small{color:#d9c08c;font-size:11px}
+#cbOv .cbhelp .hord{margin:10px 0;padding:10px 12px;border-radius:12px;border:1px dashed rgba(255,226,160,.45)}
+#cbOv .cbhelp .hord>b{color:#ffe9a8}
+#cbOv .cbhelp .hord ol{list-style:none;margin:4px 0 0;padding:0}
+#cbOv .cbhelp .hord li{display:flex;align-items:center;gap:8px;margin:3px 0;font-size:12.5px}
+#cbOv .cbhelp .hord li i{flex:none;font-style:normal;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#e2a83e;color:#3a2206;font-size:11px;font-weight:700}
+#cbOv .cbhelp .hwhere{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:6px 0}
+#cbOv .cbhelp .hwhere>div{padding:8px 10px;border-radius:12px;font-size:11.5px;line-height:1.55}
+#cbOv .cbhelp .hwhere>div>b{display:block;font-size:13.5px}
+#cbOv .cbhelp .hwhere span b{color:#fff3c4}
+#cbOv .cbhelp .hwhere .ok{background:rgba(120,200,140,.12);border:1px solid rgba(140,220,160,.55)}
+#cbOv .cbhelp .hwhere .ok>b{color:#b8f0c4}
+#cbOv .cbhelp .hwhere .no{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(255,120,100,.08);border:1px solid rgba(255,150,120,.4)}
+#cbOv .cbhelp .hwhere .no>b{display:inline;color:#ffc2a8}
+#cbOv .cbhelp .hcase{position:relative;width:100%;max-width:430px;margin:6px auto 10px;aspect-ratio:1100/185}
+#cbOv .cbhelp .hcase>img{position:absolute;inset:0;width:100%;height:100%;display:block;filter:drop-shadow(0 4px 8px rgba(0,0,0,.55))}
+#cbOv .cbhelp .hcase>span{position:absolute;display:flex;align-items:center;justify-content:center}
+#cbOv .cbhelp .hcase>span img{height:92%;width:auto;max-width:96%;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.65))}
+#cbOv .cbhelp .hgms{display:flex;flex-direction:column;gap:6px}
+#cbOv .cbhelp .hgm{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:12px;background:rgba(255,236,190,.05);border:1px solid rgba(255,226,160,.18)}
+#cbOv .cbhelp .hgm .gm{flex:none;width:40px;height:40px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+#cbOv .cbhelp .hgm>i{flex:none;font-style:normal;color:#c9a35a;font-size:11px}
+#cbOv .cbhelp .hgm .hcd{width:38px}
+#cbOv .cbhelp .hgm>div{min-width:0}
+#cbOv .cbhelp .hgm b{display:block;color:#ffe9a8;font-size:13.5px;line-height:1.35}
+#cbOv .cbhelp .hgm span{font-size:12px;color:#e8d3a4}
+#cbOv .cbhelp .hgm em{font-style:normal;margin-left:6px;padding:0 6px;border-radius:8px;background:#3a2410;border:1px solid #c9a35a;color:#ffd98a;font-size:10.5px;white-space:nowrap}
+#cbOv .cbhelp .hdt{margin:6px 0;border-radius:12px;border:1px solid rgba(255,226,160,.25);background:rgba(255,236,190,.04)}
+#cbOv .cbhelp .hdt summary{list-style:none;cursor:pointer;padding:10px 12px;font-weight:700;color:#ffe9a8;display:flex;align-items:center;justify-content:space-between;gap:8px}
+#cbOv .cbhelp .hdt summary::-webkit-details-marker{display:none}
+#cbOv .cbhelp .hdt summary::after{content:"＋";flex:none;color:#e2a83e}
+#cbOv .cbhelp .hdt[open] summary::after{content:"－"}
+#cbOv .cbhelp .hdt ul{padding:0 12px 10px 1.9em}
+#cbOv .cbhelp .hend{margin:16px 0 0;text-align:center;font-size:11.5px;color:#bfa873}
 #cbOv .cbhelp ul{margin:0;padding-left:1.2em}#cbOv .cbhelp li{margin:2px 0}
-#cbOv .cbhelp .ord{display:flex;align-items:center;justify-content:center;gap:1px;margin:8px -6px}
-#cbOv .cbhelp .ord img{flex:0 1 30px;min-width:0;width:30px;height:auto;aspect-ratio:2/3}#cbOv .cbhelp .ord i{flex:none;font-style:normal;color:#c9a35a;font-size:11px}
-#cbOv .cbhelp .ef{display:flex;gap:10px;align-items:flex-start;margin:8px 0;padding:8px;border-radius:12px;background:rgba(255,236,190,.06);border:1px solid rgba(255,226,160,.22)}
-#cbOv .cbhelp .ef img{flex:none;width:58px;height:87px}
-#cbOv .cbhelp .ef b{display:block;color:#ffe9a8;font-size:14px}
-#cbOv .cbhelp .ef strong{color:#ffe9a8}
 #cbOv .cbmod.cbset{background:rgba(8,5,2,.93)}#cbOv .cbmod.cbset h3{font-size:22px}
 #cbOv .cbsws{display:flex;flex-direction:column;gap:8px;width:100%;max-width:320px}
 #cbOv .cbsw{display:flex;align-items:center;gap:10px;min-height:54px;box-sizing:border-box;padding:6px 8px 6px 14px;border-radius:16px;background:rgba(255,236,190,.07);border:1px solid rgba(255,226,160,.26);text-align:left}
@@ -1213,43 +1310,105 @@ const CBApp = (() => {
   }
 
   // ---------- あそび方 ----------
+  // 第4.225版（まさちゃん 2026/11/26 13:57「⑤テンゲルカードバトルの分かりやすい説明書を作成する。1.カードの強い順(画像でわかりやすく)
+  //   2.５ターン7枚の手札で勝負すること（決戦調査と友達バトルは決戦宝石が使えること、決戦宝石は、どれか何か画像で分かりやすく）3.カードの効果(画像で分かりやすく)
+  //   4.あとは細かい説明があれば、任せるいいか感じに仕上げて！」）：遊び方を 絵で 見る 説明書に 作り直した。
+  //   ・上に 3つの ポイント（5ターン・手札 7枚・勝った 数が 多い 方）と もくじ（タップで その 所へ）
+  //   ・① カードの 強さ（大きい 絵の 順位表）② 勝負の 仕方（手札 7枚・5ターン・めくって 強い 方）③ 1ターンの 流れ（4つの 段）
+  //   ・④ カードの 効果（カードの 絵・使える とき・いる カードの 絵・する こと）⑤ 決戦宝石（使える 所・宝石と トークンの 絵・ケースの 絵）
+  //   ・⑥ そのほか（前の 遊び方の 細かい 説明：見た カード・捨て札・ご褒美・バトルコイン・デザインカスタム・決戦調査・ミッション・音・友達と 対戦）は 開いて 読む
+  //   絵は いま えらんで いる デザイン（pic）。カードの 絵を タップすると 大きく 見られる（hbig）
   let helpBack = 'menu';
   function showHelp(from) {
     helpBack = from || 'menu'; closeMod();
-    const ef = (k, t, d) => `<div class="ef"><img src="${pic(k)}" alt=""><div><b>${t}</b>${d}</div></div>`;
+    const im = (k, cls) => `<img class="${cls || ''}" src="${pic(k)}" alt="${k == null ? '伏せた カード' : esc(nameOf(k))}" draggable="false">`;
+    const card = (k, cap, cls) => `<button type="button" class="hcd${cls ? ' ' + cls : ''}" data-cb="hbig" data-k="${esc(k)}" aria-label="${esc(nameOf(k))} の カードを 大きく 見る">${im(k)}${cap ? `<small>${cap}</small>` : ''}</button>`;
+    const many = (k, n) => `<span class="hmany">${Array.from({ length: n }, () => im(k)).join('')}</span>`;
+    const when = t => `<span class="hwhen">${t}</span>`;
+    const ef = (k, title, wh, need, d) => `<div class="hef">${card(k)}<div class="hefr"><b>${title}</b>${when(wh)}${need ? `<div class="hneed">${need}</div>` : ''}<p>${d}</p></div></div>`;
+    const sec = (id, n, t) => `<h4 data-h="${id}" data-n="${n}">${t}</h4>`;      // 番号の 丸は CSS（::before）：見出しの 字は 題 だけ
+    const turnPips = Array.from({ length: R.TURNS }, (_, i) => `<i>${i + 1}</i>`).join('');
+    const gemsCase = '<div class="hcase"><img src="cb_gmcase.webp" alt="決戦宝石の ケース" draggable="false">'
+      + R.GEMS.map((g, i) => { const s = GEM_SLOT[i]; return `<span style="left:${s[0]}%;top:${s[1]}%;width:${s[2]}%;height:${s[3]}%"><img src="${gemPic(g)}" alt="${esc(GEMS[g].n)}" draggable="false"></span>`; }).join('') + '</div>';
+    const gemRow = g => `<div class="hgm"><img class="gm" src="${gemPic(g)}" alt="" draggable="false"><i aria-hidden="true">▶</i>${card(tokP(g), '', 'tk')}<div><b>${esc(GEMS[g].n)}</b><span>${esc(GEMS[g].t)}${R.GEM_W[g] > 1 ? `<em>${R.GEM_W[g]}頭分</em>` : ''}</span></div></div>`;
     scr.help.innerHTML = '<div class="hd"><button type="button" class="cbb dk sm" data-cb="helpx">← 戻る</button><b>遊び方</b></div><div class="bd">'
-      + `<h4>勝負の 仕方</h4><ul><li>手札は <b>${R.HAND}枚</b>。<b>${R.TURNS}ターン</b>で 勝負するよ</li><li>${R.TURNS}ターン 終わって、<b>勝った 数が 多い 人の 勝ち</b>（同じ なら 同点）</li><li><b>先に 勝ちが 決まったら、その ターンで 試合終了</b>だよ（3勝した とき・残りの ターンを 全部 勝っても 追いつけない とき）</li><li>出すのは 1ターンに 1枚。${R.HAND - R.TURNS}枚は 使わずに 残るよ</li></ul>`
-      + '<h4>1ターンの 流れ</h4><ul><li><b>① ターンの 始め</b>：手札に <b>6 が 2枚</b> ある 人に「6 の 効果を 使う？」と 聞くよ（<b>セットの 前</b>に 相手の 手札を 1枚 見られる）。その 後、前の ターンに <b>神様馬・幻の馬</b>で 勝った 人が 効果を 使うか 選ぶよ</li>'
-      + '<li><b>② セット</b>：手札から 1枚 選んで「この カードを セットする」。<b>伏せて（裏で）出す</b>よ（自分の カードには 数字の 印・タップで 見られる）。<b>セットしたら もう 変えられない</b><br><b>手札の 効果</b>（<b>7</b> の 3枚 交換・4枚 公開・<b>3</b> の 交換）は、<b>セットの 前</b>に「○ の 効果を 使う？」と 聞くよ（手札は セットする 前の 枚数で 数える。使った 後で セットする カードを 選べる）</li>'
-      + '<li><b>③ 効果タイム</b>：2人とも セットしたら、<b>セットした カードの 効果</b>を <b>1つずつ</b> 聞くよ（<b>5 → 4</b> の 順）。その 効果を 使える 人に「○ の 効果を 使う？」→ 決めたら <b>すぐ 効果が 出て</b>、終わって から 次の 効果を 聞くよ。<b>「使う」「使わない」は 自分で 選べる</b>。同じ 効果を 2人とも 使える ときは、2人とも 決めて から 一緒に 出る</li>'
-      + '<li><b>④ オープン</b>：2枚を 一緒に めくる。<b>強い カードの 勝ち</b>（1・2 の「<b>逆転勝利</b>」は、めくった 後に 使うか 選ぶよ）</li></ul>'
-      + '<h4>カードの 強さ</h4><div class="ord">' + ['k', 'm'].map(k => `<img src="${pic(k)}" alt="${nameOf(k)}">`).join('<i>＝</i>') + ['1', '2', '3', '4', '5', '6', '7'].map(k => `<i>＞</i><img src="${pic(k)}" alt="${k}">`).join('') + '</div>'
-      + '<ul><li><b>神様馬</b>と <b>幻の馬</b>が 一番 強い（この 2枚が ぶつかったら 引き分け）</li><li>数字は <b>1 が 一番 強くて、7 が 一番 弱い</b></li><li>7 の 効果（<b>4枚 公開</b>）で <b>強さ 逆転</b>したら、その 対戦が 終わる まで <b>7 が 一番 強くて、1 が 一番 弱い</b>（神様馬と 幻の馬は 一番 強い まま。上に「強さ 逆転中」と 出るよ）</li><li><b>同じ 数字</b>が ぶつかったら「かぶり」＝<b>どちらも 負け</b>（4 同士で <b>2人とも 4 の 効果を 使った</b> ときは <b>ドロー</b>）</li><li><b>逆転勝利</b>：1 が 3枚 あれば 神様馬・幻の馬に、2 が 3枚 あれば 1 に 勝てる（下の「カードの 効果」）</li><li>カードは 全部で 30枚（1〜7 が 4枚 ずつ・神様馬 1枚・幻の馬 1枚）</li></ul>'
-      + '<h4>カードの 効果</h4><ul><li><b>6</b> の 効果は <b>ターンの 始め</b>（セットの 前）に 使うか 選ぶよ</li><li><b>7</b>（3枚 交換・4枚 公開）・<b>3</b> の 効果は、<b>セットの 前</b>に 使うか 選ぶよ（手札の 効果：セットしなくて いい）</li><li><b>5・4</b> の 効果は、2人とも セットした 後の「<b>効果タイム</b>」で、<b>1つずつ</b> 使うか 選ぶよ</li><li><b>1・2</b> の 効果（逆転勝利）は、<b>オープンした 後</b>、負けた 人が 使うか 選ぶよ</li><li><b>神様馬・幻の馬</b>の 効果は、勝った <b>次の ターンの 始め</b>に、使うか 選ぶよ</li><li>どの 効果も、<b>使うか 使わないかは 自分で 選べる</b>よ</li><li>効果を 使うと、ボードの 真ん中に <b>誰が・どの 効果を・何を するか</b>の 札が 出るよ（タップすると すぐ 次へ）</li></ul>'
-      + ef('7', '7：3枚 交換・4枚 公開で 逆転', '【3枚】手札に 7 が 3枚 あれば、<strong>セットの 前に</strong> 3枚を 山札に 戻して、新しく 3枚 引けるよ。<br>【4枚】手札に 7 が 4枚 あれば、<strong>セットの 前に</strong> 4枚 見せて 1枚 捨てると、<strong>その 対戦が 終わる まで 数字の 強さが 逆</strong>に なるよ（7＞6＞5＞4＞3＞2＞1・神様馬と 幻の馬は 一番 強い まま）。その あと いつもの ように セット（残った 7 を 出しても いい）。<br>【3枚】と【4枚】は 1ターンに どちらか 1つ')
-      + ef('6', '6：2枚 見せて 手札を 見る', '手札に 6 が 2枚 あれば、<strong>ターンの 始め（セットの 前）</strong>に、その 2枚を 相手に 見せて、相手の 手札を 1枚 選んで 見られるよ（見てから セットする カードを 選べる）。神様馬・幻の馬の 効果より 先だよ。<br>相手の 手札が <strong>もう 見た カード だけ</strong>の ときは 使えないよ（見るのは まだ 見て いない カード）。')
-      + ef('5', '5：2枚 捨てて 山札から セット', '5 を セットしたら、その 5 と 手札 1枚を 捨てて、山札から 1枚を 伏せて セットできるよ。何が 出るかは オープンまで 分からない！<br>使えるのは、使った 後の 手札が <strong>残りの ターンの 数より 少なく ならない とき</strong> だけ（最後の ターンは、手札が 1枚 あれば 使える）。')
-      + ef('4', '4：見せて 強制交換', '4 を セットして 効果を 使うと、4 を 先に 見せる 代わりに、相手は セットした カードを 手札の 別の カードと 交換しないと いけないよ。<br><strong>2人とも 4 を 出して、2人とも 効果を 使ったら</strong>、打ち消して その ターンは <strong>ドロー</strong>（引き分け）だよ。<br>交換で <strong>5 を セットしたら、5 の 効果を 使うか 選べる</strong>よ（オープンの 前）。<br>4 の 効果は <strong>一番 後</strong>：相手が 5 の 効果で 山札から 伏せた カードも 交換に なるよ。')
-      + ef('3', '3：3枚 見せて 手札を 交換', '手札に 3 が 3枚 あれば、<strong>セットの 前に</strong> その 3枚を 相手に 見せて、その うちの 1枚と、相手の 手札の <strong>裏の カードから 自分で 選んだ 1枚</strong>（何が 来るかは わからない）を 交換できるよ。もう 見た カード（表）は 選べないよ。')
-      + ef('2', '2：3枚 見せて 逆転勝利', '2 を 出して <strong>1 に 負けた</strong> とき、手札に 2 が 2枚 あれば（場の 2 と 合わせて 3枚）、その 2枚を 相手に 見せて、1枚 捨てると、<strong>勝ちに できる</strong>よ。')
-      + ef('1', '1：3枚 見せて 逆転勝利', '1 を 出して <strong>神様馬・幻の馬に 負けた</strong> とき、手札に 1 が 2枚 あれば（場の 1 と 合わせて 3枚）、その 2枚を 相手に 見せて、1枚 捨てると、<strong>勝ちに できる</strong>よ。<br>1・2 とも、使えるのは 捨てた 後の 手札が <strong>残りの ターンの 数より 少なく ならない とき</strong> だけ。')
-      + ef('k', '神様馬：勝ったら 手札を 見る', '神様馬で 勝ったら、次の ターンの 始めに、相手の 手札を 1枚 選んで 見られるよ（まだ 見て いない カードが ある とき）。')
-      + ef('m', '幻の馬：勝ったら 手札を 交換', '幻の馬で 勝ったら、次の ターンの 始めに、手札を 2枚 捨てて、山札から 2枚 引けるよ。')
-      + '<ul><li>手札の 数は、手札の 効果（6・7・3）は <b>セットする 前</b>の 手札で、5 の 効果は <b>セットした あと</b>の 手札で 数えるよ（セットした カードは 手札に 入らない）</li><li>効果が 出る 順番：<b>① ターンの 始め</b>（<b>6</b> → 神様馬・幻の馬）→ <b>② セット</b>（手札の 効果 7・3 は セットの 前）→ <b>③ 効果タイム</b>（<b>5 → 4</b>：セットした カードの 効果。4 は 一番 後）</li><li>効果は <b>1つ 終わってから 次の 効果</b>を 聞くよ（前の 効果で 変わった 手札で 決められる。例：7 で 引いた 後の 手札で、セットする カードを 選ぶ・5 で 捨てる カードを 選ぶ）</li><li>最後の ターンに 神様馬・幻の馬で 勝った ときは、次の ターンが ない ので 効果は ないよ</li></ul>'
-      + '<h4>見た カード・見られた カード</h4><ul><li>効果で 見た 相手の カードは、相手の 手札に ある 間 表で 見えるよ</li><li>相手に 見られた 自分の カードには 目の 印が 付くよ</li><li>セットした カードは <b>裏</b>（4 の 効果で 見せる か、オープン するまで）。相手の 手札は いつも <b>本当の 手札</b>の まま 見えるよ（見た カードを 相手が セットしたら、その カードは 相手の 手札から 消える）</li></ul>'
-      + '<h4>捨て札</h4><ul><li>ボードの「<b>捨て札</b>」を タップすると、捨て札を 見られるよ</li><li><b>終わった ターンの 捨て札</b>（2人が 出した カード）と、<b>効果で 捨てた カード</b>に 分けて 出るよ</li></ul>'
-      + `<h4>ご褒美</h4><ul><li>コンピュータに 勝つと <b>バトルコイン</b>（下の「バトルコイン」）</li><li>コンピュータに ${TK_BONUS.map(t => `<b>${t[0]}連勝 ごとに 調査隊切符 ${t[1]}枚</b>`).join('・')}（${TK_BONUS.reduce((a, t) => a * t[0], 1)}連勝 など、両方の ときは 両方。調査隊切符は ${QT.max}枚 まで）</li><li>負けると 連勝は 0 に 戻るよ。同点は そのまま。対戦の 途中で やめた・アプリを 閉じた ときも 負けに なるよ</li></ul>`
-      + `<h4>バトルコイン</h4><ul><li><b>コンピュータに 勝つと ${COIN.win}枚</b> もらえるよ。連勝すると ボーナス：${COIN.bonus.map(t => `<b>${t[0]}連勝 ごとに ＋${t[1]}枚</b>`).join('・')}（${COIN.bonus.reduce((a, t) => a * t[0], 1)}連勝 など、両方の ときは 両方）</li>`
+      // ---- 3つの ポイント・もくじ ----
+      + '<div class="hhero"><p class="hlead">TENGERカードバトルは、馬の カードで 戦う ゲームだよ</p><div class="hpts">'
+      + `<div class="hpt"><div class="hpic hturns">${turnPips}</div><b>${R.TURNS}ターン</b><span>で 勝負</span></div>`
+      + `<div class="hpt"><div class="hpic hfan">${Array.from({ length: R.HAND }, () => `<img src="${pic(null)}" alt="" draggable="false">`).join('')}</div><b>手札 ${R.HAND}枚</b><span>から 1枚ずつ 出す</span></div>`
+      + `<div class="hpt"><div class="hpic hvs">${im('1')}<em>VS</em>${im('5')}</div><b>強い 方の 勝ち</b><span>勝った 数が 多い 人の 優勝</span></div>`
+      + '</div></div>'
+      + '<nav class="htoc" aria-label="もくじ">' + [['st', '① カードの 強さ'], ['rule', '② 勝負の 仕方'], ['flow', '③ 1ターンの 流れ'], ['ef', '④ カードの 効果'], ['gem', '⑤ 決戦宝石'], ['etc', '⑥ そのほか']]
+        .map(([h, t]) => `<button type="button" data-cb="hgo" data-h="${h}">${t}</button>`).join('') + '</nav>'
+      // ---- ① カードの 強さ ----
+      + sec('st', '1', 'カードの 強さ')
+      + '<div class="hrank"><div class="hrk hrk0">' + card('k', '神様馬') + '<i class="eq">＝</i>' + card('m', '幻の馬') + '<span class="hcrown">いちばん 強い！</span></div>'
+      + '<p class="hdir"><span>強い</span><i></i><span>弱い</span></p>'
+      + '<div class="hrk">' + ['1', '2', '3', '4'].map(k => card(k, k === '1' ? '数字の 最強' : '')).join('<i>＞</i>') + '</div>'
+      + '<div class="hrk"><i>＞</i>' + ['5', '6', '7'].map(k => card(k, k === '7' ? '一番 弱い' : '')).join('<i>＞</i>') + '</div></div>'
+      + '<ul class="hnote"><li>数字は <b>1 が 一番 強くて、7 が 一番 弱い</b>よ</li>'
+      + '<li><b>同じ 数字</b>が ぶつかったら「<b>かぶり</b>」＝ <b>どちらも 負け</b>（4 同士で 2人とも 4 の 効果を 使った ときは ドロー）</li>'
+      + '<li><b>神様馬 と 幻の馬</b>が ぶつかったら <b>引き分け</b></li>'
+      + '<li>7 の 効果（<b>4枚 公開</b>）で <b>強さ 逆転</b>したら、その 対戦が 終わる まで <b>7＞6＞5＞4＞3＞2＞1</b>（神様馬・幻の馬は 一番 強い まま。上に「強さ 逆転中」と 出るよ）</li>'
+      + '<li>カードは 全部で <b>30枚</b>：1〜7 が 4枚 ずつ・神様馬 1枚・幻の馬 1枚</li></ul>'
+      // ---- ② 勝負の 仕方 ----
+      + sec('rule', '2', '勝負の 仕方')
+      + '<div class="hsteps">'
+      + `<div class="hst"><div class="hpic hfan">${Array.from({ length: R.HAND }, () => `<img src="${pic(null)}" alt="" draggable="false">`).join('')}</div><p><b>手札は ${R.HAND}枚</b>（2人とも 山札から 配られるよ）</p></div>`
+      + `<div class="hst"><div class="hpic hturns">${turnPips}</div><p><b>${R.TURNS}ターン</b> 戦うよ。1ターンに <b>1枚ずつ</b> 出すから、<b>${R.HAND - R.TURNS}枚は 使わずに 残る</b>よ（ターンの 間に 山札から 引かない）</p></div>`
+      + `<div class="hst"><div class="hpic hvs">${im(null)}<em>VS</em>${im(null)}</div><p>2人とも カードを <b>伏せて セット</b> → 一緒に <b>めくって、強い 方の 勝ち</b></p></div>`
+      + `<div class="hst"><div class="hpic hscore"><b>3</b><i>－</i><b>1</b></div><p>${R.TURNS}ターン 終わって <b>勝った 数が 多い 人の 勝ち</b>（同じ なら 同点）。<b>先に 勝ちが 決まったら</b>（3勝した・残りを 全部 勝っても 追いつけない）その ターンで 試合終了</p></div>`
+      + '</div>'
+      + '<ul class="hnote"><li>相手は <b>コンピュータ</b> か、近くに いる <b>友達</b>（部屋を 作って 対戦）。<b>決戦調査</b>では 強い 敵と 連続で 戦うよ</li></ul>'
+      // ---- ③ 1ターンの 流れ ----
+      + sec('flow', '3', '1ターンの 流れ')
+      + '<ol class="hflow">'
+      + `<li><i>1</i><div><b>ターンの 始め</b><span>手札に <b>6 が 2枚</b> ある 人は「6 の 効果」・前の ターンに <b>神様馬・幻の馬</b>で 勝った 人は その 効果を 使えるよ</span></div></li>`
+      + `<li><i>2</i><div><b>セット</b><span>手札から 1枚 選んで <b>伏せて 出す</b>（自分の カードには 数字の 印・タップで 見られる）。<b>セットしたら もう 変えられない</b>よ。<b>7・3 の 効果</b>と <b>決戦宝石</b>は セットの 前に 使えるよ（使った 後で セットする カードを 選べる）</span></div></li>`
+      + `<li><i>3</i><div><b>効果タイム</b><span>2人とも セットしたら、セットした <b>5 → 4</b> の 順に 効果を 使うか 聞かれるよ（1つ 終わってから 次。同じ 効果を 2人とも 使える ときは、2人とも 決めて から 一緒に 出る）</span></div></li>`
+      + `<li><i>4</i><div><b>オープン</b><span>2枚 一緒に めくって 勝ち負け。負けた 人は <b>1・2 の 逆転勝利</b>を 使えるかも</span></div></li>`
+      + '</ol>'
+      // ---- ④ カードの 効果 ----
+      + sec('ef', '4', 'カードの 効果')
+      + '<p class="hsub">効果は <b>使うか 使わないか 自分で 選べる</b>よ。使う ときは、<b class="hglow">選べる カードが 金色に 光る</b>よ（<b class="hring">金の ふち</b>＝その 効果に かかわる カード）。効果で 来た カード・見た カード・見られた カードは 少しの 間 強く 光るよ</p>'
+      + ef('k', '神様馬：相手の 手札を 見る', '勝った 次の ターンの 始め', `${many('k', 1)}<em>神様馬で 勝つ</em>`, '相手の 手札を <b>1枚 選んで 見られる</b>よ（まだ 見て いない カードが ある とき）')
+      + ef('m', '幻の馬：手札を 入れかえ', '勝った 次の ターンの 始め', `${many('m', 1)}<em>幻の馬で 勝つ</em>`, '手札を <b>2枚 捨てて</b>、山札から <b>2枚 引ける</b>よ')
+      + ef('1', '1：逆転勝利', 'オープンの 後', `${many('1', 3)}<em>場の 1 ＋ 手札の 1 が 2枚</em>`, '1 を 出して <b>神様馬・幻の馬に 負けた</b> とき、手札の 1 を 2枚 見せて 1枚 捨てると <b>勝ちに できる</b>よ')
+      + ef('2', '2：逆転勝利', 'オープンの 後', `${many('2', 3)}<em>場の 2 ＋ 手札の 2 が 2枚</em>`, '2 を 出して <b>1 に 負けた</b> とき、手札の 2 を 2枚 見せて 1枚 捨てると <b>勝ちに できる</b>よ<br><small>1・2 とも、捨てた 後の 手札が 残りの ターンの 数より 少なく ならない とき だけ</small>')
+      + ef('3', '3：3枚 見せて 交換', 'セットの 前', `${many('3', 3)}<em>手札に 3 が 3枚</em>`, '3枚を 見せて、その 1枚と、相手の 手札の <b>裏の カードから 自分で 選んだ 1枚</b>を 交換（何が 来るかは わからない）。もう 見た カードは 選べないよ<br><small>手札に あれば 使える（3 を セットしなくて いい）</small>')
+      + ef('4', '4：見せて 強制交換', '効果タイム（いちばん 後）', `${many('4', 1)}<em>4 を セット</em>`, '4 を 先に 見せる かわりに、<b>相手は セットした カードを 手札の 別の カードと 交換</b>しないと いけないよ。<b>2人とも 4 の 効果を 使ったら</b> その ターンは <b>ドロー</b>。交換で 5 を セットしたら、5 の 効果も 使えるよ<br><small>4 は 一番 後：相手が 5 の 効果で 山札から 伏せた カードも 交換に なるよ</small>')
+      + ef('5', '5：山札から 伏せて セット', '効果タイム', `${many('5', 1)}<em>5 を セット</em>`, '<b>5 と 手札 1枚を 捨てて</b>、山札から 1枚を <b>伏せて セット</b>。何が 出るかは オープンまで 分からない！<br><small>使った 後の 手札が 残りの ターンの 数より 少なく ならない とき だけ（最後の ターンは、手札が 1枚 あれば 使える）</small>')
+      + ef('6', '6：相手の 手札を 見る', 'ターンの 始め', `${many('6', 2)}<em>手札に 6 が 2枚</em>`, '2枚を 相手に 見せて、<b>相手の 手札を 1枚 選んで 見る</b>よ。見てから セットする カードを 選べる。相手の 手札が もう 見た カード だけの ときは 使えないよ')
+      + ef('7', '7：3枚 交換・4枚で 強さ 逆転', 'セットの 前', `${many('7', 3)}<em>手札に 7 が 3枚（4枚）</em>`, '<b>【3枚】</b>3枚を 山札に 戻して、新しく <b>3枚 引く</b>よ<br><b>【4枚】</b>4枚 見せて 1枚 捨てると、<b>その 対戦が 終わる まで 強さが 逆</b>（7＞6＞…＞1）<br><small>【3枚】と【4枚】は 1ターンに どちらか 1つ。手札に あれば 使える（7 を セットしなくて いい）</small>')
+      + '<div class="hord"><b>効果の 順番</b><ol><li><i>1</i>ターンの 始め：<b>6</b> → 神様馬・幻の馬</li><li><i>2</i>セットの 前：<b>7・3</b>・決戦宝石</li><li><i>3</i>効果タイム：<b>5 → 4</b></li><li><i>4</i>オープンの 後：<b>1・2</b></li></ol></div>'
+      + '<ul class="hnote"><li>手札の 数は、6・7・3 は <b>セットする 前</b>、5 は <b>セットした あと</b>の 手札で 数えるよ</li><li>最後の ターンに 神様馬・幻の馬で 勝った ときは、次の ターンが ない ので 効果は ないよ</li><li>効果は 1つ 終わってから 次の 効果を 聞くよ（前の 効果で 変わった 手札で 決められる。例：7 で 引いた 後の 手札で セットする カードを 選ぶ・5 で 捨てる カードを 選ぶ）</li><li>効果を 使うと、ボードの 真ん中に <b>誰が・どの 効果を・何を するか</b>の 札が 出るよ（タップすると すぐ 次へ）</li></ul>'
+      // ---- ⑤ 決戦宝石 ----
+      + sec('gem', '5', '決戦宝石')
+      + '<div class="hwhere"><div class="ok"><b>⚔️ 決戦調査</b><span>いつも 使える！<br>1つの 調査（連勝が 続く 間）で 5つを 1回ずつ</span></div>'
+      + '<div class="ok"><b>🤝 友達バトル</b><span>部屋を 作る 人が「<b>決戦宝石 あり</b>」に した とき。2人とも 1試合で 5つを 1回ずつ（おたがいの 宝石が 見える）</span></div>'
+      + '<div class="no"><b>コンピュータとの 対戦</b><span>使えないよ</span></div></div>'
+      + `<p class="hsub">手札の 下の <b>ケース</b>に 宝石が 並ぶよ。タップ →「使う」で、<b>トークンの カード</b>が 手札に 1枚 来るよ</p>${gemsCase}`
+      + `<div class="hgms">${R.GEMS.map(gemRow).join('')}</div>`
+      + `<ul class="hnote"><li>使えるのは <b>手札が ${R.GEM_HAND}枚 以下</b>・<b>セットの 前</b>・<b>1ターンに 1つ</b></li>`
+      + '<li>トークンは <b>その ターン だけ</b>（使わないと ターンの 終わりに 消えるよ）。セットすると その カードと 同じ 強さ（神様馬トークンと 神様馬は かぶり）</li>'
+      + '<li>「○頭分」は 手札の 効果の 数え方：1トークンで 1 の 逆転勝利・3トークン ＋ 3 で 3 の 交換・7トークンで 7 の 効果（見せて 捨てて、山札から 3枚 引く）・7トークン ＋ 7 で 4枚 公開。セット・捨てる ときは 1枚</li>'
+      + '<li>決戦調査の 敵は 宝石を 使わないよ（あなたが 使った ことも 敵には わからない）</li></ul>'
+      // ---- ⑥ そのほか（前の 遊び方の 細かい 説明） ----
+      + sec('etc', '6', 'そのほか')
+      + '<details class="hdt"><summary>見た カード・見られた カード</summary><ul><li>効果で 見た 相手の カードは、相手の 手札に ある 間 表で 見えるよ</li><li>相手に 見られた 自分の カードには 目の 印が 付くよ</li><li>セットした カードは <b>裏</b>（4 の 効果で 見せる か、オープン するまで）。相手の 手札は いつも <b>本当の 手札</b>の まま 見えるよ（見た カードを 相手が セットしたら、その カードは 相手の 手札から 消える）</li></ul></details>'
+      + '<details class="hdt"><summary>捨て札</summary><ul><li>ボードの「<b>捨て札</b>」を タップすると、捨て札を 見られるよ</li><li><b>終わった ターンの 捨て札</b>（2人が 出した カード）と、<b>効果で 捨てた カード</b>に 分けて 出るよ</li></ul></details>'
+      + `<details class="hdt"><summary>ご褒美・調査隊切符</summary><ul><li>コンピュータに 勝つと <b>バトルコイン</b>（下の「バトルコイン」）</li><li>コンピュータに ${TK_BONUS.map(t => `<b>${t[0]}連勝 ごとに 調査隊切符 ${t[1]}枚</b>`).join('・')}（${TK_BONUS.reduce((a, t) => a * t[0], 1)}連勝 など、両方の ときは 両方。調査隊切符は ${QT.max}枚 まで）</li><li>負けると 連勝は 0 に 戻るよ。同点は そのまま。対戦の 途中で やめた・アプリを 閉じた ときも 負けに なるよ</li></ul></details>`
+      + `<details class="hdt"><summary>バトルコイン</summary><ul><li><b>コンピュータに 勝つと ${COIN.win}枚</b> もらえるよ。連勝すると ボーナス：${COIN.bonus.map(t => `<b>${t[0]}連勝 ごとに ＋${t[1]}枚</b>`).join('・')}（${COIN.bonus.reduce((a, t) => a * t[0], 1)}連勝 など、両方の ときは 両方）</li>`
       + `<li><b>毎日の ログインボーナス</b>でも <b>${COIN.day}枚</b>（<b>7日目は ＋${COIN.day7}枚</b>）もらえるよ。<b>買う ことは できない</b>よ</li>`
       + '<li>友達と 対戦する 部屋を 作る とき、<b>参加コイン</b>と <b>勝者の 獲得コイン</b>（参加コインの 2倍 まで）を 決められるよ</li><li>部屋に 入る 人は、同じ 数の 参加コインを 持って いないと 入れないよ</li>'
-      + '<li>2人とも 初めに 参加コインを 出す。<b>勝った 人は、テンゲルから 獲得コインを プレゼントで もらえる</b>。同点は 参加コインが 戻る</li><li><b>途中で やめると、参加コインは 戻らない</b>（つながりが 切れた ときは 戻るよ）</li><li>相手が 途中で やめた とき：あなたが カードを 3回 出した 後 なら 獲得コインを もらえる。その 前なら 参加コインが 戻るよ</li></ul>'
-      + `<h4>デザインカスタム</h4><ul><li>メニューの「<b>デザインカスタム</b>」で、カードの <b>表</b>・<b>裏</b>と <b>プレイボード</b>の デザインを 変えられるよ</li>`
+      + '<li>2人とも 初めに 参加コインを 出す。<b>勝った 人は、テンゲルから 獲得コインを プレゼントで もらえる</b>。同点は 参加コインが 戻る</li><li><b>途中で やめると、参加コインは 戻らない</b>（つながりが 切れた ときは 戻るよ）</li><li>相手が 途中で やめた とき：あなたが カードを 3回 出した 後 なら 獲得コインを もらえる。その 前なら 参加コインが 戻るよ</li></ul></details>'
+      + `<details class="hdt"><summary>デザインカスタム</summary><ul><li>メニューの「<b>デザインカスタム</b>」で、カードの <b>表</b>・<b>裏</b>と <b>プレイボード</b>の デザインを 変えられるよ</li>`
       + `<li><b>カードの 表</b>は <b>カードパック</b>で 集めるよ：1パック <b>バトルコイン ${PACK.cost}枚</b>・<b>${PACK.size}枚</b>入り（ノーマル ${PACK.size - 1}枚 ＋ くじの 1枚）</li>`
       + `<li>くじの 1枚：<b>レア 2パックに 1枚</b>・<b>超レア 5パックに 1枚</b>（どちらも 神様馬・幻の馬を 含む）・<b>神様馬／幻の馬の レア 10パックに 1枚</b>・<b>神様馬／幻の馬の 超レア 23パックに 1枚</b>（どれも 平均。詳しい 確率は カードパックの「出る 確率」）</li>`
       + '<li>新しい カードは 持って いる カードに 入るよ（同じ カードが 出ても、数は 増えないよ）。開けた パックは「パックの 記録」で もう 1回 見られるよ</li>'
       + `<li>カードの 裏 <b>${BACK_COST}枚</b>・プレイボード <b>${BOARD_COST}枚</b>は バトルコインで 1つずつ 解放できるよ。いつもの デザインは 初めから 使えるよ</li>`
-      + '<li>コンピュータと 対戦する ときは、コンピュータの カード（裏・表）も あなたが 選んだ デザインに なるよ</li><li>友達と 対戦する ときは、<b>あなたの カードは あなたの デザイン</b>・<b>友達の カードは 友達が 選んだ デザイン</b>で 出るよ（山札は あなたの 裏）</li><li>プレイボードは、あなたの 画面に 出るよ（友達と 対戦する ときも、あなたの 画面は あなたが 選んだ ボード）</li></ul>'
-      + `<h4>⚔️ 決戦調査</h4><ul><li>メニューの「<b>決戦調査</b>」：<b>エリア 1〜${QN}</b> の 敵と 戦う クエストだよ。マップの エリアを タップ →「決戦調査に 行く」</li>`
+      + '<li>コンピュータと 対戦する ときは、コンピュータの カード（裏・表）も あなたが 選んだ デザインに なるよ</li><li>友達と 対戦する ときは、<b>あなたの カードは あなたの デザイン</b>・<b>友達の カードは 友達が 選んだ デザイン</b>で 出るよ（山札は あなたの 裏）</li><li>プレイボードは、あなたの 画面に 出るよ（友達と 対戦する ときも、あなたの 画面は あなたが 選んだ ボード）</li></ul></details>'
+      + `<details class="hdt"><summary>⚔️ 決戦調査</summary><ul><li>メニューの「<b>決戦調査</b>」：<b>エリア 1〜${QN}</b> の 敵と 戦う クエストだよ。マップの エリアを タップ →「決戦調査に 行く」</li>`
       + '<li>フィールドで 敵が 出たら、タップで カードバトル。<b>いつもの ルール</b>で 戦うよ（上の 敵HP ゲージが、勝つ たびに 減る）</li>'
       + `<li>敵ごとに 決まった <b>連勝</b>で 討伐！ バトルコインが もらえるよ：${QUEST.map(q => `Lv${q.lv} ${q.w}連勝 <b>${q.c}枚</b>`).join('・')}</li>`
       + '<li>討伐すると <b>次の エリアが 開く</b>よ。負けたら その エリアを <b>1戦目から やり直し</b>。同点は <b>同じ 戦を やり直し</b>（HP は そのまま）</li>'
@@ -1257,21 +1416,15 @@ const CBApp = (() => {
       + '<li>討伐した エリアにも <b>もう 一度 調査に 行ける</b>よ。<b>討伐の バトルコインは 毎月 1回目 だけ</b>（2回目からは なし）</li>'
       + '<li>もらえるのは 討伐の バトルコインと、<b>決戦調査ミッション</b>（決戦宝石を 残して 連続勝利）の バトルコイン。いつもの 勝ち負け・連勝（調査隊切符の ボーナス）・いつもの ミッションには 数えないよ</li>'
       + '<li>戦の 途中で やめる・アプリを 閉じると 調査 失敗。<b>毎月 1日に リセット</b>（討伐した エリアも 最初から）</li>'
-      + `<li>${TKI}<b>調査隊切符</b>：エリアに <b>挑戦する とき 1枚</b>（1戦目の はじめ）。<b>連勝中は 使わない</b>（「第○戦へ」・同点の やり直し）。負けて「もう 一度 挑戦」する とき・次の エリアに 行く とき（例：レベル3 → レベル4）は また 1枚。<b>${QTM()}分で 1枚</b> たまって、<b>${QT.max}枚 まで</b>。0枚の ときは 挑戦 できないよ（マップの 上の ゲージで 枚数と 次の 1枚 までの 時間が わかるよ）</li></ul>`
-      + `<h4>決戦宝石</h4><ul><li><b>決戦調査では いつも 使えるよ</b>：1つの 調査（連勝が 続く 間）で <b>5つ 1回ずつ（合計 5個）</b>。負けて 1戦目から やり直すと また 5つ</li>`
-      + `<li>友達との 対戦は、部屋を 作る 人が「<b>決戦宝石 あり</b>」に した とき：2人とも <b>1試合で 5つ 1回ずつ</b>（おたがいの 宝石が 見える）</li>`
-      + `<li>宝石は 5つ：${R.GEMS.map(g => `${GEMS[g].n}＝<b>${GEMS[g].t}</b>${headOf(R.GEM_W[g])}`).join('・')}</li>`
-      + `<li>手札の 下の ケースの 宝石を タップ →「使う」で、<b>トークンの カードが 手札に 1枚</b>。使えるのは <b>手札が ${R.GEM_HAND}枚 以下</b>・<b>セットの 前</b>・<b>1ターンに 1つ</b></li>`
-      + '<li>トークンは <b>その ターン だけ</b>（使わないと ターンの 終わりに 消えるよ）。セットすると その カードと 同じ 強さ（神様馬トークンと 神様馬は かぶり）</li>'
-      + '<li>「2頭分・3頭分」は 手札の 効果の 数え方：1トークンで 1 の 逆転勝利・3トークン ＋ 3 で 3 の 交換・7トークンで 7 の 効果（7トークンを 見せて 捨てて、山札から 3枚 引く：トークンは 山札に 戻せない）・7トークン ＋ 7 で 4枚 公開。セット・捨てる ときは 1枚</li>'
-      + '<li>決戦調査の 敵は 宝石を 使わないよ（あなたが 使った ことも 敵には わからない）</li></ul>'
-      + `<h4>ミッション</h4><ul><li>メニューの「<b>ミッション</b>」：<b>コンピュータに 連続勝利</b>・<b>友達バトルで 連続勝利</b>・<b>決戦調査</b>（決戦宝石を 残して 連続勝利）で バトルコインが もらえるよ</li>`
+      + `<li>${TKI}<b>調査隊切符</b>：エリアに <b>挑戦する とき 1枚</b>（1戦目の はじめ）。<b>連勝中は 使わない</b>（「第○戦へ」・同点の やり直し）。負けて「もう 一度 挑戦」する とき・次の エリアに 行く とき（例：レベル3 → レベル4）は また 1枚。<b>${QTM()}分で 1枚</b> たまって、<b>${QT.max}枚 まで</b>。0枚の ときは 挑戦 できないよ（マップの 上の ゲージで 枚数と 次の 1枚 までの 時間が わかるよ）</li></ul></details>`
+      + `<details class="hdt"><summary>ミッション</summary><ul><li>メニューの「<b>ミッション</b>」：<b>コンピュータに 連続勝利</b>・<b>友達バトルで 連続勝利</b>・<b>決戦調査</b>（決戦宝石を 残して 連続勝利）で バトルコインが もらえるよ</li>`
       + `<li>コンピュータ：${MS.cpu.map(t => `${t[0]}連勝 <b>${t[1]}枚</b>`).join('・')}</li><li>友達バトル：${MS.fr.map(t => `${t[0]}連勝 <b>${t[1]}枚</b>`).join('・')}</li>`
       + `<li>決戦調査（1つの 調査で 数える・宝石を ○個 以上 残せば 達成）：${QMS.map(t => `宝石 ${t[0]}個 残し ${t[1].map(w => `${w[0]}連勝 <b>${w[1]}枚</b>`).join('・')}`).join('／')}</li>`
       + '<li>達成した ときに、その場で もらえるよ（受け取りは いらない）。<b>毎月 1日に リセット</b>（達成も 連勝も 0 に 戻る）</li>'
-      + '<li>負けると その 連勝は 0 に 戻るよ（途中で やめた・対戦の 途中で アプリを 閉じた ときも 同じ）。同点は そのまま。友達が 途中で 部屋を 出た・つながりが 切れた ときは 数えないよ</li><li>コンピュータ・友達バトル・決戦調査は 別に 数えるよ（決戦調査の 勝ち負けは いつもの ミッションに 数えない）</li></ul>'
-      + '<h4>音（設定）</h4><ul><li>ボードの 右下の <b>歯車</b>（メニューでは「設定」）を 押すと、<b>BGM</b>・<b>効果音</b>を オン／オフ できるよ</li></ul>'
-      + '<h4>友達と 対戦（部屋）</h4><ul><li>1人が「部屋を 作る」→ 出て きた <b>部屋番号（4桁）</b>を 友達に 教える</li><li>友達は「部屋に 入る」で その 番号を 入れる</li><li><b>近くに いる 友達</b>と、iPhone 同士で 直接 つながるよ（インターネットは 使わない）。2人とも Wi‑Fi か Bluetooth を オンに してね</li><li>初めて 使う とき「ローカルネットワーク」の 確認が 出たら「許可」を 押してね</li></ul>'
+      + '<li>負けると その 連勝は 0 に 戻るよ（途中で やめた・対戦の 途中で アプリを 閉じた ときも 同じ）。同点は そのまま。友達が 途中で 部屋を 出た・つながりが 切れた ときは 数えないよ</li><li>コンピュータ・友達バトル・決戦調査は 別に 数えるよ（決戦調査の 勝ち負けは いつもの ミッションに 数えない）</li></ul></details>'
+      + '<details class="hdt"><summary>音（設定）</summary><ul><li>ボードの 右下の <b>歯車</b>（メニューでは「設定」）を 押すと、<b>BGM</b>・<b>効果音</b>を オン／オフ できるよ</li></ul></details>'
+      + '<details class="hdt"><summary>友達と 対戦（部屋）</summary><ul><li>1人が「部屋を 作る」→ 出て きた <b>部屋番号（4桁）</b>を 友達に 教える</li><li>友達は「部屋に 入る」で その 番号を 入れる</li><li><b>近くに いる 友達</b>と、iPhone 同士で 直接 つながるよ（インターネットは 使わない）。2人とも Wi‑Fi か Bluetooth を オンに してね</li><li>初めて 使う とき「ローカルネットワーク」の 確認が 出たら「許可」を 押してね</li></ul></details>'
+      + '<p class="hend">カードの 絵を タップすると 大きく 見られるよ</p>'
       + '</div>';
     show('help');
   }
@@ -1731,6 +1884,7 @@ const CBApp = (() => {
   const WHO = () => (match && match.kind === 'cpu' ? (qRun ? QUEST[qRun.lv - 1].s : 'コンピュータ') : '友達');      // 第4.196版：決戦調査は 敵の 名前
   function startMatch(m) {
     GEN += 1; match = m; V = null; queue = []; pumping = false; mode = { k: 'idle' }; busy = false; lock = false; ended = false; dealHold = false; fin = false; ends = [];
+    FL.clear();      // 第4.225版：前の 対戦の 光る しるしは 持ちこさない（カードの 番号は 対戦ごとに 同じ 数から）
     m.onUpdate = u => { if (match === m) onEv(u); queue.push(u); pump(); };
     m.onState = s => onNet(s);
     show('game'); closeMod();
@@ -1910,7 +2064,7 @@ const CBApp = (() => {
     const asking = dealHold ? false : askSync();       // 効果を 使うか 聞く 窓（下の askSync）：出て いる 間、下の ボタンは 出さない（同じ ボタンを 2か所に 出さない）。dealHold：配った あとの 帯の あいだ（第4.190版）
     paintHand(); paintAct(asking); paintGem(v);
     say(dealHold ? '' : asking ? '効果を 使うか 選んでね' : (modeText() || statusText(v)));
-    layout();
+    layout(); applyGlow();      // 第4.225版：場の カードも（上の paintHand は 手札だけの 時点）
   }
   // 第4.197版：決戦宝石の ケース（手札の 下：自分の 宝石だけ。決戦調査は 5つ・友だちとの 対戦は 持ち込んだ 1つ）と 相手の 宝石（友だちとの 対戦：おたがいに 見える）
   function paintGem(v) {
@@ -1946,6 +2100,62 @@ const CBApp = (() => {
   function paintHand(fresh, list) {
     const hd = $('.cbhand');
     hd.innerHTML = sortHand(list || V.my.hand).map(c => cardBtn(c, (mode.k === 'dropm' && mode.sel.indexOf(c.u) >= 0 ? 'sel ' : '') + (fresh && fresh.indexOf(c.u) >= 0 ? 'new' : ''), ' data-cb="card"')).join('');
+    applyGlow();
+  }
+  // ---------- 光る カード（第4.225版） ----------
+  // まさちゃん 2026/11/26 13:57「④カードが効果を使う時は、カードが光るように演出できる？ 例えば、5が効果を使用した時や手札に対して使用する効果や
+  //   4が効果を使用する時と交換するカードを選ぶ時が、分かりにくいから分かりやすく対象のカードを少し光らせるようにする。」
+  //   ・tg（金色に ゆっくり 明るく なる・手札は 少し 上がる）＝ 今 えらべる カード：5 と 一緒に 捨てる・幻の馬で 捨てる 2枚・4 の 効果で 交換する 手札・
+  //     6／神様馬で 見る・3 で 交換する 相手の カード（えらぶ 窓の 中）
+  //   ・src（金の ふち）＝ その 効果に かかわる カード：効果を 使う 場の カード（5・4・逆転の 1・2）・4 の 効果で 交換される 場の カード・
+  //     手札の 効果の カード（6 の 2枚・7・3）・見られる／交換される 相手の 手札（まだ 見て いない カード）・幻の馬で 捨てる 手札
+  //   ・fl（1.6秒 だけ 強く 光る）＝ 効果で かわった カード：山札から 来た 場の カード（5）・交換で 来た カード（3・4）・引いた カード（7・幻の馬）・
+  //     見られた 自分の カード／見た 相手の カード（6・神様馬）・決戦宝石の トークン・見せた 4
+  //   ・効果の 札（useShow）の カードも 光る（CSS の cbusg）
+  const FL = new Map(), FL_MS = 1600;
+  function glowPlan(v) {
+    const P = { myT: new Set(), myS: new Set(), opT: new Set(), opS: new Set(), slot: { my: false, op: false } };
+    if (!v || ended || v.phase === 'end' || screen !== 'game') return P;
+    const hand = v.my.hand, pt = v.pend ? v.pend.type : '', mine = !!(v.pend && v.pend.mine);
+    const all = s => hand.forEach(c => s.add(c.u)), kind = k => hand.forEach(c => { if (c.k === k) P.myS.add(c.u); });      // その 数字の 手札（トークンも）
+    const opNew = () => v.op.hand.forEach(c => { if (!c.k) P.opS.add(c.u); });      // まだ 見て いない 相手の 手札（見る・交換の 対象）
+    if (mode.k === 'eff') { P.slot.my = true; if (mode.step === 'drop5') all(P.myT); return P; }      // 効果タイムの 5・4：場の カード（5 は 捨てる 手札を えらぶ）
+    if (mode.k === 'u5') { P.slot.my = true; all(P.myT); return P; }
+    if (mode.k === 'dropm') { hand.forEach(c => { if (mode.sel.indexOf(c.u) < 0) P.myT.add(c.u); }); return P; }
+    if (pt === 'swap') { P.slot.my = P.slot.op = true; if (mine) all(P.myT); return P; }      // 4 の 効果：見せた 4 と 交換される 場の カード（自分が 交換する ときは 手札も）
+    if (mine && pt === 'u5') { P.slot.my = true; return P; }
+    if (mine && pt === 'rev' && v.my.set) { P.slot.my = true; kind(v.my.set.k); return P; }
+    if (mine && pt === 'k') { opNew(); return P; }
+    if (mine && pt === 'm') { all(P.myS); return P; }
+    if (mode.k !== 'idle') return P;
+    if (v.can.six) { kind('6'); opNew(); return P; }
+    if (v.can.set) {
+      const L = preList(v).map(p => p.c);
+      if (L.indexOf('x7') >= 0 || L.indexOf('x7r') >= 0) kind('7');
+      if (L.indexOf('x3') >= 0) { kind('3'); (v.can.x3p || []).forEach(u => P.opS.add(u)); }
+    }
+    return P;
+  }
+  function applyGlow() {
+    if (!ov) return;
+    const P = glowPlan(V), now = performance.now();
+    const mark = (el, key, tg, src) => {
+      el.classList.toggle('tg', !!tg); el.classList.toggle('src', !tg && !!src);
+      const t = FL.get(key);
+      if (t != null && now - t < FL_MS) {      // 作り直した カードは とちゅう から（--fld）・同じ カードを もう 1回 光らせる ときは はじめ から
+        if (el.dataset.flt !== String(t)) { el.classList.remove('fl'); void el.offsetWidth; el.style.setProperty('--fld', Math.round(t - now) + 'ms'); el.classList.add('fl'); el.dataset.flt = String(t); }
+      } else { if (t != null) FL.delete(key); if (el.classList.contains('fl')) { el.classList.remove('fl'); el.style.removeProperty('--fld'); delete el.dataset.flt; } }
+    };
+    const hd = $('.cbhand'), oh = $('.cbohand');
+    if (hd) hd.querySelectorAll('.cbc').forEach(el => { const u = +el.dataset.u; mark(el, 'my:' + u, P.myT.has(u), P.myS.has(u)); });
+    if (oh) oh.querySelectorAll('.cbc').forEach(el => { const u = +el.dataset.u; mark(el, 'op:' + u, P.opT.has(u), P.opS.has(u)); });
+    ['my', 'op'].forEach(sd => { const el = $('.cbslot.' + sd + ' .cbc'); if (el) mark(el, 'slot:' + sd, false, P.slot[sd]); });
+  }
+  // 効果で かわった カードを 1.6秒 光らせる（key：'my:番号'・'op:番号'・'slot:my'・'slot:op'）
+  function flash(...keys) {
+    const t = performance.now();
+    keys.forEach(k => { if (k) FL.set(k, t); });
+    applyGlow(); later(applyGlow, FL_MS + 60);
   }
   function paintAct(asking) {
     const v = V, a = $('.cbact'); let h = '';
@@ -2043,7 +2253,7 @@ const CBApp = (() => {
     const txt = x3 ? `交換する カードを 1枚 選んでね<br>（相手の 手札の 裏の カード：何が 来るかは わからないよ）<br>${tokIn('3') ? '3トークン（2頭分）と 3 を 見せて、本物の 3 を 1枚 わたすよ' : '手札の 3 を 3枚 相手に 見せて、1枚 わたすよ'}`
       : `見たい カードを 1枚 選んでね${kind === 'p6' ? '<br>（手札の 6 を 2枚 相手に 見せるよ）' : ''}`;
     modal(`<h3 class="gold">${head}</h3><p>${txt}${seen ? '<br>もう 見た カードは 選べないよ' : ''}</p>`
-      + `<div class="pick">${v.op.hand.map(c => cardBtn({ u: c.u, k: c.k }, c.k ? 'knw' : '', ok(c) ? ` data-cb="pick" data-kind="${kind}"` : ' disabled', 'op')).join('')}</div>`
+      + `<div class="pick">${v.op.hand.map(c => cardBtn({ u: c.u, k: c.k }, (c.k ? 'knw' : '') + (ok(c) ? ' tg' : ''), ok(c) ? ` data-cb="pick" data-kind="${kind}"` : ' disabled', 'op')).join('')}</div>`      // 第4.225版：えらべる カードは 光る（tg）
       + '<div class="col"><button type="button" class="cbb dk" data-cb="modx">戻る</button></div>', x3 ? 'cbx3' : '');
   }
   // 捨て札（まさちゃん 23:15）：「終わった ターンの 捨て札」（ターン ごとに 2人の 出した カード）と「効果で 捨てた カード」（5 の 効果・幻の馬の 効果・第4.178版：1・2 の 逆転勝利）に 分けて 見せる。カードは タップで 大きく
@@ -2164,6 +2374,8 @@ const CBApp = (() => {
     if (a === 'tstm') { if (testOn() && window.CBTest.msAct) window.CBTest.msAct(b.dataset.t, msApi); return; }
     if (a === 'help') return showHelp(screen === 'game' ? 'game' : 'menu');
     if (a === 'helpx') { show(helpBack); if (helpBack === 'game') render(); return; }
+    if (a === 'hgo') { const t = scr.help.querySelector(`h4[data-h="${b.dataset.h}"]`); if (t) t.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }      // 第4.225版：遊び方の もくじ
+    if (a === 'hbig') { const k = b.dataset.k || ''; if (R.KINDS.indexOf(k) >= 0 || (k.length === 2 && k[0] === 't' && GEMS[k[1]])) { se('tap', 0.6); showCard(k); } return; }      // 第4.225版：遊び方の カードを 大きく
     if (a === 'roomx') { roomStop(); return showMenu(); }
     if (a === 'roomre') return showRoom('host', true);
     if (a === 'stke') return stakeSet('e', +b.dataset.n);
@@ -2299,7 +2511,7 @@ const CBApp = (() => {
     for (const x of ev) {
       if (!match || g0 !== GEN) return;
       if (x.e === 'deal') {
-        ended = false; gameNo += 1; closeMod(); V = null; paintEmpty();
+        ended = false; gameNo += 1; closeMod(); V = null; FL.clear(); paintEmpty();
         payStake();                                    // 第4.179版：部屋の 参加コインを 出す（コンピュータとの 対戦・コインなしの 部屋は 何も しない）
         msLive();                                      // 第4.183版：ミッション：対戦 ちゅうの しるし
         $('.cbdeck .cbn').textContent = '30'; se('deal');
@@ -2347,8 +2559,8 @@ const CBApp = (() => {
         toast(`${x.me ? '' : WHO() + 'の '}${x.k} の 効果は 使えなかったよ`, 2.2); await T(700);
       } else if (x.e === 'p6') {
         await useShow(x);                              // 第4.185版：効果の 札（だれが・どの 効果・何を する）
-        if (x.me) await peekShow('6 の 効果', x.k, `${WHO()}の 手札に ${nameOf(x.k)} が あるよ`, 'op');
-        else { const c = hand.find(q => q.u === x.pick); toast(c ? `${WHO()}が 6 の 効果で、\nあなたの ${nameOf(c.k)} を 見たよ` : `${WHO()}が 6 を 2枚 見せて、\nあなたの 手札を 1枚 見たよ`, 3.2); await T(1100); }
+        if (x.me) { await peekShow('6 の 効果', x.k, `${WHO()}の 手札に ${nameOf(x.k)} が あるよ`, 'op'); flash('op:' + x.pick); }      // 第4.225版：見た カード・見られた カードが 光る
+        else { const c = hand.find(q => q.u === x.pick); flash('my:' + x.pick); toast(c ? `${WHO()}が 6 の 効果で、\nあなたの ${nameOf(c.k)} を 見たよ` : `${WHO()}が 6 を 2枚 見せて、\nあなたの 手札を 1枚 見たよ`, 3.2); await T(1100); }
       } else if (x.e === 'ask5') {                     // 第4.183版：交換で 5 を セットした（自分 だけに 届く）→ 使うか 聞く 窓（render の askSync）
         se('magic', 0.7);
       } else if (x.e === 'u5') {                       // セットして いた 5 を 表に → 5 と 手札 1まいを 捨てる → 山札から ふせて セット（第4.183版：交換で 出した 5 も 同じ）
@@ -2363,6 +2575,7 @@ const CBApp = (() => {
         toDis([{ k: '5', mine: x.me }, { k: picK(x.drop), mine: x.me }]);
         se('set'); await fly(null, mid(deckBox(), 40), slotBox(sd), 340, false, sd);
         $('.cbslot.' + sd).innerHTML = cardBtn({ u: 0, k: null }, '', '', sd) + (x.me ? '<span class="tag">山札から</span>' : '');
+        flash('slot:' + sd);                           // 第4.225版：山札から 来た カードが 光る
         await T(250);
       } else if (x.e === 'x7') {
         await useShow(x);
@@ -2383,7 +2596,7 @@ const CBApp = (() => {
           if (x.me) { let n = 0; hand = hand.filter(q => !(q.k === '7' && n++ < 3)); rehand(); }
         }
         await Promise.all([0, 1, 2].map(i => T(i * 70).then(() => fly(null, mid(d, 36), mid(hb, w), 320, false, s7))));
-        if (x.me && x.drew) { hand = hand.concat(x.drew.map(c => ({ u: c.u, k: c.k }))); rehand(x.drew.map(c => c.u)); await T(420); }
+        if (x.me && x.drew) { hand = hand.concat(x.drew.map(c => ({ u: c.u, k: c.k }))); rehand(x.drew.map(c => c.u)); flash(...x.drew.map(c => 'my:' + c.u)); await T(420); }      // 第4.225版：引いた カードが 光る
       } else if (x.e === 'x7r') {                      // 第4.185版：7 を 4まい 見せて 1まい 捨てる → 強さ 逆転（この 対戦が 終わる まで）
         await useShow(x);
         const sd = x.me ? 'my' : 'op';
@@ -2407,21 +2620,23 @@ const CBApp = (() => {
           await peekShow('3 の 効果：交換！', tk, `${WHO()}の 手札から ${nameOf(tk)} を もらったよ（3 を 1枚 渡した）`, 'op');
           await Promise.all([fly('3', cardBox('my', x.give.u) || mid(hm, 56), mid(ho, 36), 400, false, 'op'), fly(tk, mid(ho, 36), mid(hm, 56), 400)]);
           hand = hand.filter(q => q.u !== x.give.u).map(q => (x.three.indexOf(q.u) >= 0 ? Object.assign({}, q, { seen: true }) : q)).concat([{ u: x.take.u, k: tk, seen: true }]);
-          rehand([x.take.u]);
+          rehand([x.take.u]); flash('my:' + x.take.u);      // 第4.225版：交換で 来た カードが 光る
         } else {
           toast(`${WHO()}が 3 の 効果を 使ったよ\nあなたの ${nameOf(tk)} と 3 を 交換した`, 3.4);
           await Promise.all([fly(tk, cardBox('my', x.take.u) || mid(hm, 56), mid(ho, 36), 400, false, 'op'), fly('3', mid(ho, 36), mid(hm, 56), 400)]);
           hand = hand.filter(q => q.u !== x.take.u).concat([{ u: x.give.u, k: '3' }]);
-          rehand([x.give.u]);
+          rehand([x.give.u]); flash('my:' + x.give.u);
         }
         await T(500);
       } else if (x.e === 'first') {
         se('flip');
         $('.cbslot.' + (x.me ? 'my' : 'op')).innerHTML = cardBtn({ u: 0, k: '4' }, '', '', x.me ? 'my' : 'op') + '<span class="tag">4 の 効果</span>';
+        flash('slot:' + (x.me ? 'my' : 'op'));        // 第4.225版：見せた 4 が 光る
         await useShow(x);                              // 第4.185版：前の「4 の 効果！」の 帯の かわりに 効果の 札
       } else if (x.e === 'first2') {
         se('flip');
         $('.cbslot.my').innerHTML = cardBtn({ u: 0, k: '4' }, ''); $('.cbslot.op').innerHTML = cardBtn({ u: 0, k: '4' }, '', '', 'op');
+        flash('slot:my', 'slot:op');
         await useShow(x);                              // 第4.181版：2人とも 4 の 効果 → この ターンは ドロー（第4.185版：効果の 札「どちらも 使った！」）
       } else if (x.e === 'swap') {
         se('set');
@@ -2430,15 +2645,15 @@ const CBApp = (() => {
         const c = x.me ? hand.find(q => q.u === x.u) : null;
         await fly(null, x.me ? (cardBox('my', x.u) || mid(hb, 56)) : mid(hb, 36), slotBox(sd), 300, false, sd);      // 第4.187版：交換で 出す カードも ふせて セット
         $('.cbslot.' + sd).innerHTML = x.me ? mySet({ u: x.u, k: c ? c.k : null, tok: c ? c.tok : 0, up: false, blind: false, open: false }) : cardBtn({ u: 0, k: null }, '', '', sd);
-        if (x.me) { const bk = v.my.hand.find(q => q.u === x.back) || (P && P.my.set && P.my.set.u === x.back ? { u: x.back, k: P.my.set.k, tok: P.my.set.tok } : null); hand = hand.filter(q => q.u !== x.u); if (bk) hand.push(Object.assign({ u: bk.u, k: bk.k, seen: !!bk.seen }, bk.tok ? { tok: bk.tok } : {})); rehand(bk ? [bk.u] : null); }
-        else toast(`${WHO()}が カードを 交換したよ`, 1.8);
+        if (x.me) { const bk = v.my.hand.find(q => q.u === x.back) || (P && P.my.set && P.my.set.u === x.back ? { u: x.back, k: P.my.set.k, tok: P.my.set.tok } : null); hand = hand.filter(q => q.u !== x.u); if (bk) hand.push(Object.assign({ u: bk.u, k: bk.k, seen: !!bk.seen }, bk.tok ? { tok: bk.tok } : {})); rehand(bk ? [bk.u] : null); flash('slot:my', bk ? 'my:' + bk.u : null); }      // 第4.225版：交換した カードが 光る
+        else { flash('slot:op'); toast(`${WHO()}が カードを 交換したよ`, 1.8); }
       } else if (x.e === 'open') {
         hush();                                        // 「相手を 待って いるよ」などの 前の 文を 消して から 開く
         await openShow(x, !!(v && v.rv));
       } else if (x.e === 'k') {
         await useShow(x);
-        if (x.me) await peekShow(`${kmN('k', x.tok)}の 効果`, x.k, `${WHO()}の 手札に ${nameOf(x.k)} が あるよ`, 'op');
-        else { const c = hand.find(q => q.u === x.pick); toast(c ? `${WHO()}が ${kmN('k', x.tok)}の 効果で、\nあなたの ${nameOf(c.k)} を 見たよ` : `${WHO()}が ${kmN('k', x.tok)}の 効果で、\nあなたの 手札を 1枚 見たよ`, 3.2); await T(1100); }
+        if (x.me) { await peekShow(`${kmN('k', x.tok)}の 効果`, x.k, `${WHO()}の 手札に ${nameOf(x.k)} が あるよ`, 'op'); flash('op:' + x.pick); }      // 第4.225版
+        else { const c = hand.find(q => q.u === x.pick); flash('my:' + x.pick); toast(c ? `${WHO()}が ${kmN('k', x.tok)}の 効果で、\nあなたの ${nameOf(c.k)} を 見たよ` : `${WHO()}が ${kmN('k', x.tok)}の 効果で、\nあなたの 手札を 1枚 見たよ`, 3.2); await T(1100); }
       } else if (x.e === 'm') {
         await useShow(x);
         toast(x.me ? `${kmN('m', x.tok)}の 効果！\n${x.drop.map(c => nameOf(c.k)).join(' と ')} を 捨てて、${x.n}枚 引いたよ` : `${WHO()}が ${kmN('m', x.tok)}の 効果を 使ったよ\n${x.drop.map(c => nameOf(c.k)).join(' と ')} を 捨てて、${x.n}枚 引いた`, 3.2);
@@ -2447,7 +2662,7 @@ const CBApp = (() => {
         if (x.me) { hand = hand.filter(q => !x.drop.some(c => c.u === q.u)); rehand(); }
         toDis(x.drop.map(c => ({ k: c.k, mine: x.me })));
         await Promise.all(Array.from({ length: x.n }, (_, i) => T(i * 80).then(() => fly(null, mid(d, 36), mid(hb, w), 320, false, sd))));
-        if (x.me && x.drew) { hand = hand.concat(x.drew.map(c => ({ u: c.u, k: c.k }))); rehand(x.drew.map(c => c.u)); }
+        if (x.me && x.drew) { hand = hand.concat(x.drew.map(c => ({ u: c.u, k: c.k }))); rehand(x.drew.map(c => c.u)); flash(...x.drew.map(c => 'my:' + c.u)); }      // 第4.225版
         await T(250);
       } else if (x.e === 'kskip' || x.e === 'mskip') {
         if (!x.me) { toast(`${WHO()}は 効果を 使わなかったよ`, 1.8); await T(500); }
@@ -2485,7 +2700,7 @@ const CBApp = (() => {
           const sl = $(`.cbgem .g[data-g="${x.g}"]`); if (sl) { sl.classList.remove('can'); sl.classList.add('pop'); }
           const from = sl ? box(sl) : mid(handBox('my'), 60);
           await fly(picK(c), from, mid(handBox('my'), 60), 460);
-          hand = hand.concat([{ u: c.u, k: c.k, tok: c.tok }]); rehand([c.u]);
+          hand = hand.concat([{ u: c.u, k: c.k, tok: c.tok }]); rehand([c.u]); flash('my:' + c.u);      // 第4.225版：トークンが 光る
           await banner(`${gm.n}！`, `${gm.t}${headOf(w)}が 手札に 来たよ\nこの ターン だけ`, 1300);
         } else {
           const og = $('.cbopp .ogem');

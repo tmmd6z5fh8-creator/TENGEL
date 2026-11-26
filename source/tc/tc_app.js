@@ -134,7 +134,11 @@ const TCApp = (() => {
     const LOOPS_OLD = { divine: { pre: 0.5, len: 32 * 4 * 60 / 156 } };
     let hold = null, aim = null;
     function buf(f) { if (!cache[f]) cache[f] = fetch(AP(f)).then(r => { if (!r.ok) throw new Error('no ' + f); return r.arrayBuffer(); }).then(b => new Promise((ok, ng) => { const q = ac.decodeAudioData(b, ok, ng); if (q && q.catch) q.catch(() => { }); })); return cache[f]; }
-    function unlock() { try { if (!ac) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ac = new AC(); master = ac.createGain(); master.gain.value = on ? 1 : 0; master.connect(ac.destination); } if (ac.state === 'suspended') ac.resume(); } catch (e) { } }
+    // 第4.225版（まさちゃん 2026/11/26 13:57「①トレーニングセンターから戻る時に、変な音がなる。」）：閉じる ときは ぜんぶの 音を 少しずつ 小さく してから 止める（下の stopAll）。
+    //   小さく して いる とちゅう・止めた あとに また 開いた ときは、ここで 元の 大きさに もどす（lvl）
+    let quietT = 0;
+    function lvl() { if (!master) return; try { const n = ac.currentTime; master.gain.cancelScheduledValues(n); master.gain.setValueAtTime(on ? 1 : 0, n); } catch (e) { master.gain.value = on ? 1 : 0; } }
+    function unlock() { try { if (!ac) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ac = new AC(); master = ac.createGain(); master.gain.value = on ? 1 : 0; master.connect(ac.destination); } clearTimeout(quietT); quietT = 0; lvl(); if (ac.state === 'suspended') ac.resume(); } catch (e) { } }
     // いま 鳴って いる 音を fout 秒で 消して、name の 音を fin 秒で 入れる（name が 空・ない ときは 何も 鳴らさない）。同じ 音が もう 鳴って いれば 何も しない
     async function swap(name, fout, fin) {
       aim = name || ''; if (!ac) return; if (bed && bed.name === aim) return;
@@ -159,8 +163,17 @@ const TCApp = (() => {
       if (!ac || !on) return; let b; try { b = await buf(name); } catch (e) { return; }
       try { const s = ac.createBufferSource(); s.buffer = b; const g = ac.createGain(); g.gain.value = gain == null ? 1 : gain; s.connect(g); g.connect(master); s.start(ac.currentTime + Math.max(0, at || 0)); return s; } catch (e) { }
     }
-    function stopAll() { if (bed) { try { bed.s.stop(); } catch (e) { } bed = null; } want = null; hold = null; aim = null; if (ac && ac.state === 'running') { try { ac.suspend(); } catch (e) { } } }
-    function setOn(v) { on = !!v; if (master) master.gain.value = on ? 1 : 0; }
+    // 前は 鳴って いる 音を いきなり 止めて、すぐ 音の 出口（AudioContext）も 止めて いた → 「ブツッ・ジジッ」と 変な 音が 出る ことが あった。
+    //   第4.225版：ぜんぶの 音（フィールドの 音・BGM・効果音）を STOP_F 秒で 小さく → 鳴らして いた 音を 止める → 0.3秒 あとに 出口を 休ませる（カードバトルと 同じ 形）
+    const STOP_F = 0.15;
+    function stopAll() {
+      const old = bed; bed = null; want = null; hold = null; aim = null;
+      if (!ac) return;
+      try { const n = ac.currentTime; master.gain.cancelScheduledValues(n); master.gain.setValueAtTime(master.gain.value, n); master.gain.linearRampToValueAtTime(0, n + STOP_F); if (old) old.s.stop(n + STOP_F + 0.05); } catch (e) { try { if (old) old.s.stop(); } catch (x) { } }
+      clearTimeout(quietT);
+      quietT = setTimeout(() => { quietT = 0; if (ac && ac.state === 'running' && !bed) { try { const q = ac.suspend(); if (q && q.catch) q.catch(() => { }); } catch (e) { } } }, 300);
+    }
+    function setOn(v) { on = !!v; lvl(); }
     function preload(list) { if (!ac) return; list.forEach(f => buf(f).catch(() => { })); }
     return { unlock, field, bgm, se, stopAll, setOn, preload, get ac() { return ac; }, get bed() { return bed ? bed.name : null; }, get hold() { return hold; }, get loop() { return bed ? [bed.s.loopStart, bed.s.loopEnd] : null; }, LOOPS };      // loop（第4.171版）＝いまの 音の くり返す 所（秒：はじめ・おわり。0・0 は ファイルの はじめから おわりまで）
   })();

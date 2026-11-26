@@ -11,8 +11,9 @@
 //     左の 値段の 字を かくす（4けたの 値段だと「やめる」の 下に もぐって 切れて 見えた：値段は 緑の ボタンに 書いて ある）
 //   TCBuy.open(el, api)・TCBuy.close()・TCBuy.isOpen()　api＝tc_app.js の BUY（info・buy・guide・se）
 const TCBuy = (() => {
+  // 第4.225版：窓の 中も ダブルタップで 拡大しない（touch-action:auto → manipulation：スクロールと 2本指の 拡大は できる）
   const CSS = `
-#tcb{position:absolute;inset:0;z-index:22;display:none;align-items:center;justify-content:center;pointer-events:auto;touch-action:auto;font-family:"BIZ UDPGothic",BIZ,"Hiragino Sans","Noto Sans CJK JP",sans-serif}
+#tcb{position:absolute;inset:0;z-index:22;display:none;align-items:center;justify-content:center;pointer-events:auto;touch-action:manipulation;font-family:"BIZ UDPGothic",BIZ,"Hiragino Sans","Noto Sans CJK JP",sans-serif}
 #tcb .bbk{position:absolute;inset:0;background:rgba(30,18,6,.5)}
 #tcb .bsh{position:relative;width:calc(100% - 24px);max-width:420px;max-height:calc(100% - 16px);background:#fff8ec;border-radius:18px;box-shadow:0 6px 18px rgba(0,0,0,.35);overflow:hidden;display:flex;flex-direction:column}
 #tcb .bhd{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px 6px 14px;background:linear-gradient(#f6e3bf,#efd6a8);border-bottom:2px solid #e2c48e}

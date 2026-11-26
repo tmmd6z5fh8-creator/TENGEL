@@ -970,9 +970,9 @@ try:
 
         print('■ あそび方・エラー')
         pg.locator('#cbOv .cbmenu [data-cb=help]').click(); pg.wait_for_timeout(200)
-        hl = pg.locator('#cbOv .cbhelp').inner_text()
+        hl = pg.evaluate("() => document.querySelector('#cbOv .cbhelp').textContent")      # 第4.225版：「そのほか」は 開いて 読む（閉じて いても 中の 字は ある）
         check('⚔️ 決戦調査' in hl and 'Lv12 6連勝 250枚' in hl and '毎月 1日に リセット' in hl and '同じ 戦を やり直し' in hl, '遊び方に「⚔️ 決戦調査」（連勝・コイン・同点・リセット）')
-        check('決戦宝石' in hl and '決戦調査では いつも 使えるよ' in hl and '5つ 1回ずつ（合計 5個）' in hl and '1試合で 5つ 1回ずつ' in hl and '幻影のアメジスト＝幻の馬トークン' in hl and '三峰の翡翠＝7トークン（1枚で 3頭分）' in hl and '手札が 6枚 以下' in hl and 'その ターン だけ' in hl, '第4.197版：遊び方に「決戦宝石」（決戦調査は いつも・1つの 調査で 5つ 1回ずつ・友達との 対戦は 1試合で 5つ・使える とき・その ターン だけ）')
+        check('決戦宝石' in hl and '⚔️ 決戦調査いつも 使える！1つの 調査（連勝が 続く 間）で 5つを 1回ずつ' in hl and '2人とも 1試合で 5つを 1回ずつ' in hl and '幻影のアメジスト幻の馬トークン' in hl and '三峰の翡翠7トークン3頭分' in hl and '手札が 6枚 以下' in hl and 'その ターン だけ' in hl, '第4.197版：遊び方に「決戦宝石」（決戦調査は いつも・1つの 調査で 5つ 1回ずつ・友達との 対戦は 1試合で 5つ・宝石と トークン・使える とき・その ターン だけ）（第4.225版：絵の 説明書の 形）')
         hi = pg.evaluate("() => { const h = document.querySelector('#cbOv .cbhelp'), li = [...h.querySelectorAll('li')].find(e => e.textContent.trim().indexOf('調査隊切符') === 0), i = li && li.querySelector('img.tki'); return { emo: /[💎🎫]/u.test(h.textContent), first: !!(li && li.firstElementChild === i), src: i && i.getAttribute('src'), ok: !!i && i.complete && i.naturalWidth > 0, gh: [...h.querySelectorAll('h4')].map(e => e.textContent).filter(x => x.indexOf('決戦宝石') >= 0) }; }")
         check(not hi['emo'] and hi['first'] and hi['src'] == 'cb_q_tk.webp' and (hi['ok'] or not HAVE) and hi['gh'] == ['決戦宝石'], f'第4.205版：遊び方に 💎・🎫 は ない（見出しは「決戦宝石」）・調査隊切符の 行の 頭は 切符の 絵 {hi}')
         check(not errs, f'画面の エラー なし {errs[:3]}')
