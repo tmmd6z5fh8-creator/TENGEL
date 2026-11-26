@@ -3,7 +3,7 @@
 #     ・推し馬からも作戦会議に飛べるようにして！時間がやりたいレースの通知時間が来たら、推し馬のアイコンのところにも、通知が来てることが分かるようにして！」
 #   12:11「壁紙のところ、無課金のポイントでGETできる組は、定番じゃなくてポイント壁紙カスタムにして、項目ごとに分けずに並べて！」
 #   12:13「テンゲルデータのみは、記録数載せなくていい！他の解放したマザーデータは全て表示して！」（答え「使っているデータだけ」）
-#   ・トレーニングセンターの 丸：今の お世話トークンの 数（tc_app.js の accrue と 同じ 数え方：5分ごとに 5個・25個 まで・はじめは 5個・数が かわる 時刻に 書き直す）
+#   ・トレーニングセンターの 丸：今の お世話トークンの 数（tc_app.js の accrue と 同じ 数え方：8分ごとに 5個〈第4.230版：前は 5分〉・25個 まで・はじめは 5個・数が かわる 時刻に 書き直す）
 #   ・TENGERカードバトルの 丸：今の 調査隊切符の 枚数（cb_app.js の qtNow と 同じ：30分で 1枚・15枚 まで・はじめは 15枚）・解放 して いない（🔒）ときは 出さない
 #   ・推し馬の 丸：通知が オンで、予約した レースの 選んだ お知らせの 時刻が 来て から 発走 まで 🔔（作戦会議を 開いたら 消える）。🔔 の ときに 押すと 予約した レースの 方が 開く
 #   ・作戦会議：行き先の 札（📋 作戦会議／🐴 推し馬）は 見出しの すぐ 下に 止まる・見て いる 方の 色・まもなく 発走の レースに「🔔 まもなく発走」
@@ -125,16 +125,16 @@ try:
         check(t0['t'] == '5' and t0['cls'] == 'fabc tk' and t0['al'] == 'トレーニングセンター（お世話トークン 5個・押すと 開くよ）' and t0['ah'] == 'true' and t0['corner'] and t0['inView'] and t0['pe'] == 'none' and t0['fs'] >= 10.5 and t0['h'] >= 18,
               f'まだ 開いた ことが ない：丸の 右上に はじめの 5（読み上げは「お世話トークン 5個」・押しても 丸が 押される）（{t0}）')
         res = []
-        for s, at, seen, want in (({'stock': 7}, -11, None, '17'), ({'stock': 25}, -1, None, '25'), ({'stock': 20}, -30, None, '25'), ({'stock': 0}, 0, None, '0'),
-                                  ({'stock': 10}, -1, 10, '20'), ({'stock': 10}, 3, None, '10')):
+        for s, at, seen, want in (({'stock': 7}, -17, None, '17'), ({'stock': 25}, -1, None, '25'), ({'stock': 20}, -30, None, '25'), ({'stock': 0}, 0, None, '0'),
+                                  ({'stock': 10}, -1, 16, '20'), ({'stock': 10}, 3, None, '10')):
             pg.evaluate(SETTC, {'s': s, 'at': at, 'seen': seen}); pg.wait_for_timeout(80); g = pg.evaluate(BADGE, 'tcFab'); res.append((g['t'], want, g['cls']))
         check(all(a == w for a, w, _ in res) and res[3][2] == 'fabc tk z' and res[0][2] == 'fabc tk',
-              f'たまる 数（5分ごとに 5個・25個 まで・もどらない 時計・時計が 先の とき は ふえない）・0 は うすく：{[(a, w) for a, w, _ in res]}')
-        pg.evaluate(SETTC, {'s': {'stock': 10}, 'at': -5 + 2.5 / 60}); pg.wait_for_timeout(100); a1 = pg.evaluate(BADGE, 'tcFab')['t']
+              f'たまる 数（8分ごとに 5個〈第4.230版〉・25個 まで・もどらない 時計・時計が 先の とき は ふえない）・0 は うすく：{[(a, w) for a, w, _ in res]}')
+        pg.evaluate(SETTC, {'s': {'stock': 10}, 'at': -8 + 2.5 / 60}); pg.wait_for_timeout(100); a1 = pg.evaluate(BADGE, 'tcFab')['t']
         pg.wait_for_timeout(3600); a2 = pg.evaluate(BADGE, 'tcFab')
-        check(a1 == '10' and a2['t'] == '15' and '15個' in a2['al'], f'5分 たった 時刻に 自分で 書き直す（何も しなくても 10 → 15・読み上げも：{a1} → {a2["t"]}）')
+        check(a1 == '10' and a2['t'] == '15' and '15個' in a2['al'], f'8分 たった 時刻に 自分で 書き直す（何も しなくても 10 → 15・読み上げも：{a1} → {a2["t"]}）')
         # トレーニングセンターの 中の 数と 同じ（tc_bundle.js の TCApp.tokens.now：アプリの 中と 同じ 数え方）
-        pg.evaluate(SETTC, {'s': {'stock': 3}, 'at': -17}); pg.wait_for_timeout(80); b1 = pg.evaluate(BADGE, 'tcFab')['t']
+        pg.evaluate(SETTC, {'s': {'stock': 3}, 'at': -25}); pg.wait_for_timeout(80); b1 = pg.evaluate(BADGE, 'tcFab')['t']
         tcn = pg.evaluate("async () => { await new Promise((ok, ng) => { const s = document.createElement('script'); s.src = 'tc_bundle.js'; s.onload = ok; s.onerror = ng; document.head.appendChild(s); }); return TCApp.tokens.now().stock; }")
         pg.evaluate("() => document.dispatchEvent(new CustomEvent('tengel:tc'))"); pg.wait_for_timeout(80); b2 = pg.evaluate(BADGE, 'tcFab')['t']
         check(b1 == '18' and tcn == 18 and b2 == '18', f'トレーニングセンターの 中の 数（TCApp.tokens.now {tcn}）と 同じ（読む 前 {b1}・読んだ あと {b2}）')

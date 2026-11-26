@@ -19,9 +19,10 @@
 //           もと：10こ目の ハートの 反応（のび 4.6秒・小さい 馬の はしゃぐ）が ごろん（横に なる）と 重なって、横に なった まま 体が はずんで いた。
 //           抽選は 反応が おわって から・はしゃぐ／あくび などは 抽選の ときは 出さない・横に なる 間は お世話の 反応を 止める（tc_horse.js）
 //       10こで 1/66 の 抽選 → 当たり：ぴょん ＋ お世話 5回 解放／ハズレ：ふぅ〜（どちらも 少し しゃがんで ためてから）
+//       第4.230版（まさちゃん 2026/11/27 00:29「撫でるのハート10個でお世話トークン抽選の確率を1/22に変更して！」）：1/66 → 1/22（RULE.win）。お世話トークンが たまる のは 8分ごとに 5つ（RULE.stockEvery 480秒：tc_app.js の TOKEN_MIN）
 //       第4.156版（まさちゃん 2026/11/12 04:20「トレーニングセンターの馬の寝転ぶ演出は全部消して！」）：ハズレの ごろん・夜の ねむる を なくした（横に なる 動きは どこにも 出ない）
 //       ※ぴょんは 当たりの 合図 なので、ほかの 場面では とばない（小さい 子の はしゃぎも とばない）
-//   ・お世話の ストック（お世話トークン）：5分ごとに +5・最高 25（第4.165版：10分 → 5分。数えるのは tc_app.js。下の 列の 1番 右の「お世話トークン購入」から ポイントで 買える：tc_buy.js）
+//   ・お世話の ストック（お世話トークン）：8分ごとに +5・最高 25（第4.230版：5分 → 8分・第4.165版：10分 → 5分。数えるのは tc_app.js。下の 列の 1番 右の「お世話トークン購入」から ポイントで 買える：tc_buy.js）
 //   ・ちかちか しない（光らせない・ふくらむ ものは ゆっくり）
 //   TCCare.init(o)・TCCare.pre(t, dt)（馬を 動かす 前）・TCCare.post(t)（馬を 描いた あと）・TCCare.input(kind, x, y, t)（フィールドの 絵の px）
 //   見本：preview3d.html?care=pet_a など（決まった 指の 動きを 時間で 流す・音の きっかけは window.__events()）
@@ -31,6 +32,8 @@
 //   ・ごはん（お世話トークン 1つ）：エサ・リンゴ・ニンジンから えらぶ（今日の 好物は 日ごとに かわる）
 //       エサ → その場で バケツから もぐもぐ（3回で からっぽ）→ ぺろっ／リンゴ・ニンジン → 手から 3口（シャクッ）
 //       好物 → 大よろこび・金のニンジン（ニンジンの 1/30）→ なかよし +3・ときどき おかわりの目（こちらを じっと 見る：見た目 だけ）
+//       第4.230版（まさちゃん 2026/11/27 00:37「トレーニングセンター今ニンジンしか金色ないけど、りんごとバケツのエサも金色作れる？効果は金のニンジンと同じでいいから！」）：
+//         金の リンゴ・金の エサ（バケツごと 金色）も 出る。どれも 1/30・なかよし +3・抽選を しない ごはんでは 出ない（金のニンジンと 同じ）。絵は 下の goldify
 //       第4.168版（まさちゃん 2026/11/14 01:26「ごはんをあげたあと、おかわり？の時だけ抽選ボタンが出るのが遅すぎる。通常の時と同じ速度で表示して！」）：
 //         前は おかわりの目が 出ると、なでて もらう（→ まんぞく）のを 6.5秒 まで 待って から おしまい ＝ お世話の あとの PUSH が その ぶん おそく 出て いた。
 //         → 待たない：「おかわり…？」の 札と 目は 出す が、おしまいは いつもと 同じ 時（PUSH も 同じ はやさ）。なでて まんぞく、は なくした（PUSH が 出て いる 間は なでられない ため）
@@ -48,12 +51,12 @@ const TCCare = (() => {
   const angDiff = (a, b) => { let d = (b - a) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return d; };
   const FONT = '"BIZ UDPGothic", BIZ, "Hiragino Sans", "Noto Sans CJK JP", sans-serif';
   const AP = p => (typeof window !== 'undefined' && typeof window.TC_ASSET === 'function') ? window.TC_ASSET(p) : p;      // 絵の 場所（アプリは 名前だけ）
-  const RULE = { strokes: 3, strokeLen: 34, cool: 7, streak: 5, perMin: 5, max: 10, win: 1 / 66, unlock: 5, stockMax: 25, stockEvery: 300, stockStep: 5, lotStock: 20 };      // 第4.165版：stockEvery 600 → 300秒（5分ごとに 5つ：tc_app.js の TOKEN_MIN と 同じ）／第4.159版（まさちゃん 11/12 10:37「お世話の最大トークン25回にして！」）：stockMax 20 → 25
+  const RULE = { strokes: 3, strokeLen: 34, cool: 7, streak: 5, perMin: 5, max: 10, win: 1 / 22, unlock: 5, stockMax: 25, stockEvery: 480, stockStep: 5, lotStock: 20 };      // 第4.230版：stockEvery 300 → 480秒（8分ごとに 5つ：tc_app.js の TOKEN_MIN と 同じ）・win 1/66 → 1/22／第4.165版：600 → 300秒／第4.159版（まさちゃん 11/12 10:37「お世話の最大トークン25回にして！」）：stockMax 20 → 25
   const HURRY = 2.8, ZOOM_IN = 0.5, ZOOM_OUT = 0.6, NEAR_Y = 1040, STEP_Y = 230, ZOOM_MIN = 2.2, ZOOM_MAX = 2.7;
   //   第4.151版：急ぎ足（歩く・向きを かえる 速さの 倍）・ズームの 秒（前は 0.95）・呼ぶで 来る 所（いちばん 手前まで 歩かない：いまの 所から STEP_Y だけ 手前・NEAR_Y より 奥なら NEAR_Y まで）
   //   ズームの 上限：いちばん 手前まで 来た とき（2.2倍）と 同じ 大きさに 見える 倍率（奥に 立って いる ぶん 大きく 寄る・2.7倍まで）
 
-  let g = null, G0 = null, HO = null, BR = null, O = {}, rnd = Math.random, apple = null, carrot = null, carrotG = null, bucket = null, BANNER = null, PROPS = null;
+  let g = null, G0 = null, HO = null, BR = null, O = {}, rnd = Math.random, apple = null, carrot = null, carrotG = null, bucket = null, BANNER = null, PROPS = null, appleG = null, PROPG = null;      // appleG・PROPG：金の リンゴ・金の バケツと エサ（第4.230版：はじめて 出た ときに 作る）
   const FRONT = { x: 526, y: 1372 };          // 画面の いちばん 手前（撫でる・呼ぶで 来る 所）
   function front() {                          // 大きな 馬（幻の馬・神様馬：5段階の 1.7倍）は 横向きで 画面に 収まる 所まで 下がる（11/09 11:38 まさちゃん「他の馬と同じ動きにして！」）
     let y = FRONT.y; while (y > 960 && TCHorse.scaleAt(HO, y) * 1.8 > 0.47 * W) y -= 8; return { x: FRONT.x, y, big: y < FRONT.y };      // 大きな 馬は まん中（頭も しっぽも 画面に 入る）
@@ -361,7 +364,7 @@ const TCCare = (() => {
   //   ごはん・おそうじの ボタンを 押したら、先に 札「抽選を する」「抽選を しない」（左上に「← もどる」・もう一度 同じ ボタンでも とじる）。
   //   ・抽選を する＝いままで どおり：お世話が おわったら PUSH（押した ときに トークン −1 → 抽選）。トークンが 1つ 以上 いる（ない ときは 札「お世話トークンが ないよ」）
   //   ・抽選を しない＝お世話 だけ：PUSH は 出ない・トークンは 使わない（0こ でも できる）。トークンを 使わない ので、お世話の 回数（馬の 成長・馬の 入れかえの 5回・ミッション）には 数えない
-  //     （数えるのは トークン 1こ＝お世話 1回：第4.159版）。ただで なかよしハートを ふやせない ように、金のニンジン（なかよし ＋3）は 出ない。
+  //     （数えるのは トークン 1こ＝お世話 1回：第4.159版）。ただで なかよしハートを ふやせない ように、金のニンジン（なかよし ＋3）は 出ない（第4.230版：金の リンゴ・金の エサも 出ない）。
   //     ゴミ・うんちは 片付く（金のうんちの 高確ゾーンも つく）・好物の「だいすき！」・おかわりの目は いつもと 同じ
   //   ・えらんだら すぐ 次へ（ごはん＝えらぶ 札・おそうじ＝ほうきと ちりとり）。札は 0.25秒で 消える（askOut）
   //   ・見本（S.demo）と、アプリで ない とき（O.lottery が ない）は 札を 出さない（いままで どおり）
@@ -390,7 +393,9 @@ const TCCare = (() => {
     at(t + 0.25, tt => {
       S.chooser = null;
       if (S.withLot && !haveToken(tt, 'feed')) { S.phase = 'idle'; S.mode = null; BR.careHold = false; return; }
-      const gold = kind === 'carrot' && S.withLot && (S.demo && S.demo.gold != null ? S.demo.gold : T1('gold', () => rnd() < 1 / 30));      // 第4.175版：抽選を しない ごはんでは 金のニンジンは 出ない
+      // 第4.175版：抽選を しない ごはんでは 金のニンジンは 出ない／第4.230版：エサ・リンゴも 1/30 で 金色（見本は 決めた とおり：gold が ない 見本は ふつう）
+      const gold = !!S.withLot && (S.demo ? !!S.demo.gold : !!T1('gold', () => rnd() < 1 / 30));
+      if (gold) { if (kind === 'apple') appleGold(); else if (kind === 'esa') propsGold(); }      // 金の 絵を 先に 作る（はじめての とき だけ：馬が 来る 前）
       S.feed = { kind, gold, fav: kind === S.fav, bites: 0, t0: tt };
       if (BR.stand) { BR.reacts = []; mark('A', tt); feedStart(tt); return; }          // 幻の馬・神様馬：正面の まま
       comeNear(tt);
@@ -415,30 +420,37 @@ const TCCare = (() => {
         F.b3 = place3(TCHorse.anchorPose(HO, mats, 'nose'), TCHorse.anchorPose(HO, mats, 'eye'), TCHorse.anchorPose(HO, mats, 'poll'), TCHorse.anchorPose(HO, mats1, 'nose'), ds);
       }
       at(t + 0.3, tt => { S.grazeOK = true; BR.want.graze = 1; react('deep', F.b3 ? 4.8 : 4.4, tt, F.b3 ? { ds } : null); });
-      for (let k = 0; k < 3; k++) at(t + 1.2 + k * 1.0, tt => { F.bucket.level = 2 - k; ev(tt, 'munch', { n: k }); const b = F.bucket, rw = F.b3 ? TCHorse.project(HO, [F.b3.cx, F.b3.R, F.b3.cz]) : null; fx({ k: 'crumbs', t0: tt, w: rw || [b.x, b.y - (b.lh + 0.48) * s], col: ['#e8c46a', '#d9a94a', '#f2dc94'] }); });
+      const rim = () => { const b = F.bucket; return (F.b3 ? TCHorse.project(HO, [F.b3.cx, F.b3.R, F.b3.cz]) : null) || [b.x, b.y - (b.lh + 0.48) * s]; };      // バケツの 口（体の 座標 → フィールド）
+      if (F.gold) at(t + 0.3, tt => { F.glintW = rim(); goldTag(tt); });      // 第4.230版：金の エサ（バケツごと 金色）
+      for (let k = 0; k < 3; k++) at(t + 1.2 + k * 1.0, tt => { F.bucket.level = 2 - k; ev(tt, 'munch', { n: k }); fx({ k: 'crumbs', t0: tt, w: rim(), col: F.gold ? GOLD_CRUMBS : ['#e8c46a', '#d9a94a', '#f2dc94'] }); });
       at(t + 4.4, tt => { BR.want.graze = 0; S.grazeOK = false; });
       at(t + 4.9, tt => { react('lick', 1.3, tt, { side: sideToward(BR.x, BR.y + 200) }); ev(tt, 'lick'); tagW(P('nose'), 'ぺろっ', tt + 0.2, { off: [0, -90], size: 34 }); });
       at(t + 6.1, tt => { F.bucket.hideT = tt; ev(tt, 'fold'); });
       at(t + 6.7, tt => feedAfter(tt));
     } else {                            // リンゴ・ニンジン：手から 3口
       F.handT = t; F.itemW = itemPos(); ev(t, 'unfold');
-      if (F.gold) at(t + 0.3, tt => { fx({ k: 'glint', t0: tt, dur: 3.2 }); ev(tt, 'gold'); tagW(P('nose'), '金のニンジン！', tt + 0.1, { off: [0, -150], size: 36, dur: 1.8, col: '#b07a10' }); });
+      if (F.gold) at(t + 0.3, tt => goldTag(tt));      // 金の リンゴ（第4.230版）・金の ニンジン
       for (let k = 0; k < 3; k++) at(t + (F.gold ? 1.2 : 0.7) + k * 1.0, tt => {
         F.bites = k + 1; react('eat', 0.95, tt, { side: sideToward(BR.x, BR.y + 200) }); ev(tt, 'bite', { n: k, kind: F.kind });
-        const q = F.itemW; fx({ k: 'crumbs', t0: tt, w: q, col: F.kind === 'apple' ? ['#f4efe0', '#d9343c', '#f7e9c8'] : F.gold ? ['#ffd65c', '#fff1b0', '#e9b13a'] : ['#f08a2a', '#ffb25c', '#f6c38a'] });
+        const q = F.itemW; fx({ k: 'crumbs', t0: tt, w: q, col: F.gold ? GOLD_CRUMBS : F.kind === 'apple' ? ['#f4efe0', '#d9343c', '#f7e9c8'] : ['#f08a2a', '#ffb25c', '#f6c38a'] });
         if (k === 0) tagW(P('nose'), 'シャクッ', tt + 0.05, { off: [-20, -100], size: 34, dur: 1.0 });
       });
       at(t + (F.gold ? 3.9 : 3.4), tt => { F.handHide = tt; ev(tt, 'fold'); });
       at(t + (F.gold ? 4.3 : 3.8), tt => feedAfter(tt));
     }
   }
-  function feedAfter(t) {                // 食べた あと：好物・金のニンジン・おかわりの目
+  const GOLD_NAME = { esa: '金のエサ！', apple: '金のリンゴ！', carrot: '金のニンジン！' }, GOLD_CRUMBS = ['#ffd65c', '#fff1b0', '#e9b13a'];
+  function goldTag(t) {                   // 金の ごはん：きらきら・キラーン・札（第4.230版：エサ・リンゴも）
+    const F = S.feed; fx({ k: 'glint', t0: t, dur: 3.2 }); ev(t, 'gold');
+    tagW(P('nose'), GOLD_NAME[F.kind] || GOLD_NAME.carrot, t + 0.1, { off: [0, -150], size: 36, dur: 1.8, col: '#b07a10' });
+  }
+  function feedAfter(t) {                // 食べた あと：好物・金の ごはん（ニンジン・リンゴ・エサ）・おかわりの目
     const F = S.feed; let end = t + 0.4;
     if (F.fav) { at(t + 0.1, tt => { react('happy', 2.6, tt); react('nod', 1.4, tt + 0.3); ev(tt, 'yummy'); tagW(P('poll'), '大好き！', tt + 0.1, { off: [30, -100], size: 40, dur: 2.0 });
       for (let k = 0; k < 5; k++) at(tt + 0.2 + k * 0.3, t2 => { const p = P('poll'); if (p) fx({ k: 'mini', t0: t2, w: [p[0] + (hash(t2 * 3) - 0.5) * 120, p[1] - 10], r: 22, dx: (hash(t2 * 7) - 0.5) * 70 }); ev(t2, 'heartpop'); }); }); end = t + 2.8; }
     if (F.gold) {                       // なかよし +3
       for (let k = 0; k < 3; k++) at(t + 0.3 + k * 0.3, tt => {
-        const q = toS(F.itemW || itemPos()), i = Math.min(S.heart, RULE.max - 1); fx({ k: 'fly', t0: tt, x: q[0], y: q[1], i, dur: 0.8 }); ev(tt, 'heart'); S.heart = Math.min(RULE.max, S.heart + 1);
+        const q = toS(F.itemW || F.glintW || itemPos()), i = Math.min(S.heart, RULE.max - 1); fx({ k: 'fly', t0: tt, x: q[0], y: q[1], i, dur: 0.8 }); ev(tt, 'heart'); S.heart = Math.min(RULE.max, S.heart + 1);
         at(tt + 0.8, t2 => { S.heartShow = Math.max(S.heartShow, i + 1); ev(t2, 'slot', { n: i + 1 }); fx({ k: 'pop', t0: t2, x: SLOT(i)[0], y: SLOT(i)[1] }); });
       });
       at(t + 0.3, tt => tagW(P('poll'), '仲良し +3', tt, { off: [30, -110], size: 38, dur: 1.8, col: '#c2456f' }));
@@ -874,7 +886,7 @@ const TCCare = (() => {
     S.hand.hideT = t + 0.55; at(t + 0.55, tt => ev(tt, 'fold'));
     S.holdUntil = end + 0.5; S.ses.done = true;
   }
-  // なかよしハート 10こ：1/66 の 抽選（当たり：ぴょん ＋ お世話 5回 解放／ハズレ：ふぅ〜〈第4.155版までは ごろん〉）
+  // なかよしハート 10こ：1/22 の 抽選（第4.230版：1/66 → 1/22。当たり：ぴょん ＋ お世話 5回 解放／ハズレ：ふぅ〜〈第4.155版までは ごろん〉）
   function lottery(t) {
     const win = S.demo && S.demo.win != null ? S.demo.win : T1('win', () => rnd() < RULE.win);
     S.lot = { t0: t, win }; ev(t, 'max'); S.holdUntil = Infinity; S.petGen++; cutReacts(t);
@@ -969,7 +981,7 @@ const TCCare = (() => {
     // ハートは 1分に 5こまで
     pet_f: { front: 1, heart: 5, got: [-50, -41, -30, -19, -8], greeted: true, cap: [[0.2, 'R+6.0', 'ハートは 1分に 5個まで']], path: PET3('neckA', 'neckB'), end: 'R+6.2' },
     // なかよしハート 10こ → 抽選
-    pet_g: { front: 1, heart: 9, got: [], greeted: true, win: false, cap: [[0.2, 'R+3.4', 'ハートが 10個に なると…'], ['R+3.4', 'R+9.6', '抽選（1/66）→ ハズレは ふぅ〜']], path: PET3('neckA', 'neckB'), end: 'R+9.8' },
+    pet_g: { front: 1, heart: 9, got: [], greeted: true, win: false, cap: [[0.2, 'R+3.4', 'ハートが 10個に なると…'], ['R+3.4', 'R+9.6', '抽選（1/22）→ ハズレは ふぅ〜']], path: PET3('neckA', 'neckB'), end: 'R+9.8' },
     pet_h: { front: 1, heart: 9, got: [], greeted: true, win: true, cap: [[0.2, 'R+3.4', 'ハートが 10個に なると…'], ['R+3.4', 'R+11.2', '当たり → ぴょん！ お世話 5回 解放']], path: PET3('neckA', 'neckB'), end: 'R+11.4' },
     // ④ 時間帯・⑤ 育ち・たまに
     pet_i: { front: 1, heart: 2, got: [-30, -15], greeted: true, cap: [[0.2, 'R+9.6', '夕方は ゆったり 寄りかかる']], path: PET3('neckA', 'neckB', 0.7, 0.4), end: 'R+9.8' },
@@ -984,7 +996,7 @@ const TCCare = (() => {
     feed_a: { press: [[0.8, 'feed'], [2.3, 'pick', 'esa']], pt: null, beg: false, cap: [[0.2, 2.7, 'ご飯：エサ・リンゴ・ニンジンから 選ぶ'], [2.7, 'Z-0.2', 'エサ → バケツから もぐもぐ（3回で 空っぽ）']], end: 'Z+0.6' },
     feed_b: { press: [[0.6, 'feed'], [1.9, 'pick', 'apple'], ['Z+1.3', 'push']], pt: 100, beg: false, cap: [[0.2, 'F+0.2', 'リンゴ・ニンジン → 手から 3口'], ['F+0.2', 'F+3.8', 'シャクッ・シャクッ・シャクッ'], ['F+3.8', 'Z+0.1', '今日の 好物だと 大喜び'], ['Z+0.1', 'Z+1.3', 'お世話の 後に PUSH！'], ['Z+1.3', 'Z+3.5', '押すと 抽選 → 当たり → ピロン']], end: 'Z+3.6' },      // 第4.159版：当たりは PUSH を 押した とき
     feed_c: { heart: 2, got: [], press: [[0.6, 'feed'], [1.9, 'pick', 'carrot']], gold: true, pt: null, beg: true,      // 第4.168版：おかわりの目は 見た目 だけ（なでる 手の 見本は なくした）
-      cap: [[0.2, 'F+0.4', 'ニンジンは 1/30で 金のニンジン'], ['F+0.4', 'B-0.2', '金のニンジン → 仲良し +3'], ['B-0.2', 'Z+0.6', '時々 おかわりの目（こっちを 見つめる）']], end: 'Z+1.6' },
+      cap: [[0.2, 'F+0.4', 'エサ・リンゴ・ニンジンは 1/30で 金色'], ['F+0.4', 'B-0.2', '金の ごはん → 仲良し +3'], ['B-0.2', 'Z+0.6', '時々 おかわりの目（こっちを 見つめる）']], end: 'Z+1.6' },
     feed_d: { press: [[0.6, 'feed'], [1.9, 'pick', 'carrot']], gold: false, pt: null, beg: false, cap: [[0.2, 'F+0.2', 'ニンジン → 手から 3口'], ['F+0.2', 'Z+0.2', '先から シャクッ・シャクッ・シャクッ']], end: 'Z+0.6' },
     ban_k: { rt: [6.4, 6.7], cap: [], end: 10.6 },          // 神様馬の フィールド：降臨の バナー → 当選で ルーレット → 消える → もどる
     ban_m: { rt: [6.4, 6.7], cap: [], end: 10.6 },
@@ -1031,12 +1043,14 @@ const TCCare = (() => {
     const op = b.hideT != null ? 1 - sm((t - b.hideT) / 0.45) : backOut((t - b.t0) / 0.45); if (op <= 0.01) return null;
     const M = TCHorse.M, ox = 0.86 + 0.14 * clamp(op, 0, 1.2), oy = Math.max(0.02, op);
     const mB = M.mul(M.tr(q.cx, 0, q.cz), M.mul(M.ry(B3.yaw), M.sc(q.sB * ox, q.sB * oy, q.sB * ox)));
-    const out = [{ P: PROPS.bucket, m: mB, sh: [q.cx, q.cz, 0.8 * q.sB * ox, 0.8 * clamp(op, 0, 1)] }];
-    if (PROPS.feed) {
+    const GP = F.gold ? propsGold() : null, PB = (GP && GP.bucket) || PROPS.bucket, PF = (GP && GP.feed) || PROPS.feed;      // 第4.230版：金の エサは バケツごと 金色
+    const lift = GP ? GOLD_LIFT : 0;      // 金は 少し 自分で 光る（夜・夕方の 青い 光でも 金に 見える：uLift）
+    const out = [{ P: PB, m: mB, sh: [q.cx, q.cz, 0.8 * q.sB * ox, 0.8 * clamp(op, 0, 1)], lift }];
+    if (PF) {
       const d = q.ds.reduce((a, s) => a + sm((t - s) / 0.45), 0) / q.ds.length;          // 0〜1：エサが 減った わりあい（馬の 首と 同じ 時刻）
       const top = lerp(q.top0, q.top1, d) * oy, rf0 = B3.feedR * innerR(1.75) * q.sB;      // エサの 山の 半径（バケツの 上の 方の 内がわに 合わせる）
       const hf = B3.feedH * rf0 * (1 - 0.6 * d) * oy, base = top - hf, rf = Math.min(rf0, B3.feedR * innerR(base / q.sB) * q.sB) * ox;
-      out.push({ P: PROPS.feed, m: M.mul(M.tr(q.cx, base, q.cz), M.mul(M.ry(0.7), M.sc(rf / 2.65, hf / 2.15, rf / 2.65))) });
+      out.push({ P: PF, m: M.mul(M.tr(q.cx, base, q.cz), M.mul(M.ry(0.7), M.sc(rf / 2.65, hf / 2.15, rf / 2.65))), lift });
     }
     return out;
   }
@@ -1047,11 +1061,40 @@ const TCCare = (() => {
       const bin = TCHorse.unz(await fetch(AP(`tc_items/${meta.bin || nm + '.bin'}`)).then(r => { if (!r.ok) throw new Error(nm); return r.arrayBuffer(); }));
       const im = f => f ? new Promise(ok => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = AP(`tc_items/${f}`); }) : Promise.resolve(null);
       const [texImg, nrmImg] = await Promise.all([im(meta.tex), im(meta.ntex)]);
-      return TCHorse.createProp(HO.gl, meta, bin, { texImg, nrmImg });
+      const pr = TCHorse.createProp(HO.gl, meta, bin, { texImg, nrmImg }); if (pr) pr.img = texImg; return pr;      // img：金の 絵を 作る もと（第4.230版）
     };
     try { const [b3, f3, br, pn] = await Promise.all([one('tc_prop_bucket'), one('tc_prop_feed').catch(() => null), one('tc_prop_broom').catch(() => null), one('tc_prop_pan').catch(() => null)]); return { bucket: b3, feed: f3, broom: br, pan: pn }; } catch (e) { return null; }
   }
-  function bucketArt(x, y, k, level, op, legH) {      // x,y：足もと（画面）・k：px／体の 高さ 1・level：0〜3・op：0〜1 ひらく・legH：台の 足の 長さ（体の 高さ 1 に 対して・ふつう 0.3）
+  // ---------- 金の ごはん（第4.230版・まさちゃん 2026/11/27 00:37「りんごとバケツのエサも金色作れる？効果は金のニンジンと同じでいいから！」）----------
+  //   金の リンゴ（手で あげる 絵）・金の エサ（3D の バケツと エサ：馬と 同じ 光で 描く）は、もとの 絵を その場で 金色に ぬり直す（ファイルは ふやさない・1回 作って とっておく）。
+  //   明るさ（3〜97% の はば：GOLD_Y）→ 金の 色の 表（GOLD_STOPS：暗い 所は こい 金・明るい 所は 白っぽい 金 ＝ 金のニンジンの 絵と 同じ 色あい）。
+  //   絵が 読めない（getImageData が できない）ときは 金色を 重ねる（金の うんちと 同じ）
+  const GOLD_STOPS = [[0, 110, 60, 0], [0.3, 165, 105, 2], [0.55, 205, 142, 12], [0.8, 245, 192, 42], [1, 255, 226, 110]];
+  const GOLD_Y = { apple: [50, 161], bucket: [20, 175], feed: [60, 210] }, GOLD_LIFT = 0.3;      // 3D は 少し 明るめ（GOLD_LIFT：かげも 明るく）
+  let GLUT = null;
+  function goldLut() {
+    if (GLUT) return GLUT; const L = new Uint8Array(768);
+    for (let i = 0; i < 256; i++) { const x = i / 255; let j = 1; while (j < GOLD_STOPS.length - 1 && x > GOLD_STOPS[j][0]) j++; const a = GOLD_STOPS[j - 1], b = GOLD_STOPS[j], u = clamp((x - a[0]) / (b[0] - a[0]), 0, 1); for (let c = 0; c < 3; c++) L[i * 3 + c] = Math.round(a[c + 1] + (b[c + 1] - a[c + 1]) * u); }
+    return (GLUT = L);
+  }
+  function goldify(src, y) {             // 金色に ぬり直した 紙（作った あと 中身は かわらない：_fix）
+    const w = src && (src.naturalWidth || src.width), h = src && (src.naturalHeight || src.height); if (!w || !h || typeof document === 'undefined') return null;
+    const c = document.createElement('canvas'); c.width = w; c.height = h; const q = c.getContext('2d'); if (!q) return null; q.drawImage(src, 0, 0);
+    try {
+      const d = q.getImageData(0, 0, w, h), a = d.data, L = goldLut(), k = 255 / (y[1] - y[0]);
+      for (let i = 0; i < a.length; i += 4) { const v = (0.299 * a[i] + 0.587 * a[i + 1] + 0.114 * a[i + 2] - y[0]) * k, n = (v <= 0 ? 0 : v >= 255 ? 255 : Math.round(v)) * 3; a[i] = L[n]; a[i + 1] = L[n + 1]; a[i + 2] = L[n + 2]; }
+      q.putImageData(d, 0, 0); c._how = 'lut';
+    } catch (e) { q.globalCompositeOperation = 'source-atop'; q.fillStyle = 'rgba(255,200,60,0.62)'; q.fillRect(0, 0, w, h); q.globalCompositeOperation = 'source-over'; c._how = 'tint'; }
+    c._fix = true; return c;
+  }
+  function appleGold() { if (!appleG && apple && apple.naturalWidth) appleG = goldify(apple, GOLD_Y.apple); return appleG; }
+  function propsGold() {                 // 金の バケツ・エサ（同じ 形に 金の 絵：TCHorse.propSkin）
+    if (PROPG || !PROPS || !PROPS.bucket || typeof TCHorse === 'undefined' || !TCHorse.propSkin) return PROPG;
+    const sk = (P, y) => { try { const c = P && P.img ? goldify(P.img, y) : null; return c ? TCHorse.propSkin(P, c) : null; } catch (e) { return null; } };
+    PROPG = { bucket: sk(PROPS.bucket, GOLD_Y.bucket), feed: sk(PROPS.feed, GOLD_Y.feed) };
+    return PROPG;
+  }
+  function bucketArt(x, y, k, level, op, legH, gold) {      // x,y：足もと（画面）・k：px／体の 高さ 1・level：0〜3・op：0〜1 ひらく・legH：台の 足の 長さ（体の 高さ 1 に 対して・ふつう 0.3）・gold：金の エサ（第4.230版）
     if (op <= 0.01) return;
     g.save(); g.translate(x, y); g.scale(1, op); g.lineWidth = 0.8;
     const sw = 0.5 * k, lh = (legH != null ? legH : 0.3) * k, bh = 0.42 * k, tw = 0.5 * k, bw = 0.38 * k;
@@ -1059,27 +1102,28 @@ const TCCare = (() => {
     for (const sx of [-1, 1]) { pf([[sx * sw * 0.36 - 4, -lh], [sx * sw * 0.36 + 4, -lh], [sx * sw * 0.42 + 4, 0], [sx * sw * 0.42 - 4, 0]], sx < 0 ? '#9c6a3c' : '#7e5330'); }      // 台の 足
     pf([[-sw / 2, -lh - 0.06 * k], [sw / 2, -lh - 0.06 * k], [sw / 2, -lh], [-sw / 2, -lh]], '#b98552'); pf([[-sw / 2, -lh], [sw / 2, -lh], [sw / 2, -lh + 6], [-sw / 2, -lh + 6]], '#8e6238');      // 台
     const y0 = -lh - 0.06 * k, y1 = y0 - bh;
-    pf([[-bw / 2, y0], [0, y0], [0, y1], [-tw / 2, y1]], '#d49a5c'); pf([[0, y0], [bw / 2, y0], [tw / 2, y1], [0, y1]], '#b9793f');      // バケツ（左は 光・右は かげ）
-    for (const f of [0.2, 0.75]) { const yy = lerp(y0, y1, f), hw = lerp(bw, tw, f) / 2; pf([[-hw - 1, yy - 4], [hw + 1, yy - 4], [hw + 1, yy + 4], [-hw - 1, yy + 4]], '#8d8f96'); pf([[0, yy - 4], [hw + 1, yy - 4], [hw + 1, yy + 4], [0, yy + 4]], '#6f7178'); }
+    pf([[-bw / 2, y0], [0, y0], [0, y1], [-tw / 2, y1]], gold ? '#f2c446' : '#d49a5c'); pf([[0, y0], [bw / 2, y0], [tw / 2, y1], [0, y1]], gold ? '#cf9a24' : '#b9793f');      // バケツ（左は 光・右は かげ）
+    for (const f of [0.2, 0.75]) { const yy = lerp(y0, y1, f), hw = lerp(bw, tw, f) / 2; pf([[-hw - 1, yy - 4], [hw + 1, yy - 4], [hw + 1, yy + 4], [-hw - 1, yy + 4]], gold ? '#b8841c' : '#8d8f96'); pf([[0, yy - 4], [hw + 1, yy - 4], [hw + 1, yy + 4], [0, yy + 4]], gold ? '#976812' : '#6f7178'); }
     g.lineWidth = 1.2; for (let q = -2; q <= 2; q++) line([q * bw / 6, y0], [q * tw / 6, y1], 'rgba(90,50,20,0.25)');
     g.fillStyle = '#7a4a22'; g.beginPath(); g.ellipse(0, y1, tw / 2, tw * 0.16, 0, 0, TAU); g.fill();       // 口
     if (level > 0) {                                   // エサ（えん麦：小さな 金色の 紙）
       const hh = [0, 0.05, 0.1, 0.16][level] * k;
-      g.fillStyle = '#e2b858'; g.beginPath(); g.ellipse(0, y1 - hh * 0.3, tw * 0.44, tw * 0.13, 0, 0, TAU); g.fill();
-      pf([[-tw * 0.4, y1], [-tw * 0.15, y1 - hh], [tw * 0.12, y1 - hh * 0.8], [tw * 0.4, y1]], '#f0cf73'); pf([[tw * 0.12, y1 - hh * 0.8], [tw * 0.4, y1], [0, y1 + 2]], '#d6aa4a');
+      g.fillStyle = gold ? '#f5c93a' : '#e2b858'; g.beginPath(); g.ellipse(0, y1 - hh * 0.3, tw * 0.44, tw * 0.13, 0, 0, TAU); g.fill();
+      pf([[-tw * 0.4, y1], [-tw * 0.15, y1 - hh], [tw * 0.12, y1 - hh * 0.8], [tw * 0.4, y1]], gold ? '#ffe27a' : '#f0cf73'); pf([[tw * 0.12, y1 - hh * 0.8], [tw * 0.4, y1], [0, y1 + 2]], gold ? '#e3ad2a' : '#d6aa4a');
       for (let i = 0; i < 9; i++) { const gx = (hash(i * 3.3) - 0.5) * tw * 0.7, gy = y1 - hh * (0.2 + 0.6 * hash(i * 7.7)); pf([[gx - 4, gy], [gx, gy - 3], [gx + 4, gy], [gx, gy + 3]], i % 2 ? '#fff0b8' : '#c99a3c'); }
     }
     g.restore();
   }
   const APPLE_C = typeof document !== 'undefined' ? document.createElement('canvas') : null;
-  function appleArt(x, y, r, bites, a, flip) {         // まさちゃんの りんごの 絵に かじった あと（右から・flip で 左から：かじった ふちは 白っぽい 実の 色）
+  function appleArt(x, y, r, bites, a, flip, gold) {   // まさちゃんの りんごの 絵に かじった あと（右から・flip で 左から：かじった ふちは 白っぽい 実の 色）・gold：金の リンゴ（第4.230版）
     if (!apple || !apple.naturalWidth || a <= 0.01) return;
+    const im = (gold && appleGold()) || apple;
     const w = r * 2, h = w * apple.naturalHeight / apple.naturalWidth, c = APPLE_C; c.width = Math.ceil(w) + 4; c.height = Math.ceil(h) + 4; const q = c.getContext('2d');
-    q.clearRect(0, 0, c.width, c.height); q.drawImage(apple, 2, 2, w, h);
+    q.clearRect(0, 0, c.width, c.height); q.drawImage(im, 2, 2, w, h);
     const nb = Math.min(3, bites | 0);
     if (nb > 0) {
       const B = [[1.0, 0.45, 0.13], [0.98, 0.66, 0.15], [0.86, 0.56, 0.19]];          // 体の 右の ふち（体は 横 0.03〜0.95・縦 0.22〜0.97）
-      q.globalCompositeOperation = 'source-atop'; q.fillStyle = '#fff2d6';
+      q.globalCompositeOperation = 'source-atop'; q.fillStyle = gold ? '#fff0ad' : '#fff2d6';
       for (let i = 0; i < nb; i++) { const [bx, by, br] = B[i]; polyP(q, 2 + w * bx, 2 + h * by, w * (br + 0.035), 11, i * 0.8); q.fill(); }
       q.globalCompositeOperation = 'destination-out'; q.fillStyle = '#000';
       for (let i = 0; i < nb; i++) { const [bx, by, br] = B[i]; polyP(q, 2 + w * bx, 2 + h * by, w * br, 11, i * 0.8); q.fill(); }
@@ -1165,13 +1209,13 @@ const TCCare = (() => {
     const F = S.feed;
     if (F && F.bucket) { const b = F.bucket, p = toS([b.x, b.y]), k = TCHorse.scaleAt(HO, b.y) * z, op = b.hideT != null ? 1 - sm((t - b.hideT) / 0.45) : backOut((t - b.t0) / 0.45);
       paperSquare(p[0], p[1] - 0.3 * k, 30 * z * (b.hideT != null ? sm((t - b.hideT - 0.3) / 0.2) * (1 - sm((t - b.hideT - 0.5) / 0.2)) : (1 - sm((t - b.t0 - 0.25) / 0.2))), t, 1);
-      if (!F.b3) bucketArt(p[0], p[1], k, b.level, Math.max(0, op), b.lh); }
+      if (!F.b3) bucketArt(p[0], p[1], k, b.level, Math.max(0, op), b.lh, F.gold); }
     if (F && F.handT != null && F.itemW) {
       const q = toS(F.itemW), k = TCHorse.scaleAt(HO, BR.y) * z, uo = (t - F.handT) / 0.5, uc = F.handHide != null ? (t - F.handHide) / 0.5 : -1;
       const open = uc >= 0 ? 1 - sm(uc / 0.6) : backOut((uo - 0.3) / 0.6), a = uc >= 0 ? 1 - sm((uc - 0.4) / 0.4) : 1;
       const n = P('nose'), w2 = P('withers'), side = n && w2 && n[0] > w2[0] ? 1 : -1;
       if (F.kind === 'apple') {         // リンゴ：口もとの 少し 前（かじった あとは 口の 方）
-        const ax = q[0] + side * 0.14 * k; hand(ax + side * 0.04 * k, q[1] + 0.16 * k, 62, side * 0.3, 1, a, Math.max(0, open)); appleArt(ax, q[1], 0.2 * k, F.bites, a * sm(uo / 0.6), side > 0);
+        const ax = q[0] + side * 0.14 * k; hand(ax + side * 0.04 * k, q[1] + 0.16 * k, 62, side * 0.3, 1, a, Math.max(0, open)); appleArt(ax, q[1], 0.2 * k, F.bites, a * sm(uo / 0.6), side > 0, F.gold);
       } else {                         // ニンジン：先は いつも 口もと（かじると 手で 押しこむ・11:01 まさちゃん「もっと先端を口もとに出るようにして！」）・葉の 方を 手で 持つ
         const L = 0.7 * k, len = L * (1 - 0.27 * Math.min(3, F.bites)), dx = side * 0.96, dy = -0.27, T = [q[0] + dx * len, q[1] + dy * len];
         const Hp = mixP(T, q, 0.3); hand(Hp[0], Hp[1] + 0.13 * k, 62, side * 0.25, 1, a, Math.max(0, open));
@@ -1821,8 +1865,8 @@ const TCCare = (() => {
       } else if (f.k === 'kira') {     // キラッ（きれいに なった：ゆっくり 1回）
         const d = 1.0; if (u > d) continue; const q = toS(f.w);
         for (let i = 0; i < 4; i++) { const v = (u - i * 0.12) / 0.7; if (v <= 0 || v >= 1) continue; star(q[0] + (hash(i * 5.1) - 0.5) * 140 * z, q[1] - (10 + 50 * hash(i * 2.2)) * z, 18 * z * Math.sin(Math.PI * v), v, 0.95, '#fff2bf'); }
-      } else if (f.k === 'glint') {    // 金のニンジンの きらきら
-        const d = f.dur; if (u > d || !S.feed || !S.feed.itemW) continue; const q = toS(S.feed.itemW);
+      } else if (f.k === 'glint') {    // 金の ごはんの きらきら（第4.230版：金の エサは バケツの 口：glintW）
+        const d = f.dur, w0 = S.feed && (S.feed.itemW || S.feed.glintW); if (u > d || !w0) continue; const q = toS(w0);
         for (let i = 0; i < 4; i++) { const v = ((u * 0.8 + i / 4) % 1); star(q[0] + (hash(i * 3.3) - 0.5) * 120 * z, q[1] + (hash(i * 7.1) - 0.5) * 120 * z, 12 * z * Math.sin(Math.PI * v), v * 2, 0.9 * (1 - sm((u - d + 0.4) / 0.4))); }
       } else if (f.k === 'luck') {     // 運がついた！ 高確ゾーン（お世話 5回）
         const d = f.dur; if (u > d) continue; const a = 1 - sm((u - d + 0.4) / 0.4), s2 = backOut(u / 0.3);
@@ -1865,6 +1909,7 @@ const TCCare = (() => {
     g = G0 = o.canvas.getContext('2d'); S.on = true;      // G0＝本物の 紙（g は 描く 間 だけ 書きとめ役 REC に かわる：下の post）
     apple = new Image(); apple.src = AP('tc_items/tc_item_apple.webp'); try { await apple.decode(); } catch (e) { }
     bucket = new Image(); bucket.src = AP('tc_items/tc_item_bucket.webp'); try { await bucket.decode(); } catch (e) { }      // まさちゃんの エサの バケツの 絵（11/09 13:21：ごはんの ボタン）
+    PROPG = null; appleG = null;      // 金の バケツ・エサ／リンゴ（第4.230版）：GL の 入れものが かわる ので 作り直す
     if (o.props !== false) PROPS = await loadProps();      // まさちゃんの 3D の バケツ・エサ（11/09 14:13）：なければ 紙の 絵の バケツ
     carrot = new Image(); carrot.src = AP('tc_items/tc_item_carrot.webp'); carrotG = new Image(); carrotG.src = AP('tc_items/tc_item_carrot_gold.webp');      // まさちゃんの ニンジンの 絵・それを 金に した 絵（11/09 11:27・11:28）
     try { await Promise.all([carrot.decode(), carrotG.decode()]); } catch (e) { }

@@ -176,8 +176,8 @@ try:
                   and rows[5][3] == '25個を 超える' and all(r[3] == '買う' for r in rows[:5]) and w0 >= 2500
                   and pg.evaluate("() => JSON.stringify(TengelPoints.TOKEN_PACKS)") == json.dumps(PACKS, separators=(',', ':')),
                   f'組は 6つ（1個 100P・5個 500P・10個 1,000P・15個 1,500P・20個 2,000P・25個 2,500P：points.js の 表と 同じ）・今 5個・{w0:,}P → 20個 までは 買える・25個は「25個を 超える」で 買えない {rows}')
-            check(now['stock'] == '5 / 25個' and now['pts'] == f'{w0:,}P' and now['msg'] == '' and any('持てるのは 25個まで' in t and 'あと 20個' in t for t in sh['notes']) and any('5分ごとに 5つ' in t for t in sh['notes']) and any('戻せない' in t for t in sh['notes']) and sh['guide'],
-                  f'今の トークン（{now["stock"]}）・使える ポイント（{now["pts"]}）・決まりの 説明（25個まで／5分ごとに 5つ／戻せない）・「説明書を 見る（当たりの 確率）」')
+            check(now['stock'] == '5 / 25個' and now['pts'] == f'{w0:,}P' and now['msg'] == '' and any('持てるのは 25個まで' in t and 'あと 20個' in t for t in sh['notes']) and any('8分ごとに 5つ' in t for t in sh['notes']) and not any('5分ごとに' in t for t in sh['notes']) and any('戻せない' in t for t in sh['notes']) and sh['guide'],
+                  f'今の トークン（{now["stock"]}）・使える ポイント（{now["pts"]}）・決まりの 説明（25個まで／8分ごとに 5つ〈第4.230版〉／戻せない）・「説明書を 見る（当たりの 確率）」')
             # 2回 押して 決める
             pg.locator('#tcb [data-b=ask][data-n="5"]').click(); pg.wait_for_timeout(200)
             cf = pg.evaluate("() => { const r = document.querySelector('#tcb .brow.cf'); return r ? [+r.dataset.n, [...r.querySelectorAll('.bb')].map(b => b.textContent), TCApp.state.stock, TengelWallet.total()] : null; }")
@@ -258,11 +258,11 @@ try:
             check(r_rec2 == [8, None, None, 0, None, 8], f'台帳に 入って いない 買い物の 印 → 印 だけ 消す（トークンは 増えない・ポイントも そのまま）・こわれた 印も 消す {r_rec2}')
             # 買う 前に、たまって いる ぶんを 先に 入れる → その あとで 25こを こえるかを 見る
             r_acc = pg.evaluate("""async () => { const st = TCApp.state, S = TCCare.S, now = Math.max(Date.now(), +st.seen || 0), out = [];
-              st.stock = 15; S.stock = S.stockShow = 15; st.stockAt = now - 5 * 60000 - 800; let r = await TCApp.buy.buy(5); out.push([r.ok, r.why || '', st.stock]);       // 15 → たまって 20 → 買って 25
-              st.stock = 20; S.stock = S.stockShow = 20; st.stockAt = now - 5 * 60000 - 800; r = await TCApp.buy.buy(5); out.push([r.ok, r.why || '', st.stock]);            // 20 → たまって 25 → 買えない（こえる）
+              st.stock = 15; S.stock = S.stockShow = 15; st.stockAt = now - 8 * 60000 - 800; let r = await TCApp.buy.buy(5); out.push([r.ok, r.why || '', st.stock]);       // 15 → たまって 20 → 買って 25
+              st.stock = 20; S.stock = S.stockShow = 20; st.stockAt = now - 8 * 60000 - 800; r = await TCApp.buy.buy(5); out.push([r.ok, r.why || '', st.stock]);            // 20 → たまって 25 → 買えない（こえる）
               S.stock = 18; st.stock = 19; st.stockAt = now + 7200000; r = await TCApp.buy.buy(5); out.push([r.ok, r.why || '', st.stock, S.stock]);                          // お世話で 使った ぶん（S が 少ない）を 先に 写す：18 → 23
               st.stockAt = now + 7200000; return out; }""")
-            check(r_acc == [[True, '', 25], [False, 'full', 25], [True, '', 23, 23]], f'買う 前に たまって いる ぶん（5分ごとの ＋5）を 入れて から 数える（15 → 20 → 買って 25／20 → 25 → 買えない）・お世話で 使った ぶんも 先に 写す {r_acc}')
+            check(r_acc == [[True, '', 25], [False, 'full', 25], [True, '', 23, 23]], f'買う 前に たまって いる ぶん（8分ごとの ＋5・第4.230版）を 入れて から 数える（15 → 20 → 買って 25／20 → 25 → 買えない）・お世話で 使った ぶんも 先に 写す {r_acc}')
             # 2つ いっしょに 買おうと しても 1つずつ
             set_stock(pg, 0)
             r_two = pg.evaluate("async () => { const t0 = TengelWallet.total(); const [a, b] = await Promise.all([TCApp.buy.buy(5), TCApp.buy.buy(5)]); return [a.ok, b.ok, b.why, TCApp.state.stock, t0 - TengelWallet.total()]; }")
@@ -287,7 +287,7 @@ try:
             gd = pg.evaluate("""() => { const e = document.querySelector('#tcg'), secs = [...e.querySelectorAll('.sec')].map(x => [x.querySelector('h3').textContent, x.textContent]), f = k => (secs.find(x => x[0].includes(k)) || [0, ''])[1];
               return { buy: TCBuy.isOpen(), guide: TCGuide.isOpen(), sec: f('お世話トークンの購入'), rows: [...e.querySelectorAll('table[data-tab=packs] tr')].map(r => [+r.dataset.n, r.cells[0].textContent, r.cells[1].textContent]), tok: f('お世話トークン') }; }""")
             check(not gd['buy'] and gd['guide'] and gd['rows'] == [[1, '1個', '100P'], [5, '5個', '500P'], [10, '10個', '1,000P'], [15, '15個', '1,500P'], [20, '20個', '2,000P'], [25, '25個', '2,500P']]
-                  and all(x in gd['sec'] for x in ['下の列の1番右の「お世話トークン購入」', '最大25個', '2回押すと決まり', 'ポイントに戻せない', 'ポイント特化ゾーン']) and '5分ごとに5つ' in gd['tok'],
+                  and all(x in gd['sec'] for x in ['下の列の1番右の「お世話トークン購入」', '最大25個', '2回押すと決まり', 'ポイントに戻せない', 'ポイント特化ゾーン']) and '8分ごとに5つ' in gd['tok'],
                   f'「説明書を 見る（当たりの 確率）」→ 窓が 閉じて 説明書が 開く・説明書に「お世話トークンの購入」の 項目（組の 表 6行・25個まで・2回 押す・戻せない）{gd["rows"]}')
             pg.evaluate("() => TCGuide.close()"); pg.wait_for_timeout(400)
             # トレーニングセンターを 閉じると 窓も とじる

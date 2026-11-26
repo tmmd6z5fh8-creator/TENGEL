@@ -5,7 +5,7 @@
 #   python3 test_tc_test.py   （ios/tc_assets/ が ある とき だけ 画面の テスト。ない とき（CI）は 中身の 見くらべ だけ）
 #   きまり（S.test：次の 1回 だけ）は test_tc_care.js・いつもの トレーニングセンターは test_tc.py
 #   第4.165版（まさちゃん 2026/11/13 11:46「トレーニングセンターのルーレット抽選や幻の馬、神様馬のテストができるようにする」）：「えらんだら すぐ PUSH を 出す」の スイッチ（はじめは オン）・
-#     「PUSH を すぐ 出す」・お世話トークンを 0こに・トークンの 時計を 5分 進める・設定の「テスト版の道具」から 道具箱を 開く。
+#     「PUSH を すぐ 出す」・お世話トークンを 0こに・トークンの 時計を 8分 進める（第4.230版：前は 5分）・設定の「テスト版の道具」から 道具箱を 開く。
 #     この テストの 前の 方（第4.154版〜の 流れ：えらんで から 本物の ごはんで 出す）は スイッチを オフに して ためす（SKIP_OFF）・おわりの 方で オンに して ためす
 import json, os, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -127,6 +127,13 @@ def fx_done(pg, sec=90):              # ルーレット・チケットの 演出
 
 
 MSG = "() => document.querySelector('#tcOv .tcmsg').textContent"
+# 第4.230版：金の リンゴ（手の 先）・金の エサ（バケツの 口から 足もと）の 所（フィールドの 座標 1052×1657）と 3D の 絵が 金か（skin）
+GOLDREG = """() => { const S = TCCare.S, F = S.feed, z = S.zoom, toS = p => [(p[0] - z.cx) * z.z + 1052 / 2, (p[1] - z.cy) * z.z + 1657 / 2];
+  if (!F) return null; const HO = TCCare._hb[0], BR = TCCare._hb[1], k = TCHorse.scaleAt(HO, BR.y) * z.z;
+  if (F.kind === 'esa') { const w = F.glintW || (F.b3 ? TCHorse.project(HO, [F.b3.cx, F.b3.R, F.b3.cz]) : null); if (!w) return null; const q = toS(w), gq = toS([F.bucket.x, F.bucket.y]);
+    return { x0: q[0] - 0.2 * k, x1: q[0] + 0.2 * k, y0: q[1] + 0.02 * k, y1: gq[1], skin: (BR.props || []).map(p => !!p.P.skin) }; }
+  if (!F.itemW) return null; const q = toS(F.itemW), n = TCHorse.where(HO, 'nose'), w2 = TCHorse.where(HO, 'withers'), side = n && w2 && n[0] > w2[0] ? 1 : -1, ax = q[0] + side * 0.14 * k;
+  return { x0: ax - 0.17 * k, x1: ax + 0.17 * k, y0: q[1] - 0.17 * k, y1: q[1] + 0.17 * k, skin: [] }; }"""
 WAL = "() => TengelWallet.total() + TengelWallet.hold().total"
 try:
     # ---------- 中身の 見くらべ（絵が なくても）----------
@@ -162,7 +169,7 @@ try:
             check(sh['open'] and sh['secs'] == ['horse', 'prize', 'other', 'drop'] and sh['visit'] == 3 and sh['prize'] == 37 and sh['heart'] == 2 and sh['flag'] == 7 and sh['poop'] == 2 and sh['drop'] == 14 and sh['n'] == 73
                   and sh['extra'] == [1, 1, 3, 1] and sh['skip'] == [False, 'false', '☐'],
                   f'道具箱：① 馬 3・② 当たり 37（くじ・外れ・ポイント 6・ルーレット 6＋6＋6・チケット 3・ポイント特化ゾーン 7・第4.175版：激馬熱馬 1）・③ そのほか・④ お世話チャレンジ 14（第4.173版・第4.175版：＋激馬熱馬）（{sh["n"]}個 の ボタン）・'
-                  f'第4.165版：すぐ PUSH の スイッチ（ここでは オフに して ある {sh["skip"]}）・「PUSH を すぐ 出す」・トークン 25／19／0個・時計を 5分 進める {sh["extra"]}')
+                  f'第4.165版：すぐ PUSH の スイッチ（ここでは オフに して ある {sh["skip"]}）・「PUSH を すぐ 出す」・トークン 25／19／0個・時計を 8分 進める（第4.230版） {sh["extra"]}')
             #   第4.165版（まさちゃん 11/13 12:51「ポイントの特化ゾーンを作る」）：上乗せ できる 回数を えらぶ ボタン 6つ ＋ くじどおり
             zw = [[f'{n}回{"（MAX）" if n == 12 else ""} → {1000 + 2000 * n:,}P', {'k': 'zn', 'n': n}] for n in (0, 1, 3, 6, 11, 12)] + [['くじどおり（1回ごとに 60%）', {'k': 'zn'}]]
             check(sh['zone'] == zw and len(sh['zhead']) == 1 and '今の 馬の まま' in sh['zhead'][0], f'道具箱の ポイント特化ゾーン：上乗せ 0・1・3・6・11・12回（MAX 25,000P）と「くじどおり」（{[z[0] for z in sh["zone"]]}）')
@@ -316,19 +323,41 @@ try:
                 awake(pg); stage_click(pg, 725, 1494); pg.wait_for_timeout(400); q = pg.evaluate("() => [TCCare.S.callKind, TCCare.S.mode, JSON.stringify(TCCare.S.test || {})]")
                 check(nm in m and q[0] == k and q[1] == 'call' and 'call' not in q[2], f'呼ぶ：「{nm}」を 選ぶ → 次の 呼ぶは {k}（1回 だけ）')
             free(pg)
-            # ごはん：金のニンジン・おかわりの目
-            pg.evaluate("() => { const S = TCCare.S; S.got = []; S.heart = S.heartShow = 2; TCApp.state.heart = 2; }")
-            pg.evaluate("() => TCApp.test.prize(null)")      # この ごはんは はずれ
-            tool(pg, 'flag', {'k': 'gold', 'v': True}); m = pg.evaluate(MSG); tool(pg, 'flag', {'k': 'beg', 'v': True}); pg.wait_for_timeout(200)
-            sheet(pg); now = pg.evaluate("() => document.querySelector('#tct [data-now]').innerText"); sheet(pg, False)
-            b0 = pg.evaluate("() => TCCare.S.begT == null ? -1 : TCCare.S.begT")
-            feed(pg, 2); pg.wait_for_function("() => TCCare.S.feed && TCCare.S.phase === 'feed'", timeout=30000); g = pg.evaluate("() => TCCare.S.feed.gold"); pg.wait_for_timeout(1500); shot(pg, 'tct_gold_carrot')
-            # 第4.168版：おかわりの目は 見た目 だけ（お世話の 段階は「beg」に ならない＝なでるのを 待たない・PUSH は いつもと 同じ 時に 出る）
-            pg.wait_for_function("(b0) => (TCCare.S.begT != null && TCCare.S.begT !== b0) || (TCCare.S.phase === 'idle' && !TCCare.S.feed)", arg=b0, timeout=60000)
-            bg = pg.evaluate("(b0) => [TCCare.S.begT != null && TCCare.S.begT !== b0, TCCare.S.phase]", b0); free(pg, 60); pg.wait_for_timeout(1200)
-            q = pg.evaluate("() => [TCCare.S.heart, JSON.stringify(TCCare.S.test || {})]")
-            check('金のニンジン' in m and '金のニンジン' in now and 'おかわりの目' in now and g is True and bg[0] is True and bg[1] != 'beg' and q[0] == 5 and q[1] == '{}',
-                  f'「金のニンジン」「おかわりの目」→ 次の ニンジンは 金（仲良し ＋3：2 → {q[0]}）・食べた あと おかわりの目（見た目 だけ・段階は「{bg[1]}」＝撫でるのを 待たない）（どちらも 1回 だけ）')
+            # ごはん：金の ごはん・おかわりの目（第4.230版：まさちゃん 2026/11/27 00:37「りんごとバケツのエサも金色作れる？効果は金のニンジンと同じでいいから！」
+            #   → 道具の「金の ごはん」は 次の ごはん（エサ・リンゴ・ニンジン どれでも）。ここでは 金の リンゴと 金の エサ（バケツごと 金色）を 本物の 絵で 見る）
+            def gold_px(kind):      # 金の 絵の 所（リンゴ：手の 先・エサ：バケツの 口から 足もと）の 色を 数える（金色・赤）
+                r = pg.evaluate(GOLDREG)
+                if not r: return None
+                import io
+                from PIL import Image
+                im = Image.open(io.BytesIO(pg.screenshot())).convert('RGB'); a = stage_xy(pg, r['x0'], r['y0']); b_ = stage_xy(pg, r['x1'], r['y1']); k = im.width / 390
+                px = list(im.crop((int(a[0] * k), int(a[1] * k), int(b_[0] * k), int(b_[1] * k))).getdata()); n = len(px) or 1
+                return {'gold': round(sum(1 for R, G, B in px if R > 90 and G > 0.55 * R and B < 0.4 * G and R >= G) / n, 3), 'red': round(sum(1 for R, G, B in px if R > 140 and G < 90 and B < 100) / n, 3), 'skin': r['skin'], 'n': n}
+            gres = {}
+            for kind, item, nm in (('apple', 1, '金のリンゴ！'), ('esa', 0, '金のエサ！')):
+                pg.evaluate("() => { const S = TCCare.S; S.got = []; S.heart = S.heartShow = 2; TCApp.state.heart = 2; }")
+                pg.evaluate("() => TCApp.test.prize(null)")      # この ごはんは はずれ
+                tool(pg, 'flag', {'k': 'gold', 'v': True}); m = pg.evaluate(MSG)
+                if kind == 'apple': tool(pg, 'flag', {'k': 'beg', 'v': True})
+                pg.wait_for_timeout(200); sheet(pg); now = pg.evaluate("() => document.querySelector('#tct [data-now]').innerText"); sheet(pg, False)
+                b0 = pg.evaluate("() => TCCare.S.begT == null ? -1 : TCCare.S.begT")
+                feed(pg, item); pg.wait_for_function("() => TCCare.S.feed && TCCare.S.phase === 'feed'", timeout=30000); g = pg.evaluate("() => TCCare.S.feed.gold")
+                try: pg.wait_for_function("(nm) => TCCare.S.fx.some(f => f.k === 'tag' && f.txt === nm)", arg=nm, timeout=10000); tg = True
+                except Exception: tg = False
+                pg.wait_for_timeout(500 if kind == 'apple' else 900); px = gold_px(kind); shot(pg, 'tct_gold_' + kind)
+                if kind == 'apple':
+                    # 第4.168版：おかわりの目は 見た目 だけ（お世話の 段階は「beg」に ならない＝なでるのを 待たない・PUSH は いつもと 同じ 時に 出る）
+                    pg.wait_for_function("(b0) => (TCCare.S.begT != null && TCCare.S.begT !== b0) || (TCCare.S.phase === 'idle' && !TCCare.S.feed)", arg=b0, timeout=60000)
+                    bg = pg.evaluate("(b0) => [TCCare.S.begT != null && TCCare.S.begT !== b0, TCCare.S.phase]", b0)
+                free(pg, 60); pg.wait_for_timeout(1200)
+                q = pg.evaluate("() => [TCCare.S.heart, JSON.stringify(TCCare.S.test || {})]"); gres[kind] = px
+                if kind == 'apple':
+                    check('金色' in m and '金の ごはん' in now and 'おかわりの目' in now and g is True and tg and bg[0] is True and bg[1] != 'beg' and q[0] == 5 and q[1] == '{}',
+                          f'「金の ごはん」「おかわりの目」→ 次の ごはん（リンゴ）は 金のリンゴ（札「{nm}」・仲良し ＋3：2 → {q[0]}）・食べた あと おかわりの目（見た目 だけ・段階は「{bg[1]}」＝撫でるのを 待たない）（どちらも 1回 だけ）')
+                    check(px and px['gold'] >= 0.3 and px['red'] <= 0.05, f'金のリンゴは 金色の 絵（手の 先：金色 {px and px["gold"]}・赤 {px and px["red"]}）')
+                else:
+                    check(g is True and tg and q[0] == 5 and q[1] == '{}', f'「金の ごはん」→ 次の ごはん（エサ）は 金のエサ（札「{nm}」・仲良し ＋3：2 → {q[0]}）')
+                    check(px and px['skin'] == [True, True] and px['gold'] >= 0.2, f'金のエサ：3D の バケツと エサが 金色の 絵（{px and px["skin"]}・バケツの 所：金色 {px and px["gold"]}）')
             # 撫でる：ハートの 抽選（当たり → ぴょん！・トークン ＋5）
             pg.evaluate("() => { TCCare.S.stock = 7; TCApp.state.stock = 7; TCApp.state.stockAt = Date.now() + 7200000; }"); tool(pg, 'heart', {'win': True}); pg.wait_for_timeout(250); m = pg.evaluate(MSG)      # （10分ごとに 5つ たまる：この 確かめの 間に たまらない ように 数えはじめを 先に）
             q0 = pg.evaluate("() => [TCCare.S.heart, TCCare.S.heartShow, TCApp.state.heart, TCCare.S.test && TCCare.S.test.win, TCCare.S.got.length]")
@@ -413,13 +442,13 @@ try:
             pg.evaluate("() => TCApp.test.prize(null)"); tool(pg, 'push'); pg.wait_for_timeout(700); m1 = pg.evaluate(MSG); a1 = pg.evaluate("() => !!(TCCare.S.push && TCCare.S.push.hideT == null)")
             tool(pg, 'push'); pg.wait_for_timeout(300); m2 = pg.evaluate(MSG); push(pg); free(pg)
             check('PUSH を 出したよ' in m1 and a1 and 'もう' in m2, f'「PUSH を すぐ 出す」→ PUSH が 出る・もう 出て いる ときは そのまま（{m1!r}・{m2!r}）')
-            # トークン：0こに・時計を 5分 進める（＋5）・最大の ときは そのまま
+            # トークン：0こに・時計を 8分 進める（＋5・第4.230版：前は 5分）・最大の ときは そのまま
             tool(pg, 'tokens', {'n': 0}); pg.wait_for_timeout(300); t0_ = pg.evaluate("() => [TCCare.S.stock, TCApp.state.stock, document.querySelector('#tcOv .tcmsg').textContent]")
             pg.evaluate("() => { TCApp.state.stockAt = Date.now(); }"); tool(pg, 'ahead'); pg.wait_for_timeout(700); t1_ = pg.evaluate("() => [TCCare.S.stock, TCApp.state.stock, document.querySelector('#tcOv .tcmsg').textContent]")
             tool(pg, 'ahead'); pg.wait_for_timeout(700); t2_ = pg.evaluate("() => TCApp.state.stock")
             tool(pg, 'tokens'); pg.wait_for_timeout(300); tool(pg, 'ahead'); pg.wait_for_timeout(500); t3_ = pg.evaluate("() => [TCApp.state.stock, document.querySelector('#tcOv .tcmsg').textContent]")
-            check(t0_[:2] == [0, 0] and '0個に' in t0_[2] and t1_[:2] == [5, 5] and '5分 進めたよ' in t1_[2] and t2_ == 10 and t3_[0] == 25 and 'もう 最大' in t3_[1],
-                  f'「お世話トークンを 0個に」→ 0・「トークンの 時計を 5分 進める」→ ＋5 ずつ（0 → {t1_[0]} → {t2_}）・最大の ときは「もう 最大だよ」（{t3_[1]!r}）')
+            check(t0_[:2] == [0, 0] and '0個に' in t0_[2] and t1_[:2] == [5, 5] and '8分 進めたよ' in t1_[2] and t2_ == 10 and t3_[0] == 25 and 'もう 最大' in t3_[1],
+                  f'「お世話トークンを 0個に」→ 0・「トークンの 時計を 8分 進める」（第4.230版：8分ごとに 5つ）→ ＋5 ずつ（0 → {t1_[0]} → {t2_}）・最大の ときは「もう 最大だよ」（{t3_[1]!r}）')
             # 設定の「テスト版の道具」から：トレーニングセンターを 開いて 道具箱を 出す
             pg.locator('#tcOv [data-tc="back"]').click(); pg.wait_for_timeout(500)
             pg.evaluate("() => { document.querySelector('.tabbar [data-tab=set]').click(); }"); pg.wait_for_timeout(600)

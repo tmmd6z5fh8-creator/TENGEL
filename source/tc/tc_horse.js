@@ -490,6 +490,8 @@
     for (let i = 0; i < nv; i++) { const x = pos[i * 3], y = pos[i * 3 + 1], z = pos[i * 3 + 2]; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; if (z < z0) z0 = z; if (z > z1) z1 = z; }
     return { gl, B, meta, tex: opt.texImg ? mkTex(gl, opt.texImg) : null, ntex: opt.nrmImg ? mkTex(gl, opt.nrmImg) : null, box: [x0, y0, z0, x1, y1, z1] };
   }
+  // 第4.230版（金の エサ：まさちゃん 2026/11/27 00:37「りんごとバケツのエサも金色作れる？」）：同じ 形に べつの 絵（色の テクスチャ だけ かえる・形と でこぼこは 同じ もの）
+  function propSkin(P, img) { return P && img ? Object.assign({}, P, { tex: mkTex(P.gl, img), img: null, skin: true }) : null; }
   function drawProps(h, st, view) {
     const gl = h.gl, Q = view.quality || {};
     const at = (b, loc, n, type, norm, stride) => { if (loc < 0) return; gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, n, type || gl.FLOAT, !!norm, stride || 0, 0); };
@@ -1220,5 +1222,5 @@
     return out;
   }
   function react(st, k, dur, t, o) { st.reacts = (st.reacts || []).filter(r => t - r.t0 < r.dur); st.reacts.push(Object.assign({ k, t0: t, dur }, o || {})); }
-  window.TCHorse = { create, createProp, anchorPose, project, M, brain, step, draw, pose, where, wherePose, react, unz, extent, scaleAt: (h, y) => scaleAt(h, y), GAITS, WALK, RUN, AREA, TRACK, EYE_GLOW, walkLegs, walkSpeed, blendOf };
+  window.TCHorse = { create, createProp, propSkin, anchorPose, project, M, brain, step, draw, pose, where, wherePose, react, unz, extent, scaleAt: (h, y) => scaleAt(h, y), GAITS, WALK, RUN, AREA, TRACK, EYE_GLOW, walkLegs, walkSpeed, blendOf };
 })();

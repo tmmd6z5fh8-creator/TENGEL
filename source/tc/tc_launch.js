@@ -623,7 +623,8 @@
   //   トレーニングセンターの 丸の 右上に 今の お世話トークンの 数。数え方は tc_app.js の accrue と 同じ（5分ごとに 5個・25個 まで・時刻は 時計の 番人・
   //   もどらない 時計 seen より 前に しない）。まだ 開いた ことが ない ときは はじめの 5個（開いた ときから 数えはじめる）。
   //   書き直す とき：数が かわる 時刻（次の 5分：10分より 先は 10分ごとに 見直す）・閉じた（'tengel:tc'）・時計を たしかめた（'tengel:clock'）・アプリに もどった
-  var TK_EVERY = 5 * 60000, TK_STEP = 5, TK_MAX = 25, TK_FIRST = 5, WAIT_MAX = 600000;
+  //   第4.230版（まさちゃん 2026/11/27 00:29「お世話トークン5分に５つから8分に５つに変更して！」）：8分ごとに 5個（tc_app.js の TOKEN_MIN と 同じ）
+  var TK_EVERY = 8 * 60000, TK_STEP = 5, TK_MAX = 25, TK_FIRST = 5, WAIT_MAX = 600000;
   function clockNow() { try { var c = window.TengelClock; if (c && typeof c.now === 'function') { var t = +c.now(); if (isFinite(t) && t > 0) return t; } } catch (e) { /* なし */ } return Date.now(); }
   function tokens() {
     var s = live() || jget(TK); if (!s || s.v !== 1) return { n: TK_FIRST, wait: 0 };      // 形の ちがう 保存は tc_app.js も 使わない（はじめから）

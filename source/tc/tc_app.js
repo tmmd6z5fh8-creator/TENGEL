@@ -12,7 +12,8 @@ const TCApp = (() => {
   // お世話トークン：5分ごとに 5つ・最大 25（第4.165版・まさちゃん 11/13 11:46「お世話トークンに5分で5個追加に変更」＝10分 → 5分。
   //   第4.159版：11/12 10:37「お世話の最大トークン25回にして！」・12:48「お世話トークンは25がMAXで、5分経つと5つずつ増えるようにね！」
   //   → 14:50「お世話トークンに関して、10分で５つトークンが追加にして！」＝5分 → 10分。その 前は 10分ごとに 1つ・最大 20）
-  const TOKEN_MIN = 5, TOKEN_STEP = 5, TOKEN_MAX = 25;
+  //   第4.230版（まさちゃん 2026/11/27 00:29「お世話トークン5分に５つから8分に５つに変更して！」）：5分 → 8分ごとに 5つ（最大 25 は そのまま。数えはじめ・時計の 番人は 前と 同じ）
+  const TOKEN_MIN = 8, TOKEN_STEP = 5, TOKEN_MAX = 25;
   const TICK = 120;                                   // 2分ごとの チャンス（秒・開いて いる 間）：高確ゾーン・うんち（第4.144版から 幻の馬・神様馬の 抽選は しない）
   // 第4.144版（馬の リセットの きまり：11/10 18:04 まさちゃん「馬のリセットは5分に切り替えよう！…トレーニングセンターで最低5回お世話をした段階でリセットタイマーが作動して(お世話をしてる間はリセットなし)5分経ったらリセット。
   //   …トレーニングセンターを開きっぱなしでもお世話の操作をしない限りは馬は変わらないでいて！ただ、幻の馬と神様馬は…トレーニングセンターを開いてから30分経過すると切り替わる仕組みにして！」
@@ -113,7 +114,7 @@ const TCApp = (() => {
   function accrue(now) {                              // お世話トークン（閉じて いる 間も 時間で たまる）。now＝tnow()（もどらない 時計）
     if (st.stock >= TOKEN_MAX) { st.stockAt = now; return 0; }
     const n = Math.floor((now - st.stockAt) / (TOKEN_MIN * 60000)); if (n <= 0) return 0;
-    const add = Math.min(n * TOKEN_STEP, TOKEN_MAX - st.stock); st.stock += add; st.stockAt = st.stock >= TOKEN_MAX ? now : st.stockAt + n * TOKEN_MIN * 60000; touch(); return add;      // 5分（TOKEN_MIN）が n回 たった → 5つ × n（上限 まで）
+    const add = Math.min(n * TOKEN_STEP, TOKEN_MAX - st.stock); st.stock += add; st.stockAt = st.stock >= TOKEN_MAX ? now : st.stockAt + n * TOKEN_MIN * 60000; touch(); return add;      // 8分（TOKEN_MIN・第4.230版：前は 5分）が n回 たった → 5つ × n（上限 まで）
   }
 
   // ---------- 音（WebAudio：環境音・BGM は くり返し、効果音は できごとで）----------
@@ -679,7 +680,7 @@ const TCApp = (() => {
   //   ここは 道具箱が よぶ 入口（TEST）。App Store版では 道具箱が ない ので 何も しない（testOn が false）。
   //   ・馬：本番と 同じ 流れ（リセットの 抽選で 当たった ときの doReset → startVisit／帰る ときの endVisit）を そのまま よぶ ＝ 見え方・音・タイムリミットは 本番と 同じ
   //   ・当たり：次の お世話（ごはん・おそうじ）の 抽選の 結果を 1回 だけ 決める（testPrize → draw）。わたし方（ポイントは 台帳・ルーレット・チケットの 演出）は 本番と 同じ
-  //   ・そのほか（ハートの 抽選・金のニンジン・おかわりの目・首を かしげる・ほうきを かじる・呼ぶの 3つ）：tc_care.js の S.test（次の 1回 だけ）
+  //   ・そのほか（ハートの 抽選・金の ごはん〈第4.230版：エサ・リンゴ・ニンジン〉・おかわりの目・首を かしげる・ほうきを かじる・呼ぶの 3つ）：tc_care.js の S.test（次の 1回 だけ）
   function testOn() { return !!(window.__TEST && window.TCTest); }
   let testPrize;                 // undefined＝いつもの くじ・null＝はずれ・{ k, … }＝この 当たり
   let testList = [];             // 第4.173版：つぎの 抽選の 結果を 順に（お世話チャレンジの 玉ごと：null＝はずれ・{ k, … }）。空なら いつもの くじ
@@ -752,7 +753,7 @@ const TCApp = (() => {
       const n = TCCare.RULE.max - 1; S.heart = S.heartShow = n; st.heart = n; S.got = []; S.coolUntil = -1e9; S.petN = 0; S.drainT = null;
       S.test = Object.assign(S.test || {}, { win: !!win }); touch(); return 'ok';
     },
-    // 次の 1回 だけ：gold（金のニンジン）・beg（おかわりの目）・rare（首を かしげる）・nibble（ほうきを かじる）・call（'come'・'turn'・'amae'）
+    // 次の 1回 だけ：gold（金の ごはん：次に 抽選を する ごはん〈第4.230版：エサ・リンゴ・ニンジン どれでも〉）・beg（おかわりの目）・rare（首を かしげる）・nibble（ほうきを かじる）・call（'come'・'turn'・'amae'）
     flag(k, v) {
       if (!testOn() || ['gold', 'beg', 'rare', 'nibble', 'call'].indexOf(k) < 0) return 'off';
       const S = TCCare.S; S.test = Object.assign(S.test || {}, { [k]: v }); return 'ok';

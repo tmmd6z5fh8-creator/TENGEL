@@ -265,7 +265,7 @@ try:
         pg.wait_for_timeout(2500)
         st = pg.evaluate("() => ({ on: TCCare.on, horse: !!TCCare.S, field: TCApp.state && TCApp.state.stock, plan: !!document.querySelector('#tcOv .tcpl img'), snd: !!document.querySelector('#tcOv .tcsd') })")
         check(st['on'] and st['plan'] and st['snd'], f'トレーニングセンターが 開いた（{st}）')
-        # 第4.165版：お世話トークンは 5分ごとに 5つ たまる（第4.159版は 10分ごとに 5つ・その 前は 10分に 1つ）→ テストの 間に たまると 数が ずれる ので、時計の テスト（下）まで たまらない ように 数えはじめを 先に しておく
+        # 第4.165版：お世話トークンは 5分ごとに 5つ たまる（第4.230版：8分ごとに 5つ・第4.159版は 10分ごとに 5つ・その 前は 10分に 1つ）→ テストの 間に たまると 数が ずれる ので、時計の テスト（下）まで たまらない ように 数えはじめを 先に しておく
         HOLD = "() => { TCApp.state.stockAt = Date.now() + 7200000; }"
         pg.evaluate(HOLD)
         px = pg.evaluate("() => { const c = document.querySelector('#tcOv .tcgl'); const g = c.getContext('webgl'); const p = new Uint8Array(4); g.readPixels(c.width >> 1, c.height >> 1, 1, 1, g.RGBA, g.UNSIGNED_BYTE, p); return [c.width, c.height, Array.from(p)]; }")
@@ -397,6 +397,7 @@ try:
               f'ご飯を 押すと 先に 札「抽選を する」（左・金色）「抽選を しない」（右・白い 紙）が 出る（選ぶ 札は まだ：{ak}・色 {[q[:3] for q in apx[:2]]}）')
         stage_click(pg, 310, 1268); pg.wait_for_timeout(900)
         check(pg.evaluate("() => !!TCCare.S.chooser && !TCCare.S.ask && TCCare.S.withLot === true"), '「抽選を する」を 押すと 3つ から 選ぶ')
+        pg.evaluate("() => { TCCare.S.test = Object.assign(TCCare.S.test || {}, { gold: false }); }")      # 第4.230版：エサも 1/30 で 金の エサ → ここは ふつうの エサ（金は test_tc_test.py・test_tc_care.js）
         stage_click(pg, 270, 1262)
         ok = False
         for _ in range(120):
@@ -581,9 +582,9 @@ try:
         pg.evaluate("() => { TCApp.state.stock = 5; TCCare.S.stock = TCCare.S.stockShow = 5; const r = window.__realNow; Date.now = () => r() + 30 * 60000; }"); pg.wait_for_timeout(800)
         k3 = pg.evaluate(TS)
         check(k3['stock'] == 5 and k3['seen'] == k2['seen'], f'トークンを 使って（5個）30分 たっても 増えない（本当の 時刻が 先に 見た 時刻に 追いつくまで）（{k3["stock"]}個）')
-        pg.evaluate("() => { const r = window.__realNow; Date.now = () => r() + 271 * 60000; }"); pg.wait_for_timeout(800)
+        pg.evaluate("() => { const r = window.__realNow; Date.now = () => r() + 277 * 60000; }"); pg.wait_for_timeout(800)
         k4 = pg.evaluate(TS)
-        check(k4['stock'] == 15 and k4['seen'] > k2['seen'], f'先に 見た 時刻を 超えたら また 増える（超えた 11分ぶん＝5分が 2回＝10こ〈第4.165版：5分ごとに 5つ〉：5 → {k4["stock"]}）')
+        check(k4['stock'] == 15 and k4['seen'] > k2['seen'], f'先に 見た 時刻を 超えたら また 増える（超えた 17分ぶん＝8分が 2回＝10こ〈第4.230版：8分ごとに 5つ〉：5 → {k4["stock"]}）')
         pg.evaluate("() => { Date.now = window.__realNow; const s = TCApp.state, n = Date.now(); s.seen = n; s.stockAt = n; }"); pg.wait_for_timeout(300)
         print('■ 説明書')
         stage_click(pg, 678, 97); pg.wait_for_timeout(1200)
@@ -614,10 +615,11 @@ try:
         wantTx = ['全部 合わせて 約16.6%',      # 第4.230版：約17.1% → 約16.6%（ルーレット・チケット・ポイント特化ゾーンの 分母 ＋100）
                    'ルーレットは どちらも 50%', '3枚 12.5%・2枚 約33.3%・1枚 約54.2%', 'チケット（壁紙 or 7,000P・1〜3枚）', 'チケット1枚で、カギの壁紙を1つ解放するか、7,000Pに変えるか、選べるよ', 'お世話（ご飯・お掃除）を5回すると、リセットのタイマーがスタート', 'タイマーが5分たつとリセット → 次の馬を抽選', 'それ以外は いつもの馬のまま', 'お世話をしないと 馬は変わらないよ（開いているだけでは 抽選しないよ）', 'お世話の途中は リセットしないよ',
                   '抽選（お世話の後のPUSH）は、幻の馬 最大10回・神様馬 最大5回まで。使い切ると帰るよ',      # 第4.168版（まさちゃん 11/14 01:26「幻の馬は、抽選最大10回まで 神様馬は、抽選最大5回まで」）
-                  '帰るのは、抽選を使い切ったとき・お世話5回のあと5分（リセット）・来てから30分（タイムリミット）の 一番早いとき', '左上の「仲良し」の下に「タイムリミット・抽選の回数・切り替わりタイマー」が出るよ', '約1.52%・1/66', '約33.3%ずつ・1/3', 'ニンジンの約3.33%・1/30',
+                  '帰るのは、抽選を使い切ったとき・お世話5回のあと5分（リセット）・来てから30分（タイムリミット）の 一番早いとき', '左上の「仲良し」の下に「タイムリミット・抽選の回数・切り替わりタイマー」が出るよ', '約4.55%・1/22', '約33.3%ずつ・1/3', '金のエサ・金のリンゴ・金のニンジン（それぞれ約3.33%・1/30）',      # 第4.230版（まさちゃん 11/27 00:37）：金の リンゴ・金の エサも
+                  '金のエサ・金のリンゴ・金のニンジンも出ないよ',
                   f'{pc(D("poop"))}（1/{D("poop")}）', f'うんちの{pc(D("gold"))}・1/{D("gold")}', f'高確ゾーン {pc(D("high"))}（1/{D("high")}', f'幻の馬 {pc(D("mab"))}（1/{D("mab")}）', f'神様馬 {pc(D("kami"))}（1/{D("kami")}）']
         check(all(x in gd['text'] for x in wantTx) and gd['fit'] and [D(k) for k in ('poop', 'gold', 'high', 'mab', 'kami')] == [7, 20, 50, 245, 399] and od['visitDraws'] == {'maboroshi': 10, 'kamisama': 5},
-              f"説明書：合わせた ％・ルーレット 50%・チケットの 枚数・ハートの 抽選・呼ぶ・金のニンジン・うんち・金のうんち・高確ゾーン・幻の馬・神様馬（抽選の 上限 10回・5回：アプリの 数と 同じ）（左の 欄に おさまる {gd['fit']}・ない もの {[x for x in wantTx if x not in gd['text']]}）")
+              f"説明書：合わせた ％・ルーレット 50%・チケットの 枚数・ハートの 抽選・呼ぶ・金の ごはん（エサ・リンゴ・ニンジン：第4.230版）・うんち・金のうんち・高確ゾーン・幻の馬・神様馬（抽選の 上限 10回・5回：アプリの 数と 同じ）（左の 欄に おさまる {gd['fit']}・ない もの {[x for x in wantTx if x not in gd['text']]}）")
         od = pg.evaluate("() => [TCApp._t.ODDS.trashMin, TCApp._t.ODDS.trashN]")
         check(od == [15, 5] and all(x in gd['text'] for x in ['15分ごとにゴミが5か所に散らばる', '片付けるまで次のゴミは出ない', 'お掃除できるのはゴミかうんちがあるときだけ', 'ほうきとちりとりは、指でつかんで好きな所へ運べるよ', 'ちりとりへ 掃き入れよう']) and 'うんちがない時は落ち葉' not in gd['text'],
               f'説明書：お掃除は「15分ごとに ゴミが 5か所」「ゴミか うんちが ある とき だけ」「ほうきと ちりとりは 指で つかんで 運べる」（第4.165版）「ちりとりへ 掃き入れる」（決まりの 数 {od} と 同じ・前の「3回はく・落ち葉」は ない）')
@@ -643,12 +645,12 @@ try:
               f"説明書：「馬のリセット（次の馬の抽選）」の 項目が ある・幻の馬／神様馬の 抽選は そこに 書く（2分ごとの チャンスは 高確ゾーン だけ）・「いるのは10分」は ない（{g2['heads']}）")
         #   第4.159版：トークンの 上限 25・お世話の あとの PUSH（1個 使う／まとめて 使う・ハズレは 音 だけ）
         g3 = pg.evaluate("() => { const s = [...document.querySelectorAll('#tcg .sec')].map(x => [x.querySelector('h3').textContent, x.textContent]); const f = k => (s.find(x => x[0].includes(k)) || [0, ''])[1]; return { tok: f('お世話トークン'), push: f('お世話の後のPUSH'), pt: f('お世話でポイントGETチャンス'), pet: f('撫でる'), heads: s.map(x => x[0]) }; }")
-        check('最大25個' in g3['tok'] and '20個' not in g3['tok'] and '5分ごとに5つたまる' in g3['tok'] and '10分ごと' not in g3['tok'] and 'ポイントで買うこともできる' in g3['tok'] and 'お世話トークンが最大だよ！' in g3['pet'] and 'PUSHを1回押すと1つ使う' in g3['tok']
+        check('最大25個' in g3['tok'] and '20個' not in g3['tok'] and '8分ごとに5つたまる' in g3['tok'] and '5分ごとに5つ' not in g3['tok'] and '10分ごと' not in g3['tok'] and 'ポイントで買うこともできる' in g3['tok'] and 'お世話トークンが最大だよ！' in g3['pet'] and 'PUSHを1回押すと1つ使う' in g3['tok']
               and g3['heads'].index('買お世話トークンの購入') == g3['heads'].index('トお世話トークン') + 1 and g3['heads'].index('押お世話の後のPUSH') == g3['heads'].index('トお世話トークン') + 3
               and all(x in g3['push'] for x in ['PUSHが出るよ', 'トークンを1つ使って抽選', 'ハズレは「プフォ」の音だけ', '「1個 使う」「まとめて 使う」', '1回押したらおしまい', '押した回数分トークンが減る', 'やめるときは「終わる」', 'トークン1つがお世話1回'])
               and 'PUSHを押すたびに抽選' in g3['pt']
               and all(x in g3['pet'] for x in ['抽選はお世話トークンが20こ未満のときだけ', '20こ以上（最大の25個も）のときは', '抽選まち', '20個を切ったら抽選がはじまるよ']) and '増えない' not in g3['pet'],
-              f"説明書（第4.159版・第4.165版）：お世話トークンは 5分ごとに 5つ・最大25こ（最大の ときに 撫でると「お世話トークンが最大だよ！」）・すぐ 下に「お世話トークンの購入」の 項目・「お世話の後のPUSH」の 項目（押すと 抽選・ハズレは 音 だけ・1個／まとめての スイッチ・終わる・トークン 1つが お世話 1回）・"
+              f"説明書（第4.159版・第4.165版・第4.230版）：お世話トークンは 8分ごとに 5つ・最大25こ（最大の ときに 撫でると「お世話トークンが最大だよ！」）・すぐ 下に「お世話トークンの購入」の 項目・「お世話の後のPUSH」の 項目（押すと 抽選・ハズレは 音 だけ・1個／まとめての スイッチ・終わる・トークン 1つが お世話 1回）・"
               f"ハートの 抽選は トークンが 20こ未満の とき だけ（20こ以上は 抽選まち → 20個を 切ったら 抽選）")
         shot(pg, 'tc_guide')
         pg.evaluate("() => TCGuide.close()"); pg.wait_for_timeout(500)
@@ -811,22 +813,23 @@ try:
         check(pd['z'] == ['pt', 100, 'string'] and pd['p1'] == ['pt', 100, True] and pd['d1'] == 0 and pd['p2'] is None and pd['d2'] == 100 and pd['d3'] == 100,
               f'当たり（100P）は 引いた ときに 保存 → 演出の 後で 台帳へ（+100P）→ 保存を 消す・同じ 当たりは 2回 足さない（{pd}）')
         check(pd['r1'] == ['rt', 'normal', 0, 800, 1600] and pd['p3'] == ['rt', 0, 800, 1600, True] and pd['tk'] == 2, 'ルーレットは 止まる 所（800P か 1600P）も 引いた ときに 決めて 保存・チケットは 数を 足す')
-        #   お世話で 1つ 使った ちょうど その とき 5分 たって 5つ たまる（第4.165版：5分ごとに 5つ）→ 使った ぶんは 消えない（5 → 4 → 9。使った ぶんが 消えると 10）
+        #   お世話で 1つ 使った ちょうど その とき 8分 たって 5つ たまる（第4.230版：8分ごとに 5つ）→ 使った ぶんは 消えない（5 → 4 → 9。使った ぶんが 消えると 10）
         tr = pg.evaluate("""async () => { const st = TCApp.state, S = TCCare.S, now = Math.max(Date.now(), +st.seen || 0);
           st.stock = 5; S.stock = S.stockShow = 5; st.stockAt = now; await new Promise(r => setTimeout(r, 200));
-          S.stock = 4; st.stockAt = now - 5 * 60000 - 500; await new Promise(r => setTimeout(r, 400));
+          S.stock = 4; st.stockAt = now - 8 * 60000 - 500; await new Promise(r => setTimeout(r, 400));
           return [st.stock, S.stock]; }""")
         check(tr == [9, 9], f'お世話で 使った トークンは、同じ 瞬間に 5つ たまっても 消えない（5個 → 使って 4 → たまって 9：{tr}）')
         # 第4.165版（まさちゃん 11/13 11:46「お世話トークンに5分で5個追加に変更」）：5分 たつ ごとに 5つ・25 まで。開いて いる 間に たまると 右上に「＋N」
+        #   第4.230版（まさちゃん 2026/11/27 00:29「お世話トークン5分に５つから8分に５つに変更して！」）：8分 たつ ごとに 5つ
         #   （第4.159版：11/12 12:48「お世話トークンは25がMAXで、5分経つと5つずつ増えるようにね！」→ 14:50「10分で５つトークンが追加にして！」＝10分ごと）
         ac = pg.evaluate("""async () => { const st = TCApp.state, S = TCCare.S, now = Math.max(Date.now(), +st.seen || 0), w = ms => new Promise(r => setTimeout(r, ms)), o = TCApp._t.ODDS, pl = () => { const a = S.fx.filter(f => f.k === 'plus').map(f => f.txt); S.fx = S.fx.filter(f => f.k !== 'plus'); return a; };
-          st.stock = 3; S.stock = S.stockShow = 3; st.stockAt = now - 4 * 60000 - 50000; pl(); await w(400); const a0 = [st.stock, pl()];      // 4分50秒：まだ
-          st.stockAt = now - 5 * 60000 - 500; await w(400); const a1 = [st.stock, S.stock, pl()];                                     // 5分 → ＋5
-          st.stockAt = now - 10 * 60000 - 900; await w(400); const a2 = [st.stock, pl()];                                             // 10分 → ＋10
+          st.stock = 3; S.stock = S.stockShow = 3; st.stockAt = now - 7 * 60000 - 50000; pl(); await w(400); const a0 = [st.stock, pl()];      // 7分50秒：まだ
+          st.stockAt = now - 8 * 60000 - 500; await w(400); const a1 = [st.stock, S.stock, pl()];                                     // 8分 → ＋5
+          st.stockAt = now - 16 * 60000 - 900; await w(400); const a2 = [st.stock, pl()];                                             // 16分 → ＋10
           st.stockAt = now - 30 * 60000; await w(400); const a3 = [st.stock, pl()]; await w(300); const a4 = [st.stock, pl()];        // 30分 → 25 まで（18 → 25）・そのあとは ふえない
           return { a0, a1, a2, a3, a4, odds: [o.tokenMin, o.tokenStep, o.tokenMax] }; }""")
-        check(ac['odds'] == [5, 5, 25] and ac['a0'] == [3, []] and ac['a1'] == [8, 8, ['+5']] and ac['a2'] == [18, ['+10']] and ac['a3'] == [25, ['+7']] and ac['a4'] == [25, []] and pg.evaluate("() => TCCare.RULE.stockEvery") == 300,
-              f'お世話トークンは 5分ごとに 5つ・25 まで（第4.165版）：4分50秒＝まだ（{ac["a0"][0]}）→ 5分＝＋5（{ac["a1"][0]}）→ 10分＝＋10（{ac["a2"][0]}）→ 30分＝25 で 止まる（{ac["a3"]}）・右上に「＋N」')
+        check(ac['odds'] == [8, 5, 25] and ac['a0'] == [3, []] and ac['a1'] == [8, 8, ['+5']] and ac['a2'] == [18, ['+10']] and ac['a3'] == [25, ['+7']] and ac['a4'] == [25, []] and pg.evaluate("() => TCCare.RULE.stockEvery") == 480,
+              f'お世話トークンは 8分ごとに 5つ・25 まで（第4.230版）：7分50秒＝まだ（{ac["a0"][0]}）→ 8分＝＋5（{ac["a1"][0]}）→ 16分＝＋10（{ac["a2"][0]}）→ 30分＝25 で 止まる（{ac["a3"]}）・右上に「＋N」')
         # 第4.144版（11/10 18:04 まさちゃん「馬のリセットは5分に切り替えよう！…最低5回お世話をした段階でリセットタイマーが作動して(お世話をしてる間はリセットなし)5分経ったらリセット。
         #   …開きっぱなしでもお世話の操作をしない限りは馬は変わらないでいて！ただ、幻の馬と神様馬は…開いてから30分経過すると切り替わる仕組みにして！
         #   幻の馬と神様馬は、上のバナーの下に切り替わる条件を表示して！・タイムリミット・お世話の回数 お世話5回完了後の切り替わりタイマー」・18:13「幻の馬と神様馬も最低5回お世話完了後はリセットタイマー作動で5分でリセットね！」）

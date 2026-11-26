@@ -257,7 +257,7 @@ try:
         p5.evaluate("() => __setDay(-31)"); x2 = p5.evaluate("async () => { await TengelClock.sync(); return [TengelWallet.balance().paid_sub, TengelClock.how()]; }")
         p5.evaluate("() => __setDay(0)"); p5.evaluate("() => TengelLogin.close()")
         check(sub >= 9200 and x1 == [0, 'ok'] and x2 == [0, 'back'], f'サブスクの ポイント（{sub:,}P）：31日 たって 期限が 切れた（{x1}）→ iPhone の 日付を 31日 もどしても 使えない（{x2}）')
-        # 第4.211版（抜け穴を ふさぐ）：トレーニングセンターの お世話トークン（5分で 5個・25個 まで）も 時計の 番人で 数える。
+        # 第4.211版（抜け穴を ふさぐ）：トレーニングセンターの お世話トークン（5分で 5個・第4.230版から 8分で 5個・25個 まで）も 時計の 番人で 数える。
         #   前は iPhone の 時計（Date.now）だった ので、時刻を 25分 進める たびに 満タン（＝抽選 25回）に できた
         TKN = ("async (sync) => { if (sync) await TengelClock.sync(); await TengelClock.ready; "      # 第4.212版：トークンを わたす 口（TCGift）は なくした → トレーニングセンターの 部品を 読んで、いまの 数を 読む（tokens.now：ふやさない）
                "if (!window.TCApp) await new Promise((ok, ng) => { const s = document.createElement('script'); s.src = 'tc_bundle.js'; s.onload = ok; s.onerror = ng; document.head.appendChild(s); }); "
@@ -267,12 +267,12 @@ try:
         ta = p5.evaluate(TKN, True)
         p5.evaluate("() => __setDay(1)"); tb = p5.evaluate(TKN, False); tc_ = p5.evaluate(TKN, True)      # iPhone の 日付を 1日 進めた すぐ あと（たしかめる 前）・たしかめた あと
         p5.goto(APP); p5.wait_for_timeout(1500); gate(p5); p5.wait_for_timeout(600); p5.evaluate("() => TengelLogin.close()"); td = p5.evaluate(TKN, False)      # 進めた まま アプリを 開き直した（開いた すぐ あとの TCGift は 番人が たしかめ おわる のを 待つ）
-        p5.evaluate("() => __pass(5 * 60000 + 2000)"); te = p5.evaluate(TKN, True)      # 本当に 5分 たった
+        p5.evaluate("() => __pass(8 * 60000 + 2000)"); te = p5.evaluate(TKN, True)      # 本当に 8分 たった（第4.230版：8分で 5個）
         p5.evaluate("() => __setDay(-2)"); tf = p5.evaluate(TKN, True)                  # 日付を もどした
         p5.evaluate("() => __setDay(0)"); p5.evaluate("() => __pass(60 * 60000)"); tg = p5.evaluate(TKN, True)      # 本当に 1時間 たった
         sv = p5.evaluate("() => { const s = JSON.parse(localStorage.getItem('tengel.tc')); return [s.stock, s.seen <= TengelClock.now() + 1000, s.stockAt <= TengelClock.now() + 1000]; }")
         check(t0[0] == 5 and ta == [0, 'ok'] and tb[0] == 0 and tc_ == [0, 'ahead'] and td[0] == 0 and te[0] == 5 and tf == [5, 'back'] and tg == [25, 'ok'] and sv == [25, True, True],
-              f'お世話トークン：iPhone の 日付を 1日 進めても ふえない（たしかめる 前 {tb[0]}個・あと {tc_}・開き直しても {td[0]}個）→ 本当に 5分 たつと 5個（{te}）・日付を もどしても そのまま（{tf}）・1時間で 満タン（{tg}）')
+              f'お世話トークン：iPhone の 日付を 1日 進めても ふえない（たしかめる 前 {tb[0]}個・あと {tc_}・開き直しても {td[0]}個）→ 本当に 8分 たつと 5個（{te}）・日付を もどしても そのまま（{tf}）・1時間で 満タン（{tg}）')
         p5.evaluate("() => TengelLogin.close()")
         # 第4.212版：電源を 入れ直した（日付を 進めた まま・つながって いない）→ iPhone の 時計は 信じない：前に 見た 時刻 ＋ 電源を 入れてからの 時間（1分）→ もらえない
         #   （前の 版：わからない ので iPhone の 時計を 信じた ＝ 日付を 進めて 入れ直す たびに 1日ぶん もらえた）

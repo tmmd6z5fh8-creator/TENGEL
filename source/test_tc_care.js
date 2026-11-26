@@ -239,17 +239,28 @@ function pet(zone) {          // 3回 なでる ＝ 撫でる 1回
   feedY(); TCCare.press(T, 'pick:carrot'); until(() => S.phase === 'feed', 10);
   check(S.feed && S.feed.gold === false, '決めて いない → ニンジンは ふつう（いつもの くじ）');
   idle(30); check(!evs('beg', tq0).length, '決めて いない → おかわりの目は 出ない');
-  S.test = { gold: true, beg: true };
-  feedY(); TCCare.press(T, 'pick:apple'); until(() => S.phase === 'feed', 10);
-  check(S.feed.gold === false && S.test.gold === true, 'gold：リンゴでは 使わない（次の ニンジン まで のこる）');
+  // 第4.230版（まさちゃん 2026/11/27 00:37「りんごとバケツのエサも金色作れる？効果は金のニンジンと同じでいいから！」）：gold は 次の ごはん（エサ・リンゴ・ニンジン どれでも）
+  const goldTags = from => S.fx.filter(f => f.k === 'tag' && f.t0 >= from - 1e-6 && /^金の/.test(f.txt)).map(f => f.txt);
+  S.test = { gold: true, beg: true }; let hA = S.heart = S.heartShow = 2; S.got = [];
+  feedY(); TCCare.press(T, 'pick:apple'); until(() => S.phase === 'feed', 10); const ta0 = T;
+  check(S.feed.gold === true && !('gold' in S.test), 'gold：リンゴでも 使う → 金のリンゴ（第4.230版・使ったら 消える）');
   { const tq = T; check(until(() => evs('beg', tq).length > 0, 20) && !('beg' in S.test), 'beg：ごはんの あと おかわりの目（使ったら 消える）'); }
   idle(30);
+  check(S.heart === hA + 3 && goldTags(ta0).join() === '金のリンゴ！' && evs('gold', ta0).length === 1, `金のリンゴ → なかよし ＋3（${hA} → ${S.heart}）・札「金のリンゴ！」・キラーン（金のニンジンと 同じ）`);
+  S.test = { gold: true }; S.heart = S.heartShow = hA; S.got = [];
+  feedY(); TCCare.press(T, 'pick:esa'); until(() => S.phase === 'feed', 10); const te0 = T;
+  check(S.feed.gold === true && !('gold' in S.test), 'gold：エサでも 使う → 金のエサ（第4.230版）');
+  idle(30);
+  check(S.heart === hA + 3 && goldTags(te0).join() === '金のエサ！' && evs('gold', te0).length === 1, `金のエサ → なかよし ＋3（${hA} → ${S.heart}）・札「金のエサ！」・キラーン`);
+  S.test = { gold: true }; S.heart = S.heartShow = hA; S.got = [];
   let h1 = S.heart; S.got = [];
   feedY(); TCCare.press(T, 'pick:carrot'); until(() => S.phase === 'feed', 10);
   check(S.feed.gold === true && !('gold' in S.test), 'gold：次の ニンジンは 金のニンジン（使ったら 消える）');
   idle(30); check(S.heart === Math.min(10, h1 + 3) && !evs('beg', T - 8).length, '金のニンジン → なかよし ＋3・おかわりの目は もう 出ない（1回 だけ）');
   feedY(); TCCare.press(T, 'pick:carrot'); until(() => S.phase === 'feed', 10);
   check(S.feed.gold === false, 'その 次の ニンジンは ふつう（いつもの くじに もどる）'); idle(30);
+  feedY(); TCCare.press(T, 'pick:apple'); until(() => S.phase === 'feed', 10); const tn0 = T;
+  check(S.feed.gold === false, 'その 次の リンゴも ふつう（第4.230版）'); idle(30); check(goldTags(tn0).length === 0, 'ふつうの リンゴは 札「金の…」なし');
   // 呼ぶ
   run(7.5); TCCare.pressCall(T); check(S.callKind === 'amae', '決めて いない → 呼ぶは いつもの くじ（0.99 → 甘える）'); idle(20);
   for (const k of ['come', 'turn']) { run(7.5); S.test = Object.assign(S.test || {}, { call: k }); TCCare.pressCall(T); check(S.callKind === k && !('call' in S.test), `call：次の 呼ぶは「${k}」（使ったら 消える）`); idle(20); }
@@ -562,6 +573,12 @@ function pet(zone) {          // 3回 なでる ＝ 撫でる 1回
     const g0 = S.feed && S.feed.gold; const h0 = S.heart; until(() => S.phase === 'idle', 30); run(0.5); const h1 = S.heart;
     home(); tap(B.feed[0], B.feed[1]); tap(W / 2 - A.dx, A.y); TCCare.press(T, 'pick:carrot'); until(() => S.phase === 'feed', 10); const g1 = S.feed && S.feed.gold; until(() => S.phase === 'idle', 30); clearPush(); RND = 0.99;
     check(g0 === false && h1 === h0 && g1 === true, '金のニンジン（なかよし ＋3）は「抽選を しない」ごはんでは 出ない（ハートは ふえない）・「抽選を する」なら いままで どおり 出る');
+    until(() => S.phase === 'idle' && !S.mode && !S.push, 30); run(0.6);
+    // 第4.230版：金の リンゴ・金の エサも 同じ（抽選を しない ごはんでは 出ない）
+    RND = 0.001; const gn = [];
+    for (const kd of ['apple', 'esa']) { home(); tap(B.feed[0], B.feed[1]); tap(W / 2 + A.dx, A.y); TCCare.press(T, 'pick:' + kd); until(() => S.phase === 'feed', 10); gn.push(S.feed && S.feed.gold); until(() => S.phase === 'idle', 30); run(0.5); }
+    home(); tap(B.feed[0], B.feed[1]); tap(W / 2 - A.dx, A.y); TCCare.press(T, 'pick:esa'); until(() => S.phase === 'feed', 10); const ge = S.feed && S.feed.gold; until(() => S.phase === 'idle', 30); clearPush(); RND = 0.99;
+    check(gn.join() === 'false,false' && ge === true, `金の リンゴ・金の エサも「抽選を しない」ごはんでは 出ない（${gn}）・「抽選を する」エサは 1/30 で 出る（${ge}）`);
     until(() => S.phase === 'idle' && !S.mode && !S.push, 30); run(0.6);
     // おそうじ
     home(); BR.trash = [{ x: 300, y: 1000, sd: 0, items: [{ k: 0, dx: 0, dy: 0, r: 0, w: 0.4, d: 0 }] }]; S.stock = S.stockShow = 0; BR.trashDone = false; e0 = EV.length;
