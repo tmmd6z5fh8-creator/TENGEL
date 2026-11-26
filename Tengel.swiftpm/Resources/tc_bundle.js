@@ -4938,8 +4938,9 @@ window.TCPlan = TCPlan;
 
 
 const TCBuy = (() => {
+  
   const CSS = `
-#tcb{position:absolute;inset:0;z-index:22;display:none;align-items:center;justify-content:center;pointer-events:auto;touch-action:auto;font-family:"BIZ UDPGothic",BIZ,"Hiragino Sans","Noto Sans CJK JP",sans-serif}
+#tcb{position:absolute;inset:0;z-index:22;display:none;align-items:center;justify-content:center;pointer-events:auto;touch-action:manipulation;font-family:"BIZ UDPGothic",BIZ,"Hiragino Sans","Noto Sans CJK JP",sans-serif}
 #tcb .bbk{position:absolute;inset:0;background:rgba(30,18,6,.5)}
 #tcb .bsh{position:relative;width:calc(100% - 24px);max-width:420px;max-height:calc(100% - 16px);background:#fff8ec;border-radius:18px;box-shadow:0 6px 18px rgba(0,0,0,.35);overflow:hidden;display:flex;flex-direction:column}
 #tcb .bhd{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px 6px 14px;background:linear-gradient(#f6e3bf,#efd6a8);border-bottom:2px solid #e2c48e}
@@ -5964,7 +5965,11 @@ const TCApp = (() => {
     const LOOPS_OLD = { divine: { pre: 0.5, len: 32 * 4 * 60 / 156 } };
     let hold = null, aim = null;
     function buf(f) { if (!cache[f]) cache[f] = fetch(AP(f)).then(r => { if (!r.ok) throw new Error('no ' + f); return r.arrayBuffer(); }).then(b => new Promise((ok, ng) => { const q = ac.decodeAudioData(b, ok, ng); if (q && q.catch) q.catch(() => { }); })); return cache[f]; }
-    function unlock() { try { if (!ac) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ac = new AC(); master = ac.createGain(); master.gain.value = on ? 1 : 0; master.connect(ac.destination); } if (ac.state === 'suspended') ac.resume(); } catch (e) { } }
+    
+    
+    let quietT = 0;
+    function lvl() { if (!master) return; try { const n = ac.currentTime; master.gain.cancelScheduledValues(n); master.gain.setValueAtTime(on ? 1 : 0, n); } catch (e) { master.gain.value = on ? 1 : 0; } }
+    function unlock() { try { if (!ac) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ac = new AC(); master = ac.createGain(); master.gain.value = on ? 1 : 0; master.connect(ac.destination); } clearTimeout(quietT); quietT = 0; lvl(); if (ac.state === 'suspended') ac.resume(); } catch (e) { } }
     
     async function swap(name, fout, fin) {
       aim = name || ''; if (!ac) return; if (bed && bed.name === aim) return;
@@ -5989,8 +5994,17 @@ const TCApp = (() => {
       if (!ac || !on) return; let b; try { b = await buf(name); } catch (e) { return; }
       try { const s = ac.createBufferSource(); s.buffer = b; const g = ac.createGain(); g.gain.value = gain == null ? 1 : gain; s.connect(g); g.connect(master); s.start(ac.currentTime + Math.max(0, at || 0)); return s; } catch (e) { }
     }
-    function stopAll() { if (bed) { try { bed.s.stop(); } catch (e) { } bed = null; } want = null; hold = null; aim = null; if (ac && ac.state === 'running') { try { ac.suspend(); } catch (e) { } } }
-    function setOn(v) { on = !!v; if (master) master.gain.value = on ? 1 : 0; }
+    
+    
+    const STOP_F = 0.15;
+    function stopAll() {
+      const old = bed; bed = null; want = null; hold = null; aim = null;
+      if (!ac) return;
+      try { const n = ac.currentTime; master.gain.cancelScheduledValues(n); master.gain.setValueAtTime(master.gain.value, n); master.gain.linearRampToValueAtTime(0, n + STOP_F); if (old) old.s.stop(n + STOP_F + 0.05); } catch (e) { try { if (old) old.s.stop(); } catch (x) { } }
+      clearTimeout(quietT);
+      quietT = setTimeout(() => { quietT = 0; if (ac && ac.state === 'running' && !bed) { try { const q = ac.suspend(); if (q && q.catch) q.catch(() => { }); } catch (e) { } } }, 300);
+    }
+    function setOn(v) { on = !!v; lvl(); }
     function preload(list) { if (!ac) return; list.forEach(f => buf(f).catch(() => { })); }
     return { unlock, field, bgm, se, stopAll, setOn, preload, get ac() { return ac; }, get bed() { return bed ? bed.name : null; }, get hold() { return hold; }, get loop() { return bed ? [bed.s.loopStart, bed.s.loopEnd] : null; }, LOOPS };      
   })();
