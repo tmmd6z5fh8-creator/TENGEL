@@ -1,0 +1,60 @@
+== runner: macOS 15.8.2 arm64 (macos-15)
+== xcode: Xcode 16.4 Build version 16F6 
+== iPhone: CC50B935-E88F-4236-845E-A9A369409D57|iPhone 17|iOS 26.2
+== iPad: 8FC3CAE9-9447-43C0-B6C2-7A3AADBF1805|iPad Pro 11-inch (M5)|iOS 26.2
+== scheme: テンゲル
+== build Swift5 Debug simulator: exit 0 (34s)
+   errors: 0  warnings: 3
+== build Swift6 Debug simulator: exit 0
+   errors: 0  warnings: 2
+== build Swift5 Release device: exit 0
+   errors: 0  warnings: 2
+   release app:  19M  selftest in release: 0
+== app: テンゲル.app
+   bundle id: jp.tengel.app  version: 1.0 (20261126.3)
+   iphone-only: UIDeviceFamily=1, orientations(iphone)=1 orientations(ipad)=1 launchscreen=yes OK
+   web files: 35  index.html at: ./index.html 
+   language: CFBundleDevelopmentRegion=ja ja.lproj files=2 localizations= OK
+   local network: purpose=yes bonjour=2 OK
+== iPhone: installed
+   iphone 1: report-1
+   iphone 1: report-manual
+   iphone 1: report-back
+   names: read 12 same 12/12 -> OK
+   bgm: tengel-bgm api False card False (none expected) h264 probably -> OK
+   card battle: fab ['tcFab', 'oshiFab', 'cbFab', 'figFab'] column True 2x2 False icon [66] clear-of-kise True (view [402, 812] kise None fabs [[332, 373, 398, 459], [332, 461, 398, 536], [332, 538, 398, 625], [332, 627, 398, 713]]) room-api {'state': 'idle', 'ok': True} bad-room room open True start {'hand': 7, 'op': 7, 'deck': 16, 'turn': 1, 'turns': 5} played {'set': 5} res win wins [3, 2] discard 10 early 0 tokens None closed True coin 2->4 gifts 1 -> OK
+   card battle settings: sets {'bgm': True, 'se': True, 'fx': False, 'as': True} bgm {'on': False, 'want': True, 'gone': True, 'len': 80.53, 'ctx': 'running'} fire ['cbfire 5.6s', 'cbfire 4.3s'] gear bgm,se fx-button False board ['cb_board.webp', False] err None -> OK
+   card battle toy: locked True badge True points 5500 ask-buttons go,no opened-before-unlock False after-cancel {'ov': False, 'cb': False} unlocked [True] badge-after False err None -> OK
+   kisekae sample: pv lucky after lucky push push kb board rb hit t-lucky rows 3 size 139x200 k 0.3564 inert True tab -1 closed True wait 2428ms -> OK
+   kisekae seen: top run 57 / down pause True run 0 / back run 57 / cover pause True run 0 / tap-close run 57 153ms / login-bonus pause True run 0 / OK tap run 20 151ms -> OK
+   touch: {"ta": "manipulation", "btn": "manipulation", "us": "none", "tc": "none", "inp": "text", "pre": "text"} / OK
+   status bar: first #16203D W style 1 / sunset #24123A W style 1 / ranch #A9DA5E K style 3 / tengel #0A1B22 W style 1 / back #16203D W style 1 -> OK
+   v212: cost {'gift': 5000, 'read': 400, 'w5': 400, 'type': 500, 'slot': 23000, 'toy': 3000} toys ['drop', 'cb'] toy-items 2 old-card True after-backup True api object delBets function auto-line 2023-12-26 -> OK
+   unlock confirm: item [33, 325, 336, 162] name 310/310 1-line True go [46, 387, 310, 39] now [245, 397, 90, 19] text 23,000Pを使って解放する（今 5,500P） closed True points-same True -> OK
+   fab marks: pill テンゲルデータ groups ['壁紙パック/10', 'ポイント壁紙カスタム/17', '帯/3'] tokens 5 (font 14.2 size [24, 24] corner True in True) bell 🔔 -> open None -> after None plan top 0 soon True bar [['true', 'false'], ['false', 'true'], ['true', 'false']] tickets 15/15 (corner True in True) front [('oshi', 'tc', 2.6, True, False)] z cbFab:3 figFab:4 oshiFab:2 tcFab:1 -> OK
+   care recorder: have True ok True/True frames 16 drawn 8 same 6 hidden 2 forced 2 different 0 (compared 14) ref-diff 0 filled 0.521 reads [2, 0.375, 32] names 77 -> OK
+   iphone 2: report-2
+   clock: wall True mono True(+475 ms, wall +0 ms) boot yes dev none (keychain -34018 in simulator) proc 333F->BEA9 web ok/ok diff 834 -> OK
+   clock net: ok True/True why / rt 109/184 ms diff 254/92 ms sure True/True tries 1/1 -> OK
+   iphone 3: report-3
+   iphone 3: report-link
+   iphone 5: report-5a
+   iphone 5: report-5
+   reset: before bets 2 setting x backup 2 -> after db ok native 4 first-gate True bets 0 setting None total 10000 offer False write 7 backup n 0 errors 0 -> OK
+== iPad: installed
+   ipad 1: report-1
+   ipad 1: report-manual
+   ipad 1: report-back
+   card battle (ipad): fab ['tcFab', 'oshiFab', 'cbFab', 'figFab'] column True 2x2 False icon [66] clear-of-kise True (view [375, 647] kise None fabs [[305, 242, 371, 328], [305, 330, 371, 405], [305, 407, 371, 494], [305, 496, 371, 582]]) room-api {'state': 'idle', 'ok': True} bad-room room open True start {'hand': 7, 'op': 7, 'deck': 16, 'turn': 1, 'turns': 5} played {'set': 3, 'k': 4} res win wins [3, 0] discard 8 early 3 tokens None closed True coin 2->4 gifts 1 -> OK
+   card battle settings: sets {'bgm': True, 'se': True, 'fx': False, 'as': True} bgm {'on': False, 'want': True, 'gone': True, 'len': 80.53, 'ctx': 'running'} fire ['cbfire 5.6s', 'cbfire 4.3s'] gear bgm,se fx-button False board ['cb_board.webp', False] err None -> OK
+   card battle toy: locked True badge True points 5500 ask-buttons go,no opened-before-unlock False after-cancel {'ov': False, 'cb': False} unlocked [True] badge-after False err None -> OK
+   care recorder (ipad): have True ok True/True frames 16 drawn 8 same 6 hidden 2 forced 2 different 0 (compared 14) ref-diff 0 filled 0.521 reads [2, 0.375, 32] names 77 -> OK
+   fab marks (ipad): pill テンゲルデータ groups ['壁紙パック/10', 'ポイント壁紙カスタム/17', '帯/3'] tokens 5 (font 14.2 size [24, 24] corner True in True) bell 🔔 -> open None -> after None plan top 0 soon True bar [['true', 'false'], ['false', 'true'], ['true', 'false']] tickets 15/15 (corner True in True) front [('oshi', 'tc', 2.6, True, False)] z cbFab:3 figFab:4 oshiFab:2 tcFab:1 -> OK
+== build wide (.pad added) Debug simulator: exit 0 (53s)
+   wide app: UIDeviceFamily=1,2,
+== iPad wide: installed
+   ipadwide 4: report-4
+   wide: web 390x844 dpr 2 framed True host 834 web@(222,183) 390x844 ksk 1.0000 errors 0 -> OK
+== room (iPhone hosts 8216, iPad joins): 194s
+   room: host connected True res draw wins [2, 2] discard 10 early 0 evs ['state:connecting', 'state:connected', 'data×10'] / guest connected True res draw wins [2, 2] evs ['state:connecting', 'state:connected', 'data×25'] errors 0 -> OK
+== done

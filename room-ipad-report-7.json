@@ -1,0 +1,41 @@
+{
+ "phase": 7,
+ "device": "ipad",
+ "host": false,
+ "room": "8216",
+ "evs": [
+  "state:connecting",
+  "state:connected",
+  "data×25"
+ ],
+ "api": "object",
+ "toy": [
+  true
+ ],
+ "open": true,
+ "go": true,
+ "shown": "8216",
+ "connected": true,
+ "screen": "game",
+ "kind": "guest",
+ "auto": {
+  "clicks": 16,
+  "kinds": {
+   "set": 5,
+   "m": 4,
+   "eff": 7
+  },
+  "ended": true,
+  "ms": 10049
+ },
+ "res": "draw",
+ "wins": [
+  2,
+  2
+ ],
+ "discard": 10,
+ "early": 0,
+ "gift": "同点なので 連勝（1連勝）は そのまま",
+ "errors": [],
+ "at": "2026-11-26T06:40:42.966Z"
+}

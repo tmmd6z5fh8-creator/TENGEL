@@ -1,0 +1,33 @@
+Timestamp               Ty Process[PID:TID]
+2026-11-26 06:39:40.979 Df テンゲル[70600:3030d] [com.apple.multipeerconnectivity:MCNearbyServiceAdvertiser] Start advertising peer [tengel-1f87f95b,1E60FB60] type [_tengel-cb._tcp].
+2026-11-26 06:40:31.599 Df テンゲル[70600:31746] [com.apple.multipeerconnectivity:MCNearbyServiceAdvertiser] Received dict [{
+    MCNearbyServiceInviteContextKey = {length = 4, bytes = 0x38323136};
+    MCNearbyServiceInviteIDKey = 0;
+    MCNearbyServiceMessageIDKey = 1;
+    MCNearbyServiceRecipientPeerIDKey = {length = 24, bytes = 0x53d5924a1e60fb600f74656e67656c2d3166383766393562};
+    MCNearbyServiceSenderPeerIDKey = {length = 24, bytes = 0xeec223e28a7cbbb10f74656e67656c2d3634373737633835};
+}] from peer [tengel-64777c85,0A7CBBB1].
+2026-11-26 06:40:31.654 Df テンゲル[70600:31746] [com.apple.multipeerconnectivity:MCNearbyServiceAdvertiser] Sending dictionary {
+    MCNearbyServiceAcceptInviteKey = 1;
+    MCNearbyServiceConnectionDataKey = {length = 57, bytes = 0x80010039 110840a8 c0fe8000 00000000 ... bf5a0000 00801240 };
+    MCNearbyServiceInviteIDKey = 0;
+    MCNearbyServiceMessageIDKey = 2;
+    MCNearbyServiceRecipientPeerIDKey = {length = 24, bytes = 0xeec223e28a7cbbb10f74656e67656c2d3634373737633835};
+    MCNearbyServiceSenderPeerIDKey = {length = 24, bytes = 0x53d5924a1e60fb600f74656e67656c2d3166383766393562};
+} to peer tengel-64777c85,0A7CBBB1.
+2026-11-26 06:40:31.781 Df テンゲル[70600:30311] [com.apple.multipeerconnectivity:MCNearbyServiceAdvertiser] Received dict [{
+    MCNearbyServiceConnectionDataKey = {length = 57, bytes = 0x80010039 110840a8 c0fe8000 00000000 ... d45a0000 00801140 };
+    MCNearbyServiceInviteIDKey = 0;
+    MCNearbyServiceMessageIDKey = 3;
+    MCNearbyServiceRecipientPeerIDKey = {length = 24, bytes = 0x53d5924a1e60fb600f74656e67656c2d3166383766393562};
+    MCNearbyServiceSenderPeerIDKey = {length = 24, bytes = 0xeec223e28a7cbbb10f74656e67656c2d3634373737633835};
+}] from peer [tengel-64777c85,0A7CBBB1].
+2026-11-26 06:40:31.781 Df テンゲル[70600:30311] [com.apple.multipeerconnectivity:MCNearbyServiceAdvertiser] Got invite connect [{
+    MCNearbyServiceConnectionDataKey = {length = 57, bytes = 0x80010039 110840a8 c0fe8000 00000000 ... d45a0000 00801140 };
+    MCNearbyServiceInviteIDKey = 0;
+    MCNearbyServiceMessageIDKey = 3;
+    MCNearbyServiceRecipientPeerIDKey = {length = 24, bytes = 0x53d5924a1e60fb600f74656e67656c2d3166383766393562};
+    MCNearbyServiceSenderPeerIDKey = {length = 24, bytes = 0xeec223e28a7cbbb10f74656e67656c2d3634373737633835};
+}] from peer [tengel-64777c85,0A7CBBB1].
+2026-11-26 06:40:31.860 Df テンゲル[70600:317be] [com.apple.multipeerconnectivity:MCNearbyServiceAdvertiser] Stop advertising peer [tengel-1f87f95b,1E60FB60] type [_tengel-cb._tcp].
+2026-11-26 06:41:46.995 Df log[74975:0] [com.apple.log:] log run noninteractively, parent: 62249 (launchd_sim), args: 'log' 'show' '--last' '8m' '--style' 'compact' '--predicate' 'subsystem CONTAINS "MultipeerConnectivity" OR eventMessage CONTAINS[c] "MCNearby" OR eventMessage CONTAINS[c] "local network" OR eve

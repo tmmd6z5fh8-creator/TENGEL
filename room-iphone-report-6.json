@@ -1,0 +1,40 @@
+{
+ "phase": 6,
+ "device": "iphone",
+ "host": true,
+ "room": "8216",
+ "evs": [
+  "state:connecting",
+  "state:connected",
+  "data×10"
+ ],
+ "api": "object",
+ "toy": [
+  true
+ ],
+ "open": true,
+ "stakeStep": true,
+ "shown": "8216",
+ "connected": true,
+ "screen": "game",
+ "kind": "host",
+ "auto": {
+  "clicks": 11,
+  "kinds": {
+   "set": 5,
+   "eff": 6
+  },
+  "ended": true,
+  "ms": 10369
+ },
+ "res": "draw",
+ "wins": [
+  2,
+  2
+ ],
+ "discard": 10,
+ "early": 0,
+ "gift": "同点！ もう 1回 やって みよう！",
+ "errors": [],
+ "at": "2026-11-26T06:40:42.947Z"
+}
