@@ -2449,7 +2449,7 @@ function rsvLineHTML(J, d, l, i, lab) {
   const sum = sides.map((s, k) => `${pl[k]} ${l[s].length ? l[s].join('・') : '—'}`).join('　');
   let h = `<div class="rline${open ? ' open' : ''}${pts ? '' : ' zero'}" data-i="${i}"><div class="rlh"><button type="button" class="rlhb" data-k="rlopen" aria-expanded="${open}">`
     + `<span class="rlt">${esc(lab)}</span><span class="rlz">${z ? `第${l.tpl + 1} ${esc(z.label)}` : '推奨なし'}${own ? ' ✏️' : ''}</span><span class="rln">${pts}点</span><span class="rlc" aria-hidden="true"></span></button>`
-    + `<button type="button" class="rldel" data-k="rldel" aria-label="${esc(lab)}を 消す">✕</button></div><div class="rls" data-k="rlopen">${esc(sum)}</div>`;
+    + `<button type="button" class="rldel" data-k="rldel" aria-label="${esc(lab)}を 消す">✕</button></div><div class="rls" data-k="rlsum">${esc(sum)}</div>`;
   if (open) {
     h += `<div class="rltpl"><span>推奨（押すと その 推奨の 馬 全部に 戻るよ）</span><div class="toggles" data-k="rltpl">${J.set.map((s, k) => `<button type="button" data-v="${k}" aria-pressed="${l.tpl === k}">第${k + 1} ${esc(s.label)}</button>`).join('')}</div></div>`;
     sides.forEach((s, k) => { h += rsvPosHTML(J, l, s, pl[k]); });
@@ -2524,7 +2524,7 @@ $('#recCard').addEventListener('click', e => {
   if (e.target.closest('[data-k=romk]')) { omakase(J); return; }
   const row = e.target.closest('.rline'), li = row ? +row.dataset.i : -1, l = li >= 0 ? d.lines[li] : null;
   if (l) {
-    if (e.target.closest('[data-k=rlopen]')) { d.open = d.open === li ? -1 : li; redraw(); return; }
+    if (e.target.closest('[data-k=rlopen], [data-k=rlsum]')) { d.open = d.open === li ? -1 : li; redraw(); return; }   // 見出しと まとめの 行
     if (e.target.closest('[data-k=rldel]')) { d.lines.splice(li, 1); d.open = d.open === li ? -1 : d.open > li ? d.open - 1 : d.open; redraw(); return; }
     const tb = e.target.closest('[data-k=rltpl] button'); if (tb) { l.tpl = +tb.dataset.v; fillTpl(J, l); redraw(); return; }
     const pk = e.target.closest('[data-k=rpk]');
