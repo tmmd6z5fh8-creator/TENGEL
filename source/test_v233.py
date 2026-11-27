@@ -234,6 +234,39 @@ try:
               f'⑨上に「名古屋 9R 10R 11R 12R」・見出しに「11R」の 画面 → 11R（9R に しない）・開催場 名古屋・1700m・12頭・稍重・発走 20:15（{o["r"]}R {o["venue"]}）')
         c13 = pg.evaluate(CARD)
         check(not c13['lines'] and not (o['rl'] and o['rl'].get('lines')), '⑨べつの レースを 読む → 買い目の 行は 空から（前の レースの 行は 持って こない）')
+        # ⑩ 作戦会議の レースの 予約：画像は 3枚まで（21:48）・頭数と レース名を 読みやすく
+        pg.evaluate("() => window.TCPlanOpen()"); pg.wait_for_function("() => document.querySelector('#tcPlan [data-p=add]')", timeout=30000); pg.wait_for_timeout(300)
+        pl = pg.locator('#tcPlan')
+        pl.locator('[data-p=add]').click(); pg.wait_for_timeout(400)
+        fin = pl.locator('input[data-p=file]')
+        check(pl.locator('[data-p=ocr]').inner_text().strip() == '📷 画像から読み取る（3枚まで）' and fin.get_attribute('multiple') is not None, '⑩作戦会議の「レースを予約」：「📷 画像から読み取る（3枚まで）」・写真を まとめて 選べる（multiple）')
+        I1 = [Wd('名古屋', 0.08, 0.145, 0.16, 0.016), Wd('9R', 0.42, 0.146, 0.05), Wd('10R', 0.55, 0.146, 0.07), Wd('11R', 0.70, 0.146, 0.07), Wd('12R', 0.84, 0.146, 0.07),
+              Wd('11R', 0.07, 0.203, 0.08, 0.018), Wd('2026年10月14日(水)', 0.21, 0.200, 0.32), Wd('テンゲルの日特別 A(1 a)', 0.21, 0.240, 0.52, 0.016), Wd('発走予定時刻:20:15 ダート1700m', 0.21, 0.275, 0.6)]
+        I2 = [Wd('11R 出馬表', 0.05, 0.05, 0.4), Wd('出走頭数：12', 0.05, 0.10, 0.4)]
+        I3 = [Wd('単勝オッズ', 0.05, 0.05, 0.3)]
+        JP = os.path.join(W, 'testdata', 'ocr', 'a_tanfuku_waku.jpg')
+
+        def plan_read(images):
+            pg.evaluate("(L) => { window.__ocrLines = L; }", images)
+            fin.set_input_files([JP] * len(images)); pg.wait_for_timeout(2200)
+            return pg.evaluate("""() => { const r = document.querySelector('#tcPlan'), v = k => (r.querySelector(`[data-f="${k}"]`) || {}).value || '';
+              return { name: v('name'), n: v('n'), dist: v('dist'), time: v('time'), date: v('date'), msg: (r.querySelector('.om') || {}).innerText || '', left: window.__ocrLines.length }; }""")
+        q1 = plan_read([I1, I2, I3])
+        print('   作戦会議①:', q1)
+        check(q1['left'] == 0 and q1['name'] == 'テンゲルの日特別 A(1 a)' and q1['n'] == '12' and q1['dist'] == '1700' and q1['time'] == '20:15' and q1['date'] == '2026-10-14'
+              and '読み取ったよ（レース名・頭数・距離・発走時間）' in q1['msg'] and '読めなかった' not in q1['msg'],
+              f'⑩3枚 まとめて 読む：レース名（見出しの「11R 日付」の 下の 行）・頭数（2枚目の「出走頭数：12」）・距離・発走 → 入る（{q1["name"]}・{q1["n"]}頭）')
+        names = [Wd('11R', 0.05, 0.03, 0.1)] + [Wd(f'{k} {nm}', 0.05, 0.08 + k * 0.04, 0.6) for k, nm in enumerate(['サンライズゴールド', 'テンゲルクイーン', 'ナイトレイン', 'ブルーハーバー', 'コスモスカイ', 'ミラクルアロー', 'ハッピーデイズ', 'シルバーウィンド', 'ドリームキャッチャー', 'ロイヤルステップ'], 1)]
+        pl.locator('[data-f=name]').fill(''); pl.locator('[data-f=n]').fill('')
+        q2 = plan_read([names])
+        print('   作戦会議②:', q2)
+        check(q2['n'] == '10' and '頭数（写って いた 馬の 数）' in q2['msg'] and '読めなかった：レース名・距離・発走時間' in q2['msg'],
+              f'⑩頭数の 字が ない 出馬表（馬番と 名前 1〜10）→ 頭数は 写って いた 馬の 数（10頭）と 書いて 入る・読めなかった 項目も 出す（{q2["msg"][:60]}）')
+        pl.locator('[data-f=n]').fill('')
+        gap = [Wd('11R', 0.05, 0.03, 0.1)] + [Wd(f'{k} {nm}', 0.05, 0.08 + k * 0.04, 0.6) for k, nm in ((1, 'サンライズゴールド'), (2, 'テンゲルクイーン'), (4, 'ブルーハーバー'), (5, 'コスモスカイ'), (6, 'ミラクルアロー'))]
+        q3 = plan_read([gap])
+        check(q3['n'] == '' and ('読み取れなかったよ' in q3['msg'] or ('読めなかった：' in q3['msg'] and '頭数' in q3['msg'].split('読めなかった：')[1])), f'⑩馬番が とぎれて いる（3番が ない）ときは 頭数を 決めない（{q3["msg"][:50]}）')
+        pl.locator('[data-p=cancel]').click(); pg.wait_for_timeout(300)
         check(not errs, f'画面の エラー なし（{errs[:2]}）')
         ctx.close(); br.close()
 finally:

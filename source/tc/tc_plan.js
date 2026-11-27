@@ -141,7 +141,7 @@ const TCPlan = (() => {
   function build(el) {
     if (!document.getElementById('tcPlanCss')) { const s = document.createElement('style'); s.id = 'tcPlanCss'; s.textContent = css; document.head.appendChild(s); }
     root = document.createElement('div'); root.id = 'tcPlan'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', '作戦会議');
-    root.innerHTML = `<div class="pp"><div class="ph"><img src="tc_icon_plan.webp" alt="作戦会議"><span class="sp"></span><button type="button" class="bx" data-p="close">閉じる</button></div><div class="pj" role="group" aria-label="行き先" hidden></div><div class="pb"></div></div><input type="file" accept="image/*" hidden data-p="file">`;
+    root.innerHTML = `<div class="pp"><div class="ph"><img src="tc_icon_plan.webp" alt="作戦会議"><span class="sp"></span><button type="button" class="bx" data-p="close">閉じる</button></div><div class="pj" role="group" aria-label="行き先" hidden></div><div class="pb"></div></div><input type="file" accept="image/*" multiple hidden data-p="file">`;
     el.appendChild(root);
     root.querySelector('.pb').addEventListener('scroll', pjSync, { passive: true });      // 第4.221版：見て いる 方の 札の 色
     root.addEventListener('click', onClick);
@@ -280,7 +280,7 @@ const TCPlan = (() => {
   function formHtml() {
     const r = edit;
     return `<div class="fm"><h3>${r._new ? 'レースを予約' : 'レースを直す'}</h3>`
-      + `<button type="button" class="ocr" data-p="ocr">📷 画像から読み取る</button><div class="om" aria-live="polite">${esc(r._msg || '')}</div>`
+      + `<button type="button" class="ocr" data-p="ocr">📷 画像から読み取る（3枚まで）</button><div class="om" aria-live="polite">${esc(r._msg || '')}</div>`
       + `<label>レース名</label><input data-f="name" type="text" maxlength="40" value="${esc(r.name || '')}" placeholder="例）〇〇特別" autocomplete="off">`
       + `<div class="row2"><div><label>日付</label><input data-f="date" type="date" value="${esc(r.date || today())}"></div><div><label>発走時間</label><input data-f="time" type="time" value="${esc(r.time || '')}"></div></div>`
       + `<div class="row2"><div><label>出走頭数</label><input data-f="n" type="number" inputmode="numeric" min="2" max="18" value="${esc(r.n || '')}" placeholder="例）12"></div><div><label>距離（m）</label><input data-f="dist" type="number" inputmode="numeric" min="800" max="4000" step="100" value="${esc(r.dist || '')}" placeholder="例）1600"></div></div>`
@@ -292,21 +292,31 @@ const TCPlan = (() => {
     edit.name = v('name'); edit.date = v('date') || today(); edit.time = v('time'); edit.n = v('n') ? Math.round(+v('n')) : ''; edit.dist = v('dist') ? Math.round(+v('dist')) : '';
     const m = root.querySelector('[data-f="memo"]'); if (m) edit.memo = memoClean(m.value);
   }
+  // 第4.233版（まさちゃん 11/27 21:48「作戦会議のレース予約、画像から読み取る3枚まで読み取れるようにして！ 出馬数、レース名が抜けやすいから抜けないように改善して！」）：
+  //   画像は 3枚まで いっしょに 読む（項目ごとに どれかの 画像で 読めた もの：ocr_local.js の parse）。レース名は 見出しの 下の 行も 読む（nameRow）。
+  //   頭数は「12頭」「出走頭数：12」・単勝の 表の 馬の 数。どれも なければ、写って いた 馬の 名前の 数（1番から とぎれず 4頭 以上の とき だけ・そう 書いて 出す）。
+  //   読めなかった 項目は 案内に 出す（手で 入れて もらう）
   async function onFile(e) {
-    const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f || !edit) return;
-    readForm(); edit._msg = '読み取り中…'; paint();
+    const fs = Array.from((e.target.files) || []).slice(0, 3); e.target.value = ''; if (!fs.length || !edit) return;
+    readForm(); edit._msg = `${fs.length}枚の 画像を 読み取り中…`; paint();
     try {
       const s = window.claude && window.claude.use ? await window.claude.use('sample') : null;
       if (!s || !s.json) throw new Error('none');
-      const d = await s.json('', { images: [f] });
+      const d = await s.json('', { images: fs });
       const got = [];
-      if (d.rname) { edit.name = d.rname; got.push('レース名'); }
-      if (d.n) { edit.n = +d.n; got.push('頭数'); }
+      if (d.rname) { edit.name = String(d.rname).slice(0, 40); got.push('レース名'); }
+      let n = +d.n || 0, nBy = '';
+      if (!n && d.names && typeof d.names === 'object') {
+        const ks = Object.keys(d.names).map(Number).filter(x => x >= 1 && x <= 18).sort((x, y) => x - y);
+        if (ks.length >= 4 && ks[ks.length - 1] === ks.length) { n = ks.length; nBy = '（写って いた 馬の 数）'; }
+      }
+      if (n >= 2 && n <= 18) { edit.n = n; got.push('頭数' + nBy); }
       if (d.dist) { edit.dist = +d.dist; got.push('距離'); }
       if (d.start) { edit.time = String(d.start).padStart(5, '0'); got.push('発走時間'); }
       if (d.date && /^\d{4}-\d{2}-\d{2}$/.test(d.date) && d.date >= today()) edit.date = d.date;
       if (d.venue) edit.venue = d.venue; if (d.r) edit.r = +d.r;
-      edit._msg = got.length ? `読み取ったよ（${got.join('・')}）。違う 所は 直してね` : '読み取れなかったよ。手で 入れてね';
+      const miss = ['レース名', '頭数', '距離', '発走時間'].filter(x => !got.some(g => g.startsWith(x)));
+      edit._msg = got.length ? `読み取ったよ（${got.join('・')}）。${miss.length ? `読めなかった：${miss.join('・')} → 手で 入れてね。` : ''}違う 所は 直してね` : '読み取れなかったよ。手で 入れてね';
     } catch (er) { edit._msg = '読み取れなかったよ。手で 入れてね'; }
     paint();
   }
