@@ -421,6 +421,27 @@
           await mark('ks-pack-wall');
         }
       }
+      // 第4.234版：競馬新聞の 上の絵の 馬券の 数字（本物の WebKit で：字は Kaisei Tokumin・数字の 層の 動き kbnsTk の 1回りの さかい目〈animationiteration〉で かわる・
+      //   馬単は 3連単の 1着→2着・頭に 0 なし・止めて いる 間〈.pause〉は かわらない）。CI は 壁紙の 絵が ない ので 数字 だけ（15秒を 0.3秒に して 3秒 見る）
+      await K.apply('news'); await sleep(900);
+      document.querySelector('.tabbar [data-tab=judge]').click(); await sleep(400); window.scrollTo(0, 0); await sleep(300);
+      var nq = document.querySelector('#ksBnr .nsq'), nb = document.querySelector('#ksBnr');
+      if (nq && nb) {
+        var rdn = function () { return [].map.call(nq.querySelectorAll('[data-tki]'), function (e) { return e.textContent; }).join(' '); };
+        try { await document.fonts.load('800 12px "Kaisei Tokumin"', '0123456789'); } catch (e) { }
+        var n0 = rdn(), an0 = nq.getAnimations().map(function (a) { return [a.animationName, a.playState, a.effect.getComputedTiming().duration]; });
+        var fst = document.createElement('style'); fst.textContent = '#ksBnr .nsw .nsq{animation-duration:.3s!important}'; document.head.appendChild(fst);
+        var tks = [nq.dataset.tkn], tkb = [], tt0 = Date.now();
+        while (Date.now() - tt0 < 3000) {
+          await sleep(40); var kk = nq.dataset.tkn;
+          if (kk !== tks[tks.length - 1]) { tks.push(kk); var vv = rdn().split(' '); if (vv.length !== 5 || vv[0] !== vv[2] || vv[1] !== vv[3] || vv.some(function (x) { return !/^([1-9]|1[0-6])$/.test(x); })) tkb.push(vv.join(' ')); }
+        }
+        nb.classList.add('pause'); await sleep(150); var kp1 = nq.dataset.tkn; await sleep(1200); var kp2 = nq.dataset.tkn; nb.classList.remove('pause');
+        await mark('ks-news');
+        fst.remove();
+        res.newsTk = { first: n0, anim: an0, font: document.fonts.check('800 12px "Kaisei Tokumin"', '0123456789'), ff: getComputedStyle(nq.querySelector('.nsn')).fontFamily,
+          changes: tks.length - 1, bad: tkb, pauseSame: kp1 === kp2, w: Math.round(nq.getBoundingClientRect().width) };
+      } else res.newsTk = null;
       await K.apply('default'); await sleep(400);
       res.back = { ks: document.documentElement.dataset.ks || null, bnrHidden: (document.querySelector('#ksBnr') || {}).hidden };
       res.sb.back = await sbar();

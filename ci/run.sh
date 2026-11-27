@@ -272,6 +272,14 @@ lgok = not lg or lg.get("skip") is True or (l0.get("pause") is True and l0.get("
 lgs = "none" if not lg else "skip" if lg.get("skip") else "pause %s run %s / OK tap run %s %sms" % (l0.get("pause"), l0.get("run"), l1.get("run"), l1.get("ms"))
 print("top run %s / down pause %s run %s / back run %s / cover pause %s run %s / tap-close run %s %sms / login-bonus %s -> %s" % (n, d.get("pause"), d.get("run"), b.get("run"), c.get("pause"), c.get("run"), o.get("run"), o.get("ms"), lgs, "OK" if ok and lgok else "CHECK " + json.dumps({"seen": s, "lg": lg}, ensure_ascii=False)[:360]))
 ' "$OUT/iphone-report-1.json" 2>&1)"
+  # 第4.234版：競馬新聞の 上の絵の 馬券の 数字（本物の WebKit で：字は Kaisei Tokumin・数字の 層の 動きの 1回りごとに かわる・止めて いる 間は かわらない）
+  [ -f "$OUT/iphone-report-1.json" ] && say "   news tickets: $(python3 -c '
+import json, re, sys
+k = json.load(open(sys.argv[1])).get("kisekae") or {}; n = k.get("newsTk") or {}; an = n.get("anim") or []
+ok = bool(n) and re.fullmatch(r"([1-9]|1[0-6])( ([1-9]|1[0-6])){4}", n.get("first") or "") is not None and bool(an) and an[0][0] == "kbnsTk" and an[0][2] == 15000 \
+     and n.get("font") is True and "Kaisei Tokumin" in (n.get("ff") or "") and (n.get("changes") or 0) >= 4 and not n.get("bad") and n.get("pauseSame") is True
+print("first %s anim %s font %s changes %s bad %s pause-same %s -> %s" % (n.get("first"), an[:1], n.get("font"), n.get("changes"), (n.get("bad") or [])[:2], n.get("pauseSame"), "OK" if ok else "CHECK"))
+' "$OUT/iphone-report-1.json" 2>&1)"
   # 第4.225版：ダブルタップで 拡大しない・字の 選択を 出さない（ぜんぶの 所が manipulation・字は 選べない・長押しの 吹き出し なし・入力欄と pre は 選べる）
   [ -f "$OUT/iphone-report-1.json" ] && say "   touch: $(python3 -c '
 import json, sys
