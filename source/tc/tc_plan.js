@@ -104,6 +104,8 @@ const TCPlan = (() => {
 #tcPlan .fm input::-webkit-date-and-time-value{text-align:left;margin:0}
 #tcPlan .fm input::-webkit-calendar-picker-indicator{margin:0 0 0 2px;padding:0}
 #tcPlan .ocr{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:44px;border-radius:12px;border:2px dashed #c98a10;background:#fff4d6;color:#8a5a12;font:700 15px/1 var(--tcpf)}
+#tcPlan .ocrh{margin:7px 2px 0;font-size:12.5px;line-height:1.6;color:#8a6a48}
+#tcPlan .ocrh b{color:#b8650f}
 #tcPlan .om{font-size:12.5px;color:#3f7f3a;margin-top:6px;min-height:1em}
 #tcPlan .mm{display:block;width:100%;box-sizing:border-box;margin:8px 0 0;min-height:42px;border-radius:8px;border:1.5px dashed #d9b77c;background:#fff9dc;color:#5a3a1c;font:400 16px/1.45 var(--tcpf);padding:8px 10px;resize:none;overflow:hidden;-webkit-appearance:none;appearance:none}
 #tcPlan .mm::placeholder,#tcPlan .fm textarea::placeholder{color:#b39a72}
@@ -280,7 +282,10 @@ const TCPlan = (() => {
   function formHtml() {
     const r = edit;
     return `<div class="fm"><h3>${r._new ? 'レースを予約' : 'レースを直す'}</h3>`
-      + `<button type="button" class="ocr" data-p="ocr">📷 画像から読み取る（3枚まで）</button><div class="om" aria-live="polite">${esc(r._msg || '')}</div>`
+      + `<button type="button" class="ocr" data-p="ocr">📷 画像から読み取る（3枚まで）</button>`
+      // 第4.233版（11/27 22:11「作成会議のレース予約の画像読み取りのところ、いつもみたいにレースの画像を送ってね！みたいな感じでいい感じに説明を下に入れてほしい！」）：ボタンの すぐ 下に 説明
+      + `<div class="ocrh"><b>📸 レースの 画像を 送ってね！</b> 出走表や オッズの 画面の スクショを 1〜3枚 選ぶと、レース名・出走頭数・距離・発走時間を 読み取るよ（ポイントは 使わないよ）</div>`
+      + `<div class="om" aria-live="polite">${esc(r._msg || '')}</div>`
       + `<label>レース名</label><input data-f="name" type="text" maxlength="40" value="${esc(r.name || '')}" placeholder="例）〇〇特別" autocomplete="off">`
       + `<div class="row2"><div><label>日付</label><input data-f="date" type="date" value="${esc(r.date || today())}"></div><div><label>発走時間</label><input data-f="time" type="time" value="${esc(r.time || '')}"></div></div>`
       + `<div class="row2"><div><label>出走頭数</label><input data-f="n" type="number" inputmode="numeric" min="2" max="18" value="${esc(r.n || '')}" placeholder="例）12"></div><div><label>距離（m）</label><input data-f="dist" type="number" inputmode="numeric" min="800" max="4000" step="100" value="${esc(r.dist || '')}" placeholder="例）1600"></div></div>`

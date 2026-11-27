@@ -31,6 +31,9 @@
 //     → 色 7＝激馬熱馬：玉が 入った 瞬間に 馬バレの 丸の 中で 赤と 金の プチュン（tc_fx.js の gkLine：PUSH の プチュンと 同じ 線・同じ 音 tc_se_gk_pchun.m4a）→ 丸は 真っ暗（音が 切れる 1.67秒 まで）
 //       → 虹と 同じ 音（tc_se_dp_umb6.m4a）と いっしょに 激馬熱馬の 絵（tc_dp_uma7.webp）が つく（光り方は 虹と 同じ 拍・オーラは 虹より 少し 大きい）。保留は 八角の 激馬熱馬（tc_dp_hold7.webp）。
 //       「保留結果を見る」＝天国の 場面（api.show → tc_fx.js の geki）。プチュンの 間は フィールドの 音を 止める（api.quiet）
+//   第4.233版・11/27 21:59「あと、トレーニングセンターの玉落としは保留が5個溜まるまでは、お世話トークンがあれば連続でできるようにしてほしい。」
+//     → 1回りの 玉の 数は 決めない：当選の ます（保留）が 5つ たまる か、お世話トークン（来て いる 馬は その 馬の 抽選の のこり）が なくなる まで 続けて 落とせる（canMore）。
+//       「投入終了」は 前と 同じ（そこで 保留結果へ）。「あと Nこ」は いま 落とせる 数（トークンと 抽選の のこりの 少ない 方）。保留結果の あと、トークンが 1こ でも あれば「続けてやる」
 //
 //   ・台＝まさちゃんの 3D（Meshy）を 正面から 描いた 絵（tc_dp_base.webp）。玉より 手前の 所（釘の 先・コップの 前の かべ）は 別の 絵（tc_dp_front.webp）を 玉の 上に 重ねる
 //     ＝玉は 釘の 先の うしろを 通って、コップの 中へ 入ると 前の かべに かくれる。絵と 場所・玉の 落ち方（tc_dp.json）は kisekae/tc/drop/ の 道具が 作る（リポジトリには 入れない）
@@ -39,8 +42,8 @@
 //   ・抽選＝今の お世話の 抽選と 同じ（tc_app.js の draw）。玉 1こ＝お世話トークン 1こ＝お世話 1回。玉を 落とした 瞬間に 結果を 決めて 保存（途中で 閉じても なくならない・2回 もらえない）
 //   ・玉が コップに 入った 瞬間：当たって いれば 先に 音 → 0.1秒 あとに 馬バレ（まん中の 丸）の ランプが その 色で つく（ピの 数 だけ 強く 光る → つきっぱなし → ゆらぐ）＋ まわりに オーラ（青 → 虹で 大きく 激しく）
 //     → 当たりは「当選」の ます（5つ）に たまる。はずれの ときは 音（ポスッ）と いっしょに 白く 光る（短く・絵は なし・うすく「ハズレ」）
-//   ・玉を ぜんぶ 落とした ら「保留結果を見る」の かぎが あく → 押すと たまった 当たりを 順に わたす（ポイントは 札・ルーレット／ポイント特化ゾーン／チケットは いつもの 演出：api.show）
-//   ・おわったら：お世話トークンが 5こ 以上 のこって いれば「続けてやる」「終わり」・なければ「終わり」だけ
+//   ・保留が 5つ たまる か トークンが なくなった ら（「投入終了」を 押しても）「保留結果を見る」の かぎが あく → 押すと たまった 当たりを 順に わたす（ポイントは 札・ルーレット／ポイント特化ゾーン／チケットは いつもの 演出：api.show）
+//   ・おわったら：お世話トークンが 1こ 以上 のこって いれば「続けてやる」「終わり」・なければ「終わり」だけ（第4.232版 までは 5こ 以上）
 //   ・光の 点めつ：ピに 合わせて 速く 強弱が つく のは 馬バレの 丸と 縁の きわ だけ（数えると 画面の 1% ほど：テストは 3% 未満＝小さい 所の 点めつは 数えない 決まりの 中）。まわりの オーラ（広い 所）は 点めつ させない：
 //     ピ ごとに 大きく なる だけ（下がらない）→ その あとは ランプの ゆらぎ（1秒に 2回）に 合わせて 浅く 息を する（1秒に 3回 まで）。「演出を控えめにする」（TengelFx.calm）の ときは 強弱 なし・ゆらぎ なし・回らない・とばない
 //   TCDrop.load()（絵と データを 読む：true＝そろった）・TCDrop.ready()・TCDrop.open(stage, api, opt) → Promise<{ used }>・TCDrop.close()・TCDrop.isOpen()
@@ -56,7 +59,7 @@ const TCDrop = (() => {
   const backOut = x => { x = clamp(x, 0, 1); const c = 1.7; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
   const easeOut = x => 1 - Math.pow(1 - clamp(x, 0, 1), 3);
   const hash = n => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
-  const BALLS = 5;                                    // 1回り＝玉 5こ まで
+  const BALLS = 5;                                    // 当選の ます（保留）の 数：保留が 5つ たまる まで 続けて 落とせる（第4.233版：前は 1回り＝玉 5こ まで）
   const IMG_H = 1632;                                 // 舞台（1052×1657）の 中の 台の 高さ
   // 色（0 白＝はずれ・1 青・2 緑・3 紫・4 赤・5 金・6 虹・7 激馬熱馬〈第4.175版：光り方は 虹と 同じ 作り〉）ごとの 光：rgb・オーラの 大きさ（R：黄色い 縁の 何倍 まで 色が とどくか）・こさ（a）・台を 暗く する 度合い（dim）・光の すじの 数（rays）・
   //   オーラの 炎の 数（nt）と 長さ（tl：縁の 半径の 何倍）・はげしい 間（len 秒）・その あとの 落ちついた 強さ（keep）・保留が とび出す 時（hold 秒）・次の 玉を 落とせる まで（lock 秒：音が 鳴り おわる ころ）
@@ -151,7 +154,8 @@ const TCDrop = (() => {
   const se = (name, gain) => { T.log.push(name); if (T.log.length > 200) T.log.splice(0, 100); if (T.rec) T.rec.push([S ? +S.t.toFixed(4) : 0, name, gain == null ? 1 : gain]); try { if (API && API.se) API.se(name, gain == null ? 1 : gain); } catch (e) { /* なし */ } };
 
   // ---------- 流れ ----------
-  function roundMax() { return Math.max(0, Math.min(BALLS, API.stock(), API.left())); }
+  function roundMax() { return Math.max(0, Math.min(API.stock(), API.left())); }      // この 回の はじめに 落とせる 数（トークンと 抽選の のこりの 少ない 方：いつもの 馬は 抽選の 上限 なし）
+  const canMore = () => S.holds.length < BALLS && API.stock() >= 1 && API.left() >= 1;      // 第4.233版：まだ 落とせる＝保留が 5つ たまって いない・トークンが ある・抽選の のこりが ある
   function newRound() {
     S.max = roundMax(); S.n = 0; S.holds = []; S.ball = null; S.old = []; S.next = S.max > 0 ? { t0: S.t } : null; S.lcd = null; S.unlockT = null; S.endT = null; S.none = null; S.sum = 0; S.tk = 0; S.roundT = S.t;
     S.phase = S.max > 0 ? 'ready' : 'end';
@@ -168,7 +172,8 @@ const TCDrop = (() => {
     const i = S.deck.pop(); S.lastPath = i; return i;
   }
   function pressGo() {                                 // 「玉を落とす」
-    if (S.phase !== 'ready' || S.ball || S.t < S.lock || S.n >= S.max) return false;
+    if (S.phase !== 'ready' || S.ball || S.t < S.lock) return false;
+    if (!canMore()) { finishDrops(); return false; }      // 落とせなく なった（来て いる 馬の 帰る 時刻を すぎた など）：玉は 出さずに 保留結果へ（前と 同じ）
     const r = API.drop();
     if (!r || !r.ok) { finishDrops(); return false; }
     S.n++; S.used++; S.press.go = S.t; S.next = null;
@@ -209,7 +214,7 @@ const TCDrop = (() => {
   function afterBall() {
     if (S.phase !== 'fall') return;
     if (S.ball && S.ball.inT != null) { S.old.push(S.ball); S.ball = null; }      // コップの 中で 落ちつく までの 玉は そのまま 描く（次の 玉を 待たせない）
-    if (S.n >= S.max || API.stock() < 1 || API.left() < 1) finishDrops();
+    if (!canMore()) finishDrops();                     // 保留が 5つ たまった・トークン（抽選の のこり）が なくなった
     else { S.phase = 'ready'; S.next = { t0: S.t }; }
   }
   function finishDrops() {                             // 玉を 落とし おわった（やめる でも）
@@ -255,7 +260,7 @@ const TCDrop = (() => {
     endChoice();
   }
   function endChoice() {                               // 「続けてやる」「終わり」
-    S.phase = 'end'; S.endT = S.t; S.more = API.stock() >= BALLS && API.left() >= 1;
+    S.phase = 'end'; S.endT = S.t; S.more = API.stock() >= 1 && API.left() >= 1;      // 第4.233版：トークンが 1こ でも あれば 続けられる
   }
   function pressMore() { if (S.phase !== 'end' || !S.more || S.t < S.endT + 0.35) return false; se('button'); S.press.more = S.t; newRound(); return true; }
   function pressEnd() { if (S.phase !== 'end' || S.t < S.endT + 0.35) return false; se('fold'); finish(); return true; }
@@ -653,7 +658,7 @@ const TCDrop = (() => {
     const L = S.lcd;
     if (L) auraDim(L);
     // ボタンの ようす
-    const canGo = S.phase === 'ready' && !S.ball && t >= S.lock && S.n < S.max;
+    const canGo = S.phase === 'ready' && !S.ball && t >= S.lock && canMore();
     if (!canGo) { polyPath(D.go.poly); g.fillStyle = 'rgba(60,34,40,0.36)'; g.fill(); }
     const pg = t - (S.press.go == null ? -9 : S.press.go);
     if (pg >= 0 && pg < 0.3) { polyPath(D.go.poly); g.fillStyle = `rgba(255,255,255,${0.55 * (1 - pg / 0.3)})`; g.fill(); }
@@ -677,7 +682,7 @@ const TCDrop = (() => {
       g.globalAlpha = a; g.drawImage(IM.hold[h.c], x - w * s / 2, y - w * s / 2, w * s, w * s); g.globalAlpha = 1;
     }
     // 受け皿で 待って いる 次の 玉（ぽとんと 出て くる）
-    if (S.next && !S.ball && S.n < S.max) { const u = t - S.next.t0, v = backOut(u / 0.3); drawBall(D.ball.start[0], D.ball.start[1] - (1 - Math.min(1, v)) * 46, 0, 0.6 + 0.4 * Math.min(1, v), sm(u / 0.12)); }
+    if (S.next && !S.ball && canMore()) { const u = t - S.next.t0, v = backOut(u / 0.3); drawBall(D.ball.start[0], D.ball.start[1] - (1 - Math.min(1, v)) * 46, 0, 0.6 + 0.4 * Math.min(1, v), sm(u / 0.12)); }
     // 落ちて いる 玉 → 手前の 層
     for (const b of S.old.concat(S.ball ? [S.ball] : [])) {
       const q = ballAt(b, t - b.t0);
@@ -692,13 +697,13 @@ const TCDrop = (() => {
       if (f.k === 'peg' && u < 0.16) { const p = D.pegs[f.i]; if (p) star(p[0], p[1], 20 * (0.6 + 0.6 * f.a) * (1 - u / 0.16), 0.85 * (1 - u / 0.16)); }
       if (f.k === 'cup' && u < 0.45) { const p = D.cups[f.cup], v = u / 0.45; g.strokeStyle = `rgba(255,255,255,${0.8 * (1 - v)})`; g.lineWidth = 7 * (1 - 0.5 * v); g.beginPath(); g.ellipse(p[0], p[1] - 4, 44 + 46 * easeOut(v), 14 + 14 * easeOut(v), 0, 0, TAU); g.stroke(); }
     }
-    // 「あと Nこ」（玉を落とす の 右上）
+    // 「あと Nこ」（玉を落とす の 右上）：第4.233版：いま 落とせる 数（トークンと 抽選の のこりの 少ない 方。保留が 5つ たまれば その 前に おわる）
     if (S.max > 0 && (S.phase === 'ready' || S.phase === 'fall')) {
-      const bx = D.go.box[2] - 26, by = D.go.box[1] + 4, left = S.max - S.n, pb = t - (S.press.go == null ? -9 : S.press.go), sc = pb >= 0 && pb < 0.3 ? 1 + 0.18 * Math.sin(Math.PI * pb / 0.3) : 1;
+      const bx = D.go.box[2] - 26, by = D.go.box[1] + 4, left = Math.max(0, Math.min(API.stock(), API.left())), pb = t - (S.press.go == null ? -9 : S.press.go), sc = pb >= 0 && pb < 0.3 ? 1 + 0.18 * Math.sin(Math.PI * pb / 0.3) : 1;
       g.save(); g.translate(bx, by); g.scale(sc, sc);
       g.fillStyle = 'rgba(60,30,10,0.28)'; g.beginPath(); g.arc(3, 5, 47, 0, TAU); g.fill();
       g.fillStyle = '#fff8ec'; g.beginPath(); g.arc(0, 0, 47, 0, TAU); g.fill(); g.strokeStyle = '#e0a21f'; g.lineWidth = 6; g.stroke();
-      label('あと', 0, -24, 22, '#9a6a1c'); label(String(left), -8, 10, 46, left > 0 ? '#c2362b' : '#a89a88'); label('こ', 25, 16, 22, '#9a6a1c');
+      label('あと', 0, -24, 22, '#9a6a1c'); label(String(left), left >= 10 ? -10 : -8, 10, left >= 10 ? 38 : 46, left > 0 ? '#c2362b' : '#a89a88'); label('こ', 25, 16, 22, '#9a6a1c');      // 2けた（10こ〜）は 少し 小さく
       g.restore();
     }
     // 馬バレ：オーラ（うしろ）→ 黄色い 縁 → 色の 絵 → きらきら。とんで いく 保留
@@ -758,10 +763,10 @@ const TCDrop = (() => {
       if (got.length) label(got.join('・'), 0, -h / 2 + 208, got.length > 1 ? 58 : 76, '#c2362b', '#fff8ec', 8);
       else label('なし… また チャレンジしてね', 0, -h / 2 + 204, 40, '#8a7a66');
       label(`お世話トークン 残り ${API.stock()}個`, 0, -h / 2 + 290, 32, '#3f7f3a');
-      label(S.more ? 'もう 1回（玉 5個）できるよ' : API.left() < 1 ? 'この 馬の 抽選は ここまで' : 'トークンが 5個 たまったら また できるよ', 0, -h / 2 + 338, 26, '#9a7a55');
+      label(S.more ? 'トークンが ある 間は 続けて できるよ（保留 5つ まで）' : API.left() < 1 ? 'この 馬の 抽選は ここまで' : 'トークンが たまったら また できるよ', 0, -h / 2 + 338, 26, '#9a7a55');
       g.restore();
       const pm = t - (S.press.more == null ? -9 : S.press.more);
-      if (S.more) { chip(W / 2 - ENDB.w / 2 - ENDB.gap / 2, ENDB.y, ENDB.w, ENDB.h, '続けてやる', 48, { gold: true, a, s: backOut((u - 0.08) / 0.3) * (pm >= 0 && pm < 0.2 ? 0.95 : 1), sub: '玉を 5個 落とす' }); chip(W / 2 + ENDB.w / 2 + ENDB.gap / 2, ENDB.y, ENDB.w, ENDB.h, '終わり', 48, { a, s: backOut((u - 0.14) / 0.3) }); }
+      if (S.more) { chip(W / 2 - ENDB.w / 2 - ENDB.gap / 2, ENDB.y, ENDB.w, ENDB.h, '続けてやる', 48, { gold: true, a, s: backOut((u - 0.08) / 0.3) * (pm >= 0 && pm < 0.2 ? 0.95 : 1), sub: '保留が 5つ たまる まで' }); chip(W / 2 + ENDB.w / 2 + ENDB.gap / 2, ENDB.y, ENDB.w, ENDB.h, '終わり', 48, { a, s: backOut((u - 0.14) / 0.3) }); }
       else chip(W / 2, ENDB.y, ENDB.w, ENDB.h, '終わり', 48, { a, s: backOut((u - 0.08) / 0.3) });
     }
     g.setTransform(1, 0, 0, 1, 0, 0);

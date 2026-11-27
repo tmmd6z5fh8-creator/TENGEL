@@ -282,6 +282,52 @@
   document.addEventListener('visibilitychange', () => { if (document.hidden) { hush(); vidHidden(); } else vidBack(); });
   window.addEventListener('pagehide', hush);
 
+  // ---------- 第4.233版：音の 出口を 起こす（window.TengelAudioWake）----------
+  //   まさちゃん 11/27 22:48「アプリ開いてる状態で、一度下げて他のアプリ開くと音出なくなるからそれも改善して！」
+  //   iPhone で アプリを 下げて ほかの アプリを 開いて もどると、音の 出口（AudioContext）が「interrupted」（とぎれた）・「suspended」の まま、
+  //   または「running」でも 時計（currentTime）が 止まった まま に なる ことが ある（ほかの アプリが 音を 使った とき：とぎれが おわった 知らせが 来ない ことが ある）。
+  //   前は 出口を「suspended」の とき しか 起こさない 所（トレーニングセンター）や、resume() を 呼ぶ だけで 動いたか 見ない 所が あった → 音が 出ない まま。
+  //   → 出口を 使う 所（ここの 効果音・トレーニングセンター・カードバトル）は ここに 出口を 知らせる（watch(出口を 返す, いま 使って いるか, 作り直す)）。
+  //     もどった とき（画面が かくれて から 見えた・pageshow・アプリからの 知らせ audio：TengelWebView.swift）と、その あと 2分 以内に はじめて 画面に さわった とき に、
+  //     使って いる 出口を resume() し直して、0.7秒 あとに 動いて いるか 見る（running で 時計が 進んで いる）。動いて いない ときは 作り直す
+  //     （その 所が 新しい 出口を 作って、鳴らして いた BGM を つづける）。作り直しは 1つの 出口で 1分に 3回 まで
+  const Wake = (() => {
+    const L = []; let hid = !!document.hidden, backT = -1e9, wakeT = 0;
+    const get = w => { try { return w.get(); } catch (e) { return null; } };
+    const used = w => { try { return !!w.on(); } catch (e) { return false; } };
+    function probe(w) {
+      const c = get(w); if (!c || c.state === 'closed' || !used(w)) return;
+      if (c.state !== 'running' && c.resume) { try { const p = c.resume(); if (p && p.catch) p.catch(() => { }); } catch (e) { /* なし */ } }
+      const t0 = c.currentTime;
+      setTimeout(() => {
+        if (document.hidden || get(w) !== c || !used(w) || c.state === 'closed') return;
+        if (c.state === 'running' && c.currentTime > t0 + 0.2) return;      // 動いて いる
+        const n = Date.now(); w.fix = w.fix.filter(t => n - t < 60000);
+        if (w.fix.length >= 3) return;
+        w.fix.push(n); w.n++;
+        try { w.rebuild(); } catch (e) { /* なし */ }
+      }, 700);
+    }
+    function wake() { if (document.hidden) return; const n = Date.now(); if (n - wakeT < 400) return; wakeT = n; backT = n; setTimeout(() => L.forEach(probe), 80); }
+    document.addEventListener('visibilitychange', () => { if (document.hidden) { hid = true; return; } if (hid) { hid = false; wake(); } });
+    window.addEventListener('pageshow', e => { if (e.persisted) wake(); });
+    document.addEventListener('tengel:native', e => { if (e.detail && e.detail.name === 'audio') wake(); });
+    const touch = () => { if (Date.now() - backT > 120000) return; backT = -1e9; L.forEach(probe); };      // もどって はじめて さわった とき（指の 操作の 中で resume）
+    document.addEventListener('pointerdown', touch, true); document.addEventListener('touchend', touch, true);
+    return {
+      watch(g, on, rebuild, name) { const w = { get: g, on, rebuild, name: name || '', n: 0, fix: [] }; L.push(w); return L.length - 1; },
+      wake,
+      get list() { return L.map(w => { const c = get(w); return { name: w.name, n: w.n, state: c ? c.state : null, on: used(w) }; }); },      // n＝作り直した 回数
+      _ctx: i => (L[i] ? get(L[i]) : null),      // テスト 用：i ばんめの 出口
+    };
+  })();
+  window.TengelAudioWake = Wake;
+  Wake.watch(() => SX.ctx, () => !!S.sound, () => {      // ここの 効果音：前の 出口を とじて、ほどいた 音を すてる（次に 鳴らす ときに 新しい 出口で ほどき直す）
+    const o = SX.ctx; hush(); SX.ctx = null; SX.buf = {}; SX.ok = 0;
+    try { if (o && o.close) { const q = o.close(); if (q && q.catch) q.catch(() => { }); } } catch (e) { /* なし */ }
+    actx();
+  }, 'fx');
+
   // ---------- 動画（超神様的中・極ど的中・ノーマルど的中・神様極的中：アプリの中の mp4・押す前から読んでおく） ----------
   const VID = {};
   function holder() { let h = $('#fxVh'); if (!h) { h = document.createElement('div'); h.id = 'fxVh'; h.setAttribute('aria-hidden', 'true'); document.body.appendChild(h); } return h; }

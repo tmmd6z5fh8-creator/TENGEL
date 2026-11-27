@@ -144,7 +144,19 @@ const TCApp = (() => {
     //   小さく して いる とちゅう・止めた あとに また 開いた ときは、ここで 元の 大きさに もどす（lvl）
     let quietT = 0;
     function lvl() { if (!master) return; try { const n = ac.currentTime; master.gain.cancelScheduledValues(n); master.gain.setValueAtTime(on ? 1 : 0, n); } catch (e) { master.gain.value = on ? 1 : 0; } }
-    function unlock() { try { if (!ac) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ac = new AC(); master = ac.createGain(); master.gain.value = on ? 1 : 0; master.connect(ac.destination); } clearTimeout(quietT); quietT = 0; lvl(); if (ac.state === 'suspended') ac.resume(); } catch (e) { } }
+    // 第4.233版：出口が「suspended」の とき だけ で なく「interrupted」（iPhone で ほかの アプリの 音で とぎれた まま）の ときも 起こす
+    function unlock() { try { if (!ac) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ac = new AC(); master = ac.createGain(); master.gain.value = on ? 1 : 0; master.connect(ac.destination); } clearTimeout(quietT); quietT = 0; lvl(); if (ac.state !== 'running' && ac.state !== 'closed') { const q = ac.resume(); if (q && q.catch) q.catch(() => { }); } } catch (e) { } }
+    // 第4.233版：出口を 作り直す（fx.js の TengelAudioWake：アプリを 下げて ほかの アプリを 開いて もどったら 出口が 動かない とき）。
+    //   ほどいた 音は 新しい 出口で ほどき直す（cache を 空に）・鳴らして いた フィールドの 音／ルーレットの BGM（aim）を 新しい 出口で つづける
+    function rebuild() {
+      const o = ac, name = aim;
+      if (bed) { try { bed.s.stop(); } catch (e) { } }
+      ac = null; master = null; bed = null;
+      for (const k of Object.keys(cache)) delete cache[k];
+      try { if (o && o.close) { const q = o.close(); if (q && q.catch) q.catch(() => { }); } } catch (e) { }
+      unlock();
+      if (name) { aim = null; swap(name, 0, 0.6).catch(() => { }); }
+    }
     // いま 鳴って いる 音を fout 秒で 消して、name の 音を fin 秒で 入れる（name が 空・ない ときは 何も 鳴らさない）。同じ 音が もう 鳴って いれば 何も しない
     async function swap(name, fout, fin) {
       aim = name || ''; if (!ac) return; if (bed && bed.name === aim) return;
@@ -181,7 +193,7 @@ const TCApp = (() => {
     }
     function setOn(v) { on = !!v; lvl(); }
     function preload(list) { if (!ac) return; list.forEach(f => buf(f).catch(() => { })); }
-    return { unlock, field, bgm, se, stopAll, setOn, preload, get ac() { return ac; }, get bed() { return bed ? bed.name : null; }, get hold() { return hold; }, get loop() { return bed ? [bed.s.loopStart, bed.s.loopEnd] : null; }, LOOPS };      // loop（第4.171版）＝いまの 音の くり返す 所（秒：はじめ・おわり。0・0 は ファイルの はじめから おわりまで）
+    return { unlock, rebuild, field, bgm, se, stopAll, setOn, preload, get ac() { return ac; }, get bed() { return bed ? bed.name : null; }, get hold() { return hold; }, get loop() { return bed ? [bed.s.loopStart, bed.s.loopEnd] : null; }, LOOPS };      // loop（第4.171版）＝いまの 音の くり返す 所（秒：はじめ・おわり。0・0 は ファイルの はじめから おわりまで）
   })();
   // できごと → 効果音（sfx_care.py の parts で 作った tc_se_*.m4a。大きさ・ずれは 作る ときに 入れて ある）
   const SE_VAR = { slot: e => 'slot_' + Math.max(1, Math.min(10, e.n || 1)), bite: e => 'bite_' + (e.kind === 'apple' ? 'apple' : 'carrot'), banin: e => 'banin_' + (e.kind === 'maboroshi' ? 'maboroshi' : 'kamisama') };
@@ -207,6 +219,8 @@ const TCApp = (() => {
   //   mustDraw＝のこり 何コマは かくれて いても 描くか（紙の 大きさが かわった・アプリが 裏から もどった すぐ あと：紙の 中身が 消えて いる ことが ある）。hidN＝描かなかった コマの 数（テスト用）
   let mustDraw = 0, hidN = 0;
   const clock = () => (performance.now() - tBase) / 1000 + 1.5;
+  // 第4.233版：アプリを 下げて ほかの アプリを 開いて もどった とき、音の 出口が 動いて いなければ 起こす／作り直す（fx.js の TengelAudioWake）。見るのは トレーニングセンターが 動いて いる 間 だけ
+  try { if (window.TengelAudioWake) window.TengelAudioWake.watch(() => SND.ac, () => running, () => SND.rebuild(), 'tc'); } catch (e) { /* なし */ }
   const css = `
 #tcOv{position:fixed;inset:0;z-index:90;display:none;flex-direction:column;align-items:center;background:#2a1d12;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);-webkit-user-select:none;user-select:none;touch-action:none;font-family:"BIZ UDPGothic","Hiragino Sans",sans-serif}
 #tcOv.on{display:flex}

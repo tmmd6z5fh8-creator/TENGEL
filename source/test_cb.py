@@ -991,6 +991,16 @@ try:
             pg.evaluate(HID, False); pg.wait_for_function("() => CBApp._t.bgm.on", timeout=10000); pg.wait_for_timeout(300); b5 = pg.evaluate("() => CBApp._t.bgm")
             check(b5['on'] and b3['pos'] <= b5['pos'] <= b3['pos'] + 2.5, f'戻った：続きから 鳴る（{b3["pos"]:.2f} → {b5["pos"]:.2f}秒：曲の 頭に 戻らない）')
             pg.evaluate("() => { delete document.hidden; }")
+            # 第4.233版（まさちゃん 11/27 22:48「アプリ開いてる状態で、一度下げて他のアプリ開くと音出なくなるからそれも改善して！」）：
+            #   もどった とき 音の 出口が 動かない（interrupted の まま）→ 作り直して BGM を 続きから（fx.js の TengelAudioWake）
+            pg.wait_for_timeout(1200)
+            q0 = pg.evaluate("""() => { const W = window.TengelAudioWake, i = W ? W.list.findIndex(q => q.name === 'cb') : -1, c = i >= 0 ? W._ctx(i) : null; window.__cbI = i; window.__cbC0 = c;
+              if (c) { Object.defineProperty(c, 'state', { configurable: true, get: () => 'interrupted' }); c.resume = () => Promise.resolve(); } return { i, n: i >= 0 ? W.list[i].n : -1, pos: CBApp._t.bgm.pos }; }""")
+            pg.evaluate(HID, True); pg.wait_for_timeout(300); pg.evaluate(HID, False); pg.wait_for_timeout(3500)
+            q1 = pg.evaluate("() => { const W = window.TengelAudioWake, i = window.__cbI; return i < 0 ? null : { same: W._ctx(i) === window.__cbC0, n: W.list[i].n, bgm: CBApp._t.bgm }; }")
+            pg.evaluate("() => { delete document.hidden; }")
+            check(q0['i'] >= 0 and q1 is not None and not q1['same'] and q1['n'] == q0['n'] + 1 and q1['bgm']['on'] and q1['bgm']['ctx'] == 'running' and q0['pos'] - 0.5 <= q1['bgm']['pos'] <= q0['pos'] + 6,
+                  f'第4.233版：アプリを 下げて もどった とき 音の 出口が 動かない（interrupted の まま）→ 作り直して BGM を 続きから（{q0["pos"]:.2f} → {q1 and round(q1["bgm"]["pos"], 2)}秒）')
             pg.locator('#cbOv .cbset [data-cb=tg][data-k=bgm][data-v="0"]').click(); pg.wait_for_timeout(120)
             check(not pg.evaluate("() => CBApp._t.bgm.on") and pg.evaluate("() => JSON.parse(localStorage.getItem('tengel.cb')).bgm") is False, 'BGM オフ：止まる・覚える')
             pg.locator('#cbOv .cbset [data-cb=tg][data-k=bgm][data-v="1"]').click(); pg.wait_for_function("() => CBApp._t.bgm.on", timeout=10000)

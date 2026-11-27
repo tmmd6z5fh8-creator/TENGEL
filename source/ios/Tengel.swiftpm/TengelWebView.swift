@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftUI
 import UIKit
 import WebKit
@@ -174,6 +175,23 @@ final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
             NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] n in
                 let h = (n.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect)?.height ?? 0
                 Task { @MainActor in self?.event("keyboard", ["open": open, "height": Double(h)]) }
+            }
+        }
+        // 第4.233版（まさちゃん 2026/11/27 22:48「アプリ開いてる状態で、一度下げて他のアプリ開くと音出なくなるからそれも改善して！」）：
+        //   アプリが 前に もどった・ほかの アプリの 音で とぎれた のが おわった → 音の 出口（AVAudioSession）を 起こし直して、Webの 画面に 知らせる（audio）。
+        //   Webの 画面は 止まった 音の 出口を resume し直し、動かなければ 作り直す（fx.js の TengelAudioWake）
+        NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in
+                AudioWake.activate()
+                self?.event("audio", ["why": "active"])
+            }
+        }
+        NotificationCenter.default.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: .main) { [weak self] n in
+            let raw = (n.userInfo?[AVAudioSessionInterruptionTypeKey] as? NSNumber)?.uintValue ?? 0
+            guard AVAudioSession.InterruptionType(rawValue: raw) == .ended else { return }
+            Task { @MainActor in
+                AudioWake.activate()
+                self?.event("audio", ["why": "interruption"])
             }
         }
         webView.load(URLRequest(url: AppSchemeHandler.startURL))

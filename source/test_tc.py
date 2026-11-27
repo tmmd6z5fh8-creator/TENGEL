@@ -1332,6 +1332,22 @@ try:
         ta_ = open(os.path.join(W, 'tc', 'tc_app.js'), encoding='utf8').read()
         check("SND.bgm(z.tier === 'kamisama' ? 'none' : 'roulette');" in ta_, 'ノーマル・幻の馬の ルーレットは 今まで どおり ルーレットの BGM（上の 確かめ）・神様馬 だけ BGM なし')
         pg.evaluate("() => { clearInterval(window.__blT); }")
+        # 第4.233版（まさちゃん 11/27 22:48「アプリ開いてる状態で、一度下げて他のアプリ開くと音出なくなるからそれも改善して！」）：
+        #   ① 出口が「interrupted」（iPhone で ほかの アプリの 音で とぎれた まま）の ときも unlock で 起こす（前は「suspended」の とき だけ）
+        #   ② もどった とき 出口が 動かなければ 作り直して フィールドの 音を つづける（fx.js の TengelAudioWake）
+        print('■ 第4.233版：アプリを 下げて もどった ときの 音')
+        HIDE = "(h) => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => h }); document.dispatchEvent(new Event('visibilitychange')); }"
+        u1 = pg.evaluate("""() => { const S = TCApp._snd, c = S.ac, r0 = c.resume; let n = 0; Object.defineProperty(c, 'state', { configurable: true, get: () => 'interrupted' }); c.resume = () => { n++; return Promise.resolve(); };
+          S.unlock(); delete c.state; c.resume = r0; return n; }""")
+        a0 = pg.evaluate("""() => { const S = TCApp._snd, c = S.ac, W = window.TengelAudioWake; window.__tcC0 = c; Object.defineProperty(c, 'state', { configurable: true, get: () => 'interrupted' }); c.resume = () => Promise.resolve();
+          const i = W.list.findIndex(q => q.name === 'tc'); return { i, same: i >= 0 && W._ctx(i) === c, n: i >= 0 ? W.list[i].n : -1, loops: window.__loops() }; }""")
+        pg.evaluate(HIDE, True); pg.wait_for_timeout(500); pg.evaluate(HIDE, False); pg.wait_for_timeout(3000)
+        a1 = pg.evaluate("(i) => { const S = TCApp._snd, W = window.TengelAudioWake; return { same: S.ac === window.__tcC0, st: S.ac && S.ac.state, bed: S.bed, n: W.list[i].n, loops: window.__loops() }; }", a0['i'])
+        pg.evaluate("() => { delete document.hidden; }")
+        print('   ', u1, a0, a1)
+        check(u1 == 1, '出口が「interrupted」の ときも 起こす（resume を 呼ぶ：前は「suspended」の とき だけ）')
+        check(a0['same'] and not a1['same'] and a1['st'] == 'running' and a1['bed'] == fld and a1['n'] == a0['n'] + 1 and a1['loops'] == 1,
+              f'アプリを 下げて もどった とき 出口が 動かない（interrupted の まま）→ 作り直して フィールドの 音を つづける（{a1["bed"]}・くり返す 音は {a1["loops"]}つ）')
         print('■ チケット（2枚）')
         pg.evaluate("() => { window.__tkDone = false; TCFX.ticket(document.querySelector('#tcOv .tcfx'), { n: 2, bg: 'morning', se: TCApp._snd.se }).then(() => { window.__tkDone = true; }); }")
         pg.wait_for_timeout(2200); pg.mouse.click(200, 700); pg.wait_for_timeout(4600); shot(pg, 'tc_tk_get'); pg.mouse.click(200, 400)

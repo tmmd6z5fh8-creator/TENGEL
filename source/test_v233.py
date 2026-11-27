@@ -240,6 +240,14 @@ try:
         pl.locator('[data-p=add]').click(); pg.wait_for_timeout(400)
         fin = pl.locator('input[data-p=file]')
         check(pl.locator('[data-p=ocr]').inner_text().strip() == '📷 画像から読み取る（3枚まで）' and fin.get_attribute('multiple') is not None, '⑩作戦会議の「レースを予約」：「📷 画像から読み取る（3枚まで）」・写真を まとめて 選べる（multiple）')
+        # ⑪ 22:11「…いつもみたいにレースの画像を送ってね！みたいな感じでいい感じに説明を下に入れてほしい！」：ボタンの すぐ 下に 説明
+        oh = pg.evaluate("""() => { const b = document.querySelector('#tcPlan [data-p=ocr]'), h = b && b.nextElementSibling; if (!h) return null; const rb = b.getBoundingClientRect(), rh = h.getBoundingClientRect(), cs = getComputedStyle(h);
+          return { cls: h.className, disp: cs.display, txt: h.innerText, fs: parseFloat(cs.fontSize), gap: rh.top - rb.bottom, inside: rh.left >= rb.left - 1 && rh.right <= rb.right + 1, next: (h.nextElementSibling || {}).className || '', bold: (h.querySelector('b') || {}).textContent || '' }; }""")
+        print('   作戦会議の 説明:', oh)
+        check(oh is not None and oh['cls'] == 'ocrh' and oh['disp'] == 'block' and oh['bold'] == '📸 レースの 画像を 送ってね！' and all(x in oh['txt'] for x in ('スクショを 1〜3枚', 'レース名・出走頭数・距離・発走時間を 読み取るよ', 'ポイントは 使わないよ'))
+              and oh['fs'] >= 12 and 0 <= oh['gap'] <= 14 and oh['inside'] and oh['next'] == 'om',
+              f'⑪「📷 画像から読み取る（3枚まで）」の すぐ 下に 説明「📸 レースの 画像を 送ってね！ …」（字 {oh and oh["fs"]}px・ボタンとの 間 {oh and round(oh["gap"], 1)}px・その 下に 読み取りの 案内）')
+        pl.locator('.fm').screenshot(path=os.path.join(SHOT, 'v233_planhint.png'))
         I1 = [Wd('名古屋', 0.08, 0.145, 0.16, 0.016), Wd('9R', 0.42, 0.146, 0.05), Wd('10R', 0.55, 0.146, 0.07), Wd('11R', 0.70, 0.146, 0.07), Wd('12R', 0.84, 0.146, 0.07),
               Wd('11R', 0.07, 0.203, 0.08, 0.018), Wd('2026年10月14日(水)', 0.21, 0.200, 0.32), Wd('テンゲルの日特別 A(1 a)', 0.21, 0.240, 0.52, 0.016), Wd('発走予定時刻:20:15 ダート1700m', 0.21, 0.275, 0.6)]
         I2 = [Wd('11R 出馬表', 0.05, 0.05, 0.4), Wd('出走頭数：12', 0.05, 0.10, 0.4)]
@@ -267,6 +275,31 @@ try:
         q3 = plan_read([gap])
         check(q3['n'] == '' and ('読み取れなかったよ' in q3['msg'] or ('読めなかった：' in q3['msg'] and '頭数' in q3['msg'].split('読めなかった：')[1])), f'⑩馬番が とぎれて いる（3番が ない）ときは 頭数を 決めない（{q3["msg"][:50]}）')
         pl.locator('[data-p=cancel]').click(); pg.wait_for_timeout(300)
+        # ⑫ 22:48「アプリ開いてる状態で、一度下げて他のアプリ開くと音出なくなるからそれも改善して！」：音の 出口を 起こす（fx.js の TengelAudioWake）
+        HID = "(h) => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => h }); document.dispatchEvent(new Event('visibilitychange')); }"
+        pg.evaluate("() => { const c = document.querySelector('#tcPlan [data-p=close]'); if (c) c.click(); }"); pg.wait_for_timeout(300)
+        pg.mouse.click(5, 420); pg.evaluate("() => TengelFx.prime()"); pg.wait_for_timeout(500)
+        w0 = pg.evaluate("() => { const W = window.TengelAudioWake; if (!W) return null; const i = W.list.findIndex(q => q.name === 'fx'); return { i, list: W.list, st: i >= 0 && W._ctx(i) ? W._ctx(i).state : null }; }")
+        print('   音の 出口:', w0)
+        ok0 = bool(w0) and w0['i'] >= 0 and w0['st'] == 'running'
+        if ok0:
+            i = w0['i']
+            # 1) 出口が「interrupted」の まま（resume しても もどらない）→ もどった とき 作り直す
+            pg.evaluate("(i) => { const c = TengelAudioWake._ctx(i); window.__c0 = c; Object.defineProperty(c, 'state', { configurable: true, get: () => 'interrupted' }); c.resume = () => Promise.resolve(); }", i)
+            pg.evaluate(HID, True); pg.wait_for_timeout(200); pg.evaluate(HID, False); pg.wait_for_timeout(1400)
+            w1 = pg.evaluate("(i) => { const c = TengelAudioWake._ctx(i); return { n: TengelAudioWake.list[i].n, same: c === window.__c0, st: c && c.state, sx: TengelFx.sfxState ? TengelFx.sfxState().ctx : null }; }", i)
+            # 2) 時計が 止まった まま（running でも currentTime が 進まない）→ アプリからの 知らせ（audio）で 作り直す
+            pg.evaluate("(i) => { const c = TengelAudioWake._ctx(i); window.__c1 = c; const t = c.currentTime; Object.defineProperty(c, 'currentTime', { configurable: true, get: () => t }); }", i)
+            pg.evaluate("() => window.__nativeEvent('audio', { why: 'active' })"); pg.wait_for_timeout(1400)
+            w2 = pg.evaluate("(i) => { const c = TengelAudioWake._ctx(i); return { n: TengelAudioWake.list[i].n, same: c === window.__c1, st: c && c.state }; }", i)
+            # 3) 動いて いる 出口は そのまま（作り直さない）・4) 画面が かくれて いない ときの visibilitychange（前の 版の テストの 形）では 何も しない
+            pg.evaluate(HID, True); pg.wait_for_timeout(200); pg.evaluate(HID, False); pg.wait_for_timeout(1400)
+            pg.evaluate("() => document.dispatchEvent(new Event('visibilitychange'))"); pg.wait_for_timeout(1000)
+            w3 = pg.evaluate("(i) => ({ n: TengelAudioWake.list[i].n, same: TengelAudioWake._ctx(i) === window.__c1 })", i)
+            pg.evaluate("() => { delete document.hidden; }")
+            print('   出口の 作り直し:', w1, w2, w3)
+            ok0 = w1['n'] == 1 and not w1['same'] and w1['st'] == 'running' and w1['sx'] and w2['n'] == 2 and not w2['same'] and w2['st'] == 'running' and w3['n'] == 2
+        check(ok0, '⑫アプリを 下げて ほかの アプリを 開いて もどった とき：音の 出口が「interrupted」の まま・時計が 止まった まま なら 作り直す（もどった とき・アプリからの 知らせ audio）・動いて いる 出口は そのまま')
         check(not errs, f'画面の エラー なし（{errs[:2]}）')
         ctx.close(); br.close()
 finally:

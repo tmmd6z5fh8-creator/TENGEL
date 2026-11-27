@@ -511,6 +511,16 @@ const CBApp = (() => {
       try { if (snd.ac && snd.ac.state === 'running') { const q = snd.ac.suspend(); if (q && q.catch) q.catch(() => { }); } } catch (e) { /* なし */ }
     }, (BGM.fout + 0.4) * 1000);
   }
+  // 第4.233版：音の 出口を 作り直す（fx.js の TengelAudioWake：アプリを 下げて ほかの アプリを 開いて もどったら 出口が 動かない とき）。
+  //   鳴らして いた BGM は 止めた 所から（bg.tau）つづける・ほどいた 音は 新しい 出口で ほどき直す。見るのは カードバトルを 開いて いる 間 だけ
+  function sndRebuild() {
+    const o = snd.ac;
+    if (bg.cur) { bg.tau = bgmPos(); try { bg.cur.s.stop(); } catch (e) { /* もう 止まって いる */ } bg.cur = null; }
+    snd.ac = null; snd.buf = {}; bg.buf = null; bg.dec = null;
+    try { if (o && o.close) { const q = o.close(); if (q && q.catch) q.catch(() => { }); } } catch (e) { /* なし */ }
+    bgmSync();
+  }
+  try { if (window.TengelAudioWake) window.TengelAudioWake.watch(() => snd.ac, () => !!ov && ov.classList.contains('on'), sndRebuild, 'cb'); } catch (e) { /* なし */ }
 
   // ---------- 画面 ----------
   const css = `
