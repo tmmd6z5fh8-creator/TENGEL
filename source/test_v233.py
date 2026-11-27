@@ -129,6 +129,9 @@ try:
         check(L3 and [x['lab'] for x in L3['pos']] == ['1着', '2着', '3着'] and L3['pos'][2]['note'] == '推奨 人気・大穴' and r3['人気']['rec'] and r3['大穴']['rec'] and sorted(r3['人気']['on'] + r3['大穴']['on']) == [2, 5, 6, 9, 10, 11]
               and '3連単' in L3['pct'], '④3連単①：1着・2着・3着の 段・3着は 推奨 人気・大穴（色つき・ぜんぶ 選ばれて いる）・「選んだ馬で 3連単 ○%」')
         check(c2['sumT'] == '買い目を確認（馬単・3連単）', f'④「買い目を確認（馬単・3連単）」（{c2["sumT"]}）')
+        card.locator('.rline[data-i="0"] [data-k=rlsum]').click(); pg.wait_for_timeout(200)
+        check([l['open'] for l in pg.evaluate(CARD)['lines']] == [True, False, False], '④まとめの 行（1着 …　2着 …）を 押しても 開く（ほかは 閉じる）')
+        card.locator('.rline[data-i="2"] [data-k=rlopen]').click(); pg.wait_for_timeout(200)
         # ⑤ 番号・ゾーンの 名前・推奨・消す
         L3loc = card.locator('.rline[data-i="2"]')
         L3loc.locator('.rpos[data-side=b] button.num[data-no="6"]').click(); pg.wait_for_timeout(200)
