@@ -3411,16 +3411,17 @@ const TCGuide = (() => {
     
     
     
+    
     ['玉', '#e2574c', DP.name, `<p>・PUSHが出たとき、左下の<b>「お世話チャレンジ」</b>を押すと、<b>玉を落とす台</b>で抽選できるよ</p>
       <p data-dp="toy">・はじめに<b>3,000Pで解放</b>すると遊べるよ（入口の<b>「🔒 解放 3,000P」</b>を押すか、設定タブの「Pカスタム」の「おもちゃを購入」から。1回解放すれば、ずっと遊べるよ。PUSHの抽選は、解放しなくてもできるよ）</p>
-      <p>・<b>「玉を落とす」</b>を押すたびに<b>トークンを1つ</b>使って、玉が1こ落ちる（1回で<b>${DP.balls}個</b>まで。トークンが${DP.balls}個ないときは、ある分だけ）</p>
+      <p>・<b>「玉を落とす」</b>を押すたびに<b>トークンを1つ</b>使って、玉が1こ落ちる（<b>「当選」のマスが${DP.balls}つたまるまで、トークンがあれば続けて落とせるよ</b>）</p>
       <p>・当たりやすさは<b>PUSHとまったく同じ</b>（下の表のとおり。どのコップに入っても同じ）</p>
       <p>・玉がコップに入ったとき、当たっていれば 真ん中の<b>「馬バレ」</b>が光るよ。色で中身が分かる（青から虹へ、光が大きくなる）</p>
       <table data-tab="tone">${DP.tone.map(([nm, col, what]) => `<tr data-c="${nm}"><td><b style="color:${col}">${nm}</b></td><td>${what}</td></tr>`).join('')}</table>
       <p data-dp="miss">・外れのときは、馬バレが<b>白く</b>光るよ（薄く「ハズレ」の字）</p>
       <p data-dp="geki">・<b>激馬熱馬</b>のときは、馬バレが<b>プチュン！</b>と消えてから「激馬熱馬」が出るよ</p>
-      <p>・当たりは<b>「当選」</b>のマスにたまる → 玉を全部落としたら<b>「保留結果を見る」</b>で順に受け取ろう</p>
-      <p>・終わった後、トークンが<b>${DP.balls}こ以上</b>残っていれば<b>「続けてやる」</b>か<b>「終わり」</b>を選べるよ</p>
+      <p>・当たりは<b>「当選」</b>のマスにたまる → ${DP.balls}つたまったら（トークンがなくなったときや、<b>「投入終了」</b>を押したときも）<b>「保留結果を見る」</b>で順に受け取ろう</p>
+      <p>・終わった後、トークンが<b>1こ以上</b>残っていれば<b>「続けてやる」</b>か<b>「終わり」</b>を選べるよ</p>
       <p class="note">玉1こ＝トークン1つ＝お世話1回（馬の育ちやミッションの回数も、玉の数ぶん数えるよ）</p>
       <p class="note">途中でアプリを閉じても、たまった当たりはなくならないよ（次に開いたときに「保留結果を見る」から）</p>`],
     ['P', '#e0a020', 'お世話でポイントGETチャンス', `<p>ご飯・お掃除の後の<b>PUSH</b>を押すたびに抽選！</p>
@@ -4681,6 +4682,8 @@ const TCPlan = (() => {
 #tcPlan .fm input::-webkit-date-and-time-value{text-align:left;margin:0}
 #tcPlan .fm input::-webkit-calendar-picker-indicator{margin:0 0 0 2px;padding:0}
 #tcPlan .ocr{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:44px;border-radius:12px;border:2px dashed #c98a10;background:#fff4d6;color:#8a5a12;font:700 15px/1 var(--tcpf)}
+#tcPlan .ocrh{margin:7px 2px 0;font-size:12.5px;line-height:1.6;color:#8a6a48}
+#tcPlan .ocrh b{color:#b8650f}
 #tcPlan .om{font-size:12.5px;color:#3f7f3a;margin-top:6px;min-height:1em}
 #tcPlan .mm{display:block;width:100%;box-sizing:border-box;margin:8px 0 0;min-height:42px;border-radius:8px;border:1.5px dashed #d9b77c;background:#fff9dc;color:#5a3a1c;font:400 16px/1.45 var(--tcpf);padding:8px 10px;resize:none;overflow:hidden;-webkit-appearance:none;appearance:none}
 #tcPlan .mm::placeholder,#tcPlan .fm textarea::placeholder{color:#b39a72}
@@ -4718,7 +4721,7 @@ const TCPlan = (() => {
   function build(el) {
     if (!document.getElementById('tcPlanCss')) { const s = document.createElement('style'); s.id = 'tcPlanCss'; s.textContent = css; document.head.appendChild(s); }
     root = document.createElement('div'); root.id = 'tcPlan'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', '作戦会議');
-    root.innerHTML = `<div class="pp"><div class="ph"><img src="tc_icon_plan.webp" alt="作戦会議"><span class="sp"></span><button type="button" class="bx" data-p="close">閉じる</button></div><div class="pj" role="group" aria-label="行き先" hidden></div><div class="pb"></div></div><input type="file" accept="image/*" hidden data-p="file">`;
+    root.innerHTML = `<div class="pp"><div class="ph"><img src="tc_icon_plan.webp" alt="作戦会議"><span class="sp"></span><button type="button" class="bx" data-p="close">閉じる</button></div><div class="pj" role="group" aria-label="行き先" hidden></div><div class="pb"></div></div><input type="file" accept="image/*" multiple hidden data-p="file">`;
     el.appendChild(root);
     root.querySelector('.pb').addEventListener('scroll', pjSync, { passive: true });      
     root.addEventListener('click', onClick);
@@ -4857,7 +4860,10 @@ const TCPlan = (() => {
   function formHtml() {
     const r = edit;
     return `<div class="fm"><h3>${r._new ? 'レースを予約' : 'レースを直す'}</h3>`
-      + `<button type="button" class="ocr" data-p="ocr">📷 画像から読み取る</button><div class="om" aria-live="polite">${esc(r._msg || '')}</div>`
+      + `<button type="button" class="ocr" data-p="ocr">📷 画像から読み取る（3枚まで）</button>`
+      
+      + `<div class="ocrh"><b>📸 レースの 画像を 送ってね！</b> 出走表や オッズの 画面の スクショを 1〜3枚 選ぶと、レース名・出走頭数・距離・発走時間を 読み取るよ（ポイントは 使わないよ）</div>`
+      + `<div class="om" aria-live="polite">${esc(r._msg || '')}</div>`
       + `<label>レース名</label><input data-f="name" type="text" maxlength="40" value="${esc(r.name || '')}" placeholder="例）〇〇特別" autocomplete="off">`
       + `<div class="row2"><div><label>日付</label><input data-f="date" type="date" value="${esc(r.date || today())}"></div><div><label>発走時間</label><input data-f="time" type="time" value="${esc(r.time || '')}"></div></div>`
       + `<div class="row2"><div><label>出走頭数</label><input data-f="n" type="number" inputmode="numeric" min="2" max="18" value="${esc(r.n || '')}" placeholder="例）12"></div><div><label>距離（m）</label><input data-f="dist" type="number" inputmode="numeric" min="800" max="4000" step="100" value="${esc(r.dist || '')}" placeholder="例）1600"></div></div>`
@@ -4869,21 +4875,31 @@ const TCPlan = (() => {
     edit.name = v('name'); edit.date = v('date') || today(); edit.time = v('time'); edit.n = v('n') ? Math.round(+v('n')) : ''; edit.dist = v('dist') ? Math.round(+v('dist')) : '';
     const m = root.querySelector('[data-f="memo"]'); if (m) edit.memo = memoClean(m.value);
   }
+  
+  
+  
+  
   async function onFile(e) {
-    const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f || !edit) return;
-    readForm(); edit._msg = '読み取り中…'; paint();
+    const fs = Array.from((e.target.files) || []).slice(0, 3); e.target.value = ''; if (!fs.length || !edit) return;
+    readForm(); edit._msg = `${fs.length}枚の 画像を 読み取り中…`; paint();
     try {
       const s = window.claude && window.claude.use ? await window.claude.use('sample') : null;
       if (!s || !s.json) throw new Error('none');
-      const d = await s.json('', { images: [f] });
+      const d = await s.json('', { images: fs });
       const got = [];
-      if (d.rname) { edit.name = d.rname; got.push('レース名'); }
-      if (d.n) { edit.n = +d.n; got.push('頭数'); }
+      if (d.rname) { edit.name = String(d.rname).slice(0, 40); got.push('レース名'); }
+      let n = +d.n || 0, nBy = '';
+      if (!n && d.names && typeof d.names === 'object') {
+        const ks = Object.keys(d.names).map(Number).filter(x => x >= 1 && x <= 18).sort((x, y) => x - y);
+        if (ks.length >= 4 && ks[ks.length - 1] === ks.length) { n = ks.length; nBy = '（写って いた 馬の 数）'; }
+      }
+      if (n >= 2 && n <= 18) { edit.n = n; got.push('頭数' + nBy); }
       if (d.dist) { edit.dist = +d.dist; got.push('距離'); }
       if (d.start) { edit.time = String(d.start).padStart(5, '0'); got.push('発走時間'); }
       if (d.date && /^\d{4}-\d{2}-\d{2}$/.test(d.date) && d.date >= today()) edit.date = d.date;
       if (d.venue) edit.venue = d.venue; if (d.r) edit.r = +d.r;
-      edit._msg = got.length ? `読み取ったよ（${got.join('・')}）。違う 所は 直してね` : '読み取れなかったよ。手で 入れてね';
+      const miss = ['レース名', '頭数', '距離', '発走時間'].filter(x => !got.some(g => g.startsWith(x)));
+      edit._msg = got.length ? `読み取ったよ（${got.join('・')}）。${miss.length ? `読めなかった：${miss.join('・')} → 手で 入れてね。` : ''}違う 所は 直してね` : '読み取れなかったよ。手で 入れてね';
     } catch (er) { edit._msg = '読み取れなかったよ。手で 入れてね'; }
     paint();
   }
@@ -5139,6 +5155,9 @@ const TCBuy = (() => {
 
 
 
+
+
+
 const TCDrop = (() => {
   const W = 1052, H = 1657, TAU = Math.PI * 2;
   const FONT = '"BIZ UDPGothic", BIZ, "Hiragino Sans", "Noto Sans CJK JP", sans-serif';
@@ -5243,7 +5262,8 @@ const TCDrop = (() => {
   const se = (name, gain) => { T.log.push(name); if (T.log.length > 200) T.log.splice(0, 100); if (T.rec) T.rec.push([S ? +S.t.toFixed(4) : 0, name, gain == null ? 1 : gain]); try { if (API && API.se) API.se(name, gain == null ? 1 : gain); } catch (e) {   } };
 
   
-  function roundMax() { return Math.max(0, Math.min(BALLS, API.stock(), API.left())); }
+  function roundMax() { return Math.max(0, Math.min(API.stock(), API.left())); }      
+  const canMore = () => S.holds.length < BALLS && API.stock() >= 1 && API.left() >= 1;      
   function newRound() {
     S.max = roundMax(); S.n = 0; S.holds = []; S.ball = null; S.old = []; S.next = S.max > 0 ? { t0: S.t } : null; S.lcd = null; S.unlockT = null; S.endT = null; S.none = null; S.sum = 0; S.tk = 0; S.roundT = S.t;
     S.phase = S.max > 0 ? 'ready' : 'end';
@@ -5260,7 +5280,8 @@ const TCDrop = (() => {
     const i = S.deck.pop(); S.lastPath = i; return i;
   }
   function pressGo() {                                 
-    if (S.phase !== 'ready' || S.ball || S.t < S.lock || S.n >= S.max) return false;
+    if (S.phase !== 'ready' || S.ball || S.t < S.lock) return false;
+    if (!canMore()) { finishDrops(); return false; }      
     const r = API.drop();
     if (!r || !r.ok) { finishDrops(); return false; }
     S.n++; S.used++; S.press.go = S.t; S.next = null;
@@ -5301,7 +5322,7 @@ const TCDrop = (() => {
   function afterBall() {
     if (S.phase !== 'fall') return;
     if (S.ball && S.ball.inT != null) { S.old.push(S.ball); S.ball = null; }      
-    if (S.n >= S.max || API.stock() < 1 || API.left() < 1) finishDrops();
+    if (!canMore()) finishDrops();                     
     else { S.phase = 'ready'; S.next = { t0: S.t }; }
   }
   function finishDrops() {                             
@@ -5347,7 +5368,7 @@ const TCDrop = (() => {
     endChoice();
   }
   function endChoice() {                               
-    S.phase = 'end'; S.endT = S.t; S.more = API.stock() >= BALLS && API.left() >= 1;
+    S.phase = 'end'; S.endT = S.t; S.more = API.stock() >= 1 && API.left() >= 1;      
   }
   function pressMore() { if (S.phase !== 'end' || !S.more || S.t < S.endT + 0.35) return false; se('button'); S.press.more = S.t; newRound(); return true; }
   function pressEnd() { if (S.phase !== 'end' || S.t < S.endT + 0.35) return false; se('fold'); finish(); return true; }
@@ -5745,7 +5766,7 @@ const TCDrop = (() => {
     const L = S.lcd;
     if (L) auraDim(L);
     
-    const canGo = S.phase === 'ready' && !S.ball && t >= S.lock && S.n < S.max;
+    const canGo = S.phase === 'ready' && !S.ball && t >= S.lock && canMore();
     if (!canGo) { polyPath(D.go.poly); g.fillStyle = 'rgba(60,34,40,0.36)'; g.fill(); }
     const pg = t - (S.press.go == null ? -9 : S.press.go);
     if (pg >= 0 && pg < 0.3) { polyPath(D.go.poly); g.fillStyle = `rgba(255,255,255,${0.55 * (1 - pg / 0.3)})`; g.fill(); }
@@ -5769,7 +5790,7 @@ const TCDrop = (() => {
       g.globalAlpha = a; g.drawImage(IM.hold[h.c], x - w * s / 2, y - w * s / 2, w * s, w * s); g.globalAlpha = 1;
     }
     
-    if (S.next && !S.ball && S.n < S.max) { const u = t - S.next.t0, v = backOut(u / 0.3); drawBall(D.ball.start[0], D.ball.start[1] - (1 - Math.min(1, v)) * 46, 0, 0.6 + 0.4 * Math.min(1, v), sm(u / 0.12)); }
+    if (S.next && !S.ball && canMore()) { const u = t - S.next.t0, v = backOut(u / 0.3); drawBall(D.ball.start[0], D.ball.start[1] - (1 - Math.min(1, v)) * 46, 0, 0.6 + 0.4 * Math.min(1, v), sm(u / 0.12)); }
     
     for (const b of S.old.concat(S.ball ? [S.ball] : [])) {
       const q = ballAt(b, t - b.t0);
@@ -5786,11 +5807,11 @@ const TCDrop = (() => {
     }
     
     if (S.max > 0 && (S.phase === 'ready' || S.phase === 'fall')) {
-      const bx = D.go.box[2] - 26, by = D.go.box[1] + 4, left = S.max - S.n, pb = t - (S.press.go == null ? -9 : S.press.go), sc = pb >= 0 && pb < 0.3 ? 1 + 0.18 * Math.sin(Math.PI * pb / 0.3) : 1;
+      const bx = D.go.box[2] - 26, by = D.go.box[1] + 4, left = Math.max(0, Math.min(API.stock(), API.left())), pb = t - (S.press.go == null ? -9 : S.press.go), sc = pb >= 0 && pb < 0.3 ? 1 + 0.18 * Math.sin(Math.PI * pb / 0.3) : 1;
       g.save(); g.translate(bx, by); g.scale(sc, sc);
       g.fillStyle = 'rgba(60,30,10,0.28)'; g.beginPath(); g.arc(3, 5, 47, 0, TAU); g.fill();
       g.fillStyle = '#fff8ec'; g.beginPath(); g.arc(0, 0, 47, 0, TAU); g.fill(); g.strokeStyle = '#e0a21f'; g.lineWidth = 6; g.stroke();
-      label('あと', 0, -24, 22, '#9a6a1c'); label(String(left), -8, 10, 46, left > 0 ? '#c2362b' : '#a89a88'); label('こ', 25, 16, 22, '#9a6a1c');
+      label('あと', 0, -24, 22, '#9a6a1c'); label(String(left), left >= 10 ? -10 : -8, 10, left >= 10 ? 38 : 46, left > 0 ? '#c2362b' : '#a89a88'); label('こ', 25, 16, 22, '#9a6a1c');      
       g.restore();
     }
     
@@ -5850,10 +5871,10 @@ const TCDrop = (() => {
       if (got.length) label(got.join('・'), 0, -h / 2 + 208, got.length > 1 ? 58 : 76, '#c2362b', '#fff8ec', 8);
       else label('なし… また チャレンジしてね', 0, -h / 2 + 204, 40, '#8a7a66');
       label(`お世話トークン 残り ${API.stock()}個`, 0, -h / 2 + 290, 32, '#3f7f3a');
-      label(S.more ? 'もう 1回（玉 5個）できるよ' : API.left() < 1 ? 'この 馬の 抽選は ここまで' : 'トークンが 5個 たまったら また できるよ', 0, -h / 2 + 338, 26, '#9a7a55');
+      label(S.more ? 'トークンが ある 間は 続けて できるよ（保留 5つ まで）' : API.left() < 1 ? 'この 馬の 抽選は ここまで' : 'トークンが たまったら また できるよ', 0, -h / 2 + 338, 26, '#9a7a55');
       g.restore();
       const pm = t - (S.press.more == null ? -9 : S.press.more);
-      if (S.more) { chip(W / 2 - ENDB.w / 2 - ENDB.gap / 2, ENDB.y, ENDB.w, ENDB.h, '続けてやる', 48, { gold: true, a, s: backOut((u - 0.08) / 0.3) * (pm >= 0 && pm < 0.2 ? 0.95 : 1), sub: '玉を 5個 落とす' }); chip(W / 2 + ENDB.w / 2 + ENDB.gap / 2, ENDB.y, ENDB.w, ENDB.h, '終わり', 48, { a, s: backOut((u - 0.14) / 0.3) }); }
+      if (S.more) { chip(W / 2 - ENDB.w / 2 - ENDB.gap / 2, ENDB.y, ENDB.w, ENDB.h, '続けてやる', 48, { gold: true, a, s: backOut((u - 0.08) / 0.3) * (pm >= 0 && pm < 0.2 ? 0.95 : 1), sub: '保留が 5つ たまる まで' }); chip(W / 2 + ENDB.w / 2 + ENDB.gap / 2, ENDB.y, ENDB.w, ENDB.h, '終わり', 48, { a, s: backOut((u - 0.14) / 0.3) }); }
       else chip(W / 2, ENDB.y, ENDB.w, ENDB.h, '終わり', 48, { a, s: backOut((u - 0.08) / 0.3) });
     }
     g.setTransform(1, 0, 0, 1, 0, 0);
@@ -6026,7 +6047,19 @@ const TCApp = (() => {
     
     let quietT = 0;
     function lvl() { if (!master) return; try { const n = ac.currentTime; master.gain.cancelScheduledValues(n); master.gain.setValueAtTime(on ? 1 : 0, n); } catch (e) { master.gain.value = on ? 1 : 0; } }
-    function unlock() { try { if (!ac) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ac = new AC(); master = ac.createGain(); master.gain.value = on ? 1 : 0; master.connect(ac.destination); } clearTimeout(quietT); quietT = 0; lvl(); if (ac.state === 'suspended') ac.resume(); } catch (e) { } }
+    
+    function unlock() { try { if (!ac) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ac = new AC(); master = ac.createGain(); master.gain.value = on ? 1 : 0; master.connect(ac.destination); } clearTimeout(quietT); quietT = 0; lvl(); if (ac.state !== 'running' && ac.state !== 'closed') { const q = ac.resume(); if (q && q.catch) q.catch(() => { }); } } catch (e) { } }
+    
+    
+    function rebuild() {
+      const o = ac, name = aim;
+      if (bed) { try { bed.s.stop(); } catch (e) { } }
+      ac = null; master = null; bed = null;
+      for (const k of Object.keys(cache)) delete cache[k];
+      try { if (o && o.close) { const q = o.close(); if (q && q.catch) q.catch(() => { }); } } catch (e) { }
+      unlock();
+      if (name) { aim = null; swap(name, 0, 0.6).catch(() => { }); }
+    }
     
     async function swap(name, fout, fin) {
       aim = name || ''; if (!ac) return; if (bed && bed.name === aim) return;
@@ -6063,7 +6096,7 @@ const TCApp = (() => {
     }
     function setOn(v) { on = !!v; lvl(); }
     function preload(list) { if (!ac) return; list.forEach(f => buf(f).catch(() => { })); }
-    return { unlock, field, bgm, se, stopAll, setOn, preload, get ac() { return ac; }, get bed() { return bed ? bed.name : null; }, get hold() { return hold; }, get loop() { return bed ? [bed.s.loopStart, bed.s.loopEnd] : null; }, LOOPS };      
+    return { unlock, rebuild, field, bgm, se, stopAll, setOn, preload, get ac() { return ac; }, get bed() { return bed ? bed.name : null; }, get hold() { return hold; }, get loop() { return bed ? [bed.s.loopStart, bed.s.loopEnd] : null; }, LOOPS };      
   })();
   
   const SE_VAR = { slot: e => 'slot_' + Math.max(1, Math.min(10, e.n || 1)), bite: e => 'bite_' + (e.kind === 'apple' ? 'apple' : 'carrot'), banin: e => 'banin_' + (e.kind === 'maboroshi' ? 'maboroshi' : 'kamisama') };
@@ -6089,6 +6122,8 @@ const TCApp = (() => {
   
   let mustDraw = 0, hidN = 0;
   const clock = () => (performance.now() - tBase) / 1000 + 1.5;
+  
+  try { if (window.TengelAudioWake) window.TengelAudioWake.watch(() => SND.ac, () => running, () => SND.rebuild(), 'tc'); } catch (e) {   }
   const css = `
 #tcOv{position:fixed;inset:0;z-index:90;display:none;flex-direction:column;align-items:center;background:#2a1d12;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);-webkit-user-select:none;user-select:none;touch-action:none;font-family:"BIZ UDPGothic","Hiragino Sans",sans-serif}
 #tcOv.on{display:flex}

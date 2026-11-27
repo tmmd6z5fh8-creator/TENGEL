@@ -17,6 +17,16 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     }
 }
 
+/// 第4.233版：音の 出口（AVAudioSession）を ambient（消音スイッチなら 鳴らさない・ほかの アプリの 音楽は 止めずに 重ねる）で 起こし直す。
+/// アプリが 前に もどった とき・ほかの アプリの 音で とぎれた のが おわった とき に 呼ぶ（TengelWebView.swift）。起こせなくても 何も しない
+enum AudioWake {
+    static func activate() {
+        let s = AVAudioSession.sharedInstance()
+        try? s.setCategory(.ambient, mode: .default, options: [.mixWithOthers])
+        try? s.setActive(true)
+    }
+}
+
 @main
 struct TengelApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate

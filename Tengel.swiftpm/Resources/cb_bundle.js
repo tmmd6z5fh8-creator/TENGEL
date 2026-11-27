@@ -1550,6 +1550,16 @@ const CBApp = (() => {
       try { if (snd.ac && snd.ac.state === 'running') { const q = snd.ac.suspend(); if (q && q.catch) q.catch(() => { }); } } catch (e) {   }
     }, (BGM.fout + 0.4) * 1000);
   }
+  
+  
+  function sndRebuild() {
+    const o = snd.ac;
+    if (bg.cur) { bg.tau = bgmPos(); try { bg.cur.s.stop(); } catch (e) {   } bg.cur = null; }
+    snd.ac = null; snd.buf = {}; bg.buf = null; bg.dec = null;
+    try { if (o && o.close) { const q = o.close(); if (q && q.catch) q.catch(() => { }); } } catch (e) {   }
+    bgmSync();
+  }
+  try { if (window.TengelAudioWake) window.TengelAudioWake.watch(() => snd.ac, () => !!ov && ov.classList.contains('on'), sndRebuild, 'cb'); } catch (e) {   }
 
   
   const css = `
