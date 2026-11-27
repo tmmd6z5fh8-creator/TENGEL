@@ -37,14 +37,21 @@ SET = {'news': dict(jp='競馬新聞', key='run', pre='', sub=None, old='90c9d3f
        'neon': dict(jp='ネオン', key='run', pre='', sub=None, old='0417b8e6f0ca61b59a999f45f38744bd', cell=[170, 0, 284, 320], mode='RGBA', el='.nqw .nqr', win='.nqw .nqh', anim='nqRun', kb=(220, 400), dmin=1.04, smin=1.02)}
 # 第4.160版（まさちゃん 2026/11/12 14:31「壁紙のネオン消して！」）：ネオンは アプリから 外した。絵と 作る 道具・台帳は 手元／リポジトリに のこす ので、台帳・ページ・絵の 確かめは そのまま。
 #   アプリの 中身と 画面の 確かめ（IN_APP）からは 外して、「アプリに 入って いない」ことを 見る
-IN_APP = [nm for nm in SET if nm != 'neon']
+# 第4.234版（まさちゃん 2026/11/28 02:44「壁紙の競馬新聞は、馬の絵を消して…三枚目の馬券入れて！」）：競馬新聞の 走る コマも アプリでは 使わない（上の絵は 馬券：news_wall.inline）。
+#   走る コマの 絵・道具（flat/hq_news.py）・台帳（news_blobs.json の run・news_run.json）と 前の ページ（news_wall.inline_run）は のこす ので、台帳・ページ・絵の 確かめは その まま。
+#   アプリの 中身と 画面の 確かめ（IN_APP）からは 外して、ks_news.json が 走る コマを さして いない ことを 見る（馬券の 確かめは test_v234.py）
+IN_APP = [nm for nm in SET if nm not in ('neon', 'news')]
 N = 10; SC = 1.5
 N15 = ('news', 'silks', 'sunset', 'ink')                     # 第4.166版：15コマ（1コマ 1/30秒）。ネオンは 10コマの まま（アプリには 入って いない）。ナイターは 第4.167版で 15コマ
 NF = {nm: (15 if nm in N15 else N) for nm in SET}
 CELL = {}                                                     # いまの 切りぬく 場所（台帳から）。SET の cell は 前の 絵（2倍・10コマ）の 場所
 sys.path.insert(0, K)
 import news_wall, silks_wall, sunset_wall, ink_wall, neon_wall, fireworks_wall, night_wall
-MOD = dict(news=news_wall, silks=silks_wall, sunset=sunset_wall, ink=ink_wall, neon=neon_wall)
+class _NewsRun:                                              # 第4.234版：競馬新聞の 前の ページ（墨の 馬が 走る）＝ news_wall.inline_run
+    inline = staticmethod(news_wall.inline_run); load_blobs = staticmethod(news_wall.load_blobs)
+
+
+MOD = dict(news=_NewsRun, silks=silks_wall, sunset=sunset_wall, ink=ink_wall, neon=neon_wall)
 ID = {}; RUN = {}
 for nm, s in SET.items():
     blobs = json.load(open(os.path.join(K, nm + '_blobs.json'), encoding='utf8')); run = json.load(open(os.path.join(K, nm + '_run.json'), encoding='utf8'))
@@ -297,7 +304,10 @@ open(pth, 'w', encoding='utf8').write(page.replace("window.__NATIVE = location.p
 for f in os.listdir(BL):
     shutil.copy(os.path.join(BL, f), os.path.join(SRV, 'APP', 'ks_' + f))
 check(not os.path.exists(os.path.join(SRV, 'APP', 'ks_neon.json')) and all(os.path.exists(os.path.join(SRV, 'APP', f'ks_{nm}.json')) for nm in IN_APP) and os.path.exists(os.path.join(BL, ID['neon'] + '.webp')),
-      '第4.160版：ネオンの ファイル（ks_neon.json）は アプリに 入って いない（ほかの 4つは ある）・ネオンの 絵は 手元に のこって いる')
+      f'第4.160版：ネオンの ファイル（ks_neon.json）は アプリに 入って いない（ほかの {len(IN_APP)}つは ある）・ネオンの 絵は 手元に のこって いる')
+_kn = json.load(open(os.path.join(SRV, 'APP', 'ks_news.json'), encoding='utf8'))
+check(ID['news'] not in json.dumps(_kn) and SET['news']['old'] not in json.dumps(_kn) and 'nsRun' not in json.dumps(_kn) and os.path.exists(os.path.join(BL, ID['news'] + '.webp')),
+      '第4.234版：競馬新聞の ファイル（ks_news.json）は 走る コマ（3倍・前の 2倍とも）を さして いない（上の絵は 馬券）・走る コマの 絵は 手元に のこって いる')
 for nm, jp, new, old in ([(nm, SET[nm]['jp'], [ID[nm]], [SET[nm]['old']]) for nm in IN_APP] + [('fireworks', '花火', [FWB['scatter'], FWB['scatter_h']], [FW_OLD]), ('night', 'ナイター', [NTB[k] for k in NTB if k not in NT_KEEP], list(NT_OLD.values()) + list(NT_165.values()))]):
     kj = json.load(open(os.path.join(SRV, 'APP', f'ks_{nm}.json'), encoding='utf8')); txt = kj['bnr']['html'] + kj['bnr']['css']
     check(all(f'ks_{i}.webp' in txt for i in new) and not any(o in json.dumps(kj) for o in old), f'{jp}の ファイル（ks_{nm}.json）：新しい 絵（{len(new)}まい）・前の 絵は 入って いない')

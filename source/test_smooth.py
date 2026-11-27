@@ -240,7 +240,7 @@ STEP = """([sel, t0, t]) => { const bn = document.querySelector('#ksBnr'), w = b
 #        壁紙     窓                    コマ  さがす 時刻（秒）の きざみ
 FRAMES = [('pirate', '.prHw', 36, 0.6)] + ([('paddock', '.pkH.n2>.pkL.w', 36, 1.2), ('paddock', '.pkH.f1>.pkL.w', 36, 1.2)] if PK36 else []) + [('dino', '.dnH.h1', 15, 0.5), ('dino', '.dnH.h2', 13, 0.5),
           ('future', '.ftH', 15, 0.5), ('space', '.ucH', 19, 0.5), ('ukiyoe', '.ukH', 15, 0.5), ('course', '.csH.h0', 12, 0.4),
-          ('news', '.nsh', 15, 0.5), ('silks', '.sbh', 15, 0.5), ('sunset', '.sxh', 15, 0.5), ('ink', '.ikh', 15, 0.5),
+          ('silks', '.sbh', 15, 0.5), ('sunset', '.sxh', 15, 0.5), ('ink', '.ikh', 15, 0.5),      # 第4.234版：競馬新聞は 走る 馬を やめて 馬券（コマ送り なし）
           ('night', '.ntc7', 15, 0.5), ('night', '.ntc5', 15, 0.5), ('pixel', '.pqh', 15, 0.5, 3.0), ('marble', '.mww', 50, 0.5, 3.1, True)]
 #        （5つめ：さがし はじめる 秒〈なければ 1.0〉・6つめ：True＝くり返さない つづき〈1回り あとの 絵は 見ない〉）
 srv = subprocess.Popen(['python3', '-m', 'http.server', str(PORT), '--directory', SRV], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(0.8)

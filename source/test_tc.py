@@ -638,7 +638,7 @@ try:
               f"説明書：上乗せの 回数ごとの ％と 合計（0回 40% → 1,000P … 12回 約0.22% → 25,000P（MAX））・％を 足すと 100%・平均 {gz and gz['avg']:.1f}P（抽選の 決まりから 数えた 数と 同じ）")
         #   第4.144版（11/10 18:19 まさちゃん「この仕組みもトレーニングセンターの説明書に記載して！」）：「馬のリセット（次の馬の抽選）」の 項目・2分ごとの チャンスは 高確ゾーン だけ
         g2 = pg.evaluate("() => { const s = [...document.querySelectorAll('#tcg .sec')].map(x => [x.querySelector('h3').textContent, x.textContent]); const f = k => (s.find(x => x[0].includes(k)) || [0, ''])[1]; return { tick: f('2分ごとのチャンス'), reset: f('馬のリセット'), visit: f('幻の馬・神様馬がいる間'), heads: s.map(x => x[0]) }; }")
-        check('幻の馬' not in g2['tick'] and '神様馬' not in g2['tick'] and '高確ゾーン' in g2['tick'] and '幻の馬' in g2['reset'] and '神様馬' in g2['reset'] and '10分' not in g2['visit'] and len(g2['heads']) == 16 + HAVE_DP
+        check('幻の馬' not in g2['tick'] and '神様馬' not in g2['tick'] and '高確ゾーン' in g2['tick'] and '幻の馬' in g2['reset'] and '神様馬' in g2['reset'] and '10分' not in g2['visit'] and len(g2['heads']) == 17 + HAVE_DP and g2['heads'][-1] == '看牧場の看板'      # 第4.234版：＋1こ（いちばん 下に「牧場の看板」）
               and (not HAVE_DP or g2['heads'].index('玉お世話チャレンジ') == g2['heads'].index('押お世話の後のPUSH') + 1)      # 第4.173版：台の 絵が ある ときは 項目が 15こ（「お世話チャレンジ」が PUSH の すぐ 下）
               and g2['heads'].index('選抽選をする／しない') == g2['heads'].index('押お世話の後のPUSH') - 1 and g2['heads'].index('激激馬熱馬') == g2['heads'].index('虹ポイント特化ゾーン') + 1      # 第4.175版：＋2こ（「抽選をする／しない」は PUSH の すぐ 上・「激馬熱馬」は 特化ゾーンの すぐ 下）
               and g2['heads'].index('替馬のリセット（次の馬の抽選）') == g2['heads'].index('★2分ごとのチャンス') + 1,

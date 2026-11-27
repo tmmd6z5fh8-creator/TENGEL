@@ -148,9 +148,10 @@ def theme_banner(name):
     if name == 'ink':                     # 水墨画：走るコマは flat/sumi_run.py（キャンバスの id は ink_blobs.json・切りぬく場所は ink_run.json）
         import ink_wall
         return ink_wall.inline(ink_wall.load_blobs(f'{K}/ink_blobs.json'), json.load(open(f'{K}/ink_run.json')))
-    if name == 'news':                    # 競馬新聞：走るコマは flat/news_run.py（キャンバスの id は news_blobs.json・切りぬく場所は news_run.json）
+    if name == 'news':                    # 競馬新聞（第4.234版）：馬の 絵を 消して 馬単と 3連単の 馬券（まさちゃんの 絵）・数字は 字で 15秒ごと（news_wall.py）。
+                                          #   絵の id は news_blobs.json の paper・tickets・置く 場所と 数字の 枠は news_tk.json（flat/news_ticket.py）。前の 走る 馬は news_wall.inline_run
         import news_wall
-        return news_wall.inline(news_wall.load_blobs(f'{K}/news_blobs.json'), json.load(open(f'{K}/news_run.json')))
+        return news_wall.inline(news_wall.load_blobs(f'{K}/news_blobs.json'), json.load(open(f'{K}/news_tk.json')))
     if name == 'newyear':                 # お正月：絵は flat/newyear_banner.py --layers の2まい（キャンバスの id は newyear_blobs.json・光の決まりは newyear_sun.json）。馬は動かさない（まさちゃんの指定）
         import newyear_wall
         return newyear_wall.inline(newyear_wall.load_blobs(f'{K}/newyear_blobs.json'), json.load(open(f'{K}/newyear_sun.json')))

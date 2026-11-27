@@ -14,6 +14,7 @@
 //   第4.92版：壁紙パック（買い切り 1,500円・10枚〔第4.147版で 11 → 10枚〕：kisekae/pack/）。いちばん 上の 組に 買う ボタンと 解放の 進み具合。買った あとに 読み込んだ レース 5つごとに
 //   1枚ずつ 使える ように なる（TengelWallet.pack）。ポイントでは 解放 できない。帯の 壁紙の ミッションの 枚数に 数える
 //   第4.224版：iPhone の 時計・電池の 帯（ステータスバー）を 上の 帯（header.top）の いちばん 上の 色に そろえる（色を アプリに 知らせる：下の「時計・電池の 帯」）
+//   第4.234版：競馬新聞の 上の絵は 馬券 2まい（馬単・3連単）。数字は 15秒ごとに 25組から ランダム（下の「競馬新聞の 馬券の 数字」：tkNext）
 //   Web版（ホーム画面のアプリ）では何もしない。
 (function () {
   'use strict';
@@ -104,10 +105,37 @@
   }
   // いつもの の 上の絵（第4.176版）：動かない 1まいの 絵。読めない ときは 上の絵を かくす（下の paintBnr）
   const DEF = (() => { const t = byId.default; return t && t.bnr ? { id: 'default', bnr: { html: `<img class="bnr ksdf" src="${esc(t.bnr)}" alt="${esc(t.balt || '')}" decoding="async">`, css: '' } } : null; })();
+  // ---------- 競馬新聞の 馬券の 数字（第4.234版・まさちゃん 2026/11/28 02:44「馬券の中の数字を15秒起きにランダムに変えて！合計25種類の組み合わせが欲しい」）----------
+  //   壁紙の 中の [data-tkc]（組の 一覧：「1着-2着-3着」を 空白で 区切る：kisekae/news_wall.py の TK_COMBOS）の [data-tki]（組の 何番目）に 数字を 書く（頭に 0 は つけない）。
+  //   かわる 時刻は CSS の 動き（数字の 層 .nsq の nsTk：15秒で 1回り・はじめと おわりに 0.4秒 うすく なる）の 1回りの さかい目（animationiteration）＝
+  //   止めて いる 間（.pause：画面の 外・ほかの 窓の 下・アプリが 裏）は かわらない。控えめ（.calm）・視差効果を減らす は 動きが ない ので 数字は 出た まま。
+  //   順番：25組を まぜた 山から 1つずつ（25組 ぜんぶ 出てから まぜ直す・まぜ直した さかい目でも 同じ 組は つづけない）。出した ときも 山の 1つ目（毎回 ちがう 組から）。
+  //   判定タブの 上の絵（#ksBnr）と 設定タブの 動く タイル（.kslv：@keyframes の 名前は kpkbnsTk）の どちらでも 同じ
+  function tkNext(box) {
+    const all = String(box.dataset.tkc || '').split(/\s+/).filter(Boolean); if (!all.length) return;
+    let deck = box.__tk;
+    if (!deck || !deck.length) {
+      deck = all.map((_, i) => i);
+      for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = deck[i]; deck[i] = deck[j]; deck[j] = t; }
+      const L = deck.length - 1;
+      if (L > 0 && deck[L] === box.__tkCur) { const t = deck[0]; deck[0] = deck[L]; deck[L] = t; }
+      box.__tk = deck;
+    }
+    const k = deck.pop(); box.__tkCur = k;
+    const v = all[k].split('-');
+    box.querySelectorAll('[data-tki]').forEach(e => { const s = v[+e.dataset.tki] || ''; if (e.textContent !== s) e.textContent = s; });
+    box.dataset.tkn = String(k);
+  }
+  function tkInit(root) { try { if (root) root.querySelectorAll('[data-tkc]').forEach(tkNext); } catch (e) { /* なし：絵に 書いて ある 1組目の まま */ } }
+  document.addEventListener('animationiteration', e => {
+    if (!/nsTk$/.test(e.animationName || '')) return;
+    const box = e.target && e.target.closest ? e.target.closest('[data-tkc]') : null;
+    if (box) tkNext(box);
+  }, true);
   function paintBnr(p) {
     const b = bnrBox(); if (!b) return;
     const stage = $('.ksb', b);
-    if (p && p.bnr && p.bnr.html) { stage.innerHTML = p.bnr.html; b.hidden = false; fitBnr(); } else { stage.innerHTML = ''; b.hidden = true; }
+    if (p && p.bnr && p.bnr.html) { stage.innerHTML = p.bnr.html; tkInit(stage); b.hidden = false; fitBnr(); } else { stage.innerHTML = ''; b.hidden = true; }
     const df = $('img.ksdf', stage);
     if (df) { const bad = () => { if (stage.contains(df)) { stage.innerHTML = ''; b.hidden = true; } }; df.addEventListener('error', bad); if (df.complete && !df.naturalWidth) bad(); }
     motion();
@@ -351,7 +379,7 @@
     if (liveId() !== id || el !== $('#setKisekae .kst .kslv')) return;     // 待つ 間に 変わった
     if (!p || !p.bnr || !p.bnr.html) { st.textContent = ''; el.innerHTML = ''; return; }
     const r = rescope(id, p.bnr);
-    st.textContent = r.css; el.innerHTML = r.html; fitLive(); motionLive();
+    st.textContent = r.css; el.innerHTML = r.html; tkInit(el); fitLive(); motionLive();
   }
   // ---------- 見本（第4.218版・まさちゃん 2026/11/24 18:55「①壁紙カスタム 壁紙を選ぶところでタップすると、pushボタンと結果ボードを表示されるようにして、見本みたいに見えるようにして！」）----------
   //   壁紙の タイルを タップすると（使う・解放の 確認・帯や 壁紙パックの 案内）、その 行の 下に その 壁紙の 的中の PUSH と 結果ボードを 小さく ならべる（.kspv）。
