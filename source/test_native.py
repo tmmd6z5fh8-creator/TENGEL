@@ -1030,7 +1030,9 @@ try:
         pg.locator('#recList .rsvtop details.given summary').click(); pg.wait_for_timeout(200)
         pg.locator(f'#recList .lrow[data-id="{b10["id"]}"] [data-act=load]').click(); pg.wait_for_timeout(600)
         check(pg.locator('#v-judge').is_visible() and pg.locator('#fR').input_value() == '10' and pg.locator('#recCard [data-rsv=redo]').inner_text() == 'やっぱり予約する', '諦めたレース →「やっぱり予約する」→ 判定画面で10R')
-        pg.locator('#recCard [data-rsv=redo]').click(); pg.wait_for_timeout(300); pg.locator('#recCard [data-rsv=reserve]').click(); pg.wait_for_timeout(900)
+        pg.locator('#recCard [data-rsv=redo]').click(); pg.wait_for_timeout(300)
+        check(pg.locator('#recCard .rline').count() == 0 and pg.locator('#recCard [data-rsv=reserve]').is_disabled(), '第4.233版：諦めた レースの「やっぱり予約する」は 行なし から（＋で 足す）')
+        pg.locator('#recCard [data-k=radd] button[data-v=馬単]').click(); pg.wait_for_timeout(200); pg.locator('#recCard [data-rsv=reserve]').click(); pg.wait_for_timeout(900)
         check(pg.evaluate("[...TengelLocal.mem.bets.values()].find(b => b.r === 10).rsv.state") == 'reserved' and len(pg.evaluate('window.__notify.items')) == 2, '10Rを予約 → 予約中・お知らせ2件')
         # 結果を記録したレースは上書きしない
         pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(400)

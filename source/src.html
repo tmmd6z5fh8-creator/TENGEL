@@ -486,9 +486,9 @@ button.num:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .rlt{font-weight:800;font-size:14.5px;white-space:nowrap}
 .rlz{flex:1;min-width:0;font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rln{font-family:var(--font-mono);font-weight:700;font-size:13px;white-space:nowrap}
-.rlc{font-size:10px;color:var(--muted)}
+.rlc{flex:none;width:7px;height:7px;margin:0 6px 3px 2px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg)}.rline.open .rlc{margin:4px 6px 0 2px;transform:rotate(-135deg)}
 .rldel{flex:none;width:42px;border:0;background:transparent;color:var(--muted);font-size:15px;cursor:pointer}
-.rls{padding:0 12px 9px;font-size:12px;color:var(--muted);font-family:var(--font-mono);line-height:1.5;overflow-wrap:anywhere}
+.rls{padding:0 12px 9px;font-size:12px;color:var(--muted);font-family:var(--font-mono);line-height:1.5;overflow-wrap:anywhere;cursor:pointer}
 .rltpl{padding:2px 12px 8px}
 .rltpl>span{display:block;font-size:11.5px;color:var(--muted);margin-bottom:5px}
 .rltpl .toggles button{padding:6px 10px;font-size:12.5px}
@@ -2335,7 +2335,7 @@ document.addEventListener('click', e => { const b = e.target.closest('[data-rnav
 //   ・予約には rsv.lines（行ごと：券種・推奨の ゾーン・馬）・rsv.legs（結果待ちの 一覧）・rsv.zones（使った 推奨の ゾーン。推奨の 外の 馬が ある 行・推奨なしの 行が あれば「自己入力」も
 //     → 収支の 層別では 自己入力の 行に 数える：第4.122版と 同じ 考え方）
 const RSV_DEF_TYPES = J => ['馬単'].concat(J.third && J.third.some(t => t && t.length) ? ['3連単'] : []);
-const CIRC = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳', RSV_MAX = 20;
+const CIRC = '①②③④⑤⑥⑦⑧⑨⑩', RSV_MAX = 20;      // 11こ目 からは (11)（着せ替えの しぼった 字に 11 から 先の 丸数字は ない）
 const numAsc = (x, y) => x - y;
 const lineSize = ty => { const R = Reserve(); return (R && R.SIZE[ty]) || 1; };
 const lineSides = ty => ['a', 'b', 't'].slice(0, lineSize(ty));
@@ -2448,8 +2448,8 @@ function rsvLineHTML(J, d, l, i, lab) {
   const z = l.tpl != null ? J.set[l.tpl] : null, own = !!z && lineOwn(J, l), sides = lineSides(l.ty), pl = posLabels(l.ty, n);
   const sum = sides.map((s, k) => `${pl[k]} ${l[s].length ? l[s].join('・') : '—'}`).join('　');
   let h = `<div class="rline${open ? ' open' : ''}${pts ? '' : ' zero'}" data-i="${i}"><div class="rlh"><button type="button" class="rlhb" data-k="rlopen" aria-expanded="${open}">`
-    + `<span class="rlt">${esc(lab)}</span><span class="rlz">${z ? `第${l.tpl + 1} ${esc(z.label)}` : '推奨なし'}${own ? ' ✏️' : ''}</span><span class="rln">${pts}点</span><span class="rlc" aria-hidden="true">${open ? '▲' : '▼'}</span></button>`
-    + `<button type="button" class="rldel" data-k="rldel" aria-label="${esc(lab)}を 消す">✕</button></div><div class="rls">${esc(sum)}</div>`;
+    + `<span class="rlt">${esc(lab)}</span><span class="rlz">${z ? `第${l.tpl + 1} ${esc(z.label)}` : '推奨なし'}${own ? ' ✏️' : ''}</span><span class="rln">${pts}点</span><span class="rlc" aria-hidden="true"></span></button>`
+    + `<button type="button" class="rldel" data-k="rldel" aria-label="${esc(lab)}を 消す">✕</button></div><div class="rls" data-k="rlopen">${esc(sum)}</div>`;
   if (open) {
     h += `<div class="rltpl"><span>推奨（押すと その 推奨の 馬 全部に 戻るよ）</span><div class="toggles" data-k="rltpl">${J.set.map((s, k) => `<button type="button" data-v="${k}" aria-pressed="${l.tpl === k}">第${k + 1} ${esc(s.label)}</button>`).join('')}</div></div>`;
     sides.forEach((s, k) => { h += rsvPosHTML(J, l, s, pl[k]); });
