@@ -67,6 +67,15 @@ def gate(pg):
         pg.wait_for_timeout(150)
 
 
+def rsv_lines(pg):
+    """第4.233版：買い目の 行が ない ときは、前の 版の はじめの 形（推奨ごとに 馬単・3着の ある 推奨は 3連単も）の 行を「＋券種」で 足す"""
+    card = pg.locator('#recCard')
+    if card.locator('.rline').count() or not card.locator('[data-k=radd]').count(): return
+    nz = pg.locator('#result ol.zones > li').count(); t3 = pg.locator('#result .zthird .zref').count() > 0
+    for t in ['馬単'] * nz + (['3連単'] * nz if t3 else []):
+        card.locator(f'[data-k=radd] button[data-v="{t}"]').click(); pg.wait_for_timeout(120)
+
+
 try:
     with sync_playwright() as p:
         b = p.chromium.launch()
@@ -136,6 +145,7 @@ try:
         tb = c6c['total']
         c7 = read(lines(5, extra=['まもなく締切']))
         check(c7['r'] == '5' and c7['total'] == tb and open_ok(c7), f'⑦「発売締切」で 締切済みに なった 5R を「まもなく締切」で 読み直す（0P）→ 締切済みでは なくなる・「買い目を予約」が 出る（{c7["card"][:40]}…）')
+        rsv_lines(pg)      # 第4.233版：券種ごとの 行を 足してから 予約
         pg.locator('#recCard [data-rsv=reserve]').click(); pg.wait_for_timeout(1000)
         c7b = pg.evaluate(CL)
         b5 = [x for x in c7b['bets'] if x['r'] == 5]

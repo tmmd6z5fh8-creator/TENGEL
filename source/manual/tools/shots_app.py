@@ -206,6 +206,10 @@ try:
         shot(pg, 'result_a', '#result', ['.vhead .lbadge', '.vhead .vkubun', '.vhead .vratio', '.vhead .chips', '.hpnote', 'ol.zones > li:nth-child(1) .zflow', 'ol.zones > li:nth-child(1) .znums', 'ol.zones > li:nth-child(1) .zref',
                                          'ol.zones > li:nth-child(1) .zthird', 'ol.zones > li:nth-child(2)', '.numbers', '.vfoot', '.oldline', '.w5push', '#copyAll', '.rankbox'])
         # ---- 予約 → 記録タブで 結果 → 金額の 欄の「マザーデータにも入れる」（テンゲルデータで 判定した ので「マザーデータ①に記録する？」）----
+        # 第4.233版：買い目は 券種ごとの 行（はじめは 行なし）→ 推奨ごとに 馬単（＋3着の ある 推奨は 3連単）の 行を「＋券種」で 足してから 予約
+        nz = pg.locator('#result ol.zones > li').count(); t3 = pg.locator('#result .zthird .zref').count() > 0
+        for tt in ['馬単'] * nz + (['3連単'] * nz if t3 else []):
+            pg.locator(f'#recCard [data-k=radd] button[data-v="{tt}"]').click(); pg.wait_for_timeout(150)
         pg.locator('#recCard [data-rsv=reserve]').click(); pg.wait_for_timeout(1200)
         bid = pg.evaluate("[...TengelLocal.mem.bets.values()].find(x => x.rsv && x.rsv.state === 'reserved').id")
         tab(pg, 'rec')

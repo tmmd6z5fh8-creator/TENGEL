@@ -148,12 +148,18 @@
     await step(R, 'notify', async function () { var s = await TengelNative.notify('status'); await TengelLocal.putSetting('notify', false); return s; });
     await step(R, 'save', async function () {
       var card = document.querySelector('#recCard');
+      // 第4.233版：買い目は 券種ごとの 行（はじめは 行なし）→ 推奨ごとに 馬単（＋3着の ある 推奨は 3連単）の 行を「＋券種」で 足してから 予約
+      var nz = document.querySelectorAll('#result ol.zones > li').length, t3 = !!document.querySelector('#result .zthird .zref');
+      var add = function (t) { var x = card.querySelector('[data-k=radd] button[data-v="' + t + '"]'); if (x) x.click(); };
+      for (var i = 0; i < nz; i++) add('馬単');
+      if (t3) for (var k = 0; k < nz; k++) add('3連単');
+      await sleep(400);
       var btn = card.querySelector('[data-rsv=reserve]'); if (!btn) throw new Error('no reserve button: ' + card.innerText.slice(0, 120));
       btn.click();
       await waitFor(function () { return TengelLocal.mem.bets.size > 0; }, 8000);
       await sleep(400);
       var b = Array.from(TengelLocal.mem.bets.values())[0];
-      return { bets: TengelLocal.mem.bets.size, ids: Array.from(TengelLocal.mem.bets.keys()), rsv: b && b.rsv ? { state: b.rsv.state, types: b.rsv.types, points: b.rsv.points, zones: b.rsv.zones } : null, card: card.innerText.slice(0, 160), toast: (document.querySelector('#toast') || {}).textContent, reserve: !!window.TengelReserve, rate: !!window.TengelCustomRate, omakase: !!document.querySelector('#omakaseBtn'), pct: Array.from(document.querySelectorAll('#result .zref')).map(function (e) { return e.innerText; }).filter(function (t) { return t.indexOf('選んだ馬で') >= 0; }).slice(0, 2) };
+      return { bets: TengelLocal.mem.bets.size, ids: Array.from(TengelLocal.mem.bets.keys()), rsv: b && b.rsv ? { state: b.rsv.state, types: b.rsv.types, points: b.rsv.points, zones: b.rsv.zones, lines: (b.rsv.lines || []).map(function (l) { return l.ty + ':' + (l.k || '-') + ':' + l.pts; }) } : null, card: card.innerText.slice(0, 160), toast: (document.querySelector('#toast') || {}).textContent, reserve: !!window.TengelReserve, rate: !!window.TengelCustomRate, omakase: !!document.querySelector('#omakaseBtn'), pct: Array.from(document.querySelectorAll('#result .zref')).map(function (e) { return e.innerText; }).filter(function (t) { return t.indexOf('選んだ馬で') >= 0; }).slice(0, 2) };
     });
     // 第4.122版：上の帯の「結果待ち」（予約した レースの 数）→ 押すと 窓（ゾーンごとの 1着・2着・3着の 馬・点数）→ とじる
     await step(R, 'rsvList', async function () {
@@ -473,6 +479,17 @@
       }
       return { closed: d.closed, soon: !!d.soon, start: d.start, r: d.r, dist: d.dist, n: d.n, horses: (d.horses || []).length, nos: (d.horses || []).map(function (h) { return h.no; }),
         re: d._re || null, gaps: gs.map(function (g) { return { crop: g.crop, wide: g.wide, prev: g.prev, next: g.next }; }), tries: tries, top: top, body: body };
+    });
+    // 第4.233版（まさちゃん 11/27 20:20：11R の 画面が 9R に なった）：上に 開催場の 札「大井 ⌄」と レースの 切りかえ「8R 9R 10R 11R 12R」・その 下の 見出しに 大きく「11R」の
+    //   架空の 画面（testdata/ocr/make_mock.py の f_tabs）を 本物の Vision で 読む → 11R（切りかえの 並びの 8R に しない）・開催場 大井
+    await step(R, 'ocrtabs', async function () {
+      var res = await fetch('__selftest/f_tabs.jpg', { cache: 'no-store' });
+      if (!res.ok) return { skipped: 'no sample f_tabs.jpg (' + res.status + ')' };
+      var f = new File([await res.blob()], 'f_tabs.jpg', { type: 'image/jpeg' });
+      var raw = await TengelNative.readText(await new Promise(function (ok, ng) { var fr = new FileReader(); fr.onload = function () { ok(String(fr.result).split(',')[1]); }; fr.onerror = ng; fr.readAsDataURL(f); }));
+      var d = await (await window.claude.use('sample')).json('', { images: [f] });
+      var at = function (l) { return [l.text, Math.round(l.x * 1000) / 1000, Math.round(l.y * 1000) / 1000, Math.round(l.w * 1000) / 1000, Math.round(l.h * 1000) / 1000]; };
+      return { r: d.r, venue: d.venue, date: d.date, dist: d.dist, n: d.n, baba: d.baba, start: d.start, rname: d.rname || null, horses: (d.horses || []).length, top: (raw && raw.lines || []).filter(function (l) { return l.y < 0.25; }).map(at) };
     });
     // 第4.172版（まさちゃん 11/14 22:05「やっぱりテンゲルBGMも消して！無しでいいや！」）：テンゲルBGM は なくした → しかけ（window.TengelBgm）と 設定の 札が 入って いない ことを 見る。
     //   ルーレットの 爆発の 動画（H.264 High：第4.171版）を この WebKit が 読める 形かも 見る

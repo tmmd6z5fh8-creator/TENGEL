@@ -122,6 +122,15 @@ REC = "(r) => [...TengelLocal.mem.bets.values()].find(b => b.r === r) || null"
 VAL = "() => [1, 2, 3].map(i => { const x = document.querySelector('#recList .rsvf [data-k=nm' + i + ']'); return x ? x.value : null; })"
 yen = lambda v: f'{int(v):,}'
 
+
+def rsv_lines(pg):
+    """第4.233版：買い目の 行が ない ときは、前の 版の はじめの 形（推奨ごとに 馬単・3着の ある 推奨は 3連単も）の 行を「＋券種」で 足す"""
+    card = pg.locator('#recCard')
+    if card.locator('.rline').count() or not card.locator('[data-k=radd]').count(): return
+    nz = pg.locator('#result ol.zones > li').count(); t3 = pg.locator('#result .zthird .zref').count() > 0
+    for t in ['馬単'] * nz + (['3連単'] * nz if t3 else []):
+        card.locator(f'[data-k=radd] button[data-v="{t}"]').click(); pg.wait_for_timeout(120)
+
 try:
     with sync_playwright() as p:
         br = p.chromium.launch()
@@ -147,6 +156,7 @@ try:
 
         def reserve():
             card = pg.locator('#recCard'); card.scroll_into_view_if_needed(); pg.wait_for_timeout(200)
+            rsv_lines(pg)      # 第4.233版：券種ごとの 行を 足してから 予約
             card.locator('[data-rsv=reserve]').click(); pg.wait_for_timeout(1100)
 
         def open_row(rid):

@@ -27,6 +27,12 @@ CSS = '''<style>*{box-sizing:border-box}body{margin:0;font-family:-apple-system,
 .e .hd{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#1a3a6e;color:#fff;font-weight:700;font-size:17px}
 .e .soon{background:#d00;color:#fff;font-size:12px;line-height:15px;padding:3px 8px;border-radius:4px;text-align:center}.e .meta{padding:8px 12px;font-size:13px;color:#333;background:#eef2f8}
 .e .row{display:grid;grid-template-columns:34px 1fr 60px 84px;align-items:center;padding:9px 10px;border-bottom:1px solid #e3e3e3;font-size:13px}.e .row.h{background:#eee;font-size:11px;color:#555}
+.f{font-size:14px}.f .sb{display:flex;justify-content:space-between;align-items:center;height:47px;padding:0 26px 0 34px;font-weight:700;font-size:17px;background:#1d4f9c;color:#fff}.f .sb i{font-style:normal;font-size:13px}
+.f .nav{display:flex;align-items:center;gap:14px;padding:12px 10px;border-bottom:1px solid #ccc}.f .pill{border:1px solid #888;border-radius:18px;padding:5px 12px;font-weight:700;font-size:15px}.f .pill s{text-decoration:none;color:#666}
+.f .tb{color:#1d4f9c;font-weight:700;font-size:15px;padding:4px 6px}.f .tb.on{border-bottom:3px solid #1d4f9c}
+.f .hd{display:flex;gap:14px;padding:14px 12px}.f .big{color:#1d4f9c;font-size:22px;font-weight:700;border-right:3px solid #1d4f9c;padding-right:12px;display:flex;align-items:center}
+.f .tx{display:flex;flex-direction:column;gap:4px;font-size:13px}.f .tx b{font-size:15px}.f .meta{padding:8px 12px;font-size:13px;color:#333;background:#eef2f8}.f .ttl{padding:10px 12px;font-weight:700;font-size:16px}
+.f .row{display:grid;grid-template-columns:34px 40px 1fr 70px;align-items:center;padding:9px 10px;border-bottom:1px solid #e3e3e3;font-size:13px}.f .row.h{background:#eee;font-size:11px;color:#555}.f .od{text-align:right}
 </style>'''
 
 
@@ -59,7 +65,18 @@ def page_e():
            f'<div class="meta">ダート 1,400m　良　12頭</div><div class="row h"><span>馬番</span><span>馬名</span><span>単勝</span><span>複勝</span></div>{rows}</div>'
 
 
-PAGES = {'a_tanfuku_waku': page_a(), 'b_tanfuku_ninki': page_b(), 'c_sanrentan': page_c(), 'd_sanrentan_arrow': page_c(arrow=True, rank=False), 'e_soon': page_e()}
+# 第4.233版（まさちゃん 11/27 20:20：11R の 画面が 9R に なった）：いちばん 上に 開催場の 札「大井 ⌄」と レースの 切りかえ「8R 9R 10R 11R 12R」（選んで いる 11R は 下線 だけ）・
+#   その 下の 見出しに 大きく「11R」と 日付・レース名・発走・距離・頭数。読めた 文字では：11R（切りかえの 並びの 8R・9R に しない）・大井。JPEG は GitHubのMacの 本物の Vision でも 読む（ios/ci/selftest.js の ocrtabs）
+def page_f():
+    hs = sorted(HORSES, key=lambda x: x[2])
+    tabs = ''.join(f'<span class="tb{" on" if r == 11 else ""}">{r}R</span>' for r in range(8, 13))
+    rows = ''.join(f'<div class="row"><span>{i + 1}</span><span><b>{n}</b></span><span class="nm">{nm}</span><span class="od">{t}</span></div>' for i, (n, nm, t, f) in enumerate(hs))
+    return f'<div class="f"><div class="sb"><span>20:10</span><i>5G 87</i></div><div class="nav"><span class="pill">大井 <s>⌄</s></span>{tabs}</div>' \
+           f'<div class="hd"><span class="big">11R</span><span class="tx"><span>2026年10月14日(水)</span><b>テンゲル特別 A1</b><span>発走予定時刻：20:15　ダート1400m　12頭</span></span></div>' \
+           f'<div class="meta">天候：晴　馬場状態：良</div><div class="ttl">単勝オッズ</div><div class="row h"><span>人気</span><span>馬番</span><span>馬名</span><span>オッズ</span></div>{rows}</div>'
+
+
+PAGES = {'a_tanfuku_waku': page_a(), 'b_tanfuku_ninki': page_b(), 'c_sanrentan': page_c(), 'd_sanrentan_arrow': page_c(arrow=True, rank=False), 'e_soon': page_e(), 'f_tabs': page_f()}
 ONLY = sys.argv[2:]      # 第4.227版：作る 画面を しぼる（python3 make_mock.py <出力フォルダ> e_soon）。前の 画面の 見本は 作り直さない
 LEAF_JS = '''() => {
   const out = []; const H = document.documentElement.scrollHeight, W = document.documentElement.scrollWidth;

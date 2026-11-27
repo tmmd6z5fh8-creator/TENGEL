@@ -68,6 +68,15 @@ RES = """(() => { const refs = [...document.querySelectorAll('#result .chip.ref'
   const full = window.__judgeText ? window.__judgeText() : ((document.querySelector('#outText') || {}).textContent || '');   // 第4.60版：App Store版の 判定画面に「全STEPを表示」は ない（全文コピーと 同じ 文を 作る）
   return { isOi: !refs.length, ref: refs.length, refTxt: refs.map(c => c.textContent).join(), alt: go ? go.dataset.slot : null, full,
     chips: [...document.querySelectorAll('#result .vhead .chip')].map(c => c.textContent).join('|') }; })()"""
+
+def rsv_lines(pg):
+    """第4.233版：買い目の 行が ない ときは、前の 版の はじめの 形（推奨ごとに 馬単・3着の ある 推奨は 3連単も）の 行を「＋券種」で 足す"""
+    card = pg.locator('#recCard')
+    if card.locator('.rline').count() or not card.locator('[data-k=radd]').count(): return
+    nz = pg.locator('#result ol.zones > li').count(); t3 = pg.locator('#result .zthird .zref').count() > 0
+    for t in ['馬単'] * nz + (['3連単'] * nz if t3 else []):
+        card.locator(f'[data-k=radd] button[data-v="{t}"]').click(); pg.wait_for_timeout(120)
+
 try:
     with sync_playwright() as p:
         b = p.chromium.launch()
@@ -160,6 +169,7 @@ try:
             f = dict(f0, venue=venue, date=date, r=str(r), rows=[{"no": no, "tan": str(t), "fuku": fk} for no, t, fk in [(1, 12.4, '3.0-4.6'), (2, 4.1, '1.6-2.2'), (3, 31.5, '6.1-9.8'), (4, 9.8, '2.6-3.9'), (5, 18.2, '4.0-6.2'), (6, 2.4, '1.1-1.3'), (7, 7.6, '2.1-3.1'), (8, 54.0, '9.4-15.0'), (9, 25.9, '5.2-8.1'), (10, 6.3, '1.9-2.7'), (11, 14.7, '3.3-5.1'), (12, 88.6, '13.2-21.1')]], n='12')
             pg.evaluate("(f) => { localStorage.setItem('tengel.form', f); }", json.dumps(f, ensure_ascii=False)); pg.reload(); pg.wait_for_timeout(1400)
             card = pg.locator('#recCard')
+            rsv_lines(pg)      # 第4.233版：券種ごとの 行を 足してから 予約
             card.locator('[data-rsv=reserve]').click(); pg.wait_for_timeout(900)
             rid = pg.evaluate("(() => { const b = [...TengelLocal.mem.bets.values()].find(x => x.rsv && x.rsv.state === 'reserved'); return b ? b.id : null; })()")
             pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(500)

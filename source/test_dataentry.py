@@ -92,10 +92,20 @@ def rec_month(pg, m=10):
     if b.count() and b.get_attribute('aria-pressed') != 'true': b.click(); pg.wait_for_timeout(300)
 
 
+def rsv_lines(pg):
+    """第4.233版：買い目の 行が ない ときは、前の 版の はじめの 形（推奨ごとに 馬単・3着の ある 推奨は 3連単も）の 行を「＋券種」で 足す"""
+    card = pg.locator('#recCard')
+    if card.locator('.rline').count() or not card.locator('[data-k=radd]').count(): return
+    nz = pg.locator('#result ol.zones > li').count(); t3 = pg.locator('#result .zthird .zref').count() > 0
+    for t in ['馬単'] * nz + (['3連単'] * nz if t3 else []):
+        card.locator(f'[data-k=radd] button[data-v="{t}"]').click(); pg.wait_for_timeout(120)
+
+
 def save_result_app(pg, res, upay='', spay=''):
     """App Store版（第2弾）：判定画面で「買い目を予約」→ 記録タブの予約レースで着順を入れて「結果を保存」（マザーデータにも入れるは、はじめの入れ先のまま）"""
     card = pg.locator('#recCard')
     if card.locator('[data-rsv=redo]').count(): card.locator('[data-rsv=redo]').click(); pg.wait_for_timeout(200)
+    rsv_lines(pg)      # 第4.233版：券種ごとの 行を 足してから 予約
     card.locator('[data-rsv=reserve]').click(); pg.wait_for_timeout(900)
     rid = pg.evaluate("(() => { const b = [...TengelLocal.mem.bets.values()].find(x => x.rsv && x.rsv.state === 'reserved'); return b ? b.id : null; })()")
     pg.click('.tabbar button[data-tab=rec]'); pg.wait_for_timeout(500); rec_month(pg)
