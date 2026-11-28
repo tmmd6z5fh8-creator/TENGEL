@@ -8,6 +8,8 @@
 #   ⑤ 画像の いちばん 上に iPhone の 時計（11:58）・発走の 時刻なし・日付なし（入力は きょう）→ 時計を 発走に しない → 締切済みに しない … 前は 11:58 を 発走に して 締切済み
 #   ⑥ 前と 同じ：画像に 日付（10月1日）と 発走 09:00 → 締切済み（時刻）・「発売締切」→ 締切済み（言葉）
 #   ⑦「発売締切」で 締切済みに なった レースを「まもなく締切」の 画面で 読み直す（0P）→ 締切済みでは なくなる → 予約できる（締切済みレースの 記録は 予約に かわる）
+#   第4.241版：画像の 日付が あした 以降の レースは 言葉でも 締切済みに しない（まさちゃん 11/28 21:58）→ ⑥の 言葉と ⑦は きょう（10月1日・発走 18:05）の 画面で たしかめる
+#     （前は 10月14日 の 画面：いま〈10/01〉より 先の 日付）
 #   python3 test_v227.py
 import json, os, re, shutil, subprocess, time
 from playwright.sync_api import sync_playwright
@@ -136,14 +138,14 @@ try:
         # ⑥ 前と 同じ
         c6 = read(lines(6, date='10月1日(木)', start='09:00'))
         check(bool(c6['closed']) and c6['closed'].get('by') == 'time' and c6['date'] == '2026-10-01' and '締切済み' in c6['chips'] and c6['reserve'] == 0, '⑥画像に 日付（10月1日）と 発走 09:00 → 締切済み（時刻：前と 同じ）')
-        c6b = read(lines(5, extra=['発売締切']))
+        c6b = read(lines(5, date='10月1日(木)', extra=['発売締切']))
         check(bool(c6b['closed']) and c6b['closed'].get('by') == 'kw' and c6b['closed'].get('word') == '発売締切' and '画面に「発売締切」' in c6b['msg'] and c6b['reserve'] == 0
               and any(x['r'] == 5 and x['state'] == 'closed' for x in c6b['bets']), '⑥画面に「発売締切」→ 締切済み（言葉：前と 同じ）・締切済みレースに 入る')
-        c6c = read(lines(4, extra=['締切 まもなく発走']))
+        c6c = read(lines(4, date='10月1日(木)', extra=['締切 まもなく発走']))
         check(bool(c6c['closed']) and c6c['closed'].get('word') == '締切', '⑥「締切 まもなく発走」（締切の あと）→ 締切済み')
         # ⑦ 締切済みに なった 5R を「まもなく締切」の 画面で 読み直す
         tb = c6c['total']
-        c7 = read(lines(5, extra=['まもなく締切']))
+        c7 = read(lines(5, date='10月1日(木)', extra=['まもなく締切']))
         check(c7['r'] == '5' and c7['total'] == tb and open_ok(c7), f'⑦「発売締切」で 締切済みに なった 5R を「まもなく締切」で 読み直す（0P）→ 締切済みでは なくなる・「買い目を予約」が 出る（{c7["card"][:40]}…）')
         rsv_lines(pg)      # 第4.233版：券種ごとの 行を 足してから 予約
         pg.locator('#recCard [data-rsv=reserve]').click(); pg.wait_for_timeout(1000)
