@@ -375,7 +375,8 @@ const TCApp = (() => {
   //   Web の 欄は、押した ときの 決まりや 使い方（iPad の Swift Playgrounds・ペンシル）で キーボードが 出ない ことが ある（第4.62版の 数字の 欄と 同じ）
   const farmAsk = () => {
     const cur = farmName();
-    return { title: '🪧 牧場の名前', message: `看板に 書く 名前を 入れてね（${FARM_MAX}文字まで）`, text: cur, placeholder: FARM_DEF, max: FARM_MAX,
+    // 第4.236版：説明は 1行に（本物の iPhone の 窓で「（12文字まで）」が「12文 / 字まで）」に 折れて いた ＝ GitHub の Mac の 写真。12文字は 下の 行の「6/12文字」で わかる）
+    return { title: '🪧 牧場の名前', message: '看板に 書く 名前を 入れてね', text: cur, placeholder: FARM_DEF, max: FARM_MAX,
       empty: `空なら「${FARM_DEF}」になるよ`, ok: '決める', cancel: 'やめる', reset: cur === FARM_DEF ? '' : `「${FARM_DEF}」に もどす` };
   };
   let nmAsk = false;

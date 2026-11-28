@@ -127,7 +127,8 @@ try:
             boot(pg)
             pg.locator('#tcFab').click(); pg.wait_for_function(TC_OPEN, timeout=90000); pg.wait_for_timeout(1500)
             q = ask(pg, {'ok': True, 'text': 'まさちゃん牧場'})
-            want = {'title': '🪧 牧場の名前', 'message': '看板に 書く 名前を 入れてね（12文字まで）', 'text': 'テンゲル牧場', 'placeholder': 'テンゲル牧場', 'max': 12,
+            want = {'title': '🪧 牧場の名前', 'message': '看板に 書く 名前を 入れてね',      # 第4.236版：説明は 1行（12文字は 字の 数の 行で わかる）
+             'text': 'テンゲル牧場', 'placeholder': 'テンゲル牧場', 'max': 12,
                     'empty': '空なら「テンゲル牧場」になるよ', 'ok': '決める', 'cancel': 'やめる', 'reset': ''}
             check(q['n'] == 1 and q['last'] == want, f'④ 看板を 押すと iOS の 窓を 1回 たのむ：題「{q["last"] and q["last"]["title"]}」・いまの 名前・12文字・ボタン「決める」「やめる」・もどす ボタンは なし（いまが はじめの 名前）')
             check(q['txt'] == 'まさちゃん牧場' and q['saved'] == 'まさちゃん牧場' and q['name'] == 'まさちゃん牧場' and not q['dlg'] and '看板の 名前を「まさちゃん牧場」に したよ' in q['msg'] and q['msgOn']
