@@ -2212,16 +2212,18 @@ try:
         p9.click('.tabbar button[data-tab=judge]'); p9.wait_for_timeout(800)
         c4 = p9.evaluate(CL9)
         check(len(c4['bets']) == 0 and '締切済み' in c4['chips'] and c4['reserve'] == 0 and '締切済み' in c4['card'] and '入っているよ' not in c4['card'], '消した 後に 判定画面に 戻っても、入れ直さない（印と ※は そのまま・予約も できない）')
-        # ② 画面に「発売締切」（日付は 先の 10月14日）→ 言葉で 締切済み
-        p9.evaluate("window.__ocrLines = %s" % json.dumps([lines9(10, extra='発売締切')], ensure_ascii=False))
+        # ② 画面に「発売締切」（日付は きょう 10月1日・発走 18:05 の 前）→ 言葉で 締切済み
+        #   第4.241版（まさちゃん 11/28 21:58「一枚目の日付が翌日になってても、締め切り済みレースに登録されちゃう」）：画像の 日付が あした 以降の レースは 言葉でも 締切済みに しない
+        #   → 前の「先の 日付（10月14日）＋ 発売締切 → 締切済み」は 逆に なった（test_v241 で 見る）。ここは きょうの 画面で 言葉の 締切済みを 見る（③・読み直しも 同じ）
+        p9.evaluate("window.__ocrLines = %s" % json.dumps([lines9(10, date='10月1日(木)', extra='発売締切')], ensure_ascii=False))
         p9.set_input_files('#ocrFile', [os.path.join(OCR_DIR, 'a_tanfuku_waku.jpg')]); p9.wait_for_timeout(2600)
         c5 = p9.evaluate(CL9)
         print('   締切済み②:', {k: c5[k] for k in ('total', 'counted', 'chips', 'reserve', 'closed', 'date', 'start', 'bets')})
-        check(c5['total'] == 3400 and c5['r'] == '10' and c5['date'] == '2026-10-14' and bool(c5['closed']) and c5['closed']['by'] == 'kw' and c5['closed']['word'] == '発売締切' and '画面に「発売締切」' in c5['msg'] and '締切済み' in c5['chips'] and c5['reserve'] == 0
+        check(c5['total'] == 3400 and c5['r'] == '10' and c5['date'] == '2026-10-01' and bool(c5['closed']) and c5['closed']['by'] == 'kw' and c5['closed']['word'] == '発売締切' and '画面に「発売締切」' in c5['msg'] and '締切済み' in c5['chips'] and c5['reserve'] == 0
               and len(c5['bets']) == 1 and c5['bets'][0]['state'] == 'closed' and c5['bets'][0]['by'] == 'kw' and c5['bets'][0]['word'] == '発売締切' and c5['bets'][0]['r'] == 10 and c5['counted'] == 0,
-              f'画面に「発売締切」の ある 10R（10月14日・まだ 先）→ 800P は 使う（残り {c5["total"]}P）・「画面に「発売締切」」で 締切済み → 締切済みレースに 入る（{c5["closed"]}）')
+              f'画面に「発売締切」の ある 10R（10月1日・発走 18:05 の 前）→ 800P は 使う（残り {c5["total"]}P）・「画面に「発売締切」」で 締切済み → 締切済みレースに 入る（{c5["closed"]}）')
         # ③「締切 18:03」（締切の 時刻の 表示）は 締切済みに しない → ふつうに 予約できる・ミッションに 数える
-        p9.evaluate("window.__ocrLines = %s" % json.dumps([lines9(11, extra='締切 18:03')], ensure_ascii=False))
+        p9.evaluate("window.__ocrLines = %s" % json.dumps([lines9(11, date='10月1日(木)', extra='締切 18:03')], ensure_ascii=False))
         p9.set_input_files('#ocrFile', [os.path.join(OCR_DIR, 'a_tanfuku_waku.jpg')]); p9.wait_for_timeout(2600)
         c6 = p9.evaluate(CL9)
         check(c6['total'] == 2600 and c6['r'] == '11' and c6['closed'] is None and '締切済み' not in c6['chips'] and '締切済み' not in c6['msg'] and c6['hp'] >= 1 and p9.locator('#recCard [data-rsv=reserve]').count() == 1 and len(c6['bets']) == 1,
@@ -2237,7 +2239,7 @@ try:
         p9.locator('#recList .rsvtop details[data-k=closed] summary').click(); p9.wait_for_timeout(300)
         p9.screenshot(path=os.path.join(W, 't4', 'native_closed_rec.png'), full_page=False)
         p9.click('.tabbar button[data-tab=judge]'); p9.wait_for_timeout(500)
-        p9.evaluate("window.__ocrLines = %s" % json.dumps([lines9(10, extra='発売締切')], ensure_ascii=False))
+        p9.evaluate("window.__ocrLines = %s" % json.dumps([lines9(10, date='10月1日(木)', extra='発売締切')], ensure_ascii=False))
         p9.set_input_files('#ocrFile', [os.path.join(OCR_DIR, 'a_tanfuku_waku.jpg')]); p9.wait_for_timeout(2200)
         c8 = p9.evaluate(CL9)
         check(c8['total'] == 2600 and c8['r'] == '10' and '0P' in c8['msg'] and '締切済み' in c8['chips'] and len(c8['bets']) == 2, '締切済みの 10R を 読み直しても 0P（同じ レース）・締切済みの まま')
