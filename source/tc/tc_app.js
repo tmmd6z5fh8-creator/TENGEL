@@ -104,8 +104,9 @@ const TCApp = (() => {
   //   フィールドの すぐ 上の 帯（.tcwr の 中・フィールドの 外）に 木の 看板（まさちゃんの 絵 tc_sign.webp：kisekae/tc/sign_asset.py）と 牧場の 名前（字で 書く）。
   //   名前は st.farm（空なら FARM_DEF＝はじめの 名前）。看板を 押すと 名前を 打ちこむ 窓（FARM_MAX 文字 まで・「テンゲル牧場」に もどせる）：
   //   窓は 画面の 中の 窓（#tcnmd：nameDialog）。第4.235版〜第4.236版は アプリの 中だけ iOS の 窓（UIAlertController）に して いたが、第4.237版で もどした：
-  //   iPadOS 27 の Swift Playgrounds で 動かした アプリは、iOS の 窓でも キーボードが 出ない（Apple の 不具合）。キーボードが 出ない ときは アプリの 中の
-  //   かなキーボード（kanapad.js：欄の data-kana）が 下に 出る（App Store版だけ・テンキーと 同じ 決まり）。
+  //   iPadOS 27 の Swift Playgrounds で 動かした アプリは、iOS の 窓でも キーボードが 出ない（Apple の 不具合）。第4.237版〜第4.241版は キーボードが 出ない ときに
+  //   アプリの 中の かなキーボード（kanapad.js）を 出して いたが、第4.242版で なくした（まさちゃん 2026/11/29 00:03「牧場の名前普通に打てるからキーボード消して！」：
+  //   TestFlight・App Store から 入れた アプリでは iPhone の キーボードで 打てる）。欄は ふつうの 文字の 欄（data-kana なし）・⌨️ ボタンと 注意の 字も なし。
   //   名前は この 端末の 中 だけ（トレーニングセンターの ほかの データと 同じ localStorage）。字は 端末の 明朝（打ちこんだ どの 漢字も 出る：しぼった 字では ない）。
   //   長い 名前は 字を 小さく して 板の 中に おさめる（fitName）。帯が たりない 画面（iPhone SE など）は フィールドを 少し 小さく する（layout）
   const FARM_DEF = 'テンゲル牧場', FARM_MAX = 12;
@@ -266,7 +267,6 @@ const TCApp = (() => {
 #tcOv .tcnmi{display:block;font-family:"Hiragino Mincho ProN","Hiragino Mincho Pro","YuMincho","Yu Mincho","Noto Serif JP","Noto Serif CJK JP",serif;font-weight:700;font-size:24px;line-height:1.1;letter-spacing:.06em;text-indent:.06em;color:#4a250c;text-shadow:0 1px 0 rgba(255,241,214,.8),0 -1px 0 rgba(96,44,8,.25)}
 #tcnmd{position:absolute;inset:0;z-index:60;display:none;align-items:flex-start;justify-content:center;box-sizing:border-box;padding-top:calc(env(safe-area-inset-top) + 72px);touch-action:manipulation;font-family:"BIZ UDPGothic","Hiragino Sans",sans-serif}
 #tcnmd.on{display:flex}
-html.kanapadon #tcnmd{padding-top:calc(env(safe-area-inset-top) + 12px)}
 #tcnmd .nbk{position:absolute;inset:0;background:rgba(30,18,6,.55)}
 #tcnmd .nsh{position:relative;width:calc(100% - 28px);max-width:380px;background:#fff8ec;border-radius:18px;box-shadow:0 6px 18px rgba(0,0,0,.35);overflow:hidden}
 #tcnmd .nhd{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px 6px 14px;background:linear-gradient(#f6e3bf,#efd6a8);border-bottom:2px solid #e2c48e}
@@ -274,16 +274,11 @@ html.kanapadon #tcnmd{padding-top:calc(env(safe-area-inset-top) + 12px)}
 #tcnmd .nx{flex:none;width:34px;height:34px;border-radius:50%;background:#fff8ec;border:2px solid #d9b77c;color:#8a5a2a;font:400 17px/1 "BIZ UDPGothic","Hiragino Sans",sans-serif;padding:0}
 #tcnmd .nbd{padding:11px 14px 14px}
 #tcnmd .nhint{margin:0 0 8px;font-size:13px;line-height:1.5;color:#7a5a3a}
-#tcnmd .nnote{display:none;margin:-4px 0 8px;font-size:12px;line-height:1.5;color:#b0445f;font-weight:700;word-break:keep-all;overflow-wrap:anywhere}
-html.kanapadon #tcnmd .nnote{display:block}
 #tcnmd .nin{display:block;width:100%;box-sizing:border-box;height:48px;border-radius:12px;border:2px solid #d9b77c;background:#fffdf7;padding:0 12px;margin:0;font:700 20px/1.2 "Hiragino Mincho ProN","Hiragino Mincho Pro","YuMincho","Yu Mincho","Noto Serif JP","Noto Serif CJK JP",serif;color:#4a250c;-webkit-user-select:text;user-select:text;touch-action:manipulation;-webkit-appearance:none;appearance:none}
 #tcnmd .nin:focus{outline:none;border-color:#c2456f}
 #tcnmd .ncnt{min-height:17px;margin:4px 2px 0;font-size:12px;line-height:17px;color:#9a7a55;text-align:right}
 #tcnmd .ncnt.ng{color:#b0445f;font-weight:700}
 #tcnmd .nrw{display:flex;align-items:center;justify-content:space-between;gap:8px}
-#tcnmd .nkb{flex:none;height:28px;margin:2px 0 0;padding:0 10px;border-radius:14px;border:2px solid #d9b77c;background:#fffdf7;color:#7a4520;font:700 12px/1 "BIZ UDPGothic","Hiragino Sans",sans-serif;white-space:nowrap;-webkit-tap-highlight-color:transparent}
-#tcnmd .nkb[hidden]{display:none}
-#tcnmd .nkb.on{background:#161F3D;color:#FFE6A8;border-color:#E2A23B}
 #tcnmd .ndef{display:inline-block;margin:2px 0 0;padding:4px 2px;border:0;background:none;color:#8a5a2a;font:700 12.5px/1.4 "BIZ UDPGothic","Hiragino Sans",sans-serif;text-decoration:underline;-webkit-tap-highlight-color:transparent}
 #tcnmd .nbtn{display:flex;gap:8px;margin-top:10px}
 #tcnmd .nb{flex:1 1 0;min-width:0;height:42px;border-radius:21px;border:0;padding:0 10px;font:700 15px/1 "BIZ UDPGothic","Hiragino Sans",sans-serif;white-space:nowrap;-webkit-tap-highlight-color:transparent}
@@ -381,7 +376,7 @@ html.kanapadon #tcnmd .nnote{display:block}
   // 第4.237版（まさちゃん 2026/11/28 12:33「牧場の名前やっぱり打てないよ！」：iPad の テスト版の 写真で、第4.235版の iOS の 窓の 欄に カーソルは
   //   あるのに キーボードが 出て いない）：iPadOS 27 の Swift Playgrounds で 動かした アプリでは 文字の 欄を 押しても キーボードが 出ない（Apple の 不具合：
   //   Apple の 見本の アプリでも 同じ・まだ 直って いない）。iOS の 窓（TengelNative.call('prompt')）を やめて、画面の 中の 窓に もどし、
-  //   キーボードが 出ない ときは アプリの 中の かなキーボード（kanapad.js）で 打つ。TestFlight・App Store から 入れた アプリでは ふつうの キーボードが 出る
+  //   第4.242版：アプリの 中の かなキーボードは なくした（TestFlight・App Store から 入れた アプリでは ふつうの キーボードで 打つ）
   function nameOpen() {
     if (!ov) return;
     nameDialog();
@@ -398,10 +393,8 @@ html.kanapadon #tcnmd .nnote{display:block}
       nmd = document.createElement('div'); nmd.id = 'tcnmd'; nmd.setAttribute('role', 'dialog'); nmd.setAttribute('aria-modal', 'true'); nmd.setAttribute('aria-label', '牧場の名前');
       nmd.innerHTML = `<div class="nbk" data-nm="no"></div><div class="nsh"><div class="nhd"><b>🪧 牧場の名前</b><button type="button" class="nx" data-nm="no" aria-label="閉じる">✕</button></div>`
         + `<div class="nbd"><p class="nhint">看板に 書く 名前を 入れてね（${FARM_MAX}文字まで）</p>`
-        + `<p class="nnote">※かなキーボードの 漢字は 牧場に 関係する 字 だけ だよ。カタカナや ローマ字でも 名前を 決めてね！</p>`      // 第4.238版：かなキーボードが 出て いる ときだけ（変換は できない）
-        + `<input class="nin" type="text" data-kana="1" enterkeyhint="done" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" maxlength="${FARM_MAX * 4}" placeholder="${FARM_DEF}" aria-label="牧場の名前">`
-        + `<div class="ncnt" aria-live="polite"></div><div class="nrw"><button type="button" class="ndef" data-nm="def">「${FARM_DEF}」に もどす</button>`
-        + `<button type="button" class="nkb" data-nm="kb" aria-label="かなキーボードを 出す・しまう" hidden>⌨️ かなキーボード</button></div>`
+        + `<input class="nin" type="text" enterkeyhint="done" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" maxlength="${FARM_MAX * 4}" placeholder="${FARM_DEF}" aria-label="牧場の名前">`
+        + `<div class="ncnt" aria-live="polite"></div><div class="nrw"><button type="button" class="ndef" data-nm="def">「${FARM_DEF}」に もどす</button></div>`
         + `<div class="nbtn"><button type="button" class="nb no" data-nm="no">やめる</button><button type="button" class="nb go" data-nm="ok">決める</button></div></div></div>`;
       ov.appendChild(nmd);
       const inp = nmd.querySelector('.nin');
@@ -412,16 +405,9 @@ html.kanapadon #tcnmd .nnote{display:block}
         const k = b.dataset.nm;
         if (k === 'no') nameClose(); else if (k === 'ok') nameOk();
         else if (k === 'def') { inp.value = FARM_DEF; nameCount(); try { inp.focus(); } catch (x) { /* なし */ } }
-        else if (k === 'kb' && window.TengelKana) {      // 第4.237版：かなキーボードを 手で 出す・しまう（キーボードが 出ないのに 出て こない とき の 予備）
-          try { inp.focus({ preventScroll: true }); } catch (x) { /* なし */ }
-          if (TengelKana.state().open) TengelKana.hide(); else TengelKana.show(inp, true);
-        }
       });
-      document.addEventListener('tengel:kanapad', () => { const kb = nmd.querySelector('.nkb'); if (kb) kb.classList.toggle('on', !!(window.TengelKana && TengelKana.state().open)); });
-      ['pointerdown', 'mousedown'].forEach(t => nmd.querySelector('.nkb').addEventListener(t, e => e.preventDefault()));      // 押しても 名前の 欄から フォーカスが 外れない（かなキーボードと 同じ）
     }
     const inp = nmd.querySelector('.nin'); inp.value = farmName(); nameCount();
-    nmd.querySelector('.nkb').hidden = !window.TengelKana;      // かなキーボードの ボタンは App Store版の アプリ だけ
     nmd.classList.add('on'); nmAt = performance.now();
     try { inp.focus(); inp.select(); } catch (e) { /* なし */ }      // 押した その 場で（iPhone の キーボードは 押した 時の 中で ないと 出ない）
   }

@@ -902,40 +902,7 @@
       out.names = Object.getOwnPropertyNames(CanvasRenderingContext2D.prototype).length;
       return out;
     });
-    // 第4.237版：かなキーボード（kanapad.js）。文字の 欄（data-kana）で キーボードが 出ない とき に 出る 50音の キーボード（牧場の 名前：
-    //   iPadOS 27 の Swift Playgrounds で 動かした アプリは、iOS の 窓でも キーボードが 出ない ＝ 第4.235版の iOS の 窓は やめた）。
-    //   スクリプトの focus() では キーボードは 出ない ので、ここでは 出る はず（テンキーと 同じ）。トレーニングセンターの 絵は この ビルドに ない ので、
-    //   牧場の 名前と 同じ 形の 欄（data-kana・aria-label「牧場の名前」・48字まで・はじめは ぜんぶ 選んだ まま）を 画面に 1つ 置いて 打つ
-    await step(R, 'kanaPad', async function () {
-      var marked = false, f = null;      // スクショの 合図は どの 道でも 1回（run.sh の P1 に kana-pad：合図が ないと CI が 90秒 待って 止まる）
-      try {
-        if (!window.TengelKana) return { api: false };
-        window.scrollTo(0, 0); await sleep(200);
-        f = document.createElement('input'); f.type = 'text'; f.setAttribute('data-kana', '1'); f.setAttribute('aria-label', '牧場の名前'); f.maxLength = 48; f.value = 'テンゲル牧場';
-        f.style.cssText = 'position:fixed;left:16px;right:16px;top:calc(var(--sat,0px) + 96px);z-index:96;height:48px;box-sizing:border-box;border:2px solid #d9b77c;border-radius:12px;background:#fffdf7;padding:0 12px;margin:0;font:700 20px/1.2 serif;color:#4a250c';
-        document.body.appendChild(f);
-        f.focus(); f.select();
-        await sleep(300); var early = TengelKana.state().open;
-        await sleep(900);
-        var s1 = TengelKana.state(), out = { api: true, early: early, shown: s1.open, target: s1.target, kb: s1.kb, hw: s1.hw, mode0: s1.mode, active: document.activeElement === f };
-        var K = function (k) { var b = document.querySelector('#kanaPad button[data-k="' + k + '"]'); if (b) b.click(); return !!b; };
-        out.keys = ['m:k', 'c:ヘ', 'f:hd', 'c:カ', 'f:dk', 'c:サ', 'c:ス', 'm:j', 'c:牧', 'c:場'].filter(K).length;
-        out.v1 = f.value;                                                   // ペガサス牧場（ぜんぶ 選んだ 所に 上書き・゜ ゛ は 前の 字に）
-        K('f:left'); K('f:left'); K('m:h'); K('c:の'); out.v2 = f.value;   // ペガサスの牧場（◀ ◀ で 牧 の 前へ）
-        var pb = document.querySelector('#kanaPad'); if (pb) { var r = pb.getBoundingClientRect(); out.box = { top: Math.round(r.top), h: Math.round(r.height), bottom: Math.round(innerHeight - r.bottom), w: Math.round(r.width) }; }
-        out.cells = document.querySelectorAll('#kanaPad .kpg > *').length; out.mode1 = TengelKana.state().mode; out.activeAfter = document.activeElement === f;
-        marked = true; await mark('kana-pad');
-        // スクショの あと：小（ョ → ヨ）・⌫・英字の 大／小・クリア・完了
-        f.setSelectionRange(f.value.length, f.value.length);
-        K('m:k'); K('c:ヨ'); K('f:sm'); out.v3 = f.value; K('f:sm'); out.v4 = f.value; K('f:bs'); out.v5 = f.value;
-        K('m:a'); K('c:A'); K('f:sm'); out.v6 = f.value; K('f:clr'); out.v7 = f.value;
-        K('f:done'); await sleep(150); out.closed = !TengelKana.state().open; out.blurred = document.activeElement !== f;
-        return out;
-      } finally {
-        if (f && f.parentNode) { try { f.blur(); } catch (e) { /* なし */ } f.parentNode.removeChild(f); }
-        if (!marked) await mark('kana-pad');
-      }
-    });
+    // 第4.242版：かなキーボードの たしかめ（第4.237版）は やめた：かなキーボードは アプリから 外した（まさちゃん 11/29 00:03「牧場の名前普通に打てるからキーボード消して！」）
     // 第4.238版：アプリが うしろに 行く ときの 音（電源を 切ると「ビヨーン」）：アプリの 知らせ audio（why: resign）で 鳴って いる 音の 出口を すぐ 止める（suspend）・
     //   とぎれが おわった 知らせ（interruption）では 起こさない・active で 起こす（fx.js の TengelAudioWake：本物の iOS の WebKit の AudioContext で たしかめる）
     await step(R, 'audioQuiet', async function () {

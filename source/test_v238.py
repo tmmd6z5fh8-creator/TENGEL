@@ -1,15 +1,12 @@
 # 第4.238版の テスト（まさちゃん 2026/11/28 14:46「漢字は、ひらがな打って変換させることはできない？ 種類が固定されてるよね！
 #   あと牧場の名前変えてる時に電源落とすとまた、ビヨーンて変な音なってる！ 漢字の変換ができないなら、漢字は牧場に関連する漢字だけいれて！
 #   注意事項にカタカナがローマ字で名前も決めてね！みたいな感じで入れて！」）
-#   ① かなキーボードの 漢字は 牧場に 関係する 50字（牧場・馬・草原・山や森・空と 方角）・上の 字「牧場の 漢字（変換は できないよ）」・前の 字（金 銀 竜 虎 …）は ない
-#   ② 牧場の 名前の 窓：かなキーボードが 出て いる ときだけ「※かなキーボードの 漢字は 牧場に 関係する 字 だけ だよ。カタカナや ローマ字でも 名前を 決めてね！」
-#      （iPhone SE 375×667 でも 窓と キーボードが 重ならない・しまうと 消える）
+#   ①② かなキーボードの 漢字・注意の 字 は 第4.242版で なくした（かなキーボードを アプリから 外した：まさちゃん 11/29 00:03「牧場の名前普通に打てるからキーボード消して！」）
 #   ③ 電源を 切る ときの 音：アプリ（iOS）の 知らせ audio（why: resign：willResignActive）・画面が かくれた・pagehide で、鳴って いる 出口を すぐ 止める（suspend）
 #      ・止めて いる 間は とぎれが おわった 知らせ（interruption）で 起こさない・active／画面が 見えた／さわった で 起こす
 #      ・トレーニングセンター：resign で すぐ 止まる・active で 同じ 音の まま つづく・画面が かくれたら 0.06秒で 止まる（前は 0.3秒 あと）・見えたら また 鳴る
 #   ④ アプリ（Swift）：willResignActive → audio（resign）・とぎれが おわった 知らせは アプリが 前に いる ときだけ 起こす
 #   ⑤ GitHub の Mac の たしかめ（selftest.js の audioQuiet・run.sh の AUDPY の 行）
-#   ⑥ 写真：t4/v238_kana_note.png
 #   python3 test_v238.py
 import json, os, re, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -26,17 +23,6 @@ def check(c, label):
 
 
 nocom = lambda s: re.sub(r'(?m)^\s*//.*$', '', s)
-kp = open('kanapad.js', encoding='utf8').read(); kpc = nocom(kp)
-FARM = ['牧場農園厩舎畑柵小屋', '馬駒仔母種名愛若蹄鞍', '草原野丘高平地田里村', '山川森林谷沢泉湖木花', '大空風星月日北南東西']
-OLD = '金銀白黒赤青緑紅桜竜虎鷹幸福勝夢王神光雷新号第海島'
-jrow = re.search(r"j: \[([^\]]+)\]\.map\(row\)", kpc).group(1)
-check(re.findall(r"'([^']+)'", jrow) == FARM and len(set(''.join(FARM))) == 50 and not [c for c in OLD if c in jrow]
-      and "j: '牧場の 漢字（変換は できないよ）'" in kpc and "['j', '漢', '牧場の 漢字']" in kpc,
-      f'① 漢字の 表は 牧場に 関係する 50字（{" / ".join(FARM)}）・前の 字（{OLD[:8]}…）は ない・上の 字「牧場の 漢字（変換は できないよ）」')
-tc = open(os.path.join('tc', 'tc_app.js'), encoding='utf8').read()
-NOTE = '※かなキーボードの 漢字は 牧場に 関係する 字 だけ だよ。カタカナや ローマ字でも 名前を 決めてね！'
-check(f'<p class="nnote">{NOTE}</p>' in tc and '#tcnmd .nnote{display:none;' in tc and 'html.kanapadon #tcnmd .nnote{display:block}' in tc,
-      '② 牧場の 名前の 窓に 注意の 字（かなキーボードが 出て いる ときだけ）')
 fx = open('fx.js', encoding='utf8').read(); fxc = nocom(fx)
 check('function quiet() {' in fxc and "if (document.hidden) { hid = true; quiet(); return; }" in fxc and "window.addEventListener('pagehide', quiet);" in fxc
       and "if (why === 'resign') quiet(); else if (why === 'interruption' && hushed) return; else wake();" in fxc and 'wake, quiet,' in fxc,
@@ -132,21 +118,7 @@ try:
                     pg.evaluate("() => { delete document.hidden; }")
                     check(t3['st'] == 'suspended' and t3['bed'] is None and t4['st'] == 'running' and bool(t4['bed']),
                           f'③ トレーニングセンター：画面が かくれたら 0.06秒で 止まる（{t3["st"]}：前は 0.3秒 あと）・見えたら また 鳴る（{t4["bed"]}）')
-                # ---- ② 注意の 字
-                pg.locator('#tcOv .tcnm').click(); pg.wait_for_timeout(950)
-                pg.locator('#kanaPad button[data-k="m:j"]').tap(); pg.wait_for_timeout(100)
-                N = """() => { const n = document.querySelector('#tcnmd .nnote'), s = document.querySelector('#tcnmd .nsh').getBoundingClientRect(), p = document.querySelector('#kanaPad').getBoundingClientRect(),
-                  ok = document.querySelector('#tcnmd [data-nm=ok]').getBoundingClientRect(), hit = document.elementFromPoint(ok.left + ok.width / 2, ok.top + ok.height / 2);
-                  return { pad: TengelKana.state().open, vis: getComputedStyle(n).display !== 'none' && n.getBoundingClientRect().height > 0, txt: n.textContent, bottom: Math.round(s.bottom), padTop: Math.round(p.top),
-                    okHit: !!hit && !!hit.closest('[data-nm=ok]'), head: document.querySelector('#kanaPad .kpt').textContent }; }"""
-                n1 = pg.evaluate(N)
-                if tag == 'iphone': pg.screenshot(path=os.path.join(SHOT, 'v238_kana_note.png'))
-                pg.locator('#tcnmd .nkb').tap(); pg.wait_for_timeout(150)
-                n2 = pg.evaluate("() => ({ pad: TengelKana.state().open, vis: getComputedStyle(document.querySelector('#tcnmd .nnote')).display !== 'none' })")
-                pg.locator('#tcnmd .nb[data-nm=no]').tap(); pg.wait_for_timeout(250)
-                check(n1['pad'] and n1['vis'] and n1['txt'] == NOTE and n1['bottom'] < n1['padTop'] and n1['okHit'] and n1['head'] == '牧場の 漢字（変換は できないよ）' and not n2['pad'] and not n2['vis'],
-                      f'② {vw}×{vh}：かなキーボードが 出て いる ときだけ 注意の 字・窓（〜{n1["bottom"]}px）と キーボード（{n1["padTop"]}px〜）は 重ならない・「決める」が 押せる・しまうと 消える')
-                check(not e2, f'②③ {tag}：エラー なし {e2[:2]}')
+                check(not e2, f'③ {tag}：エラー なし {e2[:2]}')
                 c2.close()
             b2r.close()
 finally:
@@ -156,7 +128,7 @@ shutil.rmtree(SRV, ignore_errors=True)
 # ---- ⑤ GitHub の Mac
 st = open(os.path.join(W, 'ios', 'ci', 'selftest.js'), encoding='utf8').read(); rs = open(os.path.join(W, 'ios', 'ci', 'run.sh'), encoding='utf8').read()
 check("step(R, 'audioQuiet'" in st and "window.__nativeEvent('audio', { why: 'resign' })" in st and "window.__nativeEvent('audio', { why: 'interruption' })" in st and "window.__nativeEvent('audio', { why: 'active' })" in st
-      and st.index("step(R, 'kanaPad'") < st.index("step(R, 'audioQuiet'") < st.index("report('1', R);"),
+      and st.index("step(R, 'audioQuiet'") < st.index("report('1', R);"),
       '⑤ selftest.js：audioQuiet（resign → interruption → active：本物の iOS の WebKit の 出口で）・report-1 の 前')
 check('AUDPY=' in rs and 'audio quiet: $(python3 -c "$AUDPY"' in rs and 'audio quiet (ipad): $(python3 -c "$AUDPY"' in rs, '⑤ run.sh：audio quiet の 行（iPhone・iPad）')
 pya = re.search(r"\nAUDPY='\n(.*?)\n'\n", rs, re.S).group(1)

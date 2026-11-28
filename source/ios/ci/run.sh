@@ -171,20 +171,6 @@ ok = o.get("have") is True and o.get("ok0") is True and o.get("ok1") is True and
      and (o.get("px") or 0) > 0.05 and len(rd) == 3 and rd[0] == 2 and rd[1] == 0.375 and rd[2] == 32
 print("have %s ok %s/%s frames %s drawn %s same %s hidden %s forced %s different %s (compared %s) ref-diff %s filled %s reads %s names %s -> %s" % (o.get("have"), o.get("ok0"), o.get("ok1"), s.get("frames"), s.get("drawn"), s.get("same"), s.get("hidden"), s.get("forced"), s.get("bad"), o.get("checks"), o.get("diff"), o.get("px"), rd, o.get("names"), "OK" if ok else "CHECK " + json.dumps(o, ensure_ascii=False)[:400]))
 '
-# 第4.237版：かなキーボード（kanapad.js：文字の 欄で キーボードが 出ない とき の 50音の キーボード：牧場の 名前。iPadOS 27 の Swift Playgrounds で
-#   動かした アプリは キーボードが 出ない ＝ 第4.235版の iOS の 窓は やめた）。0.3秒では まだ 出ない・1.2秒で 出る・ア ヘ゜カ゛サス 漢 牧場 → ペガサス牧場（ぜんぶ 選んだ 所に 上書き）・
-#   ◀◀ あ の → ペガサスの牧場・小（ョ → ヨ）・⌫・英字の 大／小・クリア・完了で しまう・欄の フォーカスは 外れない・画面の 下に つく
-KANAPY='
-import json, sys
-o = json.load(open(sys.argv[1])).get("kanaPad") or {}; b = o.get("box") or {}
-ok = o.get("api") is True and o.get("early") is False and o.get("shown") is True and o.get("target") == "牧場の名前" and o.get("active") is True and o.get("activeAfter") is True \
-     and o.get("keys") == 10 and o.get("v1") == "ペガサス牧場" and o.get("v2") == "ペガサスの牧場" and o.get("v3") == "ペガサスの牧場ョ" and o.get("v4") == "ペガサスの牧場ヨ" \
-     and o.get("v5") == "ペガサスの牧場" and o.get("v6") == "ペガサスの牧場a" and o.get("v7") == "" and o.get("closed") is True and o.get("blurred") is True \
-     and o.get("cells") == 67 and o.get("mode1") == "h" and b.get("bottom") == 0 and (b.get("h") or 0) > 250
-print("shown %s (0.3s %s) target %s kb %s keys %s -> %s / %s small %s %s bs %s case %s clear %r done %s cells %s box %s -> %s" % (o.get("shown"), o.get("early"), o.get("target"), o.get("kb"),
-      o.get("keys"), o.get("v1"), o.get("v2"), o.get("v3"), o.get("v4"), o.get("v5"), o.get("v6"), o.get("v7"), o.get("closed"), o.get("cells"), b,
-      "OK" if ok else "CHECK " + json.dumps(o, ensure_ascii=False)[:500]))
-'
 # 第4.238版：アプリが うしろに 行く ときの 音（電源を 切ると「ビヨーン」）：resign で 鳴って いる 出口を すぐ 止める・interruption では 起こさない・active で 起こす
 AUDPY='
 import json, sys
@@ -254,7 +240,7 @@ phase() {
 }
 applog() { xcrun simctl spawn "$1" log show --last 15m --style compact --predicate 'process CONTAINS "テンゲル" OR (process CONTAINS "WebContent" AND eventMessage CONTAINS[c] "error")' 2>/dev/null | tail -400 > "$OUT/$2-log.txt"; }
 
-P1="gate-first main rsv-ov fx-push fx-board fx-fz-push fx-fz-result fx-sgd-still fx-sd fx-sd-board fx-gk fx-gk-board board-carry board-carry-slip board-carry-miss ks-judge ks-push ks-board ks-set ks-conf ks-sb-light ks-tengel ks-pack ks-pack-wall ks-news points unlock-conf fab-marks plan-soon settings backup about rec numpad manual-ov manual-ov-item cb-toy cb-menu cb-game cb-end kana-pad report-1 manual manual-item report-manual back report-back"
+P1="gate-first main rsv-ov fx-push fx-board fx-fz-push fx-fz-result fx-sgd-still fx-sd fx-sd-board fx-gk fx-gk-board board-carry board-carry-slip board-carry-miss ks-judge ks-push ks-board ks-set ks-conf ks-sb-light ks-tengel ks-pack ks-pack-wall ks-news points unlock-conf fab-marks plan-soon settings backup about rec numpad manual-ov manual-ov-item cb-toy cb-menu cb-game cb-end report-1 manual manual-item report-manual back report-back"
 # 4) iPhone
 if [ -n "$IPHONE" ]; then
   xcrun simctl boot "$IPHONE" > /dev/null 2>&1; xcrun simctl bootstatus "$IPHONE" -b > /dev/null 2>&1
@@ -382,7 +368,6 @@ print("item %s name %s/%s 1-line %s go %s now %s text %s closed %s points-same %
 ' "$OUT/iphone-report-1.json" 2>&1)"
   [ -f "$OUT/iphone-report-1.json" ] && say "   fab marks: $(python3 -c "$V221PY" "$OUT/iphone-report-1.json" 2>&1)"
   [ -f "$OUT/iphone-report-1.json" ] && say "   care recorder: $(python3 -c "$RECPY" "$OUT/iphone-report-1.json" 2>&1)"
-  [ -f "$OUT/iphone-report-1.json" ] && say "   kana pad: $(python3 -c "$KANAPY" "$OUT/iphone-report-1.json" 2>&1)"
   [ -f "$OUT/iphone-report-1.json" ] && say "   audio quiet: $(python3 -c "$AUDPY" "$OUT/iphone-report-1.json" 2>&1)"
   [ -f "$OUT/iphone-report-1.json" ] && say "   fab hide: $(python3 -c "$FABPY" "$OUT/iphone-report-1.json" 2>&1)"
   phase "$IPHONE" iphone 2 700 report-2
@@ -449,7 +434,6 @@ if [ -n "$IPAD" ]; then
   phase "$IPAD" ipad 1 1000 $P1
   [ -f "$OUT/ipad-report-1.json" ] && say "   card battle (ipad): $(python3 -c "$CBPY" "$OUT/ipad-report-1.json" 2>&1)"
   [ -f "$OUT/ipad-report-1.json" ] && say "   care recorder (ipad): $(python3 -c "$RECPY" "$OUT/ipad-report-1.json" 2>&1)"
-  [ -f "$OUT/ipad-report-1.json" ] && say "   kana pad (ipad): $(python3 -c "$KANAPY" "$OUT/ipad-report-1.json" 2>&1)"
   [ -f "$OUT/ipad-report-1.json" ] && say "   audio quiet (ipad): $(python3 -c "$AUDPY" "$OUT/ipad-report-1.json" 2>&1)"
   [ -f "$OUT/ipad-report-1.json" ] && say "   fab hide (ipad): $(python3 -c "$FABPY" "$OUT/ipad-report-1.json" 2>&1)"
   [ -f "$OUT/ipad-report-1.json" ] && say "   fab marks (ipad): $(python3 -c "$V221PY" "$OUT/ipad-report-1.json" 2>&1)"
