@@ -1,0 +1,124 @@
+{
+ "phase": 2,
+ "device": "iphone",
+ "basic": {
+  "href": "tengel://localhost/index.html",
+  "secure": true,
+  "native": true,
+  "info": {
+   "device": "phone",
+   "version": "1.0",
+   "build": "20261129.4"
+  },
+  "bridge": true,
+  "memOnly": "",
+  "races": 290,
+  "bets": 1,
+  "sw": false,
+  "ls": true,
+  "clipboard": true,
+  "ver": "",
+  "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+  "w": 402,
+  "h": 812,
+  "dpr": 3,
+  "dark": false,
+  "safeTop": "0px",
+  "safeBottom": "34px"
+ },
+ "persist": {
+  "bets": 1,
+  "ids": [
+   "20261010-v-08"
+  ],
+  "form": true
+ },
+ "wallet": {
+  "total": 5500,
+  "balance": {
+   "total": 5500,
+   "paid_sub": 0,
+   "paid_pack": 0,
+   "free": 5500,
+   "lots": [],
+   "lost": 0,
+   "nextExpire": null,
+   "paidIn": 0,
+   "freeIn": 5500,
+   "used": {
+    "paid_sub": 0,
+    "paid_pack": 0,
+    "free": 0
+   }
+  },
+  "events": [
+   "gift-first:5000",
+   "login-2026-11-28:500",
+   "unlock-toy:cb:0"
+  ],
+  "counted": 0,
+  "gift": {
+   "ok": false,
+   "error": "error:-34018"
+  },
+  "zoom": {
+   "zoom": 1,
+   "pinch": true
+  },
+  "viewport": "width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=3",
+  "gate": "splash"
+ },
+ "clock": {
+  "a": {
+   "wall": 1795891695385.977,
+   "mono": 1266901.4897916664,
+   "proc": "BE633618-687A-44CA-A471-23949290463E",
+   "boot": "FD264345-99DA-437F-8D7D-E9755A62FEC7",
+   "dev": ""
+  },
+  "b": {
+   "wall": 1795891695790.002,
+   "mono": 1267305.5158333334,
+   "proc": "BE633618-687A-44CA-A471-23949290463E",
+   "boot": "FD264345-99DA-437F-8D7D-E9755A62FEC7",
+   "dev": ""
+  },
+  "js": [
+   1795891695385,
+   1795891695386
+  ],
+  "has": true,
+  "how": "ok",
+  "st": {
+   "v": 1,
+   "dev": "",
+   "boot": "FD264345-99DA-437F-8D7D-E9755A62FEC7",
+   "proc": "BE633618-687A-44CA-A471-23949290463E",
+   "mono": 1267549.4889583332,
+   "t": 1795891696541.808,
+   "tB": 1795890797588.7126,
+   "mB": 368596.3935416666,
+   "hi": 1795891696541.808,
+   "u": 0,
+   "nv": 1795890797588.7126
+  },
+  "diff": 508,
+  "net": {
+   "mono": 1267424.2193541664,
+   "rt": 234.1066250000149,
+   "why": "",
+   "t": 1795891696500,
+   "ok": true
+  },
+  "netDiff": 468,
+  "netTries": 1,
+  "sure": true
+ },
+ "autobackup": {
+  "n": 1,
+  "at": "2026-11-28T18:48:14.547Z"
+ },
+ "deleteDB": "ok",
+ "errors": [],
+ "at": "2026-11-28T18:48:18.579Z"
+}

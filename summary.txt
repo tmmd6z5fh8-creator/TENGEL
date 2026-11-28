@@ -1,0 +1,73 @@
+== runner: macOS 26.7.2 arm64 (macos-26)
+== xcode: Xcode 26.6 Build version 17F113 
+== iPhone: A6703320-223E-45AD-9A81-05D07BD09591|iPhone 17|iOS 26.5
+== iPad: 913B08F2-797C-473F-BBD0-D9841E96F080|iPad Pro 11-inch (M5)|iOS 26.5
+== scheme: テンゲル
+== build Swift5 Debug simulator: exit 0 (26s)
+   errors: 0  warnings: 2
+== build Swift6 Debug simulator: exit 0
+   errors: 0  warnings: 2
+== build Swift5 Release device: exit 0
+   errors: 0  warnings: 2
+   release app:  20M  selftest in release: 0
+== app: テンゲル.app
+   bundle id: jp.tengel.app  version: 1.0 (20261129.4)
+   iphone-only: UIDeviceFamily=1, orientations(iphone)=1 orientations(ipad)=1 launchscreen=yes OK
+   web files: 48  index.html at: ./index.html 
+   language: CFBundleDevelopmentRegion=ja ja.lproj files=2 localizations= OK
+   local network: purpose=yes bonjour=2 OK
+== iPhone: installed
+   iphone 1: report-1
+   iphone 1: report-manual
+   iphone 1: report-back
+   names: read 12 same 12/12 -> OK
+   ocr soon: closed None soon True start None r 9 dist 1400 n 12 horses 12 missing [] reread gaps 1 hits [{"no": 11, "t": 0}] miss 0 tries [c1:11 c2:11 c3f:11 c3:11 w2:11 w2:11 w3f:-] -> OK
+   ocr tabs: r 11 venue 大井 date 2026-10-14 dist 1400 n 12 baba 良 start 20:15 rname テンゲル特別A1 horses 12 top [["20:10", 0.085, 0.017, 0.126, 0.022], ["5G 87", 0.833, 0.018, 0.105, 0.02], ["大井♥", 0.057, 0.08, 0.119, 0.021], ["8R", 0.258, 0.081, 0.057, 0.017], ["9R", 0.374, 0.081, 0.06, 0.017], ["1OR", 0.487, 0.081, 0.079, 0.017], ["11R", 0.613, 0.08, 0.079, 0.018], ["12R", 0.745, 0.08, 0.079, 0.019], ["11R", 0.025, 0.17, 0.094, 0.023], ["2026年10月14日（水）", 0.189, 0.144, 0.314, 0.019], ["テンゲル特別 A1", 0.192, 0.171, 0.286, 0.021], ["発走予定時刻：20:15", 0.189, 0.201, 0.327, 0.019], ["ダート1400m", 0.528, 0.203, 0.22, 0.015], ["12頭", 0.767, 0.203, 0.082, 0.016]] -> OK
+   ocr card: g_card 京都 12R 3歳以上2勝クラス 1200m 16:15 2026-11-28 / h_card 京都 11R テンゲルステークス 1600m 15:35 2026-11-28 -> OK
+   ocr next day: i_card 東京 2R 2歳未勝利 1400m 09:55 2026-11-29 closed None -> OK
+   bgm: tengel-bgm api False card False (none expected) h264 probably -> OK
+   card battle: fab ['tcFab', 'oshiFab', 'cbFab', 'figFab'] row True dock True column False 2x2 False icon [78] clear-of-kise True (view [402, 812] kise [270, 91, 380, 142] fabs [[4, 610, 103, 713], [103, 610, 201, 713], [201, 610, 300, 713], [300, 610, 398, 713]]) room-api {'ok': True, 'state': 'idle'} bad-room room open True start {'hand': 7, 'op': 6, 'deck': 16, 'turn': 1, 'turns': 5} played {'set': 3, 'k': 3, 'm': 4} res win wins [3, 0] discard 6 early 3 tokens None closed True coin 2->4 gifts 1 -> OK
+   card battle settings: sets {'bgm': True, 'se': True, 'fx': False, 'as': True} bgm {'on': False, 'want': True, 'gone': True, 'len': 80.53, 'ctx': 'running'} fire ['cbfire 5.6s', 'cbfire 4.3s'] gear bgm,se fx-button False board ['cb_board.webp', False] err None -> OK
+   card battle toy: locked True badge True points 5500 ask-buttons go,no opened-before-unlock False after-cancel {'ov': False, 'cb': False} unlocked [True] badge-after False err None -> OK
+   kisekae sample: pv lucky after lucky push push kb board rb hit t-lucky rows 3 size 156x224 k 0.4 inert True tab -1 closed True wait 1574ms -> OK
+   kisekae seen: top run 57 / down pause True run 0 / back run 57 / cover pause True run 0 / tap-close run 57 152ms / login-bonus pause True run 0 / OK tap run 20 151ms -> OK
+   news tickets: first 7 12 7 12 1 anim [['kbnsTk', 'running', 7000]] font True changes 11 bad [] pause-same True -> OK
+   touch: {"ta": "manipulation", "btn": "manipulation", "us": "none", "tc": "none", "inp": "text", "pre": "text"} / OK
+   status bar: first #16203D W style 1 / sunset #24123A W style 1 / ranch #A9DA5E K style 3 / tengel #0A1B22 W style 1 / back #16203D W style 1 -> OK
+   v212: cost {'gift': 5000, 'read': 800, 'w5': 800, 'type': 500, 'slot': 23000, 'toy': 3000} toys ['drop', 'cb'] toy-items 2 old-card True after-backup True api object delBets function auto-line 2023-12-28 -> OK
+   unlock confirm: item [33, 325, 336, 162] name 310/310 1-line True go [46, 387, 310, 39] now [245, 397, 90, 19] text 23,000Pを使って解放する（今 5,500P） closed True points-same True -> OK
+   fab marks: pill テンゲルデータ groups ['壁紙パック/10', 'ポイント壁紙カスタム/17', '帯/3'] tokens 5 (font 16.8 size [28, 28] corner True in True) bell 🔔 -> open None -> after None plan top 0 soon True bar [['true', 'false'], ['false', 'true'], ['true', 'false']] tickets 15/15 (corner True in True) front [] z cbFab:3 figFab:4 oshiFab:2 tcFab:1 -> OK
+   care recorder: have True ok True/True frames 16 drawn 8 same 6 hidden 2 forced 2 different 0 (compared 14) ref-diff 0 filled 0.521 reads [2, 0.375, 32] names 77 -> OK
+   audio quiet: before fx:running tc:None(off) cb:suspended(off) / resign fx:suspended tc:None(off) cb:suspended(off) / interruption fx:suspended tc:None(off) cb:suspended(off) / active fx:running tc:None(off) cb:suspended(off) -> OK
+   fab hide: 0:visible/1 1:hidden/0(no tap) 2:hidden/0(no tap) 3:visible/1 4:hidden/0(no tap) 5:visible/1 6:hidden/0(no tap) 7:visible/1 -> OK
+   pt note: note open True z 72 secs 3 buys 7 roulette none closed True / rv [139, 127, 256, 145] dock True plan [138, 86, 256, 133] kise [270, 91, 380, 142] -> OK
+   help: judge 9/9 plan 5/5 drop 8 rows / ! [245, 311, 279, 345] btn [33, 307, 237, 349] closed True -> OK
+   iphone 2: report-2
+   clock: wall True mono True(+435 ms, wall +0 ms) boot yes dev none (keychain -34018 in simulator) proc 3A62->BE63 web ok/ok diff 508 -> OK
+   clock net: ok True/True why / rt 148/234 ms diff -64/468 ms sure True/True tries 1/1 -> OK
+   iphone 3: report-3
+   iphone 3: report-link
+   iphone 5: report-5a
+   iphone 5: report-5
+   reset: before bets 2 setting x backup 2 -> after db ok native 4 first-gate True bets 0 setting None total 10000 offer False write 7 backup n 0 errors 0 -> OK
+== iPad: installed
+   ipad 1: report-1
+   ipad 1: report-manual
+   ipad 1: report-back
+   card battle (ipad): fab ['tcFab', 'oshiFab', 'cbFab', 'figFab'] row True dock True column False 2x2 False icon [73] clear-of-kise True (view [375, 647] kise [259, 90, 359, 136] fabs [[4, 461, 96, 557], [96, 461, 188, 557], [188, 461, 279, 557], [279, 461, 371, 557]]) room-api {'state': 'idle', 'ok': True} bad-room room open True start {'hand': 7, 'op': 6, 'deck': 16, 'turn': 1, 'turns': 5} played {'set': 3, 'k': 3, 'swap': 1} res win wins [3, 0] discard 8 early 3 tokens None closed True coin 2->4 gifts 1 -> OK
+   card battle settings: sets {'bgm': True, 'se': True, 'fx': False, 'as': True} bgm {'on': False, 'want': True, 'gone': True, 'len': 80.53, 'ctx': 'running'} fire ['cbfire 5.6s', 'cbfire 4.3s'] gear bgm,se fx-button False board ['cb_board.webp', False] err None -> OK
+   card battle toy: locked True badge True points 5500 ask-buttons go,no opened-before-unlock False after-cancel {'ov': False, 'cb': False} unlocked [True] badge-after False err None -> OK
+   care recorder (ipad): have True ok True/True frames 16 drawn 8 same 6 hidden 2 forced 2 different 0 (compared 14) ref-diff 0 filled 0.521 reads [2, 0.375, 32] names 77 -> OK
+   audio quiet (ipad): before fx:running tc:None(off) cb:suspended(off) / resign fx:suspended tc:None(off) cb:suspended(off) / interruption fx:suspended tc:None(off) cb:suspended(off) / active fx:running tc:None(off) cb:suspended(off) -> OK
+   fab hide (ipad): 0:visible/1 1:hidden/0(no tap) 2:hidden/0(no tap) 3:visible/1 4:hidden/0(no tap) 5:visible/1 6:hidden/0(no tap) 7:visible/1 -> OK
+   pt note (ipad): note open True z 72 secs 3 buys 7 roulette none closed True / rv [142, 123, 248, 139] dock True plan [142, 85, 249, 128] kise [259, 90, 359, 136] -> OK
+   help (ipad): judge 9/9 plan 5/5 drop 8 rows / ! [245, 306, 279, 340] btn [33, 302, 237, 344] closed True -> OK
+   fab marks (ipad): pill テンゲルデータ groups ['壁紙パック/10', 'ポイント壁紙カスタム/17', '帯/3'] tokens 5 (font 15.7 size [26, 26] corner True in True) bell 🔔 -> open None -> after None plan top 0 soon True bar [['true', 'false'], ['false', 'true'], ['true', 'false']] tickets 15/15 (corner True in True) front [] z cbFab:3 figFab:4 oshiFab:2 tcFab:1 -> OK
+== build wide (.pad added) Debug simulator: exit 0 (42s)
+   wide app: UIDeviceFamily=1,2,
+== iPad wide: installed
+   ipadwide 4: report-4
+   wide: web 390x844 dpr 2 framed True host 834 web@(222,183) 390x844 ksk 1.0000 errors 0 -> OK
+== room (iPhone hosts 2820, iPad joins): 378s
+   room: host connected True res win wins [3, 0] discard 8 early 4 evs ['state:connecting', 'state:connected', 'data×11'] / guest connected True res lose wins [0, 3] evs ['state:connecting', 'state:connected', 'data×26'] errors 0 -> OK
+== done

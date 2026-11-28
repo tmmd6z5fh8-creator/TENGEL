@@ -1,0 +1,41 @@
+{
+ "phase": 7,
+ "device": "ipad",
+ "host": false,
+ "room": "2820",
+ "evs": [
+  "state:connecting",
+  "state:connected",
+  "data×26"
+ ],
+ "api": "object",
+ "toy": [
+  true
+ ],
+ "open": true,
+ "go": true,
+ "shown": "2820",
+ "connected": true,
+ "screen": "game",
+ "kind": "guest",
+ "auto": {
+  "clicks": 21,
+  "kinds": {
+   "six": 14,
+   "set": 4,
+   "eff": 3
+  },
+  "ended": true,
+  "ms": 15160
+ },
+ "res": "lose",
+ "wins": [
+  0,
+  3
+ ],
+ "discard": 8,
+ "early": 4,
+ "gift": "連勝は 0 に 戻ったよ。もう 1回 やって みよう！",
+ "errors": [],
+ "at": "2026-11-28T19:19:38.925Z"
+}
