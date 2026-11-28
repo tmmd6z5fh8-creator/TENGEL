@@ -526,6 +526,15 @@
       }
       return out;
     });
+    // 第4.241版（まさちゃん 11/28 21:58「一枚目の日付が翌日になってても、締め切り済みレースに登録されちゃう」）：架空の あすの 出馬表（i_card：見出し「2026年11月29日(日曜) 5回東京8日」・
+    //   日付の ボタン 11/28・11/29・11/30・発走 9:55・上の 時計 21:55）を 本物の Vision で 読む → 日付は 見出しの 11/29・発走 09:55・締切の 言葉 なし
+    await step(R, 'ocrnext', async function () {
+      var res = await fetch('__selftest/i_card.jpg', { cache: 'no-store' });
+      if (!res.ok) return { skipped: res.status };
+      var f = new File([await res.blob()], 'i_card.jpg', { type: 'image/jpeg' });
+      var d = await (await window.claude.use('sample')).json('', { images: [f] });
+      return { venue: d.venue, r: d.r, rname: d.rname || null, date: d.date, dist: d.dist, start: d.start, closed: d.closed || null, soon: !!d.soon };
+    });
     // 第4.172版（まさちゃん 11/14 22:05「やっぱりテンゲルBGMも消して！無しでいいや！」）：テンゲルBGM は なくした → しかけ（window.TengelBgm）と 設定の 札が 入って いない ことを 見る。
     //   ルーレットの 爆発の 動画（H.264 High：第4.171版）を この WebKit が 読める 形かも 見る
     await step(R, 'bgm', async function () {
