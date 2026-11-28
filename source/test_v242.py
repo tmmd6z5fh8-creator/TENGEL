@@ -262,7 +262,8 @@ shutil.rmtree(SRV, ignore_errors=True)
 # ---------- ⑤ GitHub の Mac（selftest.js の ptNote・run.sh の PTNPY・P1 の 印）----------
 st = open(os.path.join(W, 'ios', 'ci', 'selftest.js'), encoding='utf8').read(); rs = open(os.path.join(W, 'ios', 'ci', 'run.sh'), encoding='utf8').read()
 check("step(R, 'ptNote'" in st and st.index("step(R, 'fabHide'") < st.index("step(R, 'ptNote'") < st.index("step(R, 'manualOv'") and "await mark('rv-btn');" in st and "await mark('pt-note');" in st and "await mark('pt-note-shop');" in st
-      and ' rec numpad rv-btn pt-note pt-note-shop manual-ov ' in rs and 'pt note: $(python3 -c "$PTNPY"' in rs and 'pt note (ipad): $(python3 -c "$PTNPY"' in rs,
+      and ' rec numpad rv-btn pt-note pt-note-shop ' in rs and rs.index(' pt-note-shop ') < rs.index(' manual-ov ')      # 第4.243版：あいだに 使い方の 印（help-judge・help-plan・help-drop）
+      and 'pt note: $(python3 -c "$PTNPY"' in rs and 'pt note (ipad): $(python3 -c "$PTNPY"' in rs,
       '⑤ selftest.js の ptNote（fabHide と 説明書の あいだ・印 rv-btn → pt-note → pt-note-shop）・run.sh の PTNPY の 行（iPhone・iPad）・P1 の 印の 順')
 pya = re.search(r"\nPTNPY='\n(.*?)\n'\n", rs, re.S).group(1)
 good = {'ptNote': {'api': True, 'rv': [138, 128, 255, 146], 'plan': [137, 86, 255, 133], 'kise': [263, 92, 373, 143], 'hd': [0, 0, 402, 160], 'rvTxt': 'やりたいレースを予約！', 'rvDk': True, 'rvSame': True,
