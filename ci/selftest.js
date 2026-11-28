@@ -422,7 +422,7 @@
         }
       }
       // 第4.234版：競馬新聞の 上の絵の 馬券の 数字（本物の WebKit で：字は Kaisei Tokumin・数字の 層の 動き kbnsTk の 1回りの さかい目〈animationiteration〉で かわる・
-      //   馬単は 3連単の 1着→2着・頭に 0 なし・止めて いる 間〈.pause〉は かわらない）。CI は 壁紙の 絵が ない ので 数字 だけ（15秒を 0.3秒に して 3秒 見る）
+      //   馬単は 3連単の 1着→2着・頭に 0 なし・止めて いる 間〈.pause〉は かわらない）。CI は 壁紙の 絵が ない ので 数字 だけ（7秒〈第4.235版〉を 0.3秒に して 3秒 見る）
       await K.apply('news'); await sleep(900);
       document.querySelector('.tabbar [data-tab=judge]').click(); await sleep(400); window.scrollTo(0, 0); await sleep(300);
       var nq = document.querySelector('#ksBnr .nsq'), nb = document.querySelector('#ksBnr');
@@ -441,7 +441,7 @@
         fst.remove();
         res.newsTk = { first: n0, anim: an0, font: document.fonts.check('800 12px "Kaisei Tokumin"', '0123456789'), ff: getComputedStyle(nq.querySelector('.nsn')).fontFamily,
           changes: tks.length - 1, bad: tkb, pauseSame: kp1 === kp2, w: Math.round(nq.getBoundingClientRect().width) };
-      } else res.newsTk = null;
+      } else { res.newsTk = null; await mark('ks-news'); }      // 第4.235版：合図は いつも 1回（run.sh の P1 に ks-news：前は P1 に なくて 60秒 待って いた）
       await K.apply('default'); await sleep(400);
       res.back = { ks: document.documentElement.dataset.ks || null, bnrHidden: (document.querySelector('#ksBnr') || {}).hidden };
       res.sb.back = await sbar();
@@ -848,6 +848,26 @@
       out.diff = df; out.px = +(px / (a.length / 4)).toFixed(3);
       out.names = Object.getOwnPropertyNames(CanvasRenderingContext2D.prototype).length;
       return out;
+    });
+    // 第4.235版：牧場の 看板の 名前は iOS の 窓（UIAlertController の 1行の 欄）で 打つ（まさちゃん 11/28 08:41「牧場の名前変えようとしても入力するところが出てこない」）。
+    //   本物の iOS で：窓が 出る・欄が キーボードを 出す 形（first responder）・はじめの 字（ぜんぶ 選んだ まま）・字の 数・13文字で「決める」が 押せない・
+    //   キーボードの 決定（Return）で 返る・窓が 出て いる 間の 2回目は ことわる。トレーニングセンターの 絵は この ビルドに ない ので 開かない：
+    //   お願いの 中身は tc_app.js の farm.ask（看板を 押した ときと 同じ）。字を 入れて 決めるのは アプリ（DEBUG の SelfTest：CI が スクショを 撮った あと）
+    await step(R, 'farmPrompt', async function () {
+      var marked = false;      // スクショの 合図は どの 道でも 1回（run.sh の P1 に farm-prompt：合図が ないと CI が 90秒 待って 止まる）
+      try {
+        if (!window.TCApp) { await new Promise(function (r) { var sc = document.createElement('script'); sc.src = 'tc_bundle.js'; sc.onload = r; sc.onerror = r; document.head.appendChild(sc); }); await sleep(200); }
+        var F = window.TCApp && window.TCApp.farm;
+        if (!F || !F.ask) return { have: false };
+        var ask = F.ask(), t0 = Date.now(), busy = null;
+        var pr = TengelNative.call('prompt', Object.assign({}, ask, { selftest: { ack: 'ack-farm-prompt.txt', text: 'CIの牧場', over: 'アイウエオカキクケコサシス' } }))
+          .catch(function (e) { return { error: String(e && e.message || e) }; });
+        await sleep(900);
+        try { busy = await Promise.race([TengelNative.call('prompt', ask), sleep(5000).then(function () { return 'timeout'; })]); } catch (e) { busy = { error: String(e && e.message || e) }; }
+        marked = true; await mark('farm-prompt');
+        var r = await Promise.race([pr, sleep(80000).then(function () { return { timeout: true }; })]);
+        return { have: true, ask: ask, r: r, busy: busy, ms: Date.now() - t0 };
+      } finally { if (!marked) await mark('farm-prompt'); }
     });
     // 外への通信（Google のフォントなどがないか）
     R.outside = performance.getEntriesByType('resource').map(function (e) { return e.name; }).filter(function (n) { return !/^tengel:/.test(n); });

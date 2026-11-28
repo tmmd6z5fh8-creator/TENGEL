@@ -6006,6 +6006,7 @@ const TCApp = (() => {
   
   
   
+  
   const FARM_DEF = 'テンゲル牧場', FARM_MAX = 12;
   const SIGN = { ar: 2036 / 334, max: 280, vw: 0.7, pad: 6, fs: 0.56 };      
   function farmClean(v, cut) {
@@ -6269,7 +6270,40 @@ const TCApp = (() => {
     c.textContent = over ? `${n}/${FARM_MAX}文字（${FARM_MAX}文字までだよ）` : n ? `${n}/${FARM_MAX}文字` : `空なら「${FARM_DEF}」になるよ`;
     nmd.querySelector('[data-nm=ok]').disabled = over;
   }
+  
+  
+  
+  
+  const farmAsk = () => {
+    const cur = farmName();
+    return { title: '🪧 牧場の名前', message: `看板に 書く 名前を 入れてね（${FARM_MAX}文字まで）`, text: cur, placeholder: FARM_DEF, max: FARM_MAX,
+      empty: `空なら「${FARM_DEF}」になるよ`, ok: '決める', cancel: 'やめる', reset: cur === FARM_DEF ? '' : `「${FARM_DEF}」に もどす` };
+  };
+  let nmAsk = false;
   function nameOpen() {
+    if (!ov) return;
+    const N = window.__NATIVE && window.TengelNative;
+    if (N && typeof N.call === 'function') { nameAsk(N); return; }
+    nameDialog();
+  }
+  function nameAsk(N) {
+    if (nmAsk) return;      
+    nmAsk = true;
+    let p; try { p = Promise.resolve(N.call('prompt', farmAsk())); } catch (e) { p = Promise.reject(e); }
+    p.then(r => {
+      nmAsk = false;
+      if (!r || typeof r !== 'object') { nameDialog(); return; }      
+      if (r.busy || !r.ok) return;                                    
+      nameSet(r.reset ? FARM_DEF : r.text);
+    }, () => { nmAsk = false; nameDialog(); });
+  }
+  
+  function nameSet(raw) {
+    const v = farmClean(raw); if (!st) load();
+    st.farm = v === FARM_DEF ? '' : v; touch(); save(); paintName();
+    SND.se('tc_se_button.m4a'); msg(`看板の 名前を「${farmName()}」に したよ`, 2.4);
+  }
+  function nameDialog() {
     if (!ov) return;
     if (!nmd) {
       nmd = document.createElement('div'); nmd.id = 'tcnmd'; nmd.setAttribute('role', 'dialog'); nmd.setAttribute('aria-modal', 'true'); nmd.setAttribute('aria-label', '牧場の名前');
@@ -6302,8 +6336,7 @@ const TCApp = (() => {
     if (!nameIsOpen()) return;
     const v = farmClean(nmd.querySelector('.nin').value, false);
     if (Array.from(v).length > FARM_MAX) { nameCount(); return; }
-    st.farm = v === FARM_DEF ? '' : v; touch(); save(); paintName(); nameClose();
-    SND.se('tc_se_button.m4a'); msg(`看板の 名前を「${farmName()}」に したよ`, 2.4);
+    nameClose(); nameSet(v);
   }
   function msg(txt, sec) {
     const m = ov.querySelector('.tcmsg'); m.textContent = txt; m.classList.add('on');
@@ -6940,7 +6973,7 @@ const TCApp = (() => {
       return { stock: st.stock, max: TOKEN_MAX };
     }
   };
-  return { open, close, tickets, tokens, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, farm: { name: farmName, open: nameOpen, close: nameClose, isOpen: nameIsOpen, clean: farmClean, DEF: FARM_DEF, MAX: FARM_MAX }, _t: { dropOpen, dropResume, dropTone, dropOk, dropLeft, dropTap, dropLocked, DROP, prep, buyShow, recoverBuy, PACKS, ZONE, GEKI, GEKI_SE, DROP_SE, zoneV, zoneRoll, gov: GOV, get hidN() { return hidN; }, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, drawMax, drawLeft, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, visitDraws: Object.assign({}, VISIT_DRAWS), capWait: CAP_WAIT, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      
+  return { open, close, tickets, tokens, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, farm: { name: farmName, open: nameOpen, close: nameClose, isOpen: nameIsOpen, clean: farmClean, DEF: FARM_DEF, MAX: FARM_MAX, ask: farmAsk, set: nameSet, dialog: nameDialog, get asking() { return nmAsk; } }, _t: { dropOpen, dropResume, dropTone, dropOk, dropLeft, dropTap, dropLocked, DROP, prep, buyShow, recoverBuy, PACKS, ZONE, GEKI, GEKI_SE, DROP_SE, zoneV, zoneRoll, gov: GOV, get hidN() { return hidN; }, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, drawMax, drawLeft, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, visitDraws: Object.assign({}, VISIT_DRAWS), capWait: CAP_WAIT, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      
 })();
 
 ;window.TCField = TCField; window.TCCare = TCCare; window.TCGuide = TCGuide; window.TCBuy = TCBuy; window.TCDrop = TCDrop; window.TCApp = TCApp;
