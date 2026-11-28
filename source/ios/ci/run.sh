@@ -214,6 +214,13 @@ ok = g.get("venue") == "京都" and g.get("r") == 12 and g.get("rname") == "3歳
 f = lambda d: "%s %sR %s %sm %s %s" % (d.get("venue"), d.get("r"), d.get("rname"), d.get("dist"), d.get("start"), d.get("date"))
 print("g_card %s / h_card %s -> %s" % (f(g), f(h), "OK" if ok else "CHECK " + json.dumps(o, ensure_ascii=False)[:500]))
 '
+# 第4.241版：架空の あすの 出馬表（i_card）を 本物の Vision で 読んだ 結果（日付は 見出しの 2026-11-29・発走 09:55・上の 時計 21:55 は 発走に しない・締切の 言葉 なし）
+NEXTPY='
+import json, sys
+d = json.load(open(sys.argv[1])).get("ocrnext") or {}
+ok = d.get("venue") == "東京" and d.get("r") == 2 and d.get("rname") == "2歳未勝利" and d.get("date") == "2026-11-29" and d.get("dist") == 1400 and d.get("start") == "09:55" and d.get("closed") is None
+print("i_card %s %sR %s %sm %s %s closed %s -> %s" % (d.get("venue"), d.get("r"), d.get("rname"), d.get("dist"), d.get("start"), d.get("date"), d.get("closed"), "OK" if ok else "CHECK " + json.dumps(d, ensure_ascii=False)[:400]))
+'
 waitfile() { local f="$1" t="${2:-60}" i=0; while [ $i -lt $((t * 4)) ]; do [ -f "$f" ] && return 0; sleep 0.25; i=$((i + 1)); done; return 1; }
 shot() {
   local u="$1" name="$2" w="${3:-700}"
@@ -285,6 +292,7 @@ print("r %s venue %s date %s dist %s n %s baba %s start %s rname %s horses %s to
     # 第4.239版（まさちゃん 11/28 15:40：作戦会議で 出馬表の 画面から 開催場と R が 読めない）：架空の 出馬表（g_card.jpg・h_card.jpg）を 本物の Vision で 読む →
     #   開催場 京都（「5回京都7日」：前は「ス選択へ」）・12R／11R（1R〜12R の 切りかえ では ない）・レース名「3歳以上2勝クラス」（クラス）／「テンゲルステークス」・距離・発走
     say "   ocr card: $(python3 -c "$CARDPY" "$OUT/iphone-report-1.json" 2>&1)"
+    say "   ocr next day: $(python3 -c "$NEXTPY" "$OUT/iphone-report-1.json" 2>&1)"
     # 第4.172版：テンゲルBGM は なくした → 本物の WebKit で しかけ（window.TengelBgm）と 設定の 札が 入って いない・爆発の 動画の 形（H.264：第4.171版）を 読める
     say "   bgm: $(python3 -c '
 import json, sys

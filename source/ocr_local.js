@@ -236,6 +236,7 @@
     var re = new RegExp(CLOSED.source, 'g'), m;
     while ((m = re.exec(text))) {
       if (BARE.test(m[0]) && !bareOK(m.index)) continue;
+      if (/前\s*日/.test(text.slice(Math.max(0, m.index - 8), m.index))) continue;      // 第4.241版：「前日最終オッズ」「前日発売は締め切りました」は 前の 日の 発売（レースは まだ）
       return { word: m[0].replace(/\s+/g, ''), soon: false };
     }
     return { word: null, soon: false };

@@ -89,24 +89,30 @@ def page_f():
 # 第4.239版（まさちゃん 11/28 15:40：作戦会議で 出馬表の 画面〈日付ごとの 開催場の ボタン・1R〜12R の 切りかえ・「2026年11月28日(土曜) 5回京都7日」・
 #   大きく「12R」と「3歳以上 2勝クラス」〉から 開催場と R が 読めない）：その 形の 架空の 画面（馬の 名前は 架空）。
 #   g_card＝特別で ない レース（名前は クラス「3歳以上2勝クラス」）・g_card_t＝ほかの 開催場が 選ばれて いる 日（東京）・h_card＝特別の レース（名前「テンゲルステークス」）
-def page_g(venue='京都', r=12, band='3歳以上 2勝クラス', cond='(混合)(特指) 定量', course='コース 1200m 芝・右 発走16:15', prize='本賞金(万円):1190、480、300、180、119'):
+# 第4.241版（まさちゃん 11/28 21:58「一枚目の日付が翌日になってても、締め切り済みレースに登録されちゃう」）：i_card＝あすの レース（2つ目の 日の 開催場が 選ばれて いる・
+#   見出し「2026年11月29日(日曜) 5回東京8日」・朝の 発走 9:55・上の 時計は 夜の 21:55）。day＝選ばれて いる 日（0＝11/28・1＝11/29）・kd＝見出し・clock＝上の 時計・wx＝天候と 馬場の 行
+def page_g(venue='京都', r=12, band='3歳以上 2勝クラス', cond='(混合)(特指) 定量', course='コース 1200m 芝・右 発走16:15', prize='本賞金(万円):1190、480、300、180、119',
+           day=0, kd=None, clock='15:34', wx='天候:晴 芝:良'):
     btn = lambda vs, on: '<div class="vs">' + ''.join(f'<span class="{"on" if v == on else ""}">{v}</span>' for v in vs) + '</div>'
     tabs = ''.join(f'<span class="{"on" if k == r else ""}">{k}R</span>' for k in range(1, 13))
     hs = [(1, 1, 'サンライズゴールド', '38.7 (15番人気)', '牝4 / 鹿 434kg(0)', '(2,2,3,8)', 'テンゲル太郎(56.0) 星野一郎(栗東)'),
           (1, 2, 'テンゲルクイーン', '2.6 (1番人気)', '牡3 / 鹿 534kg(-2)', '(2,1,1,4)', '月夜次郎(57.0) 花田三郎(栗東)')]
     rows = ''.join(f'<div class="row"><div>{w}</div><div>{n}</div><div><span class="nm">{nm}</span><span class="od">{od}</span><br>{sx}<br>{rc}<br>{jk}</div></div>' for w, n, nm, od, sx, rc, jk in hs)
-    return f'<div class="g"><div class="sb"><span>15:34</span><i>4G</i></div><div class="top"><span>←</span><span>出馬表</span></div>' \
-           f'<div class="day">11月28日(土曜)</div>{btn(["東京", "京都"], venue)}<div class="day">11月29日(日曜)</div>{btn(["東京", "京都"], None)}' \
+    kd = kd or f'2026年11月28日(土曜) 5回{venue}7日'
+    return f'<div class="g"><div class="sb"><span>{clock}</span><i>4G</i></div><div class="top"><span>←</span><span>出馬表</span></div>' \
+           f'<div class="day">11月28日(土曜)</div>{btn(["東京", "京都"], venue if day == 0 else None)}<div class="day">11月29日(日曜)</div>{btn(["東京", "京都"], venue if day == 1 else None)}' \
            f'<div class="day">11月30日(月曜)</div>{btn(["東京"], None)}<div class="lk">開催選択へ レース選択へ</div><div class="rt">{tabs}</div>' \
-           f'<div class="kd">2026年11月28日(土曜) 5回{venue}7日</div><div class="rn"><b>{r}R</b><span>{band}</span></div>' \
-           f'<div class="cd">{cond}<br>{course}<br>天候:晴 芝:良<br>{prize}</div><div class="bt"><span>オッズ</span><span>詳細出馬表</span></div>' \
+           f'<div class="kd">{kd}</div><div class="rn"><b>{r}R</b><span>{band}</span></div>' \
+           f'<div class="cd">{cond}<br>{course}<br>{wx}<br>{prize}</div><div class="bt"><span>オッズ</span><span>詳細出馬表</span></div>' \
            f'<div class="row h"><div>枠</div><div>馬番</div><div>馬名 / 単勝オッズ(人気)<br>性齢 / 毛色 / 馬体重<br>戦績(1着, 2着, 3着, 4着以下)<br>騎手名(負担重量) / 調教師名</div></div>{rows}' \
            f'<div class="nv"><span>ホーム</span><span>調教・レース</span><span>馬券購入</span><span>レースライブ</span><span>アプリ設定</span></div></div>'
 
 
 PAGES = {'a_tanfuku_waku': page_a(), 'b_tanfuku_ninki': page_b(), 'c_sanrentan': page_c(), 'd_sanrentan_arrow': page_c(arrow=True, rank=False), 'e_soon': page_e(), 'f_tabs': page_f(),
          'g_card': page_g(), 'g_card_t': page_g('東京', 12, '3歳以上 1勝クラス', '(混合)[指定] 定量', 'コース 2400m 芝・左 発走16:01', '本賞金(万円):820、330、210、120、82'),
-         'h_card': page_g('京都', 11, 'テンゲルステークス', '3歳以上 オープン (混合)(特指) 別定', 'コース 1600m 芝・右 発走15:35', '本賞金(万円):2300、920、580、350、230')}
+         'h_card': page_g('京都', 11, 'テンゲルステークス', '3歳以上 オープン (混合)(特指) 別定', 'コース 1600m 芝・右 発走15:35', '本賞金(万円):2300、920、580、350、230'),
+         'i_card': page_g('東京', 2, '2歳 未勝利', '(混合)[指定] 馬齢', 'コース 1400m ダート・左 発走9:55', '本賞金(万円):560、220、140、84、56',
+                          day=1, kd='2026年11月29日(日曜) 5回東京8日', clock='21:55', wx='天候:晴 ダート:稍重')}
 ONLY = sys.argv[2:]      # 第4.227版：作る 画面を しぼる（python3 make_mock.py <出力フォルダ> e_soon）。前の 画面の 見本は 作り直さない
 LEAF_JS = '''() => {
   const out = []; const H = document.documentElement.scrollHeight, W = document.documentElement.scrollWidth;

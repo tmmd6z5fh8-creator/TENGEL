@@ -161,6 +161,13 @@ textarea{font-size:14px;resize:vertical}
 .numbers .zl{font-weight:700;color:var(--muted);white-space:nowrap}
 details.full{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
 details.full summary{cursor:pointer;font-weight:700;font-size:14px}
+/* 第4.241版：予約した レースの 結果の 欄の 買い目（はじめは 非表示・「買い目を表示」の オン／オフ） */
+.betsee{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.betsee .bsh{display:flex;align-items:center;justify-content:space-between;gap:6px 10px;flex-wrap:wrap}
+.betsee .bsh>b{font-size:14px}
+.betsee .bss{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--muted)}
+.betsee .bss .seg button{padding:6px 14px;font-size:13px}
+.betsee [data-k=betlist][hidden]{display:none}
 .rankbox{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
 .rankbox .rkh{font-weight:700;font-size:14px;margin-bottom:6px}
 .rankbox .small{margin:4px 0}
@@ -718,7 +725,7 @@ const nowYM = () => { const t = todayJST(); return { y: +t.slice(0, 4), m: +t.sl
 const st = {
   tab: 'judge', recs: new Map(), derived: [], bets: new Map(), db: null, canWrite: true, sample: null, sampleImgs: null, downloads: null,
   dbState: 'connecting', betState: 'connecting', form: Object.assign(blankForm(), storeGet('tengel.form') || exampleForm()),
-  ym: nowYM(), rf: 'all', open: null, per: '全期間', pairK: 'all', confirmDel: null, draft: null,
+  ym: nowYM(), rf: 'all', open: null, betShow: null, per: '全期間', pairK: 'all', confirmDel: null, draft: null,
   zk: 'A', zdraft: null, win5: new Map()
 };
 if (!Array.isArray(st.form.rows)) st.form.rows = [];
@@ -1683,7 +1690,10 @@ $('#ocrFile').addEventListener('change', async e => {
 const CLOSED_NOTE = '※ 締切済みのレースは、買い目の予約と結果の記録はできないよ（読み込みの 200P は使うよ）。';
 function closedOf(f, d) {
   const id = formRaceId(f); if (!id) return null;
-  const now = new Date();
+  const now = new Date(), today = todayJST();
+  // 第4.241版（まさちゃん 2026/11/28 21:58「一枚目の日付が翌日になってても、締め切り済みレースに登録されちゃう」）：画像の 日付が あした 以降 → まだ 走って いない レース。
+  //   言葉（ほかの 画像の「最終オッズ」など）でも 時刻（あすの 9:30 を きょうの 9:30 と くらべる）でも 締切済みに しない
+  if (d && /^\d{4}-\d{2}-\d{2}$/.test(d.date || '') && d.date > today) return null;
   if (d && d.closed) return { by: 'kw', word: String(d.closed).slice(0, 12), id, at: now.toISOString() };
   if (!d || !(d.date || d.start)) return null;   // 画像に 日付も 発走時刻も なければ、時刻では 決めない（入力に 残って いた 日付で 決めると まちがえる）
   if (!/^\d{4}-\d{2}-\d{2}$/.test(f.date || '')) return null;
@@ -1691,7 +1701,7 @@ function closedOf(f, d) {
   // 第4.227版（まさちゃん 11/26 17:07「まもなく締め切りレースが締め切りレースになってる！」）：画像に 日付が ない ときは、入力の 日付が きょうより 前でも
   //   きょうの レースと みなして 時刻を くらべる（前の 日に 使った 日付が 入力に 残って いると、まもなく 締切の レースが「発走 ○○ を過ぎている」で 締切済みに なって いた）。
   //   きょう・先の 日付は そのまま（前売りの オッズ）
-  const today = todayJST(), day = d.date || f.date >= today ? f.date : today;
+  const day = d.date || f.date >= today ? f.date : today;
   // レースの 時刻は 日本時間（端末の 時間帯に よらない。お知らせの fireAt と 同じ +09:00）。発走時刻が ないときは その日の 終わりまで 締切前と みなす
   const when = t ? Date.parse(`${day}T${t}:00+09:00`) : Date.parse(`${day}T23:59:59+09:00`) + 1000;
   if (!isFinite(when)) return null;
@@ -2813,7 +2823,20 @@ function rsvTopHTML() {
   return h + '</div>';
 }
 const isPendingRsv = b => !!(b.rsv && (b.rsv.state === 'reserved' || b.rsv.state === 'given' || b.rsv.state === 'closed'));
-// 予約したレースの結果入力の欄（買い目は出さない。「買い目を確認」で見る）
+// 第4.241版（まさちゃん 2026/11/28 21:58「結果入力の時に、…隠れている買い目のところに、買い目を表示、オン、オフを選べるボタンをつけて！」・22:07「非表示な状態からスタートしてほしい！」）：
+//   結果の 欄の 買い目は 非表示から スタート。「買い目を表示」の オン／オフで 見せる・かくす（前は「買い目を確認」の たたみ：第4.65版）。
+//   オンは その 行を 開いて いる あいだ だけ（st.betShow＝オンの 行の id：結果を 決めて 金額の 欄に なっても オンの まま。行を 閉じる・ほかの 行を 開く と オフに もどる）。
+//   この 端末には 覚えない（一度 オンに しても 次の 行は 非表示から）。押した ときは 欄を 書き直さずに 見せる／かくす（打った 字は 消えない）
+const betShowOn = id => !!id && st.betShow === id && st.open === id;
+function setBetShow(id, on) {
+  st.betShow = on ? id : null;
+  for (const el of $$('.rsvf[data-id] [data-k=betsee]')) {
+    if (el.closest('.rsvf').dataset.id !== id) continue;
+    $$('[data-k=betshow] button', el).forEach(x => x.setAttribute('aria-pressed', String((x.dataset.v === '1') === !!on)));
+    const bl = $('[data-k=betlist]', el); if (bl) bl.hidden = !on;
+  }
+}
+// 予約したレースの結果入力の欄（第4.241版：買い目は 非表示から スタート・「買い目を表示」の オン／オフ）
 //   第4.65版（まさちゃん「結果と的中金額とかの入力分けて！…結果を入力 → 的中ボタンの演出（オフなら そのまま 次）→ 金額入力（後からでもできるよ）→ 記録」）：
 //   3つの 形（mode）。result＝結果だけ（結果待ちの 予約）／amount＝結果を 決めた 直後（演出の あと）の 金額の 欄だけ／edit＝記録を あとから 直す（全部）
 function rsvMode(b) { return !b.rsv || b.rsv.state !== 'done' ? 'result' : (st.rsvAmt === b.id ? 'amount' : 'edit'); }
@@ -2853,6 +2876,7 @@ function rsvFormHTML(b, mode) {
   (rs.types || []).forEach(t => { const a = (b.amt && b.amt[t]) || {}; amtv.amt[t] = { stake: a.stake == null ? '' : String(a.stake), payout: a.payout == null ? rsvPayFromImage(b, t) : String(a.payout) }; });
   const g = i => (res.p[i] || []).join('-');
   const pn = rsvPlaceNames(b, res);   // 第4.170版：1〜3着の 名前（記録に あれば それ・なければ 馬番ごとの 名前から）
+  const bs = betShowOn(b.id);   // 第4.241版：買い目を表示（はじめは オフ）
   const resultFields = `
       <div class="f s6"><span class="lab">着順（馬番）。同着は「6.2」のように2頭</span><div class="pl"><input data-k="p1" data-dash inputmode="decimal" autocomplete="off" placeholder="1着" aria-label="1着の馬番" value="${esc(g(0))}"><input data-k="p2" data-dash inputmode="decimal" autocomplete="off" placeholder="2着" aria-label="2着の馬番" value="${esc(g(1))}"><input data-k="p3" data-dash inputmode="decimal" autocomplete="off" placeholder="3着" aria-label="3着の馬番" value="${esc(g(2))}"></div><div class="plab" data-k="plab"></div></div>
       <div class="f s6"><span class="lab">1〜3着の 馬の 名前（なくても OK。画像から 読めた ときは 自動で 入るよ・直せるよ）</span><div class="pln">${[0, 1, 2].map(i => `<label class="pnr"><span>${i + 1}着</span><input data-k="nm${i + 1}" data-nos="${esc(g(i))}" maxlength="18" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${i + 1}着の 名前" aria-label="${i + 1}着の 馬の 名前" value="${esc(pn[i] || '')}"></label>`).join('')}</div></div>
@@ -2872,7 +2896,7 @@ function rsvFormHTML(b, mode) {
       : `<button class="btn primary" type="button" data-act="rsave">記録を保存</button><button class="btn" type="button" data-act="load">判定画面で開く</button>${memBtnsHTML(b)}<button class="btn ghost" type="button" data-act="rdel">記録を消す</button>`;
   return `<div class="recbox rsvf" data-id="${esc(b.id)}" data-sfx="${esc(sfx)}" data-mode="${mode}">
     <div class="recstatus" data-k="status"></div>
-    <details class="full" data-k="betsee"><summary>買い目を確認（${esc((rs.types || []).join('・'))}）</summary><div data-k="betlist">${betListHTML(rs.bets, rs.types, rsvJudge(b))}</div></details>${lead}
+    <div class="betsee" data-k="betsee"><div class="bsh"><b>買い目（${esc((rs.types || []).join('・'))}）</b><span class="bss"><span>買い目を表示</span><span class="seg" data-k="betshow" role="group" aria-label="買い目を表示"><button type="button" data-v="1" aria-pressed="${bs}">オン</button><button type="button" data-v="0" aria-pressed="${!bs}">オフ</button></span></span></div><div data-k="betlist"${bs ? '' : ' hidden'}>${betListHTML(rs.bets, rs.types, rsvJudge(b))}</div></div>${lead}
     <div class="fields" style="margin-top:10px">${fields}
     </div>
     <p class="hint" data-k="hint" style="margin:0"></p>
@@ -3110,6 +3134,7 @@ $('#recList').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || b.disabled) return;
   const grp = b.parentElement?.dataset.k;
   if (grp === 'abandon') { $$('button', b.parentElement).forEach(x => x.setAttribute('aria-pressed', String(x === b))); updateRsvPreview(box); return; }
+  if (grp === 'betshow') { setBetShow(box.dataset.id, b.dataset.v === '1'); return; }   // 第4.241版：買い目を表示 オン／オフ
   const a = b.dataset.act;
   if (a === 'rimg') { const fi = $('[data-k=rimgfile]', box); if (fi) fi.click(); }
   else if (a === 'rsave') { const F = Fx(); if (F) { try { F.prime(); } catch (fe) { /* 音なしでも保存はする */ } } saveRsvf(box, b); }
@@ -3147,6 +3172,7 @@ for (const id of ['#ymRec', '#ymStats']) { $(id).addEventListener('click', onYM)
 // ---- 記録タブ ----
 const statusFilter = { all: () => true, wait: s => s === '結果待ち', hit: s => s === '的中', miss: s => s === '不的中', other: s => s === '未購入' || s === '払い戻し', mem: () => true };   // mem＝思い出の しるし（第4.115版：betStatus では なく b.mem で しぼる）
 function renderRec() {
+  if (st.betShow && st.betShow !== st.open) st.betShow = null;   // 第4.241版：行を 閉じた・ほかの 行を 開いた → 買い目は また 非表示から
   $('#ymRec').innerHTML = ymHTML();
   const list = $('#recList');
   if (st.betState !== 'on') { list.innerHTML = `<div class="card empty" style="margin-top:var(--gap)"><div class="big">${st.betState === 'connecting' ? '記録を読み込み中…' : '記録に接続できません'}</div><p>${st.betState === 'connecting' ? '少し待ってね。' : 'Claudeの画面でこのアプリを開くと、買ったレースの記録が使えるよ。'}</p></div>`; $('#recSummary').textContent = ''; return; }

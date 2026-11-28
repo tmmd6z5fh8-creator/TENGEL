@@ -440,9 +440,9 @@ try:
         top.locator(f'.lrow[data-id="{b9c["id"]}"] .lmain').click(); pg.wait_for_timeout(500)
         f9 = pg.locator('#recList .rsvf')
         # 第4.65版：まず 結果だけ（mode=result）。金額の 欄は 結果を 決めた あと（演出の あと）に 出る
-        check(f9.count() == 1 and f9.get_attribute('data-mode') == 'result' and f9.locator('[data-k=p1]').count() == 1 and f9.locator('[data-k=res]').count() == 0 and f9.locator('details[data-k=betsee]').count() == 1 and f9.locator('[data-k=stake]').count() == 0 and f9.locator('[data-k=mslot]').count() == 0 and f9.locator('[data-k=note]').count() == 0
+        check(f9.count() == 1 and f9.get_attribute('data-mode') == 'result' and f9.locator('[data-k=p1]').count() == 1 and f9.locator('[data-k=res]').count() == 0 and f9.locator('details[data-k=betsee]').count() == 0 and f9.locator('[data-k=betsee] [data-k=betshow] button[data-v="0"][aria-pressed=true]').count() == 1 and f9.locator('[data-k=betlist]').is_hidden() and f9.locator('[data-k=stake]').count() == 0 and f9.locator('[data-k=mslot]').count() == 0 and f9.locator('[data-k=note]').count() == 0
               and f9.locator('[data-act=rsave]').inner_text() == '結果を決める' and '金額は後からでも入れられるよ' in f9.inner_text() and '結果待ち' in f9.locator('[data-k=status]').inner_text(),
-              '結果入力の欄（第4.65版）：まず 結果だけ（1〜3着の馬番・取消・中止・発走・画像）。買い目は出さない・金額・マザーデータ・メモの 欄は まだ ない・「結果を決める」・結果待ち')
+              '結果入力の欄（第4.65版）：まず 結果だけ（1〜3着の馬番・取消・中止・発走・画像）。買い目は 非表示から（第4.241版：「買い目を表示」の オン／オフ は オフ）・金額・マザーデータ・メモの 欄は まだ ない・「結果を決める」・結果待ち')
         nmv = lambda box: [box.locator(f'[data-k=nm{i}]').input_value() for i in (1, 2, 3)]
         check(f9.locator('.pln .pnr input').count() == 3 and nmv(f9) == ['', '', ''] and '1〜3着の 馬の 名前' in f9.inner_text(), '第4.170版：結果の 欄に「1〜3着の 馬の 名前」の 欄 3つ（初めは 空）')
         check(f9.locator('[data-act=rdel]').count() == 1 and f9.locator('[data-act=load]').count() == 1 and pg.locator(f'#recList .lrow[data-id="{b9c["id"]}"]').inner_text().count('保存した判定') == 0 and '判定（' not in pg.locator(f'#recList .lrow[data-id="{b9c["id"]}"] .ledit').inner_text(),

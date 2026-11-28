@@ -323,5 +323,19 @@ for (const [name, lines] of [['C 3連単 人気順（セルごと）', c], ['C 3
     && P1([W('12R', 0.05, 0.45, 0.1), W('(混合)(特指) 定量', 0.05, 0.50, 0.4), W('コース 1200m 芝・右 発走16:15', 0.05, 0.55, 0.6)]).rname === null,
     'レース名：「12R」の 下の 行の クラスも 読む・「(混合)(特指) 定量」は レース名に しない');
 }
+// 第4.241版（まさちゃん 11/28 21:58「一枚目の日付が翌日になってても、締め切り済みレースに登録されちゃう」）：あすの 出馬表（make_mock.py の i_card）・前の 日の 発売の 言葉
+{
+  const W = (t, x, y, w, h) => ({ text: t, x, y, w, h: h || 0.014 });
+  if (!fs.existsSync(path.join(DIR, 'i_card.json'))) check(false, 'i_card.json が ない');
+  else {
+    const d = O.parse([load('i_card')]);
+    check(d.venue === '東京' && d.r === 2 && d.rname === '2歳未勝利' && d.dist === 1400 && d.surface === 'ダ' && d.baba === '稍重' && d.start === '09:55' && d.date === '2026-11-29' && d.closed === null,
+      `あすの 出馬表（i_card：日付の ボタン 11/28・11/29・11/30 → 見出しの「2026年11月29日」）→ ${d.date} ${d.venue}${d.r}R「${d.rname}」発走 ${d.start}（上の 時計 21:55 は 発走に しない）・締切の 言葉 なし`);
+    const add = w => O.parse([load('i_card').concat([W(w, 0.08, 0.96, 0.6)])]).closed;
+    const got = ['前日最終オッズ', '前日発売は締め切りました', '前日発売は終了', '最終オッズ', '発売締切', '締切済'].map(add);
+    check(got[0] === null && got[1] === null && got[2] === null && got[3] === '最終オッズ' && got[4] === '発売締切' && got[5] === '締切済',
+      `締切の 言葉：「前日最終オッズ」「前日発売は締め切りました」「前日発売は終了」は 前の 日の 発売 → 言葉に しない・「最終オッズ」「発売締切」「締切済」は 前と 同じ（${JSON.stringify(got)}）`);
+  }
+}
 console.log('FAILS', fails.length, fails);
 process.exit(fails.length ? 1 : 0);
