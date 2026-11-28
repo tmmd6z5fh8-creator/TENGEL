@@ -512,6 +512,20 @@
       var at = function (l) { return [l.text, Math.round(l.x * 1000) / 1000, Math.round(l.y * 1000) / 1000, Math.round(l.w * 1000) / 1000, Math.round(l.h * 1000) / 1000]; };
       return { r: d.r, venue: d.venue, date: d.date, dist: d.dist, n: d.n, baba: d.baba, start: d.start, rname: d.rname || null, horses: (d.horses || []).length, top: (raw && raw.lines || []).filter(function (l) { return l.y < 0.25; }).map(at) };
     });
+    // 第4.239版（まさちゃん 11/28 15:40「作戦会議で、このパターンは名前だけが読み取れないみたいだから、名前は読み取れなくても、場所とRだけは読み取れるようにできる？」）：
+    //   架空の 出馬表（testdata/ocr/make_mock.py の g_card：特別で ない レース・h_card：特別の レース）を 本物の Vision で 読む →
+    //   開催場 京都（「5回京都7日」：前は「開催選択へ レース選択へ」の「ス選択へ」）・12R／11R・レース名「3歳以上2勝クラス」（クラス）／「テンゲルステークス」
+    await step(R, 'ocrcard', async function () {
+      var out = {}, list = ['g_card', 'h_card'];
+      for (var i = 0; i < list.length; i++) {
+        var nm = list[i], res = await fetch('__selftest/' + nm + '.jpg', { cache: 'no-store' });
+        if (!res.ok) { out[nm] = { skipped: res.status }; continue; }
+        var f = new File([await res.blob()], nm + '.jpg', { type: 'image/jpeg' });
+        var d = await (await window.claude.use('sample')).json('', { images: [f] });
+        out[nm] = { venue: d.venue, r: d.r, rname: d.rname || null, date: d.date, dist: d.dist, start: d.start };
+      }
+      return out;
+    });
     // 第4.172版（まさちゃん 11/14 22:05「やっぱりテンゲルBGMも消して！無しでいいや！」）：テンゲルBGM は なくした → しかけ（window.TengelBgm）と 設定の 札が 入って いない ことを 見る。
     //   ルーレットの 爆発の 動画（H.264 High：第4.171版）を この WebKit が 読める 形かも 見る
     await step(R, 'bgm', async function () {
