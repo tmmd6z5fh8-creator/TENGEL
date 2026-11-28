@@ -717,6 +717,36 @@
       setVal(f, '');
       return out;
     });
+    // 第4.240版（まさちゃん 2026/11/28 20:51「紫四角のアイコン達、結果を打ち込むときや、レースの記録を行う時は表示されなくできる？」）：
+    //   字・数字の 欄に 入って いる あいだ・記録タブで 記録を 開いて いる あいだは 丸い ボタンの 列を 消す（html.fabhide：tc/tc_launch.js）を 本物の WebKit で。
+    //   s0〜s7＝{ v：列の 見え方（visibility/opacity）・h：html.fabhide・hit：トレーニングセンターの 丸の まん中を 押すと 列に とどく か }
+    //   s0 はじめ → s1 単勝5連勝の 1着の 欄に 入る（消える）→ s2 となりの 欄へ（消えた まま）→ s3 欄から 出る（もどる）→
+    //   s4 記録タブで 記録を 開いた 形（.ledit：消える）→ s5 閉じた（もどる）→ s6 また 開く（消える）→ s7 ほかの タブへ（もどる）
+    await step(R, 'fabHide', async function () {
+      var fc = document.getElementById('fabCol'), root = document.documentElement;
+      if (!fc || !window.TengelFab || !TengelFab.hidden) return { api: false, col: !!fc };
+      var now = function () {
+        var c = getComputedStyle(fc), b = document.querySelector('#tcFab .fabi'), r = b ? b.getBoundingClientRect() : null, t = r ? document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) : null;
+        return { v: c.visibility + '/' + Math.round(parseFloat(c.opacity) * 100) / 100, h: root.classList.contains('fabhide'), hit: !!t && fc.contains(t) };
+      };
+      var out = { api: true };
+      tab('win5'); await sleep(800); if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); window.scrollTo(0, 0); await sleep(400);
+      out.s0 = now();
+      var f = document.querySelector('#w5Win0'), g = document.querySelector('#w5Win1');
+      if (!f || !g) { out.field = false; return out; }
+      f.focus(); await sleep(500); out.s1 = now();
+      g.focus(); await sleep(300); out.s2 = now();
+      g.blur(); await sleep(500); out.s3 = now();
+      tab('rec'); await sleep(900); window.scrollTo(0, 0); await sleep(300);
+      var rl = document.getElementById('recList'), d = document.createElement('div'); d.className = 'ledit'; d.style.height = '40px';
+      if (!rl) { out.rec = false; return out; }
+      rl.appendChild(d); await sleep(500); out.s4 = now();
+      d.remove(); await sleep(500); out.s5 = now();
+      rl.appendChild(d); await sleep(500); out.s6 = now();
+      tab('judge'); await sleep(700); out.s7 = now();
+      d.remove(); out.q = TengelFab.hidden();
+      return out;
+    });
     // 第4.62版：説明書は アプリの 中の 重ねた 窓（iframe）で 開く：ページは そのまま・「アプリに戻る」で 窓が 閉じる
     await step(R, 'manualOv', async function () {
       tab('rec'); await sleep(600);

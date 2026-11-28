@@ -195,6 +195,16 @@ ok = o.get("api") is True and any(q.get("on") and q.get("state") == "running" fo
      and all(q.get("state") != "running" for q in s2) and o.get("h2") is True and all(q.get("state") == "running" for q in s3 if q.get("on")) and o.get("h3") is False
 print("before %s / resign %s / interruption %s / active %s -> %s" % (f(s0), f(s1), f(s2), f(s3), "OK" if ok else "CHECK " + json.dumps(o, ensure_ascii=False)[:500]))
 '
+# 第4.240版：字・数字の 欄に 入って いる あいだ・記録タブで 記録を 開いて いる あいだは 丸い ボタンの 列を 消す（html.fabhide：tc/tc_launch.js）。
+#   s0 はじめ（見える）→ s1 単勝5連勝の 欄に 入る（消える）→ s2 となりの 欄（消えた まま）→ s3 欄から 出る（もどる）→ s4 記録を 開いた 形（消える）→ s5 閉じた（もどる）→ s6 また 開く（消える）→ s7 ほかの タブ（もどる）
+FABPY='
+import json, sys
+o = json.load(open(sys.argv[1])).get("fabHide") or {}
+st = [o.get("s%d" % i) or {} for i in range(8)]
+want = [False, True, True, False, True, False, True, False]
+ok = o.get("api") is True and all(s.get("h") is w and s.get("v") == ("hidden/0" if w else "visible/1") and s.get("hit") is (not w) for s, w in zip(st, want)) and o.get("q") is False
+print("%s -> %s" % (" ".join("%d:%s%s" % (i, s.get("v"), "" if s.get("hit") else "(no tap)") for i, s in enumerate(st)), "OK" if ok else "CHECK " + json.dumps(o, ensure_ascii=False)[:500]))
+'
 # 第4.239版：架空の 出馬表（日付ごとの 開催場の ボタン・「開催選択へ レース選択へ」・1R〜12R の 切りかえ・「5回京都7日」・「12R 3歳以上 2勝クラス」）を 本物の Vision で 読んだ 結果
 CARDPY='
 import json, sys
@@ -366,6 +376,7 @@ print("item %s name %s/%s 1-line %s go %s now %s text %s closed %s points-same %
   [ -f "$OUT/iphone-report-1.json" ] && say "   care recorder: $(python3 -c "$RECPY" "$OUT/iphone-report-1.json" 2>&1)"
   [ -f "$OUT/iphone-report-1.json" ] && say "   kana pad: $(python3 -c "$KANAPY" "$OUT/iphone-report-1.json" 2>&1)"
   [ -f "$OUT/iphone-report-1.json" ] && say "   audio quiet: $(python3 -c "$AUDPY" "$OUT/iphone-report-1.json" 2>&1)"
+  [ -f "$OUT/iphone-report-1.json" ] && say "   fab hide: $(python3 -c "$FABPY" "$OUT/iphone-report-1.json" 2>&1)"
   phase "$IPHONE" iphone 2 700 report-2
   # 第4.191版：時計の 番人：アプリの 時計（Clock.swift）が 届く・電源を 入れてからの 時間が 進む・アプリを 開き直しても 起動の 番号（boot）と 端末の 番号（dev）は 同じ・
   #   アプリの 番号（proc）は かわる・Webの 画面（TengelClock）は 1回目 first／ok・2回目 ok（同じ 起動）。boot が 空（iOS が 見せない）でも ほかが 合えば OK（その ときは 番号なしで 見はる）
@@ -432,6 +443,7 @@ if [ -n "$IPAD" ]; then
   [ -f "$OUT/ipad-report-1.json" ] && say "   care recorder (ipad): $(python3 -c "$RECPY" "$OUT/ipad-report-1.json" 2>&1)"
   [ -f "$OUT/ipad-report-1.json" ] && say "   kana pad (ipad): $(python3 -c "$KANAPY" "$OUT/ipad-report-1.json" 2>&1)"
   [ -f "$OUT/ipad-report-1.json" ] && say "   audio quiet (ipad): $(python3 -c "$AUDPY" "$OUT/ipad-report-1.json" 2>&1)"
+  [ -f "$OUT/ipad-report-1.json" ] && say "   fab hide (ipad): $(python3 -c "$FABPY" "$OUT/ipad-report-1.json" 2>&1)"
   [ -f "$OUT/ipad-report-1.json" ] && say "   fab marks (ipad): $(python3 -c "$V221PY" "$OUT/ipad-report-1.json" 2>&1)"
   applog "$IPAD" ipad
   xcrun simctl shutdown "$IPAD" > /dev/null 2>&1

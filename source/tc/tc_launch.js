@@ -170,9 +170,14 @@
       + '#minibar{padding-right:var(--fabm,12px)}'       // 判定の 帯：右の あき（もとは 12px）を 列の 手前まで 広げる ＝ 帯（まん中に よせた 丸い 札）は 列に かからない。字が 入らない ぶんは「…」
       // ちぢめた とき（.fabn：下の clear が つける）は 少し つめる（左の あき 12 → 6px・中の すきま 10 → 6px・字 13 → 12px）：そのままだと A層・B層の 2本の ゾーン
       //   （「8R 第1 中穴→人気・第2 人気→大穴」）が 幅 390px の iPhone で 20〜29px 入らず「…」に なる（測った：30この 壁紙 ぜんぶ）→ つめると 幅 375・390・402・430px とも 入る
-      + '#minibar.fabn{padding-left:6px}#minibar.fabn button{gap:6px;padding:7px 5px 7px 6px;font-size:12px}#minibar.fabn .go{padding-right:4px}';
+      + '#minibar.fabn{padding-left:6px}#minibar.fabn button{gap:6px;padding:7px 5px 7px 6px;font-size:12px}#minibar.fabn .go{padding-right:4px}'
+      // 第4.240版：字を 打って いる あいだ・記録を 開いて いる あいだは 列を 消す（html.fabhide：下の fabHideNow が つける）。すっと うすく なって 押せなく なる。
+      //   場所・大きさは そのまま（上の 帯・お知らせの 場所も かわらない ＝ 消えても 出ても まわりは 動かない）
+      + '#fabCol{transition:opacity .18s ease,visibility .18s}html.fabhide #fabCol{opacity:0;visibility:hidden}'
+      + '@media (prefers-reduced-motion:reduce){#fabCol{transition:none}}';
     document.head.appendChild(st);
     c = document.createElement('div'); c.id = 'fabCol'; c.className = 'rw'; document.body.appendChild(c);      // 第4.230版：横 1列
+    fabHideInit();                                                          // 第4.240版
     // 場所：列の 下は 2とおり（どちらに するかは fabFit が 決める。どちらも 帯が 出ても 消えても・どの タブでも・画面を 上下に 動かしても 動かない）
     //   ・たてに 1列（_b1：第4.176版）：下の タブの すぐ 上（FAB_B）。下の タブの 高さは 壁紙で 61〜69px と かわる ので 測る
     //   ・2列 × 2段（_b2：たての 短い 画面。第4.168版の 場所の まま）：判定タブの 下の 帯（#minibar）が 出る 所の すぐ 上（6px）。帯は 画面の 下から MINI_B（＋下の 安全な 余白 --sab）の 所に
@@ -295,7 +300,42 @@
     if (m.hidden) m.hidden = false;
     return m;
   }
-  window.TengelFab = { add: fabAdd, mark: fabMark, busy: function () { return !!holdT; } };      // busy：大きさを 決め直すのを 待って いる（テストが 落ち着くのを 待つ ため）
+  // 第4.240版（まさちゃん 2026/11/28 20:51「紫四角のアイコン達、結果を打ち込むときや、レースの記録を行う時は表示されなくできる？」）：
+  //   丸い ボタンの 列を 消す とき（html.fabhide）＝
+  //   ① 字・数字を 打って いる あいだ：字・数字の 欄に 入って いる（どの タブでも：判定の 入力・単勝5連勝の 結果・記録の 金額・作戦会議 など。テンキー・かなキーボードの ときも）
+  //   ② 記録タブで 記録を 開いて いる あいだ（結果・金額を 入れる 所：.ledit。予約した レースの 結果も ここ）
+  //   欄から 出る・記録を 閉じる・ほかの タブへ 行く と もどる。
+  //   ・欄から 欄へ 移る（テンキーの「次へ」・キーボードの ▲▼）ときは 0.08秒 待って から 決める（いっしゅん 出て また 消える を しない）
+  //   ・消して いる あいだは 0.4秒ごとにも 見直す（欄が 窓ごと 消えた とき など、知らせが 来なくても もどる）
+  //   ・見えて いない 欄（閉じた 窓の 中に のこった フォーカス）・読む だけの 欄（書き出しの 字）・選ぶ だけの 欄（select）は 数えない
+  var TYPE_IN = /^(text|search|number|tel|email|url|password|date|time|datetime-local|month|week)$/, hideT = 0, hideP = 0, hideOn = false;
+  function typing(a) {
+    if (!a || a === document.body || a === document.documentElement || !a.tagName) return false;
+    var ok = a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && TYPE_IN.test(String(a.type || 'text').toLowerCase())) || !!a.isContentEditable;
+    return ok && !a.readOnly && !a.disabled && a.getClientRects().length > 0 && getComputedStyle(a).visibility !== 'hidden';
+  }
+  function editing() {
+    var v = document.getElementById('v-rec'); if (!v || v.hidden) return false;
+    var e = v.querySelector('.ledit'); return !!(e && e.getClientRects().length);
+  }
+  function fabHideNow() {
+    clearTimeout(hideT); hideT = 0;
+    var on = typing(document.activeElement) || editing(), root = document.documentElement;
+    if (root.classList.contains('fabhide') !== on) root.classList.toggle('fabhide', on);
+    if (on && !hideP) hideP = setInterval(function () { if (!hideT) fabHideNow(); }, 400);      // 待って いる（0.08秒）ときは 待つ ほうを 先に
+    else if (!on && hideP) { clearInterval(hideP); hideP = 0; }
+    return on;
+  }
+  function fabHideAsk(ms) { clearTimeout(hideT); hideT = setTimeout(fabHideNow, ms || 0); }
+  function fabHideInit() {
+    if (hideOn) return; hideOn = true;
+    document.addEventListener('focusin', function () { fabHideAsk(0); }, true);
+    document.addEventListener('focusout', function () { fabHideAsk(80); }, true);
+    document.addEventListener('tengel:tab', function () { fabHideAsk(0); });
+    try { var rl = document.getElementById('recList'); if (rl && window.MutationObserver) new MutationObserver(function () { fabHideAsk(0); }).observe(rl, { childList: true, subtree: true }); } catch (e) { /* なし */ }
+    fabHideNow();
+  }
+  window.TengelFab = { add: fabAdd, mark: fabMark, busy: function () { return !!holdT; }, hidden: fabHideNow };      // busy：大きさを 決め直すのを 待って いる（テストが 落ち着くのを 待つ ため）・hidden：いま 消す か（第4.240版）
   var fab = null, loading = null;
   // 第4.140版：alert() は アプリの 中で 出ない → 画面の お知らせ（下の 黒い 札）
   function note(m) { try { var t = document.getElementById('toast'); if (t) { t.textContent = m; t.hidden = false; clearTimeout(t._tc); t._tc = setTimeout(function () { t.hidden = true; }, 4200); } } catch (e) { /* なし */ } }
