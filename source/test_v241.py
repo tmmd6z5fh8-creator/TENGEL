@@ -110,7 +110,7 @@ def rsv_lines(pg):
 
 try:
     print('■ ⑩ 前の 版（git：第4.240版）の 読み取りと くらべる')
-    old = subprocess.run(['git', 'show', 'HEAD:./ocr_local.js'], capture_output=True, check=True).stdout
+    old = subprocess.run(['git', 'show', '79a3455b:./ocr_local.js'], capture_output=True, check=True).stdout      # 第4.240版の ソース
     OLD = os.path.join(SRV, 'ocr_old.js'); open(OLD, 'wb').write(old)
     NODE = """const O = require(process.argv[1]), N = require(process.argv[2]), L = JSON.parse(require('fs').readFileSync(0, 'utf8'));
       const f = M => L.map(ims => { const d = M.parse(ims); return { date: d.date, start: d.start, r: d.r, closed: d.closed }; });
