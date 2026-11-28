@@ -82,9 +82,13 @@
     }
     // 開催場：R の前の短い言葉（「○○競馬場 9R」「○○ 第9競走」）。名前の一覧は持たない（画面に書いてあるものだけ）
     //   第4.233版：開催場を えらぶ 札の 下向きの 印（「○○ ⌄ 9R 10R …」：v・∨・〜 などに 読める）が 間に あっても 読む（日本語と 数字 でない 1〜2字）
-    if ((m = /([一-龥ぁ-んァ-ヶ]{2,5}?)(?:競馬場|競馬)?\s*(?:[^\s\d一-龥ぁ-んァ-ヶ]{1,2}\s*)?(?:第)?\s*\d{1,2}\s*(?:R(?![A-Za-z])|競走|レース)/.exec(text))) {
+    //   第4.239版（まさちゃん 11/28 15:40：出馬表の 画面〈「開催選択へ レース選択へ」の すぐ 下に「1R 2R …」〉で 開催場が「ス選択へ」に なって いた）：
+    //   ① 開催の 書き方「5回京都7日」「第8回大井競馬第3日」が あれば その 開催場（いちばん たしか）
+    //   ② ない ときは 前の 形（R の 前の 短い 言葉）。リンクや ボタンの 言葉（選択・一覧・開催・「〜へ」）は 開催場に しない
+    if ((m = /(?:^|[^\d])\d{1,2}\s*回\s*([一-龥]{2,3}?)(?:競馬場|競馬)?\s*(?:第\s*)?\d{1,2}\s*日/.exec(text)) && STOP.indexOf(m[1]) < 0) H.venue = m[1];
+    else if ((m = /([一-龥ぁ-んァ-ヶ]{2,5}?)(?:競馬場|競馬)?\s*(?:[^\s\d一-龥ぁ-んァ-ヶ]{1,2}\s*)?(?:第)?\s*\d{1,2}\s*(?:R(?![A-Za-z])|競走|レース)/.exec(text))) {
       var v = m[1].replace(/^(第|ダート|ダ|芝)/, '');
-      if (v.length >= 2 && STOP.indexOf(v) < 0 && !/(オッズ|人気|単勝|複勝|馬場|曜$|回$|日$)/.test(v)) H.venue = v;
+      if (v.length >= 2 && STOP.indexOf(v) < 0 && !/(オッズ|人気|単勝|複勝|馬場|曜$|回$|日$|選択|一覧|開催|へ$)/.test(v)) H.venue = v;
     }
     // 日付
     if ((m = /(20\d{2})\s*[年/.\-]\s*(\d{1,2})\s*[月/.\-]\s*(\d{1,2})/.exec(text))) H.date = m[1] + '-' + pad(m[2]) + '-' + pad(m[3]);
@@ -151,7 +155,13 @@
   //   R の すぐ 下 2行の うちは 言葉が なくても、日本語 3字 以上で ほかの 項目（発走・距離・頭数・馬場・日付・時刻・券種・ボタンの 字）で ない 行も。
   //   表の 見出し（馬番・馬名・人気とオッズ）より 下は 見ない。R が ない 画面は 上から 表の 見出しまでで、レース名らしい 言葉の ある 行 だけ
   var RN_KW = /(特別|賞|杯|盃|記念|カップ|ステークス|オープン|選抜|特選|一般|新馬|未勝利|勝クラス|クラス|ダービー|オークス|グランプリ|チャンピオン|トロフィー|スプリント|マイル|ジュベナイル|クラシック|チャレンジ|トライアル|ハンデ|重賞|[ABC][1-4]|[(（]G[1-3I]+[)）]|[(（]Jpn?[1-3I]+[)）])/;
-  var RN_NG = /(発走|ダート|芝\s*\d|障害|距離|\d\s*m(?![a-z])|\d\s*頭|頭数|天候|馬場|オッズ|人気|単勝|複勝|馬単|馬連|馬複|枠連|枠複|枠単|ワイド|3\s*連|三連|締\s*め?\s*切|発売|LIVE|更新|出走表|出馬表|投票|結果|払戻|TOP|入金|ポイント|メニュー|ログイン|現在|\d{1,2}:\d{2}|\d{4}\s*年|\d{1,2}\s*月\s*\d{1,2}\s*日|\d{1,2}\/\d{1,2}|お気に入り|レース一覧|予想|新聞|競馬場|競馬$|開催|ナイター$)/;
+  var RN_NG = /(混合|特指|[(（]指定|[[［]指定|定量|別定|馬齢|本賞金|コース|発走|ダート|芝\s*\d|障害|距離|\d\s*m(?![a-z])|\d\s*頭|頭数|天候|馬場|オッズ|人気|単勝|複勝|馬単|馬連|馬複|枠連|枠複|枠単|ワイド|3\s*連|三連|締\s*め?\s*切|発売|LIVE|更新|出走表|出馬表|投票|結果|払戻|TOP|入金|ポイント|メニュー|ログイン|現在|\d{1,2}:\d{2}|\d{4}\s*年|\d{1,2}\s*月\s*\d{1,2}\s*日|\d{1,2}\/\d{1,2}|お気に入り|レース一覧|予想|新聞|競馬場|競馬$|開催|ナイター$)/;
+  // 第4.239版：特別で ない レースの 名前（クラス：「3歳以上 2勝クラス」「2歳 新馬」「3歳 未勝利」「3歳以上 オープン」）→ すきまを とって「3歳以上2勝クラス」。
+  //   出馬表の 見出し（「12R 3歳以上 2勝クラス」）は 数字で 始まる ので 前は 名前に して いなかった（下の 行の「(混合)(特指) 定量」が 名前に なって いた）
+  function className(t) {
+    var m = /^([2-4])\s*歳\s*(以上)?\s*(新\s*馬|未\s*勝\s*利|[1-3]\s*勝\s*クラス|オープン)(?![一-龥ぁ-んァ-ヶ])/.exec(String(t || '').trim());
+    return m ? (m[1] + '歳' + (m[2] || '') + m[3]).replace(/\s+/g, '') : null;
+  }
   function nameRow(rs, pats) {
     var hdr = -1;
     for (var h = 0; h < rs.length && hdr < 0; h++) { var ht = rs[h].text; if (/馬\s*番|馬\s*名/.test(ht) || (/人気/.test(ht) && /オッズ|単勝/.test(ht))) hdr = h; }
@@ -162,6 +172,7 @@
       var t = rs[j].text;
       if (j === ri) t = t.replace(/第\s*\d{1,2}\s*(?:競走|レース|R)|\d{1,2}\s*R(?![A-Za-z])/g, ' ');      // R の 行は R を とった 残り
       t = t.replace(/\s+/g, ' ').trim();
+      if (ri >= 0 && j <= ri + 2 && className(t)) return className(t);      // 第4.239版：R の 行か その 下 2行の クラス
       if (!t || /^\d/.test(t) || RN_NG.test(t) || BABA.indexOf(t) >= 0 || STOP.indexOf(t) >= 0) continue;
       var jp = (t.match(/[一-龥ぁ-んァ-ヶ]/g) || []).length;
       if (jp >= 2 && RN_KW.test(t)) return t.slice(0, 30);
@@ -596,7 +607,7 @@
     });
     return best ? best.it : null;
   }
-  var API = { parse: parse, parseOne: parseOne, parseResult: parseResult, rows: rows, tokens: tokens, norm: norm, kataName: kataName, nameTable: nameTable, gaps: gaps, gapHit: gapHit };
+  var API = { parse: parse, parseOne: parseOne, parseResult: parseResult, rows: rows, tokens: tokens, norm: norm, kataName: kataName, nameTable: nameTable, gaps: gaps, gapHit: gapHit, className: className };
   root.TengelOCR = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);

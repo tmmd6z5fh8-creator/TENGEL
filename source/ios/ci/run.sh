@@ -195,6 +195,15 @@ ok = o.get("api") is True and any(q.get("on") and q.get("state") == "running" fo
      and all(q.get("state") != "running" for q in s2) and o.get("h2") is True and all(q.get("state") == "running" for q in s3 if q.get("on")) and o.get("h3") is False
 print("before %s / resign %s / interruption %s / active %s -> %s" % (f(s0), f(s1), f(s2), f(s3), "OK" if ok else "CHECK " + json.dumps(o, ensure_ascii=False)[:500]))
 '
+# 第4.239版：架空の 出馬表（日付ごとの 開催場の ボタン・「開催選択へ レース選択へ」・1R〜12R の 切りかえ・「5回京都7日」・「12R 3歳以上 2勝クラス」）を 本物の Vision で 読んだ 結果
+CARDPY='
+import json, sys
+o = json.load(open(sys.argv[1])).get("ocrcard") or {}; g = o.get("g_card") or {}; h = o.get("h_card") or {}
+ok = g.get("venue") == "京都" and g.get("r") == 12 and g.get("rname") == "3歳以上2勝クラス" and g.get("dist") == 1200 and g.get("start") == "16:15" and g.get("date") == "2026-11-28" \
+     and h.get("venue") == "京都" and h.get("r") == 11 and h.get("rname") == "テンゲルステークス" and h.get("dist") == 1600 and h.get("start") == "15:35"
+f = lambda d: "%s %sR %s %sm %s %s" % (d.get("venue"), d.get("r"), d.get("rname"), d.get("dist"), d.get("start"), d.get("date"))
+print("g_card %s / h_card %s -> %s" % (f(g), f(h), "OK" if ok else "CHECK " + json.dumps(o, ensure_ascii=False)[:500]))
+'
 waitfile() { local f="$1" t="${2:-60}" i=0; while [ $i -lt $((t * 4)) ]; do [ -f "$f" ] && return 0; sleep 0.25; i=$((i + 1)); done; return 1; }
 shot() {
   local u="$1" name="$2" w="${3:-700}"
@@ -263,6 +272,9 @@ ok = o.get("r") == 11 and o.get("venue") == "大井" and o.get("dist") == 1400 a
 st = "OK" if ok else ("SKIP " + str(o.get("skipped")) if o.get("skipped") else "CHECK")
 print("r %s venue %s date %s dist %s n %s baba %s start %s rname %s horses %s top %s -> %s" % (o.get("r"), o.get("venue"), o.get("date"), o.get("dist"), o.get("n"), o.get("baba"), o.get("start"), o.get("rname"), o.get("horses"), json.dumps((o.get("top") or [])[:14], ensure_ascii=False), st))
 ' "$OUT/iphone-report-1.json" 2>&1)"
+    # 第4.239版（まさちゃん 11/28 15:40：作戦会議で 出馬表の 画面から 開催場と R が 読めない）：架空の 出馬表（g_card.jpg・h_card.jpg）を 本物の Vision で 読む →
+    #   開催場 京都（「5回京都7日」：前は「ス選択へ」）・12R／11R（1R〜12R の 切りかえ では ない）・レース名「3歳以上2勝クラス」（クラス）／「テンゲルステークス」・距離・発走
+    say "   ocr card: $(python3 -c "$CARDPY" "$OUT/iphone-report-1.json" 2>&1)"
     # 第4.172版：テンゲルBGM は なくした → 本物の WebKit で しかけ（window.TengelBgm）と 設定の 札が 入って いない・爆発の 動画の 形（H.264：第4.171版）を 読める
     say "   bgm: $(python3 -c '
 import json, sys

@@ -24,6 +24,7 @@ const TCPlan = (() => {
   const today = () => { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
   const jaDate = s => { const [y, m, d] = String(s).split('-').map(Number); return `${y}年${m}月${d}日`; };
   const WD = ['日', '月', '火', '水', '木', '金', '土'];
+  const raceHead = r => (r && r.venue ? String(r.venue) : '') + (r && r.r ? r.r + 'R' : '');      // 第4.239版：「京都12R」（開催場と R）
   const wday = s => { const [y, m, d] = String(s).split('-').map(Number); return WD[new Date(y, m - 1, d).getDay()]; };
   let P = null, root = null, edit = null, auth = '', host = null, delAsk = null;      // delAsk＝「消す」を 1回 押した レースの id（もう一度 押すと 消す）
   // 推し馬（第4.165版）：OL＝一覧（TCOshi.load()）・editO＝登録／直す の 入力の 中身・delAskO＝「この推し馬を消す」を 1回 押した 馬の id・openO＝血統の 表を 開いて いる 馬
@@ -186,8 +187,10 @@ const TCPlan = (() => {
     let cur = '';
     list.forEach(r => {
       if (r.date !== cur) { cur = r.date; if (r.date !== td) h += `<div class="dh">${jaDate(r.date)}（${wday(r.date)}）</div>`; }
-      const meta = [r.venue ? esc(r.venue) : '', r.r ? esc(r.r) + 'R' : '', r.n ? esc(r.n) + '頭' : '', r.dist ? esc(r.dist) + 'm' : ''].filter(Boolean).join('・');
-      h += `<div class="rc"><div class="rt"><span class="tm">${esc(r.time || '--:--')}</span><span class="nm">${esc(r.name || 'レース')}</span><span class="sn" data-sn="${esc(r.id)}" hidden>🔔 まもなく発走</span></div>${meta ? `<div class="mt">${meta}</div>` : ''}${memoBox(r)}${chipRow(r)}`
+      // 第4.239版：名前が ない ときは「京都12R」。名前に 開催場と R が 入って いる ときは 下の 行に もう 書かない
+      const hd = raceHead(r), ttl = r.name || hd || 'レース', dup = !!hd && String(ttl).replace(/\s/g, '').startsWith(hd);
+      const meta = [!dup && r.venue ? esc(r.venue) : '', !dup && r.r ? esc(r.r) + 'R' : '', r.n ? esc(r.n) + '頭' : '', r.dist ? esc(r.dist) + 'm' : ''].filter(Boolean).join('・');
+      h += `<div class="rc"><div class="rt"><span class="tm">${esc(r.time || '--:--')}</span><span class="nm">${esc(ttl)}</span><span class="sn" data-sn="${esc(r.id)}" hidden>🔔 まもなく発走</span></div>${meta ? `<div class="mt">${meta}</div>` : ''}${memoBox(r)}${chipRow(r)}`
         + `<div class="ra"><button type="button" class="sb" data-p="edit" data-id="${esc(r.id)}">直す</button><button type="button" class="sb del${delAsk === r.id ? ' ask' : ''}" data-p="del" data-id="${esc(r.id)}">${delAsk === r.id ? '本当に 消す？' : '消す'}</button></div></div>`;
     });
     h += `<button type="button" class="add" data-p="add">＋ レースを予約</button></div></div>`;
@@ -284,9 +287,9 @@ const TCPlan = (() => {
     return `<div class="fm"><h3>${r._new ? 'レースを予約' : 'レースを直す'}</h3>`
       + `<button type="button" class="ocr" data-p="ocr">📷 画像から読み取る（3枚まで）</button>`
       // 第4.233版（11/27 22:11「作成会議のレース予約の画像読み取りのところ、いつもみたいにレースの画像を送ってね！みたいな感じでいい感じに説明を下に入れてほしい！」）：ボタンの すぐ 下に 説明
-      + `<div class="ocrh"><b>📸 レースの 画像を 送ってね！</b> 出走表や オッズの 画面の スクショを 1〜3枚 選ぶと、レース名・出走頭数・距離・発走時間を 読み取るよ（ポイントは 使わないよ）</div>`
+      + `<div class="ocrh"><b>📸 レースの 画像を 送ってね！</b> 出走表や オッズの 画面の スクショを 1〜3枚 選ぶと、開催場・R・レース名・出走頭数・距離・発走時間を 読み取るよ（ポイントは 使わないよ）</div>`
       + `<div class="om" aria-live="polite">${esc(r._msg || '')}</div>`
-      + `<label>レース名</label><input data-f="name" type="text" maxlength="40" value="${esc(r.name || '')}" placeholder="例）〇〇特別" autocomplete="off">`
+      + `<label>レース名</label><input data-f="name" type="text" maxlength="40" value="${esc(r.name || '')}" placeholder="例）〇〇11R 〇〇特別" autocomplete="off">`
       + `<div class="row2"><div><label>日付</label><input data-f="date" type="date" value="${esc(r.date || today())}"></div><div><label>発走時間</label><input data-f="time" type="time" value="${esc(r.time || '')}"></div></div>`
       + `<div class="row2"><div><label>出走頭数</label><input data-f="n" type="number" inputmode="numeric" min="2" max="18" value="${esc(r.n || '')}" placeholder="例）12"></div><div><label>距離（m）</label><input data-f="dist" type="number" inputmode="numeric" min="800" max="4000" step="100" value="${esc(r.dist || '')}" placeholder="例）1600"></div></div>`
       + `<label>メモ</label><textarea data-f="memo" rows="2" maxlength="${MEMO_MAX}" placeholder="例）パドックを見てから決める" aria-label="メモ" autocomplete="off" autocapitalize="off" spellcheck="false">\n${esc(r.memo || '')}</textarea>`
@@ -309,7 +312,13 @@ const TCPlan = (() => {
       if (!s || !s.json) throw new Error('none');
       const d = await s.json('', { images: fs });
       const got = [];
-      if (d.rname) { edit.name = String(d.rname).slice(0, 40); got.push('レース名'); }
+      // 第4.239版（まさちゃん 11/28 15:40「名前は読み取れなくても、場所とRだけは読み取れるようにできる？ 名前が読み取れる場合はそのまま読み取ってほしい！」
+      //   「名前が読み取れる場合も、場所とRは入れてね！」）：レース名の 欄は「開催場＋R」と 読めた レース名（そのまま）＝「京都12R」「京都11R テンゲルステークス」。
+      //   特別で ない レースは クラスが 名前（「京都12R 3歳以上2勝クラス」：ocr_local.js の className）
+      const vn = d.venue ? String(d.venue).trim().slice(0, 8) : '', rn = +d.r >= 1 && +d.r <= 12 ? Math.round(+d.r) : 0, nm = d.rname ? String(d.rname).trim() : '';
+      if (vn) got.push('開催場'); if (rn) got.push('R'); if (nm) got.push('レース名');
+      if (vn || rn || nm) edit.name = [vn + (rn ? rn + 'R' : ''), nm].filter(Boolean).join(' ').slice(0, 40);
+      if (vn) edit.venue = vn; if (rn) edit.r = rn;
       let n = +d.n || 0, nBy = '';
       if (!n && d.names && typeof d.names === 'object') {
         const ks = Object.keys(d.names).map(Number).filter(x => x >= 1 && x <= 18).sort((x, y) => x - y);
@@ -319,8 +328,7 @@ const TCPlan = (() => {
       if (d.dist) { edit.dist = +d.dist; got.push('距離'); }
       if (d.start) { edit.time = String(d.start).padStart(5, '0'); got.push('発走時間'); }
       if (d.date && /^\d{4}-\d{2}-\d{2}$/.test(d.date) && d.date >= today()) edit.date = d.date;
-      if (d.venue) edit.venue = d.venue; if (d.r) edit.r = +d.r;
-      const miss = ['レース名', '頭数', '距離', '発走時間'].filter(x => !got.some(g => g.startsWith(x)));
+      const miss = ['開催場', 'R', 'レース名', '頭数', '距離', '発走時間'].filter(x => !got.some(g => g.startsWith(x)));
       edit._msg = got.length ? `読み取ったよ（${got.join('・')}）。${miss.length ? `読めなかった：${miss.join('・')} → 手で 入れてね。` : ''}違う 所は 直してね` : '読み取れなかったよ。手で 入れてね';
     } catch (er) { edit._msg = '読み取れなかったよ。手で 入れてね'; }
     paint();

@@ -261,14 +261,14 @@ try:
               return { name: v('name'), n: v('n'), dist: v('dist'), time: v('time'), date: v('date'), msg: (r.querySelector('.om') || {}).innerText || '', left: window.__ocrLines.length }; }""")
         q1 = plan_read([I1, I2, I3])
         print('   作戦会議①:', q1)
-        check(q1['left'] == 0 and q1['name'] == 'テンゲルの日特別 A(1 a)' and q1['n'] == '12' and q1['dist'] == '1700' and q1['time'] == '20:15' and q1['date'] == '2026-10-14'
-              and '読み取ったよ（レース名・頭数・距離・発走時間）' in q1['msg'] and '読めなかった' not in q1['msg'],
+        check(q1['left'] == 0 and q1['name'] == '名古屋11R テンゲルの日特別 A(1 a)' and q1['n'] == '12' and q1['dist'] == '1700' and q1['time'] == '20:15' and q1['date'] == '2026-10-14'      # 第4.239版：名前の 前に 開催場と R
+              and '読み取ったよ（開催場・R・レース名・頭数・距離・発走時間）' in q1['msg'] and '読めなかった' not in q1['msg'],
               f'⑩3枚 まとめて 読む：レース名（見出しの「11R 日付」の 下の 行）・頭数（2枚目の「出走頭数：12」）・距離・発走 → 入る（{q1["name"]}・{q1["n"]}頭）')
         names = [Wd('11R', 0.05, 0.03, 0.1)] + [Wd(f'{k} {nm}', 0.05, 0.08 + k * 0.04, 0.6) for k, nm in enumerate(['サンライズゴールド', 'テンゲルクイーン', 'ナイトレイン', 'ブルーハーバー', 'コスモスカイ', 'ミラクルアロー', 'ハッピーデイズ', 'シルバーウィンド', 'ドリームキャッチャー', 'ロイヤルステップ'], 1)]
         pl.locator('[data-f=name]').fill(''); pl.locator('[data-f=n]').fill('')
         q2 = plan_read([names])
         print('   作戦会議②:', q2)
-        check(q2['n'] == '10' and '頭数（写って いた 馬の 数）' in q2['msg'] and '読めなかった：レース名・距離・発走時間' in q2['msg'],
+        check(q2['n'] == '10' and '頭数（写って いた 馬の 数）' in q2['msg'] and '読めなかった：開催場・レース名・距離・発走時間' in q2['msg'] and q2['name'] == '11R',      # 第4.239版：R だけ 読めた ときも 名前に
               f'⑩頭数の 字が ない 出馬表（馬番と 名前 1〜10）→ 頭数は 写って いた 馬の 数（10頭）と 書いて 入る・読めなかった 項目も 出す（{q2["msg"][:60]}）')
         pl.locator('[data-f=n]').fill('')
         gap = [Wd('11R', 0.05, 0.03, 0.1)] + [Wd(f'{k} {nm}', 0.05, 0.08 + k * 0.04, 0.6) for k, nm in ((1, 'サンライズゴールド'), (2, 'テンゲルクイーン'), (4, 'ブルーハーバー'), (5, 'コスモスカイ'), (6, 'ミラクルアロー'))]

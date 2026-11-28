@@ -90,7 +90,7 @@
       var at0 = planStart(r); if (!at0) return;
       (r.notify || []).forEach(function (m) {
         var at = at0 - m * 60000; if (at <= now + 5000) return;
-        out.push({ id: 'plan-' + r.id + '-' + m, at: at, title: 'まもなく発走！', body: (r.name || 'レース') + '　' + r.time + ' 発走（あと' + m + '分）', race: '' });
+        out.push({ id: 'plan-' + r.id + '-' + m, at: at, title: 'まもなく発走！', body: (r.name || ((r.venue || '') + (r.r ? r.r + 'R' : '')) || 'レース') + '　' + r.time + ' 発走（あと' + m + '分）', race: '' });
       });
     });
     return out;
