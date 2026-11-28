@@ -756,6 +756,31 @@
       d.remove(); out.q = TengelFab.hidden();
       return out;
     });
+    // 第4.242版（まさちゃん 2026/11/29 00:09・00:43・00:49・00:52）：ポイントの お知らせ（pt_note.js：2,500P 未満で 上の 帯の ポイントの 札に「！」→ 押すと 開く・説明書と 同じ 見た目・
+    //   いちばん 下に「ポイントを 購入」）と 作戦会議の 下の「やりたいレースを予約！」の テロップ（#rvBtn：着せ替えの 名前の 札と 同じ 形）を 本物の WebKit で。絵は CI に ない（字と 絵文字）
+    await step(R, 'ptNote', async function () {
+      var N = window.TengelPtNote, R2 = function (e) { if (!e || e.hidden) return null; var r = e.getBoundingClientRect(); return r.width ? [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)] : null; };
+      var out = { api: !!N };
+      tab('judge'); await sleep(600); window.scrollTo(0, 0); await sleep(300);
+      var rv = document.getElementById('rvBtn'), kl = document.querySelector('#kiseBtn .kisel');
+      out.rv = R2(rv); out.plan = R2(document.getElementById('planBtn')); out.kise = R2(document.getElementById('kiseBtn')); out.hd = R2(document.querySelector('header.top'));
+      out.rvTxt = rv ? rv.textContent : null; out.rvDk = rv ? rv.classList.contains('dk') : null;
+      if (rv && kl) { var a = getComputedStyle(rv), b = getComputedStyle(kl); out.rvSame = a.fontFamily === b.fontFamily && a.borderTopColor === b.borderTopColor && a.backgroundColor === b.backgroundColor && a.color === b.color; }
+      await mark('rv-btn');
+      if (!N) { await mark('pt-note'); await mark('pt-note-shop'); return out; }
+      N.open(); await sleep(1500);
+      var n = document.getElementById('ptNote'), cs = n ? getComputedStyle(n) : null, cv = n ? n.querySelector('.pnrt canvas') : null, bd = n ? n.querySelector('.pnbd') : null;
+      out.open = !!n; out.z = cs ? +cs.zIndex : null; out.ff = cs ? cs.fontFamily.slice(0, 40) : null; out.h2 = n ? (n.querySelector('h2') || {}).textContent : null;
+      out.secs = n ? [].map.call(n.querySelectorAll('.pnsec'), function (e) { return e.textContent; }) : [];
+      out.buys = n ? n.querySelectorAll('.pnshop [data-pt=buy]').length : 0;
+      out.rt = cv ? (cv.dataset.ok || (cv.closest('.pnt').classList.contains('pnnone') ? 'none' : '')) : null;
+      await mark('pt-note');
+      var sh = n ? n.querySelector('.pnshop') : null; if (bd && sh) { bd.scrollTop = sh.offsetTop - 60; await sleep(500); }
+      await mark('pt-note-shop');
+      N.close(); await sleep(300);
+      out.closed = !document.getElementById('ptNote') && !document.documentElement.classList.contains('ptnoteon');
+      return out;
+    });
     // 第4.62版：説明書は アプリの 中の 重ねた 窓（iframe）で 開く：ページは そのまま・「アプリに戻る」で 窓が 閉じる
     await step(R, 'manualOv', async function () {
       tab('rec'); await sleep(600);

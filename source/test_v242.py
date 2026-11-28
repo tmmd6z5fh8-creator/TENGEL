@@ -259,5 +259,23 @@ try:
 finally:
     srv.terminate()
 shutil.rmtree(SRV, ignore_errors=True)
+# ---------- ⑤ GitHub の Mac（selftest.js の ptNote・run.sh の PTNPY・P1 の 印）----------
+st = open(os.path.join(W, 'ios', 'ci', 'selftest.js'), encoding='utf8').read(); rs = open(os.path.join(W, 'ios', 'ci', 'run.sh'), encoding='utf8').read()
+check("step(R, 'ptNote'" in st and st.index("step(R, 'fabHide'") < st.index("step(R, 'ptNote'") < st.index("step(R, 'manualOv'") and "await mark('rv-btn');" in st and "await mark('pt-note');" in st and "await mark('pt-note-shop');" in st
+      and ' rec numpad rv-btn pt-note pt-note-shop manual-ov ' in rs and 'pt note: $(python3 -c "$PTNPY"' in rs and 'pt note (ipad): $(python3 -c "$PTNPY"' in rs,
+      '⑤ selftest.js の ptNote（fabHide と 説明書の あいだ・印 rv-btn → pt-note → pt-note-shop）・run.sh の PTNPY の 行（iPhone・iPad）・P1 の 印の 順')
+pya = re.search(r"\nPTNPY='\n(.*?)\n'\n", rs, re.S).group(1)
+good = {'ptNote': {'api': True, 'rv': [138, 128, 255, 146], 'plan': [137, 86, 255, 133], 'kise': [263, 92, 373, 143], 'hd': [0, 0, 402, 160], 'rvTxt': 'やりたいレースを予約！', 'rvDk': True, 'rvSame': True,
+                   'open': True, 'z': 72, 'ff': '"Hiragino Sans", "Hiragino Kaku Gothic', 'h2': 'お世話をして ポイント大量ゲットを 目指そう！', 'secs': ['トレーニングセンター', 'TENGERカードバトル', 'ポイントを 購入'],
+                   'buys': 7, 'rt': 'none', 'closed': True}}
+tmp = os.path.join(W, 't4', '_ptnpy.json'); os.makedirs(os.path.dirname(tmp), exist_ok=True)
+def runpy(d):
+    json.dump(d, open(tmp, 'w', encoding='utf8')); return subprocess.run(['python3', '-c', pya, tmp], capture_output=True, text=True).stdout.strip()
+r1 = runpy(good)
+bad1 = json.loads(json.dumps(good)); bad1['ptNote']['rv'] = [263, 120, 373, 150]                      # 着せ替えに 重なる
+bad2 = json.loads(json.dumps(good)); bad2['ptNote']['buys'] = 4                                       # 買う ボタンが たりない
+bad3 = json.loads(json.dumps(good)); bad3['ptNote']['rvDk'] = False; bad3['ptNote']['kise'] = [263, 150, 373, 200]      # カードの 右上：着せ替えが テロップの 下（OK）
+r2, r3, r4 = runpy(bad1), runpy(bad2), runpy(bad3)
+check(r1.endswith('-> OK') and 'CHECK' in r2 and 'CHECK' in r3 and r4.endswith('-> OK'), f'⑤ PTNPY：よい 形 → OK・着せ替えに 重なる／買う ボタンが たりない → CHECK・カードの 右上の 形 → OK {r1[-40:]!r}')
 print('FAILS', len(fails), fails)
 sys.exit(1 if fails else 0)

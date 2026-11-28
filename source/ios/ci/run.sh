@@ -191,6 +191,18 @@ want = [False, True, True, False, True, False, True, False]
 ok = o.get("api") is True and all(s.get("h") is w and s.get("v") == ("hidden/0" if w else "visible/1") and s.get("hit") is (not w) for s, w in zip(st, want)) and o.get("q") is False
 print("%s -> %s" % (" ".join("%d:%s%s" % (i, s.get("v"), "" if s.get("hit") else "(no tap)") for i, s in enumerate(st)), "OK" if ok else "CHECK " + json.dumps(o, ensure_ascii=False)[:500]))
 '
+# 第4.242版：ポイントの お知らせ（開く・説明書と 同じ 見た目・3つの 欄・買う ボタン 7こ・閉じる）と「やりたいレースを予約！」の テロップ（作戦会議の 下・着せ替えに 重ならない・帯の 中）
+PTNPY='
+import json, sys
+o = json.load(open(sys.argv[1])).get("ptNote") or {}
+rv, pl, ks, hd = o.get("rv"), o.get("plan"), o.get("kise"), o.get("hd")
+lap = lambda a, b: bool(a and b) and a[2] > b[0] and a[0] < b[2] and a[3] > b[1] and a[1] < b[3]
+place = bool(rv and pl and ks) and rv[1] > pl[1] and not lap(rv, ks) and ((o.get("rvDk") is True and bool(hd) and rv[3] <= hd[3]) or (o.get("rvDk") is False and ks[1] >= rv[3]))
+ok = o.get("api") is True and o.get("open") is True and o.get("z") == 72 and "Hiragino" in (o.get("ff") or "") and o.get("h2") == "お世話をして ポイント大量ゲットを 目指そう！" \
+     and o.get("secs") == ["トレーニングセンター", "TENGERカードバトル", "ポイントを 購入"] and o.get("buys") == 7 and o.get("rt") in ("none", "1") and o.get("closed") is True \
+     and o.get("rvTxt") == "やりたいレースを予約！" and o.get("rvSame") is True and place
+print("note open %s z %s secs %d buys %s roulette %s closed %s / rv %s dock %s plan %s kise %s -> %s" % (o.get("open"), o.get("z"), len(o.get("secs") or []), o.get("buys"), o.get("rt"), o.get("closed"), rv, o.get("rvDk"), pl, ks, "OK" if ok else "CHECK " + json.dumps(o, ensure_ascii=False)[:500]))
+'
 # 第4.239版：架空の 出馬表（日付ごとの 開催場の ボタン・「開催選択へ レース選択へ」・1R〜12R の 切りかえ・「5回京都7日」・「12R 3歳以上 2勝クラス」）を 本物の Vision で 読んだ 結果
 CARDPY='
 import json, sys
@@ -240,7 +252,7 @@ phase() {
 }
 applog() { xcrun simctl spawn "$1" log show --last 15m --style compact --predicate 'process CONTAINS "テンゲル" OR (process CONTAINS "WebContent" AND eventMessage CONTAINS[c] "error")' 2>/dev/null | tail -400 > "$OUT/$2-log.txt"; }
 
-P1="gate-first main rsv-ov fx-push fx-board fx-fz-push fx-fz-result fx-sgd-still fx-sd fx-sd-board fx-gk fx-gk-board board-carry board-carry-slip board-carry-miss ks-judge ks-push ks-board ks-set ks-conf ks-sb-light ks-tengel ks-pack ks-pack-wall ks-news points unlock-conf fab-marks plan-soon settings backup about rec numpad manual-ov manual-ov-item cb-toy cb-menu cb-game cb-end report-1 manual manual-item report-manual back report-back"
+P1="gate-first main rsv-ov fx-push fx-board fx-fz-push fx-fz-result fx-sgd-still fx-sd fx-sd-board fx-gk fx-gk-board board-carry board-carry-slip board-carry-miss ks-judge ks-push ks-board ks-set ks-conf ks-sb-light ks-tengel ks-pack ks-pack-wall ks-news points unlock-conf fab-marks plan-soon settings backup about rec numpad rv-btn pt-note pt-note-shop manual-ov manual-ov-item cb-toy cb-menu cb-game cb-end report-1 manual manual-item report-manual back report-back"
 # 4) iPhone
 if [ -n "$IPHONE" ]; then
   xcrun simctl boot "$IPHONE" > /dev/null 2>&1; xcrun simctl bootstatus "$IPHONE" -b > /dev/null 2>&1
@@ -370,6 +382,7 @@ print("item %s name %s/%s 1-line %s go %s now %s text %s closed %s points-same %
   [ -f "$OUT/iphone-report-1.json" ] && say "   care recorder: $(python3 -c "$RECPY" "$OUT/iphone-report-1.json" 2>&1)"
   [ -f "$OUT/iphone-report-1.json" ] && say "   audio quiet: $(python3 -c "$AUDPY" "$OUT/iphone-report-1.json" 2>&1)"
   [ -f "$OUT/iphone-report-1.json" ] && say "   fab hide: $(python3 -c "$FABPY" "$OUT/iphone-report-1.json" 2>&1)"
+  [ -f "$OUT/iphone-report-1.json" ] && say "   pt note: $(python3 -c "$PTNPY" "$OUT/iphone-report-1.json" 2>&1)"
   phase "$IPHONE" iphone 2 700 report-2
   # 第4.191版：時計の 番人：アプリの 時計（Clock.swift）が 届く・電源を 入れてからの 時間が 進む・アプリを 開き直しても 起動の 番号（boot）と 端末の 番号（dev）は 同じ・
   #   アプリの 番号（proc）は かわる・Webの 画面（TengelClock）は 1回目 first／ok・2回目 ok（同じ 起動）。boot が 空（iOS が 見せない）でも ほかが 合えば OK（その ときは 番号なしで 見はる）
@@ -436,6 +449,7 @@ if [ -n "$IPAD" ]; then
   [ -f "$OUT/ipad-report-1.json" ] && say "   care recorder (ipad): $(python3 -c "$RECPY" "$OUT/ipad-report-1.json" 2>&1)"
   [ -f "$OUT/ipad-report-1.json" ] && say "   audio quiet (ipad): $(python3 -c "$AUDPY" "$OUT/ipad-report-1.json" 2>&1)"
   [ -f "$OUT/ipad-report-1.json" ] && say "   fab hide (ipad): $(python3 -c "$FABPY" "$OUT/ipad-report-1.json" 2>&1)"
+  [ -f "$OUT/ipad-report-1.json" ] && say "   pt note (ipad): $(python3 -c "$PTNPY" "$OUT/ipad-report-1.json" 2>&1)"
   [ -f "$OUT/ipad-report-1.json" ] && say "   fab marks (ipad): $(python3 -c "$V221PY" "$OUT/ipad-report-1.json" 2>&1)"
   applog "$IPAD" ipad
   xcrun simctl shutdown "$IPAD" > /dev/null 2>&1
