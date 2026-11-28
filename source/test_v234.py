@@ -20,6 +20,8 @@
 #   ⑭ やめる・✕・うしろの 幕は かえない・開いた すぐ あとの 幕の クリックでは 閉じない・見えない 字は 入れない・タグの 形の 字も 字の まま
 #   ⑮ 閉じて 開き直しても・ページを 読み直しても のこる・遊び方に「牧場の看板」・iPhone SE（375×667）でも 看板と フィールドが 重ならない
 #   ⑯ 写真：t4/v234_tc_sign.png（看板）・t4/v234_tc_name.png（名前の 窓）
+#   第4.235版から：数字が かわる 秒は news_wall.TK_S（7秒：まさちゃん 11/28 08:41）・看板を 押すと アプリでは iOS の 窓（test_v235.py）。
+#     この テストの にせものの アプリ（test_native.py の FAKE）は 窓を 出せない ので、画面の 中の 窓（nameDialog）に なる ＝ その 窓の たしかめ
 #   python3 test_v234.py
 import hashlib, io, json, os, re, shutil, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -100,12 +102,13 @@ first = C[0].split('-')
 cells_html = re.findall(r'<i class="nsn k(\d)" data-tki="(\d)">(\d+)</i>', html)
 check(f'src="/_blob/{PAPER}"' in html and f'src="/_blob/{TICKETS}"' in html and OLD_RUN not in html + css and OLD_STATIC not in html + css and 'nsh' not in html + css and 'nsr' not in html + css
       and f'data-tkc="{" ".join(C)}"' in html and cells_html == [('0', '0', first[0]), ('1', '1', first[1]), ('2', '0', first[0]), ('3', '1', first[1]), ('4', '2', first[2])]
-      and 'aria-label="競馬新聞の紙面のような、題字と馬柱、馬単と3連単の馬券（馬券の数字が15秒ごとにかわる）"' in html,
+      and f'aria-label="{news_wall.ALT}"' in html and f'{news_wall.TK_S}秒ごと' in news_wall.ALT,
       '④ ページ：新聞の 紙（馬なし）・馬券・数字の 層（data-tkc＝25組）・数字 5つ（馬単 2つ＝組の 1・2番目／3連単 3つ）・はじめは 1組目・前の 走る 馬（nsh・nsr・走る コマ）は ない')
-check('.nsw .nst{position:absolute;left:117px;top:18px;width:175px;height:140px;pointer-events:none}' in css and '.nsw .nsq{position:absolute;left:0;top:0;width:175px;height:140px;animation:nsTk 15s linear infinite}' in css
-      and '@keyframes nsTk{0%{opacity:0}2.6667%{opacity:1}97.3333%{opacity:1}100%{opacity:0}}' in css and '@media (prefers-reduced-motion:reduce){.nsw .nsq{animation:none}}' in css
+FI = round(100 * news_wall.TK_FADE / news_wall.TK_S, 4)
+check('.nsw .nst{position:absolute;left:117px;top:18px;width:175px;height:140px;pointer-events:none}' in css and f'.nsw .nsq{{position:absolute;left:0;top:0;width:175px;height:140px;animation:nsTk {news_wall.TK_S}s linear infinite}}' in css
+      and f'@keyframes nsTk{{0%{{opacity:0}}{news_wall._f(FI, 4)}%{{opacity:1}}{news_wall._f(100 - FI, 4)}%{{opacity:1}}100%{{opacity:0}}}}' in css and '@media (prefers-reduced-motion:reduce){.nsw .nsq{animation:none}}' in css
       and 'font-family:"Kaisei Tokumin",serif;font-weight:800' in css and css.count('transform:matrix(') == 5,
-      '④ ページの CSS：馬券は 左 117・上 18・175×140pt・数字の 層は 15秒で 1回り（はじめと おわりに 0.4秒 うすく）・視差効果を減らす なら 動きなし・字は Kaisei Tokumin 800・枠ごとの かたむき（matrix）')
+      f'④ ページの CSS：馬券は 左 117・上 18・175×140pt・数字の 層は {news_wall.TK_S}秒で 1回り（はじめと おわりに 0.4秒 うすく）・視差効果を減らす なら 動きなし・字は Kaisei Tokumin 800・枠ごとの かたむき（matrix）')
 h0, c0 = news_wall.inline_run(blobs, json.load(open(os.path.join(K, 'news_run.json'), encoding='utf8')))
 check(f'/_blob/{OLD_RUN}' in c0 and 'class="nsh"' in h0, '④ 前の 形（墨の 馬が 走る：inline_run）は のこして ある（テスト・見本 用。アプリには 入れない）')
 
@@ -130,7 +133,7 @@ NT = open(os.path.join(W, 'test_native.py'), encoding='utf8').read()
 FAKE = re.search(r'\nFAKE = """(.*?)"""', NT, re.S).group(1)      # アプリの 窓口の にせもの
 kj = json.load(open(os.path.join(SRV, 'APP', 'ks_news.json'), encoding='utf8')); kt = kj['bnr']['html'] + kj['bnr']['css']
 check(f'ks_{PAPER}.webp' in kt and f'ks_{TICKETS}.webp' in kt and OLD_RUN not in json.dumps(kj) and OLD_STATIC not in json.dumps(kj)
-      and '@keyframes kbnsTk{' in kj['bnr']['css'] and 'animation:kbnsTk 15s linear infinite' in kj['bnr']['css'] and '#ksBnr.calm .nsw .nsq{animation:none}' in kj['bnr']['css']
+      and '@keyframes kbnsTk{' in kj['bnr']['css'] and f'animation:kbnsTk {news_wall.TK_S}s linear infinite' in kj['bnr']['css'] and '#ksBnr.calm .nsw .nsq{animation:none}' in kj['bnr']['css']
       and '#ksBnr .nsw .nsn{' in kj['bnr']['css'],
       '⑤ アプリの ks_news.json：紙と 馬券の 絵・数字の 層の 動き（kbnsTk）・演出を控えめにする（.calm）でも 動きなし・前の 走る コマと 止まった 絵は さして いない')
 import build_kisekae as BK
@@ -222,7 +225,7 @@ def tc_checks(p):
         elif how == 'x': pg.locator('#tcnmd .nx').click()
         else: pg.mouse.click(195, 820)
         pg.wait_for_timeout(200); res.append((pg.evaluate(DLG)['on'], pg.evaluate(SIGN)['txt']))
-    pg.evaluate("() => { TCApp.farm.open(); document.querySelector('#tcnmd .nbk').click(); }"); fast = pg.evaluate(DLG)['on']
+    pg.evaluate("() => { TCApp.farm.dialog(); document.querySelector('#tcnmd .nbk').click(); }"); fast = pg.evaluate(DLG)['on']      # 第4.235版：画面の 中の 窓は farm.dialog
     pg.evaluate("() => TCApp.farm.close()")
     check(res == [(False, 'テンゲル牧場')] * 3 and fast, f'⑭ やめる・✕・うしろの 幕で 閉じても 名前は かわらない・開いた すぐ あと（0.35秒）の 幕の クリックでは 閉じない（{res}）')
     pg.locator('#tcOv .tcnm').click(); pg.wait_for_timeout(450)
@@ -328,8 +331,8 @@ try:
         pg.screenshot(path=os.path.join(SHOT, 'v234_news_top.png'), clip=dict(x=0, y=0, width=390, height=560))
         # ⑦ 数字が かわる
         c1 = pg.evaluate(CUR, '#ksBnr .nsq')
-        check(bool(c1) and c1['an'] and c1['an'][0][0] == 'kbnsTk' and c1['an'][0][1] == 'running' and c1['an'][0][2] == 15000 and c1['an'][0][3] is None or (c1 and c1['an'] and c1['an'][0][3] in (None, float('inf'))),
-              f'⑦ 数字の 層の 動き：kbnsTk・15秒で 1回り・ずっと くり返す（{c1 and c1["an"]}）')
+        check(bool(c1) and c1['an'] and c1['an'][0][0] == 'kbnsTk' and c1['an'][0][1] == 'running' and c1['an'][0][2] == news_wall.TK_S * 1000 and c1['an'][0][3] is None or (c1 and c1['an'] and c1['an'][0][3] in (None, float('inf'))),
+              f'⑦ 数字の 層の 動き：kbnsTk・{news_wall.TK_S}秒で 1回り・ずっと くり返す（{c1 and c1["an"]}）')
         pg.evaluate("() => { const s = document.createElement('style'); s.id = 'tkFast'; s.textContent = '#ksBnr .nsw .nsq{animation-duration:.25s!important}'; document.head.appendChild(s); }")
         w1 = pg.evaluate(WATCH, ['#ksBnr .nsq', 9000])
         sq = w1['seen']

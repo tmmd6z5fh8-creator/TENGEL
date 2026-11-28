@@ -171,6 +171,20 @@ ok = o.get("have") is True and o.get("ok0") is True and o.get("ok1") is True and
      and (o.get("px") or 0) > 0.05 and len(rd) == 3 and rd[0] == 2 and rd[1] == 0.375 and rd[2] == 32
 print("have %s ok %s/%s frames %s drawn %s same %s hidden %s forced %s different %s (compared %s) ref-diff %s filled %s reads %s names %s -> %s" % (o.get("have"), o.get("ok0"), o.get("ok1"), s.get("frames"), s.get("drawn"), s.get("same"), s.get("hidden"), s.get("forced"), s.get("bad"), o.get("checks"), o.get("diff"), o.get("px"), rd, o.get("names"), "OK" if ok else "CHECK " + json.dumps(o, ensure_ascii=False)[:400]))
 '
+# 第4.235版：牧場の 看板の 名前の 窓（iOS の UIAlertController ＋ 1行の 欄：まさちゃん 11/28 08:41「牧場の名前変えようとしても入力するところが出てこない」）。
+#   窓が 出る・欄が キーボードを 出す 形（first responder）・題と はじめの 字・ボタン・13文字で「決める」が 押せない・字の 数・キーボードの 決定で 返る・2回目は ことわる
+FARMPY='
+import json, sys
+o = json.load(open(sys.argv[1])).get("farmPrompt") or {}; r = o.get("r") or {}; a = r.get("auto") or {}; b = o.get("busy"); k = o.get("ask") or {}
+t0 = a.get("text0") or ""; bd = b if isinstance(b, dict) else {}
+ok = o.get("have") is True and r.get("ok") is True and r.get("text") == "CIの牧場" and a.get("presented") is True and a.get("first") is True \
+     and a.get("title") == "🪧 牧場の名前" and t0 == k.get("text") and a.get("place") == "テンゲル牧場" and a.get("actions") == ["決める", "やめる"] and a.get("pref") == "決める" \
+     and a.get("ok0") is True and a.get("overOK") is False and "13/12文字" in (a.get("overMsg") or "") and a.get("okOK") is True and "5/12文字" in (a.get("msg") or "") \
+     and a.get("via") == "return" and a.get("done") is True and a.get("clear") is True and bd.get("busy") is True
+print("presented %s first %s title %s text0 %s sel %s actions %s pref %s over %s %s answer %s %s via %s busy %s waited %s -> %s" % (a.get("presented"), a.get("first"), a.get("title"), t0, a.get("sel"),
+      ",".join(a.get("actions") or []), a.get("pref"), a.get("overOK"), (a.get("overMsg") or "").split("\n")[-1], r.get("text"), (a.get("msg") or "").split("\n")[-1], a.get("via"), bd.get("busy"), a.get("waited"),
+      "OK" if ok else "CHECK " + json.dumps(o, ensure_ascii=False)[:500]))
+'
 waitfile() { local f="$1" t="${2:-60}" i=0; while [ $i -lt $((t * 4)) ]; do [ -f "$f" ] && return 0; sleep 0.25; i=$((i + 1)); done; return 1; }
 shot() {
   local u="$1" name="$2" w="${3:-700}"
@@ -204,7 +218,7 @@ phase() {
 }
 applog() { xcrun simctl spawn "$1" log show --last 15m --style compact --predicate 'process CONTAINS "テンゲル" OR (process CONTAINS "WebContent" AND eventMessage CONTAINS[c] "error")' 2>/dev/null | tail -400 > "$OUT/$2-log.txt"; }
 
-P1="gate-first main rsv-ov fx-push fx-board fx-fz-push fx-fz-result fx-sgd-still fx-sd fx-sd-board fx-gk fx-gk-board board-carry board-carry-slip board-carry-miss ks-judge ks-push ks-board ks-set ks-conf ks-sb-light ks-tengel ks-pack ks-pack-wall points unlock-conf fab-marks plan-soon settings backup about rec numpad manual-ov manual-ov-item cb-toy cb-menu cb-game cb-end report-1 manual manual-item report-manual back report-back"
+P1="gate-first main rsv-ov fx-push fx-board fx-fz-push fx-fz-result fx-sgd-still fx-sd fx-sd-board fx-gk fx-gk-board board-carry board-carry-slip board-carry-miss ks-judge ks-push ks-board ks-set ks-conf ks-sb-light ks-tengel ks-pack ks-pack-wall ks-news points unlock-conf fab-marks plan-soon settings backup about rec numpad manual-ov manual-ov-item cb-toy cb-menu cb-game cb-end farm-prompt report-1 manual manual-item report-manual back report-back"
 # 4) iPhone
 if [ -n "$IPHONE" ]; then
   xcrun simctl boot "$IPHONE" > /dev/null 2>&1; xcrun simctl bootstatus "$IPHONE" -b > /dev/null 2>&1
@@ -276,7 +290,7 @@ print("top run %s / down pause %s run %s / back run %s / cover pause %s run %s /
   [ -f "$OUT/iphone-report-1.json" ] && say "   news tickets: $(python3 -c '
 import json, re, sys
 k = json.load(open(sys.argv[1])).get("kisekae") or {}; n = k.get("newsTk") or {}; an = n.get("anim") or []
-ok = bool(n) and re.fullmatch(r"([1-9]|1[0-6])( ([1-9]|1[0-6])){4}", n.get("first") or "") is not None and bool(an) and an[0][0] == "kbnsTk" and an[0][2] == 15000 \
+ok = bool(n) and re.fullmatch(r"([1-9]|1[0-6])( ([1-9]|1[0-6])){4}", n.get("first") or "") is not None and bool(an) and an[0][0] == "kbnsTk" and an[0][2] == 7000 \
      and n.get("font") is True and "Kaisei Tokumin" in (n.get("ff") or "") and (n.get("changes") or 0) >= 4 and not n.get("bad") and n.get("pauseSame") is True
 print("first %s anim %s font %s changes %s bad %s pause-same %s -> %s" % (n.get("first"), an[:1], n.get("font"), n.get("changes"), (n.get("bad") or [])[:2], n.get("pauseSame"), "OK" if ok else "CHECK"))
 ' "$OUT/iphone-report-1.json" 2>&1)"
@@ -328,6 +342,7 @@ print("item %s name %s/%s 1-line %s go %s now %s text %s closed %s points-same %
 ' "$OUT/iphone-report-1.json" 2>&1)"
   [ -f "$OUT/iphone-report-1.json" ] && say "   fab marks: $(python3 -c "$V221PY" "$OUT/iphone-report-1.json" 2>&1)"
   [ -f "$OUT/iphone-report-1.json" ] && say "   care recorder: $(python3 -c "$RECPY" "$OUT/iphone-report-1.json" 2>&1)"
+  [ -f "$OUT/iphone-report-1.json" ] && say "   farm prompt: $(python3 -c "$FARMPY" "$OUT/iphone-report-1.json" 2>&1)"
   phase "$IPHONE" iphone 2 700 report-2
   # 第4.191版：時計の 番人：アプリの 時計（Clock.swift）が 届く・電源を 入れてからの 時間が 進む・アプリを 開き直しても 起動の 番号（boot）と 端末の 番号（dev）は 同じ・
   #   アプリの 番号（proc）は かわる・Webの 画面（TengelClock）は 1回目 first／ok・2回目 ok（同じ 起動）。boot が 空（iOS が 見せない）でも ほかが 合えば OK（その ときは 番号なしで 見はる）
@@ -392,6 +407,7 @@ if [ -n "$IPAD" ]; then
   phase "$IPAD" ipad 1 1000 $P1
   [ -f "$OUT/ipad-report-1.json" ] && say "   card battle (ipad): $(python3 -c "$CBPY" "$OUT/ipad-report-1.json" 2>&1)"
   [ -f "$OUT/ipad-report-1.json" ] && say "   care recorder (ipad): $(python3 -c "$RECPY" "$OUT/ipad-report-1.json" 2>&1)"
+  [ -f "$OUT/ipad-report-1.json" ] && say "   farm prompt (ipad): $(python3 -c "$FARMPY" "$OUT/ipad-report-1.json" 2>&1)"
   [ -f "$OUT/ipad-report-1.json" ] && say "   fab marks (ipad): $(python3 -c "$V221PY" "$OUT/ipad-report-1.json" 2>&1)"
   applog "$IPAD" ipad
   xcrun simctl shutdown "$IPAD" > /dev/null 2>&1

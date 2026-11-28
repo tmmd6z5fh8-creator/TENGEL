@@ -97,7 +97,8 @@ const TCApp = (() => {
   // ---------- 牧場の 看板（第4.234版・まさちゃん 2026/11/28 02:59「トレーニングセンターの牧場の名前をユーザーが決められるようにできる？一枚目の黄四角のところに、
   //   二枚目みたいに、看板置いて！三枚目が看板のモデル！ユーザーが名前打ち込んで決められるようにして！」）----------
   //   フィールドの すぐ 上の 帯（.tcwr の 中・フィールドの 外）に 木の 看板（まさちゃんの 絵 tc_sign.webp：kisekae/tc/sign_asset.py）と 牧場の 名前（字で 書く）。
-  //   名前は st.farm（空なら FARM_DEF＝はじめの 名前）。看板を 押すと 名前を 打ちこむ 窓（#tcnmd：FARM_MAX 文字 まで・「テンゲル牧場」に もどせる）。
+  //   名前は st.farm（空なら FARM_DEF＝はじめの 名前）。看板を 押すと 名前を 打ちこむ 窓（FARM_MAX 文字 まで・「テンゲル牧場」に もどせる）：
+  //   第4.235版から アプリの 中では iOS の 窓（下の nameAsk）・Web と テストでは 画面の 中の 窓（#tcnmd：nameDialog）。
   //   名前は この 端末の 中 だけ（トレーニングセンターの ほかの データと 同じ localStorage）。字は 端末の 明朝（打ちこんだ どの 漢字も 出る：しぼった 字では ない）。
   //   長い 名前は 字を 小さく して 板の 中に おさめる（fitName）。帯が たりない 画面（iPhone SE など）は フィールドを 少し 小さく する（layout）
   const FARM_DEF = 'テンゲル牧場', FARM_MAX = 12;
@@ -363,7 +364,40 @@ const TCApp = (() => {
     c.textContent = over ? `${n}/${FARM_MAX}文字（${FARM_MAX}文字までだよ）` : n ? `${n}/${FARM_MAX}文字` : `空なら「${FARM_DEF}」になるよ`;
     nmd.querySelector('[data-nm=ok]').disabled = over;
   }
+  // 第4.235版（まさちゃん 2026/11/28 08:41「牧場の名前変えようとしても入力するところが出てこないから改善して！」）：
+  //   アプリ（iOS）の 中では、名前は iOS の 窓（TengelNative.call('prompt')：UIAlertController の 1行の 欄・窓が 出たら すぐ キーボード）で 打つ。
+  //   画面の 中の 窓（#tcnmd：nameDialog）は、アプリの 窓が 使えない とき（Web・テスト・前の 形の アプリ）だけ。
+  //   Web の 欄は、押した ときの 決まりや 使い方（iPad の Swift Playgrounds・ペンシル）で キーボードが 出ない ことが ある（第4.62版の 数字の 欄と 同じ）
+  const farmAsk = () => {
+    const cur = farmName();
+    return { title: '🪧 牧場の名前', message: `看板に 書く 名前を 入れてね（${FARM_MAX}文字まで）`, text: cur, placeholder: FARM_DEF, max: FARM_MAX,
+      empty: `空なら「${FARM_DEF}」になるよ`, ok: '決める', cancel: 'やめる', reset: cur === FARM_DEF ? '' : `「${FARM_DEF}」に もどす` };
+  };
+  let nmAsk = false;
   function nameOpen() {
+    if (!ov) return;
+    const N = window.__NATIVE && window.TengelNative;
+    if (N && typeof N.call === 'function') { nameAsk(N); return; }
+    nameDialog();
+  }
+  function nameAsk(N) {
+    if (nmAsk) return;      // 窓が 出て いる 間は もう 1回 たのまない
+    nmAsk = true;
+    let p; try { p = Promise.resolve(N.call('prompt', farmAsk())); } catch (e) { p = Promise.reject(e); }
+    p.then(r => {
+      nmAsk = false;
+      if (!r || typeof r !== 'object') { nameDialog(); return; }      // アプリの 窓が ない → 画面の 中の 窓
+      if (r.busy || !r.ok) return;                                    // やめる
+      nameSet(r.reset ? FARM_DEF : r.text);
+    }, () => { nmAsk = false; nameDialog(); });
+  }
+  // 名前を 決める（どちらの 窓からも）：見えない 字を 外して 12文字に（アプリの 窓は こえたら 決められない：念のため 切る）・空なら はじめの 名前
+  function nameSet(raw) {
+    const v = farmClean(raw); if (!st) load();
+    st.farm = v === FARM_DEF ? '' : v; touch(); save(); paintName();
+    SND.se('tc_se_button.m4a'); msg(`看板の 名前を「${farmName()}」に したよ`, 2.4);
+  }
+  function nameDialog() {
     if (!ov) return;
     if (!nmd) {
       nmd = document.createElement('div'); nmd.id = 'tcnmd'; nmd.setAttribute('role', 'dialog'); nmd.setAttribute('aria-modal', 'true'); nmd.setAttribute('aria-label', '牧場の名前');
@@ -396,8 +430,7 @@ const TCApp = (() => {
     if (!nameIsOpen()) return;
     const v = farmClean(nmd.querySelector('.nin').value, false);
     if (Array.from(v).length > FARM_MAX) { nameCount(); return; }
-    st.farm = v === FARM_DEF ? '' : v; touch(); save(); paintName(); nameClose();
-    SND.se('tc_se_button.m4a'); msg(`看板の 名前を「${farmName()}」に したよ`, 2.4);
+    nameClose(); nameSet(v);
   }
   function msg(txt, sec) {
     const m = ov.querySelector('.tcmsg'); m.textContent = txt; m.classList.add('on');
@@ -1034,5 +1067,5 @@ const TCApp = (() => {
       return { stock: st.stock, max: TOKEN_MAX };
     }
   };
-  return { open, close, tickets, tokens, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, farm: { name: farmName, open: nameOpen, close: nameClose, isOpen: nameIsOpen, clean: farmClean, DEF: FARM_DEF, MAX: FARM_MAX }, _t: { dropOpen, dropResume, dropTone, dropOk, dropLeft, dropTap, dropLocked, DROP, prep, buyShow, recoverBuy, PACKS, ZONE, GEKI, GEKI_SE, DROP_SE, zoneV, zoneRoll, gov: GOV, get hidN() { return hidN; }, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, drawMax, drawLeft, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, visitDraws: Object.assign({}, VISIT_DRAWS), capWait: CAP_WAIT, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      // _t：テスト 用
+  return { open, close, tickets, tokens, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, farm: { name: farmName, open: nameOpen, close: nameClose, isOpen: nameIsOpen, clean: farmClean, DEF: FARM_DEF, MAX: FARM_MAX, ask: farmAsk, set: nameSet, dialog: nameDialog, get asking() { return nmAsk; } }, _t: { dropOpen, dropResume, dropTone, dropOk, dropLeft, dropTap, dropLocked, DROP, prep, buyShow, recoverBuy, PACKS, ZONE, GEKI, GEKI_SE, DROP_SE, zoneV, zoneRoll, gov: GOV, get hidN() { return hidN; }, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, drawMax, drawLeft, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, visitDraws: Object.assign({}, VISIT_DRAWS), capWait: CAP_WAIT, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      // _t：テスト 用
 })();
