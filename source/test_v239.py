@@ -43,8 +43,10 @@ for k, (v, r, nm, dist, st) in want.items():
 old = subprocess.run(['git', '-C', os.path.dirname(W), 'show', '250b4048:source/ocr_local.js'], capture_output=True, text=True, check=True).stdout
 tmp = os.path.join(SHOT, '_ocr_old.js'); open(tmp, 'w', encoding='utf8').write(old)
 res0 = json.loads(subprocess.run(['node', '-e', JS.replace("require('./ocr_local.js')", 'require(' + json.dumps(tmp) + ')'), D], capture_output=True, text=True, check=True).stdout); os.remove(tmp)
-same = [k for k in res if k not in want and res[k] == res0.get(k)]
-check(len(same) == len(res) - len(want) and res0['g_card']['venue'] == 'ス選択へ' and res0['g_card']['rname'] == '(混合)(特指) 定量',
+LATER = {'i_card'}      # 第4.241版で 足した 見本（あすの 出馬表：test_v241・test_ocr_local.js で 見る）は 前の 版とは くらべない
+prev = [k for k in res if k not in want and k not in LATER]
+same = [k for k in prev if res[k] == res0.get(k)]
+check(len(same) == len(prev) and res0['g_card']['venue'] == 'ス選択へ' and res0['g_card']['rname'] == '(混合)(特指) 定量',
       f'① 前の 見本 {len(same)}こ（{", ".join(sorted(same))}）は 1つも かわらない・前の 版では 開催場「{res0["g_card"]["venue"]}」・レース名「{res0["g_card"]["rname"]}」だった')
 
 # ---- ②③ 作戦会議
