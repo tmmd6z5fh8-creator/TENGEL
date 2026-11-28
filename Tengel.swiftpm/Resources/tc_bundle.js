@@ -3369,7 +3369,8 @@ const TCGuide = (() => {
   
   
   
-  const ZONE = { d: 799, start: 1000, add: 2000, rate: 0.6, max: 12 };
+  
+  const ZONE = { d: 869, start: 1000, add: 2000, rate: 0.6, max: 12 };
   const ZV = n => ZONE.start + ZONE.add * n, ZP = n => (n < ZONE.max ? Math.pow(ZONE.rate, n) * (1 - ZONE.rate) : Math.pow(ZONE.rate, ZONE.max));      
   const ZAVG = Array.from({ length: ZONE.max + 1 }, (_, n) => ZV(n) * ZP(n)).reduce((a, b) => a + b, 0);
   const cm = v => Math.round(v).toLocaleString('ja-JP');
@@ -3378,7 +3379,8 @@ const TCGuide = (() => {
   const GEKI = { d: 299999, v: 40000 };
   const GROW = R(GEKI.d, `<span class="gk">激馬熱馬</span>（${cm(GEKI.v)}P）`);
   
-  const RTD = [225, 345, 499], TKD = 700;
+  
+  const RTD = [275, 395, 549], TKD = 770;
   const CARE = [15, 25, 55, 95, 99, 121, RTD[0], RTD[1], RTD[2], TKD, ZONE.d, GEKI.d];      
   
   
@@ -5949,7 +5951,8 @@ const TCApp = (() => {
   
   
   
-  const ZONE = { d: 799, start: 1000, add: 2000, rate: 0.6, max: 12 };
+  
+  const ZONE = { d: 869, start: 1000, add: 2000, rate: 0.6, max: 12 };
   const zoneV = n => ZONE.start + ZONE.add * Math.max(0, Math.min(ZONE.max, Math.round(+n) || 0));      
   const zoneRoll = () => { let n = 0; while (n < ZONE.max && Math.random() < ZONE.rate) n++; return n; };
   
@@ -5968,7 +5971,11 @@ const TCApp = (() => {
     
     
     
-    [1 / 700, { k: 'tk' }], [1 / 499, { k: 'rt', tier: 'kamisama' }], [1 / 345, { k: 'rt', tier: 'maboroshi' }], [1 / 225, { k: 'rt', tier: 'normal' }],
+    
+    
+    
+    
+    [1 / 770, { k: 'tk' }], [1 / 549, { k: 'rt', tier: 'kamisama' }], [1 / 395, { k: 'rt', tier: 'maboroshi' }], [1 / 275, { k: 'rt', tier: 'normal' }],
     
     
     
@@ -6276,7 +6283,8 @@ const TCApp = (() => {
   
   const farmAsk = () => {
     const cur = farmName();
-    return { title: '🪧 牧場の名前', message: `看板に 書く 名前を 入れてね（${FARM_MAX}文字まで）`, text: cur, placeholder: FARM_DEF, max: FARM_MAX,
+    
+    return { title: '🪧 牧場の名前', message: '看板に 書く 名前を 入れてね', text: cur, placeholder: FARM_DEF, max: FARM_MAX,
       empty: `空なら「${FARM_DEF}」になるよ`, ok: '決める', cancel: 'やめる', reset: cur === FARM_DEF ? '' : `「${FARM_DEF}」に もどす` };
   };
   let nmAsk = false;
