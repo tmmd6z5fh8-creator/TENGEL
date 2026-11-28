@@ -222,8 +222,9 @@
       fabZ(c); if (c._b1 && c.style.bottom !== c._b1) c.style.bottom = c._b1;
       c.style.setProperty('--fd', dr + 'px'); c._fit = rk; return;
     }
-    var k = kiseB, kr = k ? k.getBoundingClientRect() : null;
-    if (kr && kr.height > 0 && kr.bottom > 0) c._kb = Math.round(kr.bottom * 2) / 2;
+    var kr = null;
+    [kiseB, rvB].forEach(function (e) { var r = e && !e.hidden ? e.getBoundingClientRect() : null; if (r && r.height > 0 && r.bottom > 0 && (!kr || r.bottom > kr.bottom)) kr = r; });      // 第4.242版：テロップも
+    if (kr) c._kb = Math.round(kr.bottom * 2) / 2;
     var top = (c._kb || 409 + 0.44 * (vw - 375)) + FD_PAD;                 // 列の 上は ここより 下
     var key = [n, vw, window.innerHeight, top, c._b1, c._b2, Math.round(cr.bottom * 2) / 2].join(':'); if (c._fit === key) return;
     var set = function (d, g2) {
@@ -389,6 +390,12 @@
   var PLAN_UP = 5, PLAN_OVER = 11, PLAN_EDGE = 5, PLAN_CLEAR = 6;     // 上へ はみ出す 長さ・右へ はみ出す 長さ・画面の 右はしから あける 長さ・すぐ 上の ものから あける 長さ
   var KISE_BOX = 110, KISE_W = 100, KISE_AR = 2047 / 736, KISE_H = Math.round(KISE_W / KISE_AR);      // ボタンの 幅（作戦会議の 見える 札と 同じ）・カプセルの 幅・絵の よこ÷たて（kisekae/tc/kise_asset.py が 出す 数）・高さ 36
   var KISE_UNDER = 3, KISE_LAP = 3, KISE_GAP = 4, KISE_NAME = '壁紙&ボード着せ替え';      // 作戦会議の 札の 下から あける 長さ・名前の 札が カプセルに 重なる 長さ・チップから あける 長さ
+  // 第4.242版（まさちゃん 2026/11/29 00:49「作戦会議のしたに、壁紙&ボード着せ替え、みたいなバナーでやりたいレースを予約！、みたいな感じで、バナーつけて！文章は任せる！」・
+  //   00:52「作戦会議のバナーは、一枚目の画像の壁紙着せ替えのアイコンの下のテロップと同じ感じでいいからね！」）：
+  //   「やりたいレースを予約！」の テロップ（#rvBtn）＝着せ替えの 名前の 札（.kisel）と 同じ 形・字・色。作戦会議の 見える 札の すぐ 下（まん中を そろえる）。
+  //   押すと 作戦会議の「やりたいレースを予約」の 入力（TCPlan.open の add）。上の 帯の 中（iPhone）は 着せ替えの 名前の 札と 同じ 高さ（作戦会議の 札に かからない ときは）／
+  //   カードの 右上の とき（iPad など）は 作戦会議の 札と 着せ替えの あいだ（着せ替えは その ぶん 下）。小さい ので 押せる 所は まわりに 少し 広げる（::after）
+  var RV_NAME = 'やりたいレースを予約！', RV_UNDER = 3, RV_GAP = 4, rvB = null;
   var slotMo = null;                                                  // データの 行の 見張り（MutationObserver）
   var planHost = null, planB = null, oshiB = null, kiseB = null;      // oshiB：右下の 列の 推し馬の ボタン（第4.165版）・kiseB：「壁紙&ボード着せ替え」の ボタン（第4.165版）
   var planCard = null;                                                // 判定タブの「レース情報」の カード（札と ボタンの 場所の 基準：第4.168版）
@@ -424,7 +431,13 @@
       + '#kiseJump:active{opacity:.7}'
       + '#planHost{position:fixed;left:0;top:0;right:0;bottom:0;z-index:90;pointer-events:none}'
       + '#planHost>#tcPlan{pointer-events:auto;touch-action:none}'
-      + '#planHost .pb{overscroll-behavior:contain}';
+      + '#planHost .pb{overscroll-behavior:contain}'
+      + '#rvBtn[hidden]{display:none!important}'
+      + '#rvBtn{position:fixed;z-index:28;top:-200px;right:5px;display:block;box-sizing:border-box;margin:0;padding:calc(2px * var(--dk,1)) calc(7px * var(--dk,1)) calc(2.5px * var(--dk,1));border-radius:calc(9px * var(--dk,1));'
+      + 'border:1px solid var(--lamp);background:var(--night);color:var(--night-ink);font-family:var(--font-body);font-weight:700;font-size:max(7.5px,calc(9.5px * var(--dk,1)));line-height:max(9px,calc(11px * var(--dk,1)));'
+      + 'letter-spacing:-.01em;text-align:center;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.25);-webkit-tap-highlight-color:transparent;cursor:pointer;transition:transform .15s}'
+      + '#rvBtn::after{content:"";position:absolute;inset:-5px -3px}#rvBtn:active{transform:scale(.95)}#rvBtn:disabled{opacity:.7}#rvBtn.dk{position:absolute;right:auto;z-index:2}'
+      + '@media (prefers-reduced-motion:reduce){#rvBtn{transition:none}}';
     document.head.appendChild(st);
   }
   // カードの すぐ 上の もの（壁紙の 上の絵・単勝5連勝の お知らせ）までの すきま。上に 何も ない ときは ページの 上の 余白
@@ -460,7 +473,7 @@
   function dockPut(a) {
     var b = planB, k = kiseB, hd = a.hd, ti = a.ti, s = a.k;
     if (!ti.classList.contains('dk3')) ti.classList.add('dk3');
-    [b, k].forEach(function (e) { if (!e) return; if (e.parentNode !== hd) hd.appendChild(e); if (!e.classList.contains('dk')) e.classList.add('dk'); if (e.style.getPropertyValue('--dk') !== String(s)) e.style.setProperty('--dk', String(s)); if (e.style.right) e.style.right = ''; });
+    [b, k, rvB].forEach(function (e) { if (!e) return; if (e.parentNode !== hd) hd.appendChild(e); if (!e.classList.contains('dk')) e.classList.add('dk'); if (e.style.getPropertyValue('--dk') !== String(s)) e.style.setProperty('--dk', String(s)); if (e.style.right) e.style.right = ''; });
     var hr = hd.getBoundingClientRect(), r2t = Math.min(a.rsv.top, a.ms.top), r2b = Math.max(a.rsv.bottom, a.ms.bottom), y0 = r2b + DOCK_GAP;      // 2段目の 上・下・3段目の 上
     var kh = k ? k.getBoundingClientRect().height : 0, capH = KISE_H * s;
     var inkW = (PLAN_INK[2] - PLAN_INK[0]) * PLAN_W * s, inkH = (PLAN_INK[3] - PLAN_INK[1]) * PLAN_H * s, cy = y0 + (k ? capH / 2 : inkH / 2);
@@ -468,6 +481,10 @@
     px(b, 'left', (a.rsv.left + a.rsv.right) / 2 - inkW / 2 - PLAN_INK[0] * PLAN_W * s - hr.left); px(b, 'top', cy - inkH / 2 - PLAN_INK[1] * PLAN_H * s - hr.top);
     if (k) { px(k, 'left', (a.ms.left + a.ms.right) / 2 - KISE_BOX * s / 2 - hr.left); px(k, 'top', y0 - hr.top); }
     var bottom = Math.max(y0 + kh, cy + inkH / 2);
+    if (rvB) {                                                                                               // 第4.242版：やりたいレースを予約！（作戦会議の 見える 札の すぐ 下）
+      var rq = rvB.getBoundingClientRect(), rt = Math.max(cy + inkH / 2 + 2 * s, k ? y0 + capH - KISE_LAP * s : 0);
+      px(rvB, 'left', (a.rsv.left + a.rsv.right) / 2 - rq.width / 2 - hr.left); px(rvB, 'top', rt - hr.top); bottom = Math.max(bottom, rt + rq.height);
+    }
     // テンゲルデータの 札：ロゴの 下（左は ロゴと そろえる・幅は ロゴと 同じ＝結果待ちの 手前まで）・2段目の 高さの まん中（2行に なる ときは 2段目の 上から）
     var dp = document.getElementById('dbpill'), tt = document.getElementById('testTag'), w = Math.floor(a.rsv.left - DOCK_GAP - a.brand.left);
     if (dp && dp.parentNode === ti) {
@@ -488,7 +505,7 @@
     fitAsk();
   }
   function dockOff() {
-    [planB, kiseB].forEach(function (e) { if (!e || !e.classList.contains('dk')) return; e.classList.remove('dk'); e.style.removeProperty('--dk'); e.style.left = ''; document.body.appendChild(e); });
+    [planB, kiseB, rvB].forEach(function (e) { if (!e || !e.classList.contains('dk')) return; e.classList.remove('dk'); e.style.removeProperty('--dk'); e.style.left = ''; document.body.appendChild(e); });
     var ti = document.querySelector('header.top .top-in'); if (!ti || !ti.classList.contains('dk3')) return;
     ti.classList.remove('dk3'); ti.style.paddingBottom = '';
     ['dbpill', 'testTag'].forEach(function (id) { var e = document.getElementById(id); if (e) { e.style.left = ''; e.style.top = ''; e.style.width = ''; e.style.minHeight = ''; } });
@@ -520,12 +537,17 @@
     px(b, 'top', top - inkT); px(b, 'right', rgt - inkR);
     var k = kiseB; if (!k) return;
     // ---- 「壁紙&ボード着せ替え」の ボタン：作戦会議の 札の すぐ 下（右はしは 札と 同じ）----
-    px(k, 'top', top + (inkB - inkT) + KISE_UNDER); px(k, 'right', rgt);
+    var rvH = 0;
+    if (rvB) {      // 第4.242版：作戦会議の 見える 札の すぐ 下（まん中を そろえる）・着せ替えは その 下
+      var rq = rvB.getBoundingClientRect(); rvH = rq.height + RV_GAP;
+      px(rvB, 'top', top + (inkB - inkT) + RV_UNDER); px(rvB, 'right', rgt + (PLAN_INK[2] - PLAN_INK[0]) * PLAN_W / 2 - rq.width / 2);
+    }
+    px(k, 'top', top + (inkB - inkT) + KISE_UNDER + rvH); px(k, 'right', rgt);
     slotFit(card, k, cr.right - br - (parseFloat(cs.paddingRight) || 0), sy);
     fitAsk();                                                                                                // 第4.176版：右下の 丸い ボタンの 大きさ（この ボタンの すぐ 下から うめる）
   }
   // 出す・かくす（ボタンは body か 上の 帯の 下に ある ので、タブを かえたら 自分で 決める）。第4.230版：上の 帯の 中は どの タブでも・カードの 右上は 判定タブ だけ
-  function planVis(on) { [planB, kiseB].forEach(function (e) { if (e && e.hidden !== !on) e.hidden = !on; }); }
+  function planVis(on) { [planB, kiseB, rvB].forEach(function (e) { if (e && e.hidden !== !on) e.hidden = !on; }); }
   function dockSync() { planPlace(); }
   // データの 行を ボタンの 手前で 折り返させる（right＝カードの 中身の 右はし・sy＝ページを 動かした 長さ：ボタンは 画面に 止まって いる ので、行と 同じ 物さしに 直して くらべる）
   function slotFit(card, k, right, sy) {
@@ -535,6 +557,8 @@
     var kq = k.getBoundingClientRect(), lab = k.querySelector('.kisel'), lr = lab ? lab.getBoundingClientRect() : kq;
     var kr = { left: kq.left, top: kq.top - (sy || 0), bottom: kq.bottom - (sy || 0) };                       // ページと いっしょに 動いた と した ときの ボタンの 場所
     var limit = Math.min(kr.left, lr.left) - KISE_GAP, bottom = Math.max(kr.bottom, lr.bottom - (sy || 0));  // チップの 右はしの 限り・ボタン（名前の 札まで）の 下
+    var vq = rvB && !rvB.hidden ? rvB.getBoundingClientRect() : null;                                       // 第4.242版：その 上の「やりたいレースを予約！」の テロップも よける
+    if (vq && vq.height > 0) { limit = Math.min(limit, vq.left - KISE_GAP); bottom = Math.max(bottom, vq.bottom - (sy || 0)); kr.top = Math.min(kr.top, vq.top - (sy || 0)); }
     var want = -1, fill = 0, pad = '';
     if (items.length) {
       var bs = getComputedStyle(bar), gap = parseFloat(bs.columnGap) || 0, rgap = parseFloat(bs.rowGap) || 0, r0 = items[0].getBoundingClientRect();
@@ -593,9 +617,9 @@
     j.addEventListener('click', function () { secGo('setBoard', false); });
     c.appendChild(j);
   }
-  // opt.oshi：開いたら「推し馬」の 欄まで 進める（右下の 推し馬の ボタンから：第4.165版）
+  // opt.oshi：開いたら「推し馬」の 欄まで 進める（右下の 推し馬の ボタンから：第4.165版）・opt.add：「やりたいレースを予約」の 入力を 開く（#rvBtn から：第4.242版）
   function planOpen(opt) {
-    var bs = [planB, oshiB], lock = function (v) { bs.forEach(function (b) { if (b) b.disabled = v; }); };
+    var bs = [planB, oshiB, rvB], lock = function (v) { bs.forEach(function (b) { if (b) b.disabled = v; }); };
     lock(true);
     return load().then(function () {
       planCss();
@@ -606,7 +630,7 @@
           if (!pb || pb.scrollHeight <= pb.clientHeight + 1) { if (e.cancelable) e.preventDefault(); }
         }, { passive: false });
       }
-      return window.TCPlan.open(planHost, opt && opt.oshi ? { oshi: true } : null);
+      return window.TCPlan.open(planHost, opt && opt.oshi ? { oshi: true } : opt && opt.add ? { add: true } : null);      // 第4.242版：add＝やりたい レースを 予約の 入力から
     }).catch(function () { note('作戦会議を 読みこめなかったよ。もう一度 押してね'); }).then(function () { lock(false); });
   }
   window.TCPlanOpen = planOpen;
@@ -628,6 +652,10 @@
     var kl = document.createElement('span'); kl.className = 'kisel'; kl.textContent = KISE_NAME; k.appendChild(kl);
     k.addEventListener('click', kiseGo);
     document.body.appendChild(k); kiseB = k;
+    // 第4.242版：「やりたいレースを予約！」の テロップ（作戦会議の 札の すぐ 下）
+    var rv = document.createElement('button'); rv.type = 'button'; rv.id = 'rvBtn'; rv.textContent = RV_NAME; rv.setAttribute('aria-label', RV_NAME + '（押すと 作戦会議の レースの 予約を 開くよ）');
+    rv.addEventListener('click', function () { if (!rv.disabled) planOpen({ add: true }); });
+    document.body.appendChild(rv); rvB = rv;
     dockSync(); window.addEventListener('resize', planPlace); setTimeout(planPlace, 400); setTimeout(planPlace, 1500);
     var vj = document.getElementById('v-judge'), ro = null;
     try { if (vj && window.MutationObserver) new MutationObserver(dockSync).observe(vj, { attributes: true, attributeFilter: ['hidden'] }); } catch (e) { /* なし */ }      // タブを かえた

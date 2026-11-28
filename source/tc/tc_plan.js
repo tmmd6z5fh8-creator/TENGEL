@@ -375,7 +375,7 @@ const TCPlan = (() => {
       r.notify = (r.notify || []).includes(m) ? r.notify.filter(x => x !== m) : (r.notify || []).concat(m).sort((x, y) => y - x);
       save(); paint(); return;
     }
-    if (k === 'add') { edit = { _new: true, id: 'p' + Date.now().toString(36), date: today(), time: '', name: '', n: '', dist: '', memo: '', notify: [] }; paint(); root.querySelector('.pb').scrollTop = 0; return; }
+    if (k === 'add') { addNew(); return; }
     if (k === 'edit') { const r = P.races.find(x => x.id === a.dataset.id); if (!r) return; edit = Object.assign({}, r); paint(); root.querySelector('.pb').scrollTop = 0; return; }
     if (k === 'del') {
       const r = P.races.find(x => x.id === a.dataset.id); if (!r) return;
@@ -395,6 +395,8 @@ const TCPlan = (() => {
       edit = null; save(); paint(); return;
     }
   }
+  function addNew() { edit = { _new: true, id: 'p' + Date.now().toString(36), date: today(), time: '', name: '', n: '', dist: '', memo: '', notify: [] }; paint(); root.querySelector('.pb').scrollTop = 0; }      // やりたい レースを 予約の 入力
+  // opt.add（第4.242版：上の「やりたいレースを予約！」の テロップから）：開いたら すぐ「やりたいレースを予約」の 入力
   // opt.oshi：開いたら「推し馬」の 欄まで 進める（右下の 推し馬の ボタンから：第4.165版・まさちゃん 2026/11/13 12:47「推し馬のアイコンをタップしたら、推し馬の欄に飛ぶように設定して！」）
   async function open(el, opt) {
     host = el; load(); oLoad();
@@ -403,6 +405,7 @@ const TCPlan = (() => {
     const pb = root.querySelector('.pb'), oshi = !!(opt && opt.oshi && OS());
     oshiMode = oshi; oPad();
     if (oshi) oJump(null); else pb.scrollTop = 0;      // ふつうに 開いた ときは いつも 上から（前に 推し馬の 欄まで 進めた 所が のこらない）
+    if (!oshi && opt && opt.add) addNew();      // 第4.242版
     const y0 = pb.scrollTop;
     seen(); clearInterval(snT); snT = setInterval(soonPaint, 15000);      // 第4.221版：見た（推し馬の 丸の 🔔 を 消す）・まもなく 発走の 見直し
     auth = await authState(); paint();

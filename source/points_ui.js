@@ -858,7 +858,13 @@
     setTimeout(() => { const s = document.getElementById(id); if (s) s.scrollIntoView({ block: 'start' }); }, 60);
   }
   // data-gopt="points"（上の帯の 所有ポイント・「ポイントを買う」の ボタン）は ポイントの 窓（第4.84版）。ほかは 設定タブの その 場所へ
-  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-gopt]'); if (b) { e.preventDefault(); if (b.dataset.gopt === 'points') openPoints(); else goSettings(b.dataset.gopt); } });
+  //   第4.242版：上の 帯の 札に「！」が ついて いる（.low：2,500P より 少ない）ときは ポイントの お知らせ（pt_note.js）。お知らせの 下の ボタンから ポイントの 窓へ
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-gopt]'); if (!b) return;
+    e.preventDefault();
+    if (b.dataset.gopt !== 'points') { goSettings(b.dataset.gopt); return; }
+    if (b.id === 'ptsPill' && b.classList.contains('low') && window.TengelPtNote) window.TengelPtNote.open(); else openPoints();
+  });
   // 上の帯の マザーデータの 札 → 設定タブの マザーデータ（第4.84版・まさちゃん「マザーデータをタップしたら設定のマザーデータのところに飛ぶようにして！」）
   function dbPillLink() {
     const d = $('#dbpill'); if (!d || d.dataset.gopt) return;
@@ -922,6 +928,7 @@
 
   // ---------- 上の帯：所有ポイント（購入P・サブスクP・獲得P）・説明書の 置き場（第4.59版・まさちゃんの指定 2026-10-25／第4.139版で 3つに） ----------
   // 購入P＝パックで 買ったP・サブスクP＝サブスクの P（届いた 日から 30日）・獲得P＝もらったP（はじめての プレゼント・ミッション など）。押すと 設定の ポイントへ
+  const LOW_PT = 2500;      // 第4.242版：これより 少ない ときは 上の 帯の ポイントに「！」（pt_note.js の LOW と 同じ）
   function topBar() {
     if (!document.getElementById('ptsCss')) {
       const st = document.createElement('style'); st.id = 'ptsCss';
@@ -935,6 +942,10 @@
         + '#ptsPill .pp{display:inline-flex;align-items:baseline;gap:4px;padding:4px 9px}#ptsPill .pp+.pp{border-left:1px solid rgba(243,240,230,.25)}'
         + '#ptsPill .pl{font-size:10px;opacity:.8;letter-spacing:.04em}#ptsPill .pv{font-family:var(--font-mono);font-weight:700;font-size:12.5px}#ptsPill .pv small{font-size:10px;margin-left:1px}'
         + '#ptsPill:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}'
+        /* 第4.242版：使える ポイントが 2,500P より 少ない とき（.low）は 札に 赤い 丸の「！」（ゆっくり 大きく なる）・札の ふちも 赤く */
+        + '#ptsPill .pwn{flex:none;align-self:center;display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;background:#E5484D;color:#fff;font:900 11px/1 -apple-system,system-ui,sans-serif;box-shadow:0 0 0 1.5px rgba(255,255,255,.9);animation:ptwn 1.6s ease-in-out infinite}'
+        + '@keyframes ptwn{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}#ptsPill.low{border-color:rgba(255,128,118,.85);background:rgba(229,72,77,.16)}'
+        + '@media (prefers-reduced-motion:reduce){#ptsPill .pwn{animation:none}}'
         + '#testTag{flex:none;font-size:10.5px;font-weight:700;letter-spacing:.06em;padding:2px 7px;border-radius:6px;background:#E2A23B;color:#1B1F2A}'
         /* 上の帯の「ミッション」（第4.82版）：説明書の 左。iPhone では 3段に なる（ミッション・説明書 → マザーデータの 印）ので 段の あいだは せまく */
         + 'header.top .top-in{row-gap:8px}#msBtn{cursor:pointer;font:inherit;font-size:12.5px;font-weight:700;line-height:1.5;position:relative}'
@@ -977,7 +988,7 @@
     if (!top || !brand) return;
     let pill = $('#ptsPill');
     if (!pill) {
-      pill = document.createElement('button'); pill.type = 'button'; pill.id = 'ptsPill'; pill.setAttribute('data-gopt', 'points'); pill.setAttribute('aria-label', '所有ポイント（合計）。押すとポイントの詳細（購入ポイント・サブスクポイント・獲得ポイント）と 買う・サブスク');
+      pill = document.createElement('button'); pill.type = 'button'; pill.id = 'ptsPill'; pill.setAttribute('data-gopt', 'points');
       brand.insertAdjacentElement('afterend', pill);
       if (window.__TEST && !$('#testTag')) { const t = document.createElement('span'); t.id = 'testTag'; t.textContent = 'テスト版'; pill.insertAdjacentElement('afterend', t); }
     }
@@ -985,8 +996,13 @@
     // 第4.139版（まさちゃん 11/10 11:46「上のところに表示されてる時は、合計のポイントだけ表示するようにして！」「事前に、99999まで入るようにして作ってみて！」）：
     //   札は 合計だけ（前は 購入P＝買ったP＋もらったP と サブスクP の 2つ）。内わけ（購入ポイント・サブスクポイント・獲得ポイント）は 押すと 出る ポイントの 窓の「ポイントの詳細」
     const tot = b.total != null ? b.total : b.paid_pack + b.paid_sub + b.free;
-    pill.innerHTML = `<span class="pp"><span class="pl">ポイント</span><span class="pv">${yen(tot)}<small>P</small></span></span>`;
-    pill.title = `合計 ${yen(tot)}P（購入ポイント ${yen(b.paid_pack)}・サブスクポイント ${yen(b.paid_sub)}・獲得ポイント ${yen(b.free)}）・上限 ${yen(P.CAP)}P` + (W && holdN() ? `・預かり ${yen(holdN())}P` : '');
+    // 第4.242版（まさちゃん 2026/11/29 00:09「ポイントが2500ポイント切ったら、ポイントの項目のところにびっくりマークつけてお知らせして！ 開くと、お世話をしてポイント大量ゲットを目指そう！…」）：
+    //   使える ポイント（合計＋預かり：avail）が LOW_PT（2,500P）より 少ない ときは 札に「！」（.pwn）→ 押すと ポイントの お知らせ（pt_note.js：下の data-gopt の ところ）
+    const low = !!W && avail() < LOW_PT;
+    if (pill.classList.contains('low') !== low) pill.classList.toggle('low', low);
+    pill.innerHTML = `<span class="pp">${low ? '<span class="pwn" aria-hidden="true">!</span>' : ''}<span class="pl">ポイント</span><span class="pv">${yen(tot)}<small>P</small></span></span>`;
+    pill.setAttribute('aria-label', low ? `所有ポイント（合計）。ポイントが ${yen(LOW_PT)}P より 少ないよ。押すと ポイントの お知らせ` : '所有ポイント（合計）。押すとポイントの詳細（購入ポイント・サブスクポイント・獲得ポイント）と 買う・サブスク');
+    pill.title = (low ? `！ポイントが ${yen(LOW_PT)}P より 少ないよ（押すと お知らせ）・` : '') + `合計 ${yen(tot)}P（購入ポイント ${yen(b.paid_pack)}・サブスクポイント ${yen(b.paid_sub)}・獲得ポイント ${yen(b.free)}）・上限 ${yen(P.CAP)}P` + (W && holdN() ? `・預かり ${yen(holdN())}P` : '');
     alignLater();
   }
   // ---------- 上の帯の 左の そろえ（第4.139版）：ポイントの 札と 結果待ちの 左はしを ロゴの すぐ 右の 線に ----------
@@ -1102,6 +1118,9 @@
       + '<div class="row"><button type="button" class="btn" data-test="uown">買ったことにする</button></div>'
       + '<p class="hint" style="margin:10px 0 6px">トレーニングセンターの チケット（壁紙の 解放か ' + pts(P.TICKET_POINTS) + ' に 変えるか 選べる）：<span id="testTk"></span></p>'
       + '<div class="row"><button type="button" class="btn" data-test="tkadd">チケットを 1枚 もらう</button></div>'
+      // 第4.242版：ポイントの お知らせ（使える ポイントが 2,500P より 少ない とき 上の ポイントに「！」→ 押すと お知らせ：pt_note.js）を 試す
+      + '<p class="hint" style="margin:10px 0 6px">ポイントの お知らせ（' + pts(LOW_PT) + ' より 少ない とき 上の ポイントに「！」）</p>'
+      + '<div class="row"><button type="button" class="btn" data-test="ptnote">お知らせを 見る</button><button type="button" class="btn" data-test="ptlow">' + pts(1000) + ' に する（「！」を 試す）</button></div>'
       // 第4.154版：トレーニングセンターの テスト（幻の馬・神様馬を 出す／お世話の 当たりを えらぶ）は トレーニングセンターの 中の 道具箱（tc/tc_test.js）
       //   「幻」の 字は テーマの しぼった 字に ない ので、ここは ひらがな（この 画面は テーマの 字で 出る。トレーニングセンターの 中は 別の 字）
       + '<p class="hint" id="testTcHint" style="margin:10px 0 6px">トレーニングセンターの テスト（幻の馬・神様馬を 出す／ルーレットなど お世話の 当たりを 全部 選べる）：下の ボタンか、トレーニングセンターを 開いて 上の「🧪 テスト」を 押してね</p>'
@@ -1129,6 +1148,13 @@
         if (!e) return;
         const c = credit(e); await save(); paintAll();
         toast(`🧪 サブスクの ${pts(c.added + c.held)} が 届いた ことに したよ（今 ${pts(total())}）${heldNote(c.held)}`, c.held ? 6000 : 3000);
+      }
+      else if (b.dataset.test === 'ptnote') { if (window.TengelPtNote) window.TengelPtNote.open(); }      // 第4.242版
+      else if (b.dataset.test === 'ptlow') {      // 第4.242版：1,000P に する（減らした ぶんは 使った ことに する）→ 上の ポイントに「！」
+        const over = total() - 1000;
+        if (over <= 0) { toast(`もう ${pts(1000)} 以下だよ（今 ${pts(total())}）`, 2600); return; }
+        const next = P.spend(W.events, over, 'テスト版：ポイントの お知らせを 試す', device(), Date.now()); if (!next) return;
+        W.events = next; await save(); paintAll(); toast(`🧪 テスト用に ${pts(over)}を 減らして ${pts(1000)}に したよ（上の ポイントに「！」）`, 3200);
       }
       else if (b.dataset.test === 'sn') { testN = +b.dataset.n || 0; $$('[data-test="sn"]', c).forEach(x => x.setAttribute('aria-pressed', String(+x.dataset.n === testN))); }
       else if (b.dataset.test === 'fx' && window.TengelFx) { try { window.TengelFx.prime(); } catch (x) { /* なし */ } window.TengelFx.show(testSpec(b.dataset.kind)); }
@@ -1278,7 +1304,9 @@
     compact: compactTo, auto: autoCompact
   };
   window.TengelWallet = {
-    on: true, ready: walletReady, COST: P.COST,
+    on: true, ready: walletReady, COST: P.COST, LOW: LOW_PT,
+    // 第4.242版：ポイントの お知らせ（pt_note.js）の「ポイントを 購入」の 欄＝ポイントの 窓と 同じ パック・サブスクの 一覧と 買う 動き（data-pt の ボタン → onClick → buy）
+    shop: { packs: () => packsHtml(), subs: () => subsHtml(), click: e => onClick(e), load: () => loadProducts(false), status: () => refreshSubStatus() },
     toy: { has: id => unlocked('toy:' + id), ask: toyAsk, list: () => P.TOYS.map(t => ({ id: t[0], name: t[1], on: unlocked('toy:' + t[0]) })), cost: P.COST.toy },      // 第4.212版：おもちゃ
     old: OLD,                                                                                                                                                            // 第4.212版：古い 履歴を まとめる
     balance: () => B(), total, events: () => (W ? W.events.slice() : []), countedN,

@@ -146,6 +146,26 @@ const TCApp = (() => {
   // ---------- 音（WebAudio：環境音・BGM は くり返し、効果音は できごとで）----------
   const SND = (() => {
     let ac = null, master = null, bed = null, want = null, on = true;
+    // 第4.242版（まさちゃん 2026/11/29 00:03「アプリをいきなりスクロールすると、ピーンて音なってる！」・00:20「牧場の名前を決めてる時にスクロールするとなる」）：
+    //   iPhone で 出口（AudioContext）が 止まって いる 間（アプリを 下げて もどった 直後・ほかの アプリの 音で とぎれた まま など）に 鳴らした 効果音は、
+    //   出口の 中に たまって、次に 画面に さわって 出口が 動き出した 時（fx.js の TengelAudioWake が 指の 操作の 中で resume）に まとめて 鳴って いた。
+    //   → ①出口が 動いて いない ときの 効果音は 鳴らさない（指で 押して 起こした 直後 0.7秒 だけは 待つ：askAt）
+    //     ②しばらく 止まって いた 出口が 動き出したら、大きさ 0 から 0.4秒で もどす（いきなり 大きな 音で 鳴り出さない：downAt）
+    //     ③牧場の 名前の 窓が 開いて いる 間は 効果音を 鳴らさない（字を 打って いる 間に うしろの お世話の 音が 鳴らない。決めた ときの 音は 窓を 閉じて から）
+    let downAt = 0, askAt = -1e9;
+    const live = () => !!ac && (ac.state === 'running' || performance.now() - askAt < 700);
+    function watchState(c) {
+      downAt = c.state === 'running' ? 0 : performance.now();
+      try {
+        c.addEventListener('statechange', () => {
+          if (c !== ac || !master) return;
+          if (c.state !== 'running') { if (!downAt) downAt = performance.now(); return; }
+          const was = downAt; downAt = 0;
+          if (!was || performance.now() - was < 250) return;
+          try { const n = c.currentTime; master.gain.cancelScheduledValues(n); master.gain.setValueAtTime(0, n); master.gain.linearRampToValueAtTime(on ? 1 : 0, n + 0.4); } catch (e) { }
+        });
+      } catch (e) { }
+    }
     const cache = {};
     const AMB = { morning: 'tc_amb_morning.m4a', evening: 'tc_amb_evening.m4a', night: 'tc_amb_night.m4a', abyss: 'tc_bgm_abyss.m4a', divine: 'tc_bgm_divine3.m4a', roulette: 'tc_bgm_roulette.m4a' };
     // 第4.168版（まさちゃん 2026/11/14 01:26「ルーレットに入った時にBGMを変える。フィールドBGMは重ねない。」）：ルーレットの 間は ルーレットの BGM だけ（bgm）。
@@ -171,7 +191,7 @@ const TCApp = (() => {
     let quietT = 0;
     function lvl() { if (!master) return; try { const n = ac.currentTime; master.gain.cancelScheduledValues(n); master.gain.setValueAtTime(on ? 1 : 0, n); } catch (e) { master.gain.value = on ? 1 : 0; } }
     // 第4.233版：出口が「suspended」の とき だけ で なく「interrupted」（iPhone で ほかの アプリの 音で とぎれた まま）の ときも 起こす
-    function unlock() { try { if (!ac) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ac = new AC(); master = ac.createGain(); master.gain.value = on ? 1 : 0; master.connect(ac.destination); } clearTimeout(quietT); quietT = 0; lvl(); if (ac.state !== 'running' && ac.state !== 'closed') { const q = ac.resume(); if (q && q.catch) q.catch(() => { }); } } catch (e) { } }
+    function unlock() { try { if (!ac) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ac = new AC(); master = ac.createGain(); master.gain.value = on ? 1 : 0; master.connect(ac.destination); watchState(ac); } clearTimeout(quietT); quietT = 0; lvl(); if (ac.state !== 'running' && ac.state !== 'closed') { askAt = performance.now(); const q = ac.resume(); if (q && q.catch) q.catch(() => { }); } } catch (e) { } }
     // 第4.233版：出口を 作り直す（fx.js の TengelAudioWake：アプリを 下げて ほかの アプリを 開いて もどったら 出口が 動かない とき）。
     //   ほどいた 音は 新しい 出口で ほどき直す（cache を 空に）・鳴らして いた フィールドの 音／ルーレットの BGM（aim）を 新しい 出口で つづける
     function rebuild() {
@@ -204,7 +224,8 @@ const TCApp = (() => {
       if (hold == null) await swap(want, 0.5, 1.5); else if (hold === '') await swap('', 0.08, 0); else await swap(hold, 0.3, 0.12);
     }
     async function se(name, gain, at) {
-      if (!ac || !on) return; let b; try { b = await buf(name); } catch (e) { return; }
+      if (!ac || !on || !live() || nameIsOpen()) return; let b; try { b = await buf(name); } catch (e) { return; }      // 第4.242版：①③
+      if (!live()) return;
       try { const s = ac.createBufferSource(); s.buffer = b; const g = ac.createGain(); g.gain.value = gain == null ? 1 : gain; s.connect(g); g.connect(master); s.start(ac.currentTime + Math.max(0, at || 0)); return s; } catch (e) { }
     }
     // 前は 鳴って いる 音を いきなり 止めて、すぐ 音の 出口（AudioContext）も 止めて いた → 「ブツッ・ジジッ」と 変な 音が 出る ことが あった。

@@ -131,6 +131,9 @@ if TARGET == 'app':
     # 馬カードバトル（第4.176版：まさちゃん 11/15 21:41「TENGER馬カードバトル …アイコンは推し馬の上に設置して！」）：右下の 丸い ボタンの 列の 1番 上（推し馬の 上・tc_launch.js の TengelFab を 使うので その 後に）の 入口（cb/cb_launch.js）は index.html に。
     # 本体（ルール・コンピュータ・対戦の 進め役・画面）は 押した ときに 読む cb_bundle.js（下で 書く）。絵と 音は build_ios.py が Resources/ に 入れる（リポジトリには 入れない）
     html += '<script>\n' + open(os.path.join('cb', 'cb_launch.js'), encoding='utf8').read() + '\n</script>\n'
+    # 第4.242版（まさちゃん 2026/11/29 00:09）：ポイントの お知らせ（pt_note.js：使える ポイントが 2,500P より 少ない とき、上の 帯の ポイントの「！」から 開く・説明書と 同じ 見た目）。
+    #   トレーニングセンター（TCOpen）・カードバトル（TengelCB）を 開く ボタンが ある ので その 後に
+    html += '<script>\n' + open('pt_note.js', encoding='utf8').read() + '\n</script>\n'
     # ログインボーナス（第4.168版：まさちゃん 11/14）：その 日に はじめて 開いた とき 1回（7日で ひとまわり：200・300・400・500・600・1000・1300P）。points_ui.js の 財布（TengelWallet.grant）を 使う
     html += '<script>\n' + open('login_bonus.js', encoding='utf8').read() + '\n</script>\n'
     # 古い 台帳の リセット（第4.212版：まさちゃん 11/23）：記録タブの 古い レース・ポイントの 履歴を 3年で 自動リセット ＋ 設定の「古い台帳をリセットする」（2年分・1年分・全て）
