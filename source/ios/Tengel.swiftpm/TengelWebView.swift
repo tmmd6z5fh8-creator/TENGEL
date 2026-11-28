@@ -190,9 +190,17 @@ final class WebBridge: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
             let raw = (n.userInfo?[AVAudioSessionInterruptionTypeKey] as? NSNumber)?.uintValue ?? 0
             guard AVAudioSession.InterruptionType(rawValue: raw) == .ended else { return }
             Task { @MainActor in
+                // 第4.238版：アプリが 前に いない（電源を 切った・うしろに いる）ときは 起こさない（もどった ときに didBecomeActive で 起こす）
+                guard UIApplication.shared.applicationState == .active else { return }
                 AudioWake.activate()
                 self?.event("audio", ["why": "interruption"])
             }
+        }
+        // 第4.238版（まさちゃん 11/28 14:46「牧場の名前変えてる時に電源落とすとまた、ビヨーンて変な音なってる！」）：アプリが うしろに 行く
+        //   （電源ボタン・ホーム・コントロールセンター・購入の 窓）→ Webの 画面に 知らせる（audio・why: resign）。Webの 画面は 鳴って いる 音の 出口を
+        //   すぐ 止める（fx.js の TengelAudioWake.quiet：小さく して いく あいだに iPhone が 音を 止めると 音が ゆがむ）。もどったら 上の active で 起こす
+        NotificationCenter.default.addObserver(forName: UIApplication.willResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.event("audio", ["why": "resign"]) }
         }
         webView.load(URLRequest(url: AppSchemeHandler.startURL))
         return webView

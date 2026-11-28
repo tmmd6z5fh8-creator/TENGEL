@@ -883,6 +883,21 @@
         if (!marked) await mark('kana-pad');
       }
     });
+    // 第4.238版：アプリが うしろに 行く ときの 音（電源を 切ると「ビヨーン」）：アプリの 知らせ audio（why: resign）で 鳴って いる 音の 出口を すぐ 止める（suspend）・
+    //   とぎれが おわった 知らせ（interruption）では 起こさない・active で 起こす（fx.js の TengelAudioWake：本物の iOS の WebKit の AudioContext で たしかめる）
+    await step(R, 'audioQuiet', async function () {
+      var W = window.TengelAudioWake; if (!W || !window.TengelFx) return { api: false };
+      try { TengelFx.prime(); } catch (e) { /* なし */ }
+      await sleep(600);
+      W.list.forEach(function (q, i) { var c = W._ctx(i); if (q.on && c && c.state !== 'running' && c.resume) { try { c.resume(); } catch (e) { /* なし */ } } });
+      await sleep(400);
+      var st = function () { return W.list.map(function (q, i) { var c = W._ctx(i); return { name: q.name, state: c ? c.state : null, on: q.on }; }); };
+      var out = { api: true, s0: st() };
+      window.__nativeEvent('audio', { why: 'resign' }); await sleep(400); out.s1 = st(); out.h1 = W.hushed;
+      window.__nativeEvent('audio', { why: 'interruption' }); await sleep(1200); out.s2 = st(); out.h2 = W.hushed;
+      window.__nativeEvent('audio', { why: 'active' }); await sleep(1500); out.s3 = st(); out.h3 = W.hushed;
+      return out;
+    });
     // 外への通信（Google のフォントなどがないか）
     R.outside = performance.getEntriesByType('resource').map(function (e) { return e.name; }).filter(function (n) { return !/^tengel:/.test(n); });
     report('1', R);

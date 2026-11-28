@@ -292,7 +292,7 @@
   //     使って いる 出口を resume() し直して、0.7秒 あとに 動いて いるか 見る（running で 時計が 進んで いる）。動いて いない ときは 作り直す
   //     （その 所が 新しい 出口を 作って、鳴らして いた BGM を つづける）。作り直しは 1つの 出口で 1分に 3回 まで
   const Wake = (() => {
-    const L = []; let hid = !!document.hidden, backT = -1e9, wakeT = 0;
+    const L = []; let hid = !!document.hidden, backT = -1e9, wakeT = 0, hushed = false;
     const get = w => { try { return w.get(); } catch (e) { return null; } };
     const used = w => { try { return !!w.on(); } catch (e) { return false; } };
     function probe(w) {
@@ -308,15 +308,31 @@
         try { w.rebuild(); } catch (e) { /* なし */ }
       }, 700);
     }
-    function wake() { if (document.hidden) return; const n = Date.now(); if (n - wakeT < 400) return; wakeT = n; backT = n; setTimeout(() => L.forEach(probe), 80); }
-    document.addEventListener('visibilitychange', () => { if (document.hidden) { hid = true; return; } if (hid) { hid = false; wake(); } });
+    // 第4.238版（まさちゃん 11/28 14:46「牧場の名前変えてる時に電源落とすとまた、ビヨーンて変な音なってる！」）：アプリが うしろに 行く ときは、
+    //   鳴って いる 出口を すぐ 止める（quiet：suspend）。前は 画面が かくれて から 0.15秒で 小さく して いた ので、その あいだに iPhone が 音を 止めると
+    //   音が ゆがんで「ビヨーン」と 鳴る ことが あった。止める のは アプリ（iOS）の 知らせ audio（why: resign＝電源ボタン・ホーム・コントロールセンター・購入の 窓：
+    //   TengelWebView.swift の willResignActive）・画面が かくれた とき・pagehide。もどる（active・画面が 見えた）まで は、とぎれが おわった 知らせ（interruption）でも 起こさない
+    function quiet() {
+      hushed = true;
+      L.forEach(w => { const c = get(w); if (c && c.state === 'running' && c.suspend) { try { const p = c.suspend(); if (p && p.catch) p.catch(() => { }); } catch (e) { /* なし */ } } });
+    }
+    function wake() { if (document.hidden) return; hushed = false; const n = Date.now(); if (n - wakeT < 400) return; wakeT = n; backT = n; setTimeout(() => L.forEach(probe), 80); }
+    document.addEventListener('visibilitychange', () => { if (document.hidden) { hid = true; quiet(); return; } if (hid) { hid = false; wake(); } });
     window.addEventListener('pageshow', e => { if (e.persisted) wake(); });
-    document.addEventListener('tengel:native', e => { if (e.detail && e.detail.name === 'audio') wake(); });
-    const touch = () => { if (Date.now() - backT > 120000) return; backT = -1e9; L.forEach(probe); };      // もどって はじめて さわった とき（指の 操作の 中で resume）
+    window.addEventListener('pagehide', quiet);
+    document.addEventListener('tengel:native', e => {
+      const d = e.detail; if (!d || d.name !== 'audio') return; const why = d.payload && d.payload.why;
+      if (why === 'resign') quiet(); else if (why === 'interruption' && hushed) return; else wake();
+    });
+    const touch = () => {      // もどって はじめて さわった とき（指の 操作の 中で resume）。第4.238版：止めた（quiet）まま さわられた ＝ アプリは 前に いる → 起こす
+      if (hushed && !document.hidden) { hushed = false; backT = -1e9; L.forEach(probe); return; }
+      if (Date.now() - backT > 120000) return; backT = -1e9; L.forEach(probe);
+    };
     document.addEventListener('pointerdown', touch, true); document.addEventListener('touchend', touch, true);
     return {
       watch(g, on, rebuild, name) { const w = { get: g, on, rebuild, name: name || '', n: 0, fix: [] }; L.push(w); return L.length - 1; },
-      wake,
+      wake, quiet,
+      get hushed() { return hushed; },
       get list() { return L.map(w => { const c = get(w); return { name: w.name, n: w.n, state: c ? c.state : null, on: used(w) }; }); },      // n＝作り直した 回数
       _ctx: i => (L[i] ? get(L[i]) : null),      // テスト 用：i ばんめの 出口
     };
