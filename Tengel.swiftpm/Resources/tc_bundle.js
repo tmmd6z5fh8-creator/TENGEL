@@ -2023,7 +2023,10 @@ const TCCare = (() => {
   
   
   
-  const PUSHG = { x: 526, y: 1436, w: 360, ar: 646 / 660, depth: 12, m1: [894, 1386], mn: [894, 1492], mw: 270, mh: 92, tok: [158, 1392], tw: 270, th: 124, end: [894, 1598], ew: 220, eh: 84, tap: [526, 1232], dp: [158, 1556], dpw: 270, dph: 172 };
+  const PUSHG = { x: 526, y: 1436, w: 360, ar: 646 / 660, depth: 12, m1: [894, 1386], mn: [894, 1492], mw: 270, mh: 92, tok: [158, 1392], tw: 270, th: 124, end: [894, 1598], ew: 220, eh: 84, tap: [526, 1232], dp: [158, 1556], dpw: 270, dph: 172, dpq: [318, 1490], dpqr: 25 };
+  
+  
+  
   let pushCap = null, pushBase = null, dpIcon = null;
   const dropOk = () => !!(O.dropOk && O.dropOk());
   const DROP_WAIT = 0.4;      
@@ -2125,6 +2128,16 @@ const TCCare = (() => {
         label('お世話', 46, -44, 31, '#7a4520'); label('チャレンジ', 46, -6, 31, '#7a4520');
         { const lk = O.dropLock ? +O.dropLock() || 0 : 0; S.dpLock = lk; label(lk ? `🔒 解放 ${lk.toLocaleString('ja-JP')}P` : '玉を 落とす', 46, 44, lk ? 22 : 24, '#c2362b'); }      
         g.restore();
+        if (O.onDropHelp) {      
+          const qq = t - (S.press.dpq == null ? -9 : S.press.dpq), qs = pop * (qq >= 0 && qq < 0.22 ? 0.9 : 1), r = G.dpqr;
+          g.save(); g.translate(G.dpq[0], G.dpq[1]); g.scale(qs, qs);
+          g.fillStyle = 'rgba(40,20,5,0.3)'; g.beginPath(); g.arc(3, 5, r + 3, 0, TAU); g.fill();
+          g.fillStyle = '#ffffff'; g.beginPath(); g.arc(0, 0, r + 3, 0, TAU); g.fill();
+          const qg = g.createLinearGradient(0, -r, 0, r); qg.addColorStop(0, '#ffd76a'); qg.addColorStop(1, '#e2a23b');
+          g.fillStyle = qg; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill();
+          label('!', 0, 2, 34, '#3a2405');
+          g.restore();
+        }
       }
     }
     g.restore();
@@ -2956,6 +2969,7 @@ const TCCare = (() => {
       if (inR(G.m1, G.mw, G.mh + 12)) return 'pm:1';
       if (inR(G.mn, G.mw, G.mh + 12)) return 'pm:n';
       if (S.bulk && S.push.n >= 1 && inR(G.end, G.ew, G.eh + 12)) return 'pend';
+      if (dropOk() && O.onDropHelp && Math.hypot(x - G.dpq[0], y - G.dpq[1]) < G.dpqr + 8) return 'pdq';      
       if (dropOk() && inR(G.dp, G.dpw, G.dph)) return 'pdrop';
       if (Math.hypot(x - HELP[0], y - HELP[1]) < 48) return 'help';
       return null;                       
@@ -2988,6 +3002,7 @@ const TCCare = (() => {
     else if (what === 'pend') pushEnd(t);
     else if (what === 'pdrop') { if (pushLive() && !S.fxHold && dropOk() && t >= S.push.lock && t - S.push.t0 > DROP_WAIT) { S.press.dp = t; ev(t, 'button'); if (O.onDrop) O.onDrop(); } }      
     else if (what === 'buy') pressBuy(t);
+    else if (what === 'pdq') { if (pushLive() && !S.fxHold && dropOk() && O.onDropHelp) { S.press.dpq = t; ev(t, 'button'); O.onDropHelp(); } }      
   }
   function pointer(kind, x, y, t) {        
     if (kind === 'down') { const h = uiHit(x, y); if (h === 'push') { pushPress(t); S.uiDown = '-'; return; } S.uiDown = h; if (h) return; }      
@@ -4689,6 +4704,10 @@ const TCPlan = (() => {
 #tcPlan .fm input::-webkit-calendar-picker-indicator{margin:0 0 0 2px;padding:0}
 #tcPlan .ocr{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:44px;border-radius:12px;border:2px dashed #c98a10;background:#fff4d6;color:#8a5a12;font:700 15px/1 var(--tcpf)}
 #tcPlan .ocrh{margin:7px 2px 0;font-size:12.5px;line-height:1.6;color:#8a6a48}
+#tcPlan .ocw{display:flex;align-items:center;gap:8px}
+#tcPlan .ocw .ocr{flex:1 1 auto;min-width:0;width:auto}
+#tcPlan .ocq{flex:none;display:grid;place-items:center;width:40px;height:40px;padding:0;margin:0;border-radius:50%;border:2px solid #fff;background:linear-gradient(180deg,#ffd76a,#e2a23b);color:#3a2405;font:900 21px/1 "Hiragino Sans","Hiragino Kaku Gothic ProN",system-ui,sans-serif;box-shadow:0 2px 7px rgba(90,58,28,.35);-webkit-appearance:none;appearance:none}
+#tcPlan .ocq:active{transform:translateY(1px)}
 #tcPlan .ocrh b{color:#b8650f}
 #tcPlan .om{font-size:12.5px;color:#3f7f3a;margin-top:6px;min-height:1em}
 #tcPlan .mm{display:block;width:100%;box-sizing:border-box;margin:8px 0 0;min-height:42px;border-radius:8px;border:1.5px dashed #d9b77c;background:#fff9dc;color:#5a3a1c;font:400 16px/1.45 var(--tcpf);padding:8px 10px;resize:none;overflow:hidden;-webkit-appearance:none;appearance:none}
@@ -4868,7 +4887,9 @@ const TCPlan = (() => {
   function formHtml() {
     const r = edit;
     return `<div class="fm"><h3>${r._new ? 'レースを予約' : 'レースを直す'}</h3>`
-      + `<button type="button" class="ocr" data-p="ocr">📷 画像から読み取る（3枚まで）</button>`
+      
+      
+      + `<div class="ocw"><button type="button" class="ocr" data-p="ocr">📷 画像から読み取る（3枚まで）</button>${window.TengelHelp ? '<button type="button" class="ocq" data-p="help" aria-label="画像の 読み込みと 作戦会議の 使い方" title="使い方">!</button>' : ''}</div>`
       
       + `<div class="ocrh"><b>📸 レースの 画像を 送ってね！</b> 出走表や オッズの 画面の スクショを 1〜3枚 選ぶと、開催場・R・レース名・出走頭数・距離・発走時間を 読み取るよ（ポイントは 使わないよ）</div>`
       + `<div class="om" aria-live="polite">${esc(r._msg || '')}</div>`
@@ -4969,6 +4990,7 @@ const TCPlan = (() => {
     }
     if (k === 'cancel') { edit = null; paint(); return; }
     if (k === 'ocr') { readForm(); root.querySelector('[data-p=file]').click(); return; }
+    if (k === 'help') { readForm(); if (window.TengelHelp) window.TengelHelp.open('plan', a); return; }      
     if (k === 'save') {
       readForm(); const r = edit;
       if (!r.name && !r.time) { r._msg = 'レース名か 発走時間を 入れてね'; paint(); return; }
@@ -5394,6 +5416,16 @@ const TCDrop = (() => {
     if (S.n === 0 && !S.holds.length) finish(); else finishDrops();
     return true;
   }
+  
+  
+  
+  const canHelp = () => !!(S && API && API.help && !S.hold && ((S.phase === 'ready' && !S.ball && S.t >= S.lock) || S.phase === 'wait'));
+  function pressHelp() {
+    if (!canHelp()) return false;
+    se('button'); S.press.help = S.t;
+    try { API.help(); } catch (e) {   }
+    return true;
+  }
   function finish(aborted) {
     unquiet();                                         
     const r = { used: S ? S.used : 0, aborted: !!aborted };
@@ -5437,7 +5469,7 @@ const TCDrop = (() => {
 
   
   const inBox = (b, x, y, pad) => x >= b[0] - pad && x <= b[2] + pad && y >= b[1] - pad && y <= b[3] + pad;
-  const QUIT = { x: 122, y: 62, w: 204, h: 84 }, ENDC = { y: 960, w: 880, h: 600 }, ENDB = { y: 1146, w: 380, h: 150, gap: 36 };      
+  const QUIT = { x: 122, y: 62, w: 204, h: 84 }, HELPC = { x: 343, y: 62, w: 170, h: 84 }, ENDC = { y: 960, w: 880, h: 600 }, ENDB = { y: 1146, w: 380, h: 150, gap: 36 };      
   function hit(xd, yd) {                               
     const xi = (xd - MX) / MS, yi = (yd - MY) / MS;
     if (S.phase === 'end') {
@@ -5447,6 +5479,7 @@ const TCDrop = (() => {
       return null;
     }
     if (S.phase === 'ready' && Math.abs(xd - (QUIT.x + 22)) < QUIT.w / 2 + 8 && Math.abs(yd - QUIT.y) < QUIT.h / 2 + 8) return 'quit';
+    if (API && API.help && (S.phase === 'ready' || S.phase === 'wait') && Math.abs(xd - HELPC.x) < HELPC.w / 2 + 6 && Math.abs(yd - HELPC.y) < HELPC.h / 2 + 8) return 'help';      
     if (inBox(D.go.box, xi, yi, 10)) return 'go';
     if (inBox(D.see.box, xi, yi, 6)) return 'see';
     return null;
@@ -5458,6 +5491,7 @@ const TCDrop = (() => {
     if (what === 'more') return pressMore();
     if (what === 'end') return pressEnd();
     if (what === 'quit') return pressQuit();
+    if (what === 'help') return pressHelp();
     return false;
   }
   function onDown(e) {
@@ -5845,6 +5879,19 @@ const TCDrop = (() => {
     const canQuit = S.phase === 'ready' && !S.ball && t >= S.lock, qa = S.phase === 'ready' || S.phase === 'fall' ? ia * (canQuit ? 1 : 0.4) : 0;      
     const early = S.n > 0 || S.holds.length > 0;      
     if (qa > 0.01) chip(QUIT.x + 22, QUIT.y, QUIT.w, QUIT.h, early ? '投入終了' : 'やめる', early ? 36 : 34, { a: qa, dx: early ? 0 : 20 });
+    
+    if (API.help && (S.phase === 'ready' || S.phase === 'fall' || S.phase === 'wait')) {
+      const ha = ia * (canHelp() ? 1 : 0.4), hb = t - (S.press.help == null ? -9 : S.press.help), hs = hb >= 0 && hb < 0.22 ? 0.94 : 1;
+      if (ha > 0.01) {
+        chip(HELPC.x, HELPC.y, HELPC.w, HELPC.h, '遊び方', 34, { a: ha, dx: 30, s: hs });
+        g.save(); g.globalAlpha *= ha; g.translate(HELPC.x - 56 * hs, HELPC.y + 2); g.scale(hs, hs);
+        g.fillStyle = '#ffffff'; g.beginPath(); g.arc(0, 0, 25, 0, TAU); g.fill();
+        const qg = g.createLinearGradient(0, -22, 0, 22); qg.addColorStop(0, '#ffd76a'); qg.addColorStop(1, '#e2a23b');
+        g.fillStyle = qg; g.beginPath(); g.arc(0, 0, 22, 0, TAU); g.fill();
+        label('!', 0, 2, 30, '#3a2405');
+        g.restore();
+      }
+    }
     if (!early) { g.save(); g.globalAlpha *= qa; g.strokeStyle = '#7a4520'; g.lineWidth = 6; g.lineCap = 'round'; g.beginPath();      
       g.moveTo(QUIT.x - 62, QUIT.y - 12); g.lineTo(QUIT.x - 38, QUIT.y + 14); g.moveTo(QUIT.x - 38, QUIT.y - 12); g.lineTo(QUIT.x - 62, QUIT.y + 14); g.stroke(); g.restore(); }
     
@@ -5912,7 +5959,7 @@ const TCDrop = (() => {
     tap: what => !!act(what),                          
     
     geo: () => { if (!D) return null; const c = b => [MX + (b[0] + b[2]) / 2 * MS, MY + (b[1] + b[3]) / 2 * MS];
-      return { go: c(D.go.box), see: c(D.see.box), quit: [QUIT.x + 22, QUIT.y], more: [W / 2 - ENDB.w / 2 - ENDB.gap / 2, ENDB.y], end2: [W / 2 + ENDB.w / 2 + ENDB.gap / 2, ENDB.y], end1: [W / 2, ENDB.y], lcd: [MX + D.lcd[0] * MS, MY + D.lcd[1] * MS, D.lcd[3] * MS] }; },
+      return { go: c(D.go.box), see: c(D.see.box), quit: [QUIT.x + 22, QUIT.y], help: API && API.help ? [HELPC.x, HELPC.y] : null, more: [W / 2 - ENDB.w / 2 - ENDB.gap / 2, ENDB.y], end2: [W / 2 + ENDB.w / 2 + ENDB.gap / 2, ENDB.y], end1: [W / 2, ENDB.y], lcd: [MX + D.lcd[0] * MS, MY + D.lcd[1] * MS, D.lcd[3] * MS] }; },
     info: () => (S ? { phase: S.phase, t: S.t, max: S.max, n: S.n, used: S.used, holds: S.holds.map(h => [h.c, h.state, h.z.k]), lcd: S.lcd ? S.lcd.c : 0, lcdOff: !!(S.lcd && S.lcd.off != null && S.lcd.off <= S.t), white: !!(S.lcd && S.lcd.c === 0), lamp: S.lcd ? +lampI(S.lcd).toFixed(3) : 0, aura: S.lcd ? +auraK(S.lcd).toFixed(3) : 0, ball: S.ball ? { pi: S.ball.pi, cup: S.ball.p.cup, c: S.ball.c, inT: S.ball.inT } : null, pc: S.pc ? +(S.t - S.pc.t0).toFixed(3) : null, quiet: !!S.quiet, more: S.more, lock: S.lock, sum: S.sum, tk: S.tk, next: !!S.next, hold: S.hold, op: S.op } : null) };
 })();
 
@@ -6636,6 +6683,8 @@ const TCApp = (() => {
     high: () => (TCCare.on ? TCCare.S.high || 0 : 0),
     holds: () => dropHolds().map(z => JSON.parse(JSON.stringify(z))),
     se: (name, gain) => SND.se('tc_se_' + name + '.m4a', gain),
+    
+    help: typeof window !== 'undefined' && window.TengelHelp ? () => { window.TengelHelp.open('drop'); } : null,
     quiet: on => { SND.bgm(on ? '' : null); },      
     
     drop() {
@@ -6952,7 +7001,8 @@ const TCApp = (() => {
       lottery, onPrize, onEvent: onCareEvent, banTop: 290, dropX: 726, hiX: 580, hiY: 204, points: walletTotal, onHelp: () => { if (window.TCGuide) TCGuide.open(stage, { anim: true }); },
       onBuy: () => { if (!window.TCBuy || !buyShow()) return false; TCBuy.open(stage, BUY); return true; },      
       stockMax: TOKEN_MAX, bulk: !!st.bulk, onBulk: v => { st.bulk = !!v; touch(); save(); }, onPush: on => { st.push = !!on; touch(); save(); },
-      dropOk, onDrop: () => { dropTap(); }, dropLock: () => (dropLocked() ? toyCost() : 0),      
+      dropOk, onDrop: () => { dropTap(); }, dropLock: () => (dropLocked() ? toyCost() : 0), onDropHelp: window.TengelHelp ? () => { window.TengelHelp.open('drop'); } : null,      
+           
       lotFree: () => !busy && !resetting && !panelOpen() && !st.pend, drawLeft });      
     const S = TCCare.S; S.heart = S.heartShow = st.heart || 0; S.stock = S.stockShow = st.stock; S.high = st.high || 0; S.fav = st.fav.kind;
     if (st.push) { if (st.stock >= 1) TCCare.pushShow(clock() + 0.9); else { st.push = false; touch(); } }      
