@@ -180,6 +180,11 @@ try:
                 boot(pg)
                 pg.locator('#tcFab').click(); pg.wait_for_function(TC_OPEN, timeout=90000); pg.wait_for_timeout(1500)
                 pg.evaluate("() => { window.__bridge.length = 0; }")
+                # 第4.240版：かなキーボードが 出る までの 時間は ページの 中の 時計で 測る（名前の 欄に 入った 時 → 出た 時）。
+                #   重い 画面（トレーニングセンター）では Playwright の click が もどる まで 0.6〜1.1秒 かかる ことが あり、「押して 0.25秒 あとは まだ 出て いない」は 時計しだいで 落ちて いた
+                pg.evaluate("""() => { window.__kt = { f: null, s: null };
+                  document.addEventListener('focusin', e => { const t = e.target; if (window.__kt.f == null && t && t.classList && t.classList.contains('nin')) window.__kt.f = performance.now(); }, true);
+                  document.addEventListener('tengel:kanapad', e => { if (window.__kt.s == null && (e.detail || {}).what === 'show') window.__kt.s = performance.now(); }); }""")
                 pg.locator('#tcOv .tcnm').click(); pg.wait_for_timeout(250)
                 g0 = pg.evaluate("""() => { const d = document.querySelector('#tcnmd'), i = d && d.querySelector('.nin');
                   return { on: !!d && d.classList.contains('on'), active: document.activeElement === i, sel: i ? [i.selectionStart, i.selectionEnd] : null, kana: i ? i.dataset.kana : null,
@@ -189,7 +194,7 @@ try:
                   const hit = document.elementFromPoint(ok.left + ok.width / 2, ok.top + ok.height / 2);
                   return { pad: TengelKana.state().open, top: Math.round(s.top), bottom: Math.round(s.bottom), padTop: Math.round(p.top), okHit: !!hit && !!hit.closest('[data-nm=ok]'),
                     cnt: document.querySelector('#tcnmd .ncnt').textContent, okDis: document.querySelector('#tcnmd [data-nm=ok]').disabled, v: document.querySelector('#tcnmd .nin').value }; }"""
-                g1 = pg.evaluate(LAY)
+                g1 = pg.evaluate(LAY); kt = pg.evaluate('window.__kt'); dt = (kt['s'] - kt['f']) / 1000 if kt and kt['f'] is not None and kt['s'] is not None else -1
                 for k in ('m:k', 'c:ヘ', 'f:hd', 'c:カ', 'f:dk', 'c:サ', 'c:ス', 'm:j', 'c:牧', 'c:場'):
                     pg.locator(f'#kanaPad button[data-k="{k}"]').tap()
                 g2 = pg.evaluate(LAY)
@@ -197,9 +202,9 @@ try:
                     pg.screenshot(path=os.path.join(SHOT, 'v237_kana_farm.png'))
                     pg.locator('#kanaPad button[data-k="m:h"]').tap(); pg.wait_for_timeout(100)
                 pg.screenshot(path=os.path.join(SHOT, f'v237_kana_{tag}.png'))
-                check(g0['on'] and g0['active'] and g0['sel'] == [0, 6] and g0['kana'] == '1' and g0['prompt'] == 0 and not g0['pad'] and g1['pad'] and g1['bottom'] < g1['padTop'] and g1['okHit']
+                check(g0['on'] and g0['active'] and g0['sel'] == [0, 6] and g0['kana'] == '1' and g0['prompt'] == 0 and dt >= 0.6 and g1['pad'] and g1['bottom'] < g1['padTop'] and g1['okHit']
                       and g2['v'] == 'ペガサス牧場' and g2['cnt'] == '6/12文字' and not g2['okDis'] and g2['okHit'],
-                      f'⑤ {vw}×{vh}：看板を 押すと 画面の 中の 窓（iOS の 窓は たのまない：{g0["prompt"]}回）・名前は ぜんぶ 選んだ まま → 0.95秒で かなキーボード・'
+                      f'⑤ {vw}×{vh}：看板を 押すと 画面の 中の 窓（iOS の 窓は たのまない：{g0["prompt"]}回）・名前は ぜんぶ 選んだ まま → 欄に 入って {dt:.2f}秒で かなキーボード（0.6秒 より あと）・'
                       f'窓は 上へ（{g1["top"]}〜{g1["bottom"]}px・キーボードは {g1["padTop"]}px から：重ならない・「決める」が 押せる）・指で 打って「{g2["v"]}」（{g2["cnt"]}）')
                 if tag == 'iphone':
                     pg.locator('#tcnmd [data-nm=ok]').tap(); pg.wait_for_timeout(350)
