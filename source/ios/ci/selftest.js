@@ -849,25 +849,39 @@
       out.names = Object.getOwnPropertyNames(CanvasRenderingContext2D.prototype).length;
       return out;
     });
-    // 第4.235版：牧場の 看板の 名前は iOS の 窓（UIAlertController の 1行の 欄）で 打つ（まさちゃん 11/28 08:41「牧場の名前変えようとしても入力するところが出てこない」）。
-    //   本物の iOS で：窓が 出る・欄が キーボードを 出す 形（first responder）・はじめの 字（ぜんぶ 選んだ まま）・字の 数・13文字で「決める」が 押せない・
-    //   キーボードの 決定（Return）で 返る・窓が 出て いる 間の 2回目は ことわる。トレーニングセンターの 絵は この ビルドに ない ので 開かない：
-    //   お願いの 中身は tc_app.js の farm.ask（看板を 押した ときと 同じ）。字を 入れて 決めるのは アプリ（DEBUG の SelfTest：CI が スクショを 撮った あと）
-    await step(R, 'farmPrompt', async function () {
-      var marked = false;      // スクショの 合図は どの 道でも 1回（run.sh の P1 に farm-prompt：合図が ないと CI が 90秒 待って 止まる）
+    // 第4.237版：かなキーボード（kanapad.js）。文字の 欄（data-kana）で キーボードが 出ない とき に 出る 50音の キーボード（牧場の 名前：
+    //   iPadOS 27 の Swift Playgrounds で 動かした アプリは、iOS の 窓でも キーボードが 出ない ＝ 第4.235版の iOS の 窓は やめた）。
+    //   スクリプトの focus() では キーボードは 出ない ので、ここでは 出る はず（テンキーと 同じ）。トレーニングセンターの 絵は この ビルドに ない ので、
+    //   牧場の 名前と 同じ 形の 欄（data-kana・aria-label「牧場の名前」・48字まで・はじめは ぜんぶ 選んだ まま）を 画面に 1つ 置いて 打つ
+    await step(R, 'kanaPad', async function () {
+      var marked = false, f = null;      // スクショの 合図は どの 道でも 1回（run.sh の P1 に kana-pad：合図が ないと CI が 90秒 待って 止まる）
       try {
-        if (!window.TCApp) { await new Promise(function (r) { var sc = document.createElement('script'); sc.src = 'tc_bundle.js'; sc.onload = r; sc.onerror = r; document.head.appendChild(sc); }); await sleep(200); }
-        var F = window.TCApp && window.TCApp.farm;
-        if (!F || !F.ask) return { have: false };
-        var ask = F.ask(), t0 = Date.now(), busy = null;
-        var pr = TengelNative.call('prompt', Object.assign({}, ask, { selftest: { ack: 'ack-farm-prompt.txt', text: 'CIの牧場', over: 'アイウエオカキクケコサシス' } }))
-          .catch(function (e) { return { error: String(e && e.message || e) }; });
+        if (!window.TengelKana) return { api: false };
+        window.scrollTo(0, 0); await sleep(200);
+        f = document.createElement('input'); f.type = 'text'; f.setAttribute('data-kana', '1'); f.setAttribute('aria-label', '牧場の名前'); f.maxLength = 48; f.value = 'テンゲル牧場';
+        f.style.cssText = 'position:fixed;left:16px;right:16px;top:calc(var(--sat,0px) + 96px);z-index:96;height:48px;box-sizing:border-box;border:2px solid #d9b77c;border-radius:12px;background:#fffdf7;padding:0 12px;margin:0;font:700 20px/1.2 serif;color:#4a250c';
+        document.body.appendChild(f);
+        f.focus(); f.select();
+        await sleep(300); var early = TengelKana.state().open;
         await sleep(900);
-        try { busy = await Promise.race([TengelNative.call('prompt', ask), sleep(5000).then(function () { return 'timeout'; })]); } catch (e) { busy = { error: String(e && e.message || e) }; }
-        marked = true; await mark('farm-prompt');
-        var r = await Promise.race([pr, sleep(80000).then(function () { return { timeout: true }; })]);
-        return { have: true, ask: ask, r: r, busy: busy, ms: Date.now() - t0 };
-      } finally { if (!marked) await mark('farm-prompt'); }
+        var s1 = TengelKana.state(), out = { api: true, early: early, shown: s1.open, target: s1.target, kb: s1.kb, hw: s1.hw, mode0: s1.mode, active: document.activeElement === f };
+        var K = function (k) { var b = document.querySelector('#kanaPad button[data-k="' + k + '"]'); if (b) b.click(); return !!b; };
+        out.keys = ['m:k', 'c:ヘ', 'f:hd', 'c:カ', 'f:dk', 'c:サ', 'c:ス', 'm:j', 'c:牧', 'c:場'].filter(K).length;
+        out.v1 = f.value;                                                   // ペガサス牧場（ぜんぶ 選んだ 所に 上書き・゜ ゛ は 前の 字に）
+        K('f:left'); K('f:left'); K('m:h'); K('c:の'); out.v2 = f.value;   // ペガサスの牧場（◀ ◀ で 牧 の 前へ）
+        var pb = document.querySelector('#kanaPad'); if (pb) { var r = pb.getBoundingClientRect(); out.box = { top: Math.round(r.top), h: Math.round(r.height), bottom: Math.round(innerHeight - r.bottom), w: Math.round(r.width) }; }
+        out.cells = document.querySelectorAll('#kanaPad .kpg > *').length; out.mode1 = TengelKana.state().mode; out.activeAfter = document.activeElement === f;
+        marked = true; await mark('kana-pad');
+        // スクショの あと：小（ョ → ヨ）・⌫・英字の 大／小・クリア・完了
+        f.setSelectionRange(f.value.length, f.value.length);
+        K('m:k'); K('c:ヨ'); K('f:sm'); out.v3 = f.value; K('f:sm'); out.v4 = f.value; K('f:bs'); out.v5 = f.value;
+        K('m:a'); K('c:A'); K('f:sm'); out.v6 = f.value; K('f:clr'); out.v7 = f.value;
+        K('f:done'); await sleep(150); out.closed = !TengelKana.state().open; out.blurred = document.activeElement !== f;
+        return out;
+      } finally {
+        if (f && f.parentNode) { try { f.blur(); } catch (e) { /* なし */ } f.parentNode.removeChild(f); }
+        if (!marked) await mark('kana-pad');
+      }
     });
     // 外への通信（Google のフォントなどがないか）
     R.outside = performance.getEntriesByType('resource').map(function (e) { return e.name; }).filter(function (n) { return !/^tengel:/.test(n); });
