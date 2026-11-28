@@ -959,9 +959,13 @@
       await sleep(400);
       var st = function () { return W.list.map(function (q, i) { var c = W._ctx(i); return { name: q.name, state: c ? c.state : null, on: q.on }; }); };
       var out = { api: true, s0: st() };
-      window.__nativeEvent('audio', { why: 'resign' }); await sleep(400); out.s1 = st(); out.h1 = W.hushed;
-      window.__nativeEvent('audio', { why: 'interruption' }); await sleep(1200); out.s2 = st(); out.h2 = W.hushed;
-      window.__nativeEvent('audio', { why: 'active' }); await sleep(1500); out.s3 = st(); out.h3 = W.hushed;
+      // 第4.243版：止まる・動き出す のは あとから（suspend・resume は 待つ もの）→ 決まった 時間で 1回 見る のでは なく、なる まで 見る（2.5秒・3.5秒 まで）。かかった 時間（t1〜t3）も のこす
+      //   （run 218 の iPhone で、止まる のに 0.4秒 より かかって「resign fx:running」→ CHECK に なった：iPad・前の run は OK）
+      var waitSt = async function (ok, ms) { var t0 = Date.now(); while (Date.now() - t0 < ms) { if (ok(st())) break; await sleep(100); } return Date.now() - t0; };
+      var off = function (s) { return s.every(function (q) { return q.state !== 'running'; }); };
+      window.__nativeEvent('audio', { why: 'resign' }); out.t1 = await waitSt(off, 2500); out.s1 = st(); out.h1 = W.hushed;
+      window.__nativeEvent('audio', { why: 'interruption' }); await sleep(400); out.t2 = await waitSt(off, 2500); out.s2 = st(); out.h2 = W.hushed;
+      window.__nativeEvent('audio', { why: 'active' }); out.t3 = await waitSt(function (s) { return s.every(function (q) { return !q.on || q.state === 'running'; }); }, 3500); await sleep(300); out.s3 = st(); out.h3 = W.hushed;
       return out;
     });
     // 外への通信（Google のフォントなどがないか）

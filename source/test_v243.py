@@ -33,6 +33,9 @@ hp = pn[pn.index('// ===================== 使い方'):]
 HPI = json.loads(re.sub(r'(\w+):', r'"\1":', re.search(r'const HPI = (\{.*?\});', hp).group(1)))
 imgs = {f[:-5]: Image.open(os.path.join('help', 'img', f)).size for f in sorted(os.listdir(os.path.join('help', 'img'))) if f.startswith('hp_') and f.endswith('.webp')}
 used = sorted(set(re.findall(r"pic\('(hp_\w+)\.webp'", hp)))      # 名前は そのまま（app_unused.py が さがせる）
+inl = re.findall('[\\s"\'<]on[a-z]{3,14}\\s*=\\s*["\'\\\\]', pn)
+check(not inl and "im.addEventListener('error', () => f(im), { once: true });" in pn and pn.count('wire(') == 3,
+      f'④ pt_note.js に タグに 書いた スクリプト（onerror など）が ない（App Store版の ページは 動かさない：Content-Security-Policy）→ 絵が ない ときは wire で 見張る {inl}')
 check(set(imgs) == set(used) == set(HPI) and all(list(imgs[k]) == HPI[k] for k in imgs),
       f'④ 絵（help/img）{len(imgs)}まい ＝ 使い方で 使う 絵 ＝ pt_note.js の HPI（大きさも 同じ）')
 check(all(os.path.getsize(os.path.join('help', 'img', k + '.webp')) < 120 * 1024 for k in imgs) and sum(os.path.getsize(os.path.join('help', 'img', k + '.webp')) for k in imgs) < 700 * 1024,
@@ -87,7 +90,9 @@ check("_hp = os.path.join(HERE, 'help', 'img')" in bp and "shutil.copy(os.path.j
 G = {'x': 526, 'y': 1436, 'w': 360, 'ar': 646 / 660}
 q = (318, 1490, 25)
 edge = (((q[0] + q[2] + 3) - G['x']) / (G['w'] * 0.5 + 4)) ** 2 + ((q[1] - G['y']) / (G['w'] * G['ar'] * 0.5 + 4)) ** 2      # PUSH を 押せる だ円（＋4）
-check(edge > 1 and q[0] - q[2] - 3 >= 158 + 135 - 6, f'③ 入口の 横の「！」は PUSH を 押せる だ円に かからない・入口の 札に ほとんど かからない（{edge:.2f}）')
+gap = ((330 - q[0]) ** 2 + (1600 - q[1]) ** 2) ** 0.5      # test_tc.py が 何も ない ことを 見る 所（札と PUSH の 間・「！」の 下）
+check(edge > 1 and q[0] - q[2] - 3 >= 158 + 135 - 6 and gap > q[2] + 8 + 3 and q[1] - q[2] - 3 >= 1392 + 124 / 2,
+      f'③ 入口の 横の「！」は PUSH を 押せる だ円に かからない（{edge:.2f}）・入口の 札に ほとんど かからない・上の トークンの 札に かからない・下の 間（330,1600）は あく（{gap:.0f}）')
 check(343 - 85 > 122 + 22 + 102 and 343 + 85 < 1052 - 148 - 130, '③ 台の「！ 遊び方」は やめるの 札と トークンの 札の あいだ')
 
 # ---------- アプリを 作る（App Store版・テスト版・Web版）----------
@@ -268,6 +273,25 @@ try:
             ok_q = pg.evaluate("() => TCDrop.tap('quit')"); pg.wait_for_timeout(800)
             check(ok_q and not pg.evaluate("() => TCDrop.isOpen()"), '③ 台の「やめる」は 今までどおり（閉じる）')
         check(not e3, f'③ エラー なし {e3[:2]}')
+        c.close()
+        # ===== 絵が ない とき（GitHub の Mac と 同じ：トレーニングセンター・カードバトルの 絵は ない）・タグの スクリプトは 動かない ページ（Content-Security-Policy）=====
+        c = br.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, locale='ja-JP', timezone_id='Asia/Tokyo', has_touch=True, is_mobile=True)
+        c.add_init_script(FAKE_T)
+        c.route(re.compile(r'.*/(tc_dp_\w+|tc_gk_end2|tk_door_open|tk_ticket|tc_zn_\w+|cb_board|cb_logo|rt_kamisama_\w+)\.webp$'), lambda r: r.abort())
+        pg = c.new_page(); e6 = []; pg.on('pageerror', lambda e: e6.append(str(e)))
+        boot(pg, 'APP')
+        csp = pg.evaluate("(document.querySelector('meta[http-equiv=\"Content-Security-Policy\"]') || {}).content || ''")
+        pg.evaluate("() => TengelHelp.open('drop')"); pg.wait_for_timeout(1500)
+        m1 = pg.evaluate("""() => { const o = document.getElementById('tgHelp'); return { boards: [...o.querySelectorAll('.hpbd')].map(b => b.classList.contains('hpnone')), uma: o.querySelectorAll('.hpu img').length, hold: o.querySelectorAll('.hph img').length,
+          end: o.querySelector('.hpend').classList.contains('hpnone'), rows: o.querySelectorAll('.hpc').length, wide: o.querySelector('.pnbd').scrollWidth <= o.querySelector('.pnbd').clientWidth + 1 }; }""")
+        shot(pg, 'v243_drop_noart')
+        pg.evaluate("() => TengelHelp.close()"); pg.wait_for_timeout(200)
+        pg.evaluate("() => TengelPtNote.open()"); pg.wait_for_timeout(1500)
+        m2 = pg.evaluate("""() => { const n = document.getElementById('ptNote'); return { none: [...n.querySelectorAll('.pnt')].map(t => t.classList.contains('pnnone')), nolg: n.querySelector('.pncb').classList.contains('pnnolg'), bg: n.querySelectorAll('.pncb .pnbg').length }; }""")
+        pg.evaluate("() => TengelPtNote.close()")
+        check("script-src-attr 'none'" in csp and m1['boards'] == [True, True] and m1['uma'] == 0 and m1['hold'] == 0 and m1['end'] and m1['rows'] == 8 and m1['wide'] and not e6,
+              f'④ 絵が ない とき（CI と 同じ）：遊び方は 台の 札が 字だけ・馬バレと 保留は 色の 丸・天国の 絵は 字だけ（タグの スクリプトが 動かない ページ〈{csp[:22]}…〉でも）{m1}')
+        check(m2['none'] == [True, True, True] and m2['nolg'] and m2['bg'] == 0, f'④ 絵が ない とき：ポイントの お知らせ（第4.242版）も 絵文字・VS の 絵なし（前は タグの スクリプトで 動かなかった）{m2}')
         c.close()
         br.close()
 finally:

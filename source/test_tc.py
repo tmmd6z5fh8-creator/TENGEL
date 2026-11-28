@@ -419,13 +419,14 @@ try:
         except Exception: okp = False
         pg.wait_for_timeout(1000); shot(pg, 'tc_push')
         p0 = pg.evaluate(PU); G = pg.evaluate("() => TCCare.PUSHG"); mx = pg.evaluate("() => [TCCare.RULE.stockMax, TCApp._t.ODDS.tokenMax]")
-        # 第4.173版：PUSH の 左下（撫でるの ボタンの あった 所）には お世話チャレンジの 入口が 出る（台の 絵が ある とき）→ かくれた ことは ごはんの ボタンの 所（327,1494：PUSH と 入口の 間）で 見る
-        px = pg.evaluate(OVPX, [[G['x'], G['y'] - 40], [327, 1494], [G['m1'][0] - 100, G['m1'][1] - 20], [G['mn'][0] - 100, G['mn'][1] - 20]])
+        # 第4.173版：PUSH の 左下（撫でるの ボタンの あった 所）には お世話チャレンジの 入口が 出る（台の 絵が ある とき）→ かくれた ことは PUSH と 入口の 間で 見る
+        #   第4.243版：入口の 横（318,1490）に「！」（遊び方：tc_care.js の PUSHG.dpq）→ 見る 所・押す 所は その 下（330,1600）
+        px = pg.evaluate(OVPX, [[G['x'], G['y'] - 40], [330, 1600], [G['m1'][0] - 100, G['m1'][1] - 20], [G['mn'][0] - 100, G['mn'][1] - 20]])
         check(okp and p0['live'] and p0['stock'] == stock0 and p0['total'] == 0 and p0['cares'] == 0 and p0['rs'] == 0 and p0['push'] and p0['spush'] and not p0['bulk'] and p0['pop'] == [] and mx == [25, 25],
               f'ご飯が 終わると PUSH が 出る：トークンは まだ 使って いない（{stock0}個 の まま）・お世話の 数も まだ・「PUSH が 出て いる」を 保存・トークンの 上限は 25（{mx}）')
         check(px[0][0] > 170 and px[0][1] < 100 and px[0][3] > 240 and px[1][3] == 0 and px[2][0] > 215 and 150 < px[2][1] < 215 and px[2][2] < 130 and min(px[3][:3]) > 215 and 420 < G['y'] * 614 / 1657 and G['y'] + G['w'] * G['ar'] / 2 < 1657,
               f'画面の 下に 赤い PUSH（色 {px[0]}）・お世話の 4つの ボタンは 隠れる（ご飯の 所は すきとおる {px[1]}）・スイッチは「1個 使う」が 金色（{px[2][:3]}）・「まとめて 使う」は 白（{px[3][:3]}）')
-        pg.evaluate("() => TCCare.press(TCCare.S.lastT, 'pet')"); stage_click(pg, 327, 1494); pg.wait_for_timeout(300); pb = pg.evaluate(PU)
+        pg.evaluate("() => TCCare.press(TCCare.S.lastT, 'pet')"); stage_click(pg, 330, 1600); pg.wait_for_timeout(300); pb = pg.evaluate(PU)
         check(pb['mode'] is None and pb['phase'] == 'idle' and '先に PUSH を 押してね' in pb['tags'] and pb['live'] and pb['stock'] == stock0, f'PUSH が 出て いる 間は 他の お世話は 始まらない（{pb["tags"][-1:]}）')
         stage_click(pg, *G['mn']); pg.wait_for_timeout(400); s1 = pg.evaluate(PU); px1 = pg.evaluate(OVPX, [[G['mn'][0] - 100, G['mn'][1] - 20]])
         stage_click(pg, *G['m1']); pg.wait_for_timeout(400); s2 = pg.evaluate(PU)

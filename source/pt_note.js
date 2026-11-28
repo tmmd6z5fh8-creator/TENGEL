@@ -184,13 +184,24 @@
     return true;
   }
 
+  // 第4.243版：絵が ない とき（GitHub の Mac の テスト・前の 版の 素材）の 形。App Store版の ページは タグに 書いた スクリプト（onerror など）を 動かさない
+  //   （index.html の Content-Security-Policy：script-src-attr 'none'・test_native.py の「抜け穴②の 守り」）→ 絵に data-miss を つけて ここで error を 見張る
+  //   pnt＝絵の 札を 絵文字に（.pnnone）・nolg＝カードバトルの VS の 絵を かくす（.pnnolg）・hp＝使い方の 絵の 札を 字だけに（.hpnone）・rm＝その 絵を 消す
+  const MISS = { pnt: im => { const t = im.closest('.pnt'); if (t) t.classList.add('pnnone'); }, nolg: im => { const t = im.closest('.pncb'); if (t) t.classList.add('pnnolg'); },
+    hp: im => { const t = im.closest('.hpf,.hpbd,.hpend'); if (t) t.classList.add('hpnone'); }, rm: im => im.remove() };
+  function wire(root) {
+    root.querySelectorAll('img[data-miss]').forEach(im => {
+      const f = MISS[im.dataset.miss]; if (!f) return;
+      if (im.complete && !im.naturalWidth) f(im); else im.addEventListener('error', () => f(im), { once: true });
+    });
+  }
   let ov = null, prev = null, rsT = 0;
   const isOpen = () => !!ov;
   function cbLocked() { try { return !!(window.TengelCB && window.TengelCB.locked && window.TengelCB.locked()); } catch (e) { return false; } }
   function html() {
     const w = window.TengelWallet;
     const tk = (window.TengelPoints && window.TengelPoints.TICKET_POINTS) || 7000, toy = (w && w.toy && w.toy.cost) || 3000;
-    const miss = ' onerror="this.closest(\'.pnt\').classList.add(\'pnnone\')"';
+    const miss = ' data-miss="pnt"';      // 絵が ない とき（wire）
     return `<div class="pnbar"><span class="pntt">お知らせ</span><button type="button" class="pnx" data-pn="close" aria-label="閉じる">${X}</button></div>`
       + '<div class="pnbd"><div class="pnin">'
       + '<p class="pney">ポイントの お知らせ</p>'
@@ -209,8 +220,8 @@
       + '<div class="pnsec">TENGERカードバトル</div><div class="pnbox">'
       + '<h3>TENGERカードバトルの 連続勝利でも ポイントは 貰えるぞ！</h3>'
       + '<div class="pncb" role="img" aria-label="カードバトルの 結果：あなたの 勝ち！ 3対1・コンピュータに 4連勝！ プラス 400P">'
-      + '<img class="pnbg" src="cb_board.webp" alt="" onerror="this.remove()"><span class="pnsh"></span>'
-      + '<span class="pnci"><img class="pnlg" src="cb_logo.webp" alt="" onerror="this.closest(\'.pncb\').classList.add(\'pnnolg\')">'
+      + '<img class="pnbg" src="cb_board.webp" alt="" data-miss="rm"><span class="pnsh"></span>'
+      + '<span class="pnci"><img class="pnlg" src="cb_logo.webp" alt="" data-miss="nolg">'
       + '<span class="pnrs"><span class="pnhd">あなたの 勝ち！</span><span class="pnsc">3 － 1</span><span class="pnst">4連勝中！</span>'
       + '<span class="pnptn"><i>🎁</i><span>コンピュータに 4連勝！</span><b>＋400P</b></span></span></span></div>'
       + '<div class="pntip"><span class="pnlab">🎁 連勝の ポイント</span>コンピュータに <b>4</b>連勝で <b>400P</b>・<b>6</b>連勝で <b>800P</b>・<b>7</b>連勝から 1勝ごとに <b>300P</b></div>'
@@ -241,7 +252,7 @@
     if (ov) return;
     css();      // 第4.243版：使い方（#tgHelp）と いっしょの 形（:is(#ptNote,#tgHelp)）
     ov = D.createElement('div'); ov.id = 'ptNote'; ov.className = 'tgov'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'ポイントの お知らせ');
-    ov.innerHTML = html();
+    ov.innerHTML = html(); wire(ov);
     ov.addEventListener('click', e => {
       const w0 = window.TengelWallet;
       if (e.target.closest('[data-pt]')) { if (w0 && w0.shop) w0.shop.click(e); return; }      // 買う・始める（ポイントの 窓と 同じ 動き：お知らせは 閉じない）
@@ -343,8 +354,7 @@
   const QCSS = '.hpq{flex:none;display:inline-grid;place-items:center;width:34px;height:34px;padding:0;margin:0;border-radius:50%;border:2px solid #fff;background:linear-gradient(180deg,#ffd76a,#e2a23b);color:#3a2405;'
     + 'font:900 19px/1 ' + SANS + ';cursor:pointer;box-shadow:0 2px 7px rgba(0,0,0,.28);-webkit-tap-highlight-color:transparent;-webkit-appearance:none;appearance:none}'
     + '.hpq:active{transform:translateY(1px)}.hpq:focus-visible{outline:2px solid var(--focus,#E2A23B);outline-offset:2px}';
-  const imgOk = ' onerror="var f=this.closest(\'.hpf,.hpbd,.hpend\');if(f)f.classList.add(\'hpnone\')"';
-  const drop = ' onerror="this.remove()"';
+  const imgOk = ' data-miss="hp"', drop = ' data-miss="rm"';      // 絵が ない とき（wire）
   const ar = n => (HPI[n] ? `aspect-ratio:${HPI[n][0]}/${HPI[n][1]}` : '');
   // 判定・作戦会議の 絵（help/img の 絵：manual/ に 入って いる）。f＝ファイルの 名前（そのまま 書く：app_unused.py が 使って いる ファイルを 名前で さがす）
   const pic = (f, cap, sub) => { const n = f.replace(/\.webp$/, ''); return `<figure class="hpf" data-hp="${n}"><img src="manual/${f}" alt="" decoding="async" style="${ar(n)}"${imgOk}><figcaption><b>${cap}</b>${sub ? `<span>${sub}</span>` : ''}</figcaption></figure>`; };
@@ -448,6 +458,7 @@
     hov = D.createElement('div'); hov.id = 'tgHelp'; hov.className = 'tgov'; hov.dataset.kind = kind; hov.setAttribute('role', 'dialog'); hov.setAttribute('aria-modal', 'true'); hov.setAttribute('aria-label', H[0]);
     hov.innerHTML = `<div class="pnbar"><span class="pntt">${H[0]}</span><button type="button" class="pnx" data-hp="close" aria-label="閉じる">${X}</button></div>`
       + `<div class="pnbd"><div class="pnin">${H[1]()}<div class="pnfoot"><div class="pnrow"><button type="button" class="pngh" data-hp="close">閉じる</button></div></div></div></div>`;
+    wire(hov);
     hov.addEventListener('click', e => { if (e.target.closest('[data-hp=close]')) hClose(); });
     hkind = kind; hprev = from || D.activeElement;
     D.documentElement.classList.add('mson'); D.body.appendChild(hov); D.addEventListener('keydown', hKey, true);

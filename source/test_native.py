@@ -80,6 +80,8 @@ def check(c, label):
 form = {"venue": "大井", "date": "2026-10-10", "r": "8", "dist": "1400", "surface": "ダ", "baba": "稍重", "n": "14", "s1": "41.3", "s1combo": "6-2-10", "s5": "58.2", "s10": "84.0", "rname": "はなまる特別", "start": "15:40",
         "rows": [{"no": no, "tan": str(t), "fuku": f} for no, t, f in [(1, 12.4, '3.0-4.6'), (2, 4.1, '1.6-2.2'), (3, 31.5, '6.1-9.8'), (4, 9.8, '2.6-3.9'), (5, 18.2, '4.0-6.2'), (6, 2.4, '1.1-1.3'), (7, 7.6, '2.1-3.1'), (8, 54.0, '9.4-15.0'), (9, 25.9, '5.2-8.1'), (10, 6.3, '1.9-2.7'), (11, 14.7, '3.3-5.1'), (12, 88.6, '13.2-21.1'), (13, 40.2, '7.7-12.2'), (14, 120.5, '18.4-29.6')]]}
 # にせもののアプリ：お願い（共有・コピー・バックアップ）を記録して、少しあとに返事をする
+# 第4.242版：使える ポイントが 2,500P より 少ない とき、上の 帯の ポイントの 札に「！」（.pwn）が つく → 札の 字は「！」を のぞいて くらべる
+PILL_TXT = "() => { const p = document.querySelector('#ptsPill'); return [p.querySelector('.pl'), p.querySelector('.pv')].map(e => e ? e.innerText.trim() : '').join(' '); }"
 FAKE = """
 window.__NATIVE_INFO = { version: '1.0', build: '7', device: 'phone' };
 window.__bridge = [];
@@ -1122,7 +1124,7 @@ try:
         pg.evaluate("window.__bridge = []")
         po.locator('[data-pt=buy][data-id="jp.tengel.app.points1000"]').click(); pg.wait_for_timeout(700)
         fin = [x for x in pg.evaluate('window.__bridge') if x['name'] == 'iap' and x['payload']['op'] == 'finish']
-        check(pg.evaluate('TengelWallet.total()') == 1000 and len(fin) == 1 and fin[0]['payload']['id'] == '501' and pg.evaluate("[...document.querySelectorAll('#ptOv .ptbk b')].map(x => x.innerText)") == ['800P', '0P', '200P'] and '合計 1,000P' in po.inner_text() and pg.locator('#ptsPill').inner_text().replace('\n', ' ') == 'ポイント 1,000P', '窓で 1,000Pのパックを買う → 1,200P（窓の 内わけ＝購入ポイント 1,000・獲得ポイント 200 と 上の帯の 合計も 変わる）・台帳に書いてから取引を終わらせる（finish）')
+        check(pg.evaluate('TengelWallet.total()') == 1000 and len(fin) == 1 and fin[0]['payload']['id'] == '501' and pg.evaluate("[...document.querySelectorAll('#ptOv .ptbk b')].map(x => x.innerText)") == ['800P', '0P', '200P'] and '合計 1,000P' in po.inner_text() and pg.evaluate(PILL_TXT) == 'ポイント 1,000P' and pg.locator('#ptsPill .pwn').count() == 1, '窓で 1,000Pのパックを買う → 1,200P（窓の 内わけ＝購入ポイント 1,000・獲得ポイント 200 と 上の帯の 合計も 変わる）・台帳に書いてから取引を終わらせる（finish）')
         po.locator('[data-pt=buy][data-id="jp.tengel.app.points1000"]').click(); pg.wait_for_timeout(700)
         check(pg.evaluate('TengelWallet.total()') == 1800, 'もう一度買う（別の取引）→ 1,800P（第4.230版：800P の パック）')
         pg.evaluate("window.__iap.buy['jp.tengel.app.points500'] = () => ({ ok: false, state: 'cancelled' }); 0")
@@ -1131,10 +1133,13 @@ try:
         po.locator('[data-ms=close]').click(); pg.wait_for_timeout(300)
         check(pg.locator('#ptOv').count() == 0 and not pg.evaluate("document.documentElement.classList.contains('mson')"), 'ポイントの窓を 閉じる')
         pg.click('#ptsPill'); pg.wait_for_timeout(500)
+        # 第4.242版：2,500P より 少ない とき 札は ポイントの お知らせ（pt_note.js）→ いちばん 下の「ポイントの 詳細・履歴」で ポイントの 窓
+        note1 = pg.locator('#ptNote').count() == 1 and pg.locator('#ptOv').count() == 0
+        pg.locator('#ptNote [data-pn=pts]').click(); pg.wait_for_timeout(600)
         pd = pg.evaluate("() => { const o = document.querySelector('#ptOv'), d = o && o.querySelector('#ptDetail'), b = o && o.querySelector('.msb'); if (!d) return null; const r = d.getBoundingClientRect(), h = o.querySelector('.msh').getBoundingClientRect(); return { top: Math.round(r.top - h.bottom), first: b.firstElementChild === d, st: b.scrollTop, big: d.querySelector('.ptbig').innerText.replace(/\\s+/g, ''), rows: [...d.querySelectorAll('.ptbk > div')].map(x => x.innerText.replace(/\\s+/g, ' ')) }; }")
-        check(pg.locator('#ptOv').count() == 1 and '合計 1,800P' in pg.locator('#ptOv').inner_text() and bool(pd) and pd['first'] and pd['st'] == 0 and 0 <= pd['top'] <= 40 and pd['big'] == '1,800P'
+        check(note1 and pg.locator('#ptNote').count() == 0 and pg.locator('#ptOv').count() == 1 and '合計 1,800P' in pg.locator('#ptOv').inner_text() and bool(pd) and pd['first'] and pd['st'] == 0 and 0 <= pd['top'] <= 40 and pd['big'] == '1,800P'
               and pd['rows'] == ['購入ポイント パック・期限なし 1,600P', 'サブスクポイント 届いた日から30日 0P', '獲得ポイント 初めてのプレゼント・ミッション 200P'],
-              f'上の帯の 所有ポイントを 押すと ポイントの窓（今 1,800P）。第4.139版（まさちゃん 11/10 11:46「ポイント欄を押すと、ポイントの詳細が分かる欄を作ってそこに飛ぶようにして！」）：開くと 一番 上が「ポイントの詳細」（購入ポイント 1,600P・サブスクポイント 0P・獲得ポイント 200P）（{pd}）')
+              f'上の帯の 所有ポイントを 押すと（1,800P：2,500P より 少ない ので 第4.242版の ポイントの お知らせ →「ポイントの 詳細・履歴」）ポイントの窓（今 1,800P）。第4.139版（まさちゃん 11/10 11:46「ポイント欄を押すと、ポイントの詳細が分かる欄を作ってそこに飛ぶようにして！」）：開くと 一番 上が「ポイントの詳細」（購入ポイント 1,600P・サブスクポイント 0P・獲得ポイント 200P）（{pd}）')
         pg.locator('#ptOv [data-ms=hist]').click(); pg.wait_for_timeout(600)
         check(pg.locator('#ptOv').count() == 0 and pg.locator('#v-set').is_visible() and pg.locator('#setPoints [data-pt=restore]').count() == 1, '窓の「ポイントの履歴・購入を復元」→ 設定タブのポイント（詳しく）')
         pg.click('.tabbar button[data-tab=judge]'); pg.wait_for_timeout(300)
@@ -1525,7 +1530,10 @@ try:
         ip = p4.evaluate("(() => { const r = document.querySelector('header.top').getBoundingClientRect(); return { top: r.top, ti2: document.documentElement.style.getPropertyValue('--top-inset2'), pill: !!document.querySelector('#ptsPill') }; })()")
         check(ip['ti2'] == '24px' and abs(ip['top'] - 24) < 1 and ip['pill'], f'iPad の 幅（820px）で 上の あきが 0 なら 24px あけて、上の帯が 時計と 重ならない（{ip}）')
         p4.evaluate("document.querySelector('#ptsPill').click()"); p4.wait_for_timeout(500)
-        check(p4.locator('#ptOv').count() == 1 and p4.locator('#ptOv #ptBuy [data-pt=buy]').count() == 4, '所有ポイントを 押すと ポイントの窓（第4.84版：iPad でも）')
+        # 第4.242版：使える ポイントが 2,500P より 少ない ときは 札 → ポイントの お知らせ（いちばん 下の「ポイントの 詳細・履歴」→ ポイントの 窓）
+        low4 = p4.evaluate("TengelWallet.avail() < TengelWallet.LOW"); n4 = p4.locator('#ptNote').count() == 1
+        if low4 and n4: p4.locator('#ptNote [data-pn=pts]').click(); p4.wait_for_timeout(500)
+        check(p4.locator('#ptOv').count() == 1 and p4.locator('#ptOv #ptBuy [data-pt=buy]').count() == 4 and (n4 if low4 else True), f'所有ポイントを 押すと ポイントの窓（第4.84版：iPad でも・2,500P より 少ない ときは お知らせ から：{low4}）')
         p4.evaluate("TengelWallet.closePoints()"); p4.wait_for_timeout(200)
         ctx4.close()
         # ---- 第4.91版：結果ボードカスタム（買い切り 2,200円・非消耗型）：設定の カード → ためす（▶ 見る）→ 買う → 読み込みで 番号の 順に 解放 → 選ぶ → 結果の ボードに つく ----
