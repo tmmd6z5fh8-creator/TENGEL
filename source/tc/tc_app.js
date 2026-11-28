@@ -274,7 +274,7 @@ html.kanapadon #tcnmd{padding-top:calc(env(safe-area-inset-top) + 12px)}
 #tcnmd .nx{flex:none;width:34px;height:34px;border-radius:50%;background:#fff8ec;border:2px solid #d9b77c;color:#8a5a2a;font:400 17px/1 "BIZ UDPGothic","Hiragino Sans",sans-serif;padding:0}
 #tcnmd .nbd{padding:11px 14px 14px}
 #tcnmd .nhint{margin:0 0 8px;font-size:13px;line-height:1.5;color:#7a5a3a}
-#tcnmd .nnote{display:none;margin:-4px 0 8px;font-size:12px;line-height:1.5;color:#b0445f;font-weight:700}
+#tcnmd .nnote{display:none;margin:-4px 0 8px;font-size:12px;line-height:1.5;color:#b0445f;font-weight:700;word-break:keep-all;overflow-wrap:anywhere}
 html.kanapadon #tcnmd .nnote{display:block}
 #tcnmd .nin{display:block;width:100%;box-sizing:border-box;height:48px;border-radius:12px;border:2px solid #d9b77c;background:#fffdf7;padding:0 12px;margin:0;font:700 20px/1.2 "Hiragino Mincho ProN","Hiragino Mincho Pro","YuMincho","Yu Mincho","Noto Serif JP","Noto Serif CJK JP",serif;color:#4a250c;-webkit-user-select:text;user-select:text;touch-action:manipulation;-webkit-appearance:none;appearance:none}
 #tcnmd .nin:focus{outline:none;border-color:#c2456f}

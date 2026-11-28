@@ -44,8 +44,9 @@ check("TengelNative.call('prompt'" not in nocom and 'farmAsk' not in nocom and '
       '① トレーニングセンター：看板を 押すと 画面の 中の 窓（iOS の 窓は たのまない）・名前の 欄に data-kana・かなキーボードが 出て いる 間は 窓を 上へ')
 sw = open(os.path.join('ios', 'Tengel.swiftpm', 'TengelWebView.swift'), 'rb').read()
 old = subprocess.run(['git', 'show', '838970df:./ios/Tengel.swiftpm/TengelWebView.swift'], capture_output=True, check=True).stdout
-check(sw == old and b'prompt' not in sw and b'UIAlertController' not in sw and b'self?.event("keyboard", ["open": open' in sw,
-      f'① アプリ（TengelWebView.swift）は 第4.234版と 同じ バイト（{len(sw):,} B：iOS の 窓 "prompt" は ない）・キーボードの 知らせ（keyboardWillShow／Hide）は そのまま')
+lo, ln = old.decode('utf8').split('\n'), sw.decode('utf8').split('\n')      # 第4.238版：行を 足した（willResignActive・interruption の guard）＝ 第4.234版の 行は ぜんぶ ある
+check(all(x in set(ln) for x in lo) and b'prompt' not in sw and b'UIAlertController' not in sw and b'self?.event("keyboard", ["open": open' in sw,
+      f'① アプリ（TengelWebView.swift）は 第4.234版の 行が ぜんぶ ある（{len(sw):,} B：iOS の 窓 "prompt" は ない・第4.238版で 行を 足した）・キーボードの 知らせ（keyboardWillShow／Hide）は そのまま')
 bad = [w for w in ('まさちゃん', 'Claude', 'Anthropic', '大井', 'JRA', 'NAR', 'WIN5') if w in kp]
 check(not bad, f'① kanapad.js に 出しては いけない 字 なし（{bad or "なし"}）')
 
