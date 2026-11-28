@@ -106,6 +106,10 @@ const TCPlan = (() => {
 #tcPlan .fm input::-webkit-calendar-picker-indicator{margin:0 0 0 2px;padding:0}
 #tcPlan .ocr{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:44px;border-radius:12px;border:2px dashed #c98a10;background:#fff4d6;color:#8a5a12;font:700 15px/1 var(--tcpf)}
 #tcPlan .ocrh{margin:7px 2px 0;font-size:12.5px;line-height:1.6;color:#8a6a48}
+#tcPlan .ocw{display:flex;align-items:center;gap:8px}
+#tcPlan .ocw .ocr{flex:1 1 auto;min-width:0;width:auto}
+#tcPlan .ocq{flex:none;display:grid;place-items:center;width:40px;height:40px;padding:0;margin:0;border-radius:50%;border:2px solid #fff;background:linear-gradient(180deg,#ffd76a,#e2a23b);color:#3a2405;font:900 21px/1 "Hiragino Sans","Hiragino Kaku Gothic ProN",system-ui,sans-serif;box-shadow:0 2px 7px rgba(90,58,28,.35);-webkit-appearance:none;appearance:none}
+#tcPlan .ocq:active{transform:translateY(1px)}
 #tcPlan .ocrh b{color:#b8650f}
 #tcPlan .om{font-size:12.5px;color:#3f7f3a;margin-top:6px;min-height:1em}
 #tcPlan .mm{display:block;width:100%;box-sizing:border-box;margin:8px 0 0;min-height:42px;border-radius:8px;border:1.5px dashed #d9b77c;background:#fff9dc;color:#5a3a1c;font:400 16px/1.45 var(--tcpf);padding:8px 10px;resize:none;overflow:hidden;-webkit-appearance:none;appearance:none}
@@ -285,7 +289,9 @@ const TCPlan = (() => {
   function formHtml() {
     const r = edit;
     return `<div class="fm"><h3>${r._new ? 'レースを予約' : 'レースを直す'}</h3>`
-      + `<button type="button" class="ocr" data-p="ocr">📷 画像から読み取る（3枚まで）</button>`
+      // 第4.243版（まさちゃん 2026/11/29 01:11「作戦会議の画像読み込みの横にもビックリマークをつけて、タップするとどんな画像を読み込めばいいか(画像つけて)どんなことができるか画像つきで説明が出てくるようにして！」）：
+      //   ボタンの 横の「！」→ 使い方（pt_note.js の TengelHelp.open('plan')：読み込む 画像・作戦会議で できること）。使い方が ない（テストの 古い 形）ときは 出さない
+      + `<div class="ocw"><button type="button" class="ocr" data-p="ocr">📷 画像から読み取る（3枚まで）</button>${window.TengelHelp ? '<button type="button" class="ocq" data-p="help" aria-label="画像の 読み込みと 作戦会議の 使い方" title="使い方">!</button>' : ''}</div>`
       // 第4.233版（11/27 22:11「作成会議のレース予約の画像読み取りのところ、いつもみたいにレースの画像を送ってね！みたいな感じでいい感じに説明を下に入れてほしい！」）：ボタンの すぐ 下に 説明
       + `<div class="ocrh"><b>📸 レースの 画像を 送ってね！</b> 出走表や オッズの 画面の スクショを 1〜3枚 選ぶと、開催場・R・レース名・出走頭数・距離・発走時間を 読み取るよ（ポイントは 使わないよ）</div>`
       + `<div class="om" aria-live="polite">${esc(r._msg || '')}</div>`
@@ -386,6 +392,7 @@ const TCPlan = (() => {
     }
     if (k === 'cancel') { edit = null; paint(); return; }
     if (k === 'ocr') { readForm(); root.querySelector('[data-p=file]').click(); return; }
+    if (k === 'help') { readForm(); if (window.TengelHelp) window.TengelHelp.open('plan', a); return; }      // 第4.243版：「！」→ 使い方（入力中の 中身は 残す）
     if (k === 'save') {
       readForm(); const r = edit;
       if (!r.name && !r.time) { r._msg = 'レース名か 発走時間を 入れてね'; paint(); return; }

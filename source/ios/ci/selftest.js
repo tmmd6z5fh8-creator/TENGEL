@@ -781,6 +781,27 @@
       out.closed = !document.getElementById('ptNote') && !document.documentElement.classList.contains('ptnoteon');
       return out;
     });
+    // 第4.243版（まさちゃん 2026/11/29 01:11・01:14）：使い方（pt_note.js の TengelHelp：判定の「オッズ画像から読み取る」の 横の「！」・作戦会議の「📷 画像から読み取る」の 横の「！」・
+    //   お世話チャレンジの 遊び方）を 本物の WebKit で。使い方の 絵（help/img の hp_*.webp）は CI にも ある・トレーニングセンターの 絵は ない（色の 丸と 字だけ）
+    await step(R, 'help', async function () {
+      var Hp = window.TengelHelp, out = { api: !!Hp };
+      var R2 = function (e) { if (!e) return null; var r = e.getBoundingClientRect(); return r.width ? [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)] : null; };
+      tab('judge'); await sleep(600); window.scrollTo(0, 0); await sleep(300);
+      var q = document.getElementById('ocrHelp'); out.q = R2(q); out.ob = R2(document.getElementById('ocrBtn')); out.qTxt = q ? q.textContent : null;
+      if (!Hp) { await mark('help-judge'); await mark('help-plan'); await mark('help-drop'); return out; }
+      var info = async function (kind) {
+        Hp.open(kind); await sleep(1800);
+        var o = document.getElementById('tgHelp'); if (!o) return { open: false };
+        var im = [].slice.call(o.querySelectorAll('.hpf > img')), bd = o.querySelector('.pnbd');
+        return { open: true, z: +getComputedStyle(o).zIndex, secs: [].map.call(o.querySelectorAll('.pnsec'), function (e) { return e.textContent; }), imgs: im.length,
+          ok: im.filter(function (i) { return i.complete && i.naturalWidth > 0; }).length, rows: o.querySelectorAll('.hpc').length, wide: bd.scrollWidth <= bd.clientWidth + 1 };
+      };
+      out.judge = await info('judge'); await mark('help-judge'); Hp.close(); await sleep(300);
+      out.plan = await info('plan'); await mark('help-plan'); Hp.close(); await sleep(300);
+      out.drop = await info('drop'); await mark('help-drop'); Hp.close(); await sleep(300);
+      out.closed = !document.getElementById('tgHelp') && !document.documentElement.classList.contains('mson');
+      return out;
+    });
     // 第4.62版：説明書は アプリの 中の 重ねた 窓（iframe）で 開く：ページは そのまま・「アプリに戻る」で 窓が 閉じる
     await step(R, 'manualOv', async function () {
       tab('rec'); await sleep(600);

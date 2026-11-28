@@ -654,7 +654,10 @@ const TCCare = (() => {
   // 第4.173版（まさちゃん 2026/11/14 23:34「トレーニングセンターの抽選を、今のボタンと、もう一つボール落としができるようにしたい！」）：
   //   PUSH の 左下（のこりの トークンの 札の 下）に「お世話チャレンジ」の 入口（dp：台の 小さい 絵と 名前の 札。押すと アプリが 玉を 落とす 台を 開く＝O.onDrop）。
   //   絵と データが 読めて いる とき だけ 出す（O.dropOk）。「おわる」（まとめてで 1回 以上 押した あと）は その 所から 右の 列の 下（「まとめて 使う」の 下）へ うつした
-  const PUSHG = { x: 526, y: 1436, w: 360, ar: 646 / 660, depth: 12, m1: [894, 1386], mn: [894, 1492], mw: 270, mh: 92, tok: [158, 1392], tw: 270, th: 124, end: [894, 1598], ew: 220, eh: 84, tap: [526, 1232], dp: [158, 1556], dpw: 270, dph: 172 };
+  const PUSHG = { x: 526, y: 1436, w: 360, ar: 646 / 660, depth: 12, m1: [894, 1386], mn: [894, 1492], mw: 270, mh: 92, tok: [158, 1392], tw: 270, th: 124, end: [894, 1598], ew: 220, eh: 84, tap: [526, 1232], dp: [158, 1556], dpw: 270, dph: 172, dpq: [318, 1490], dpqr: 25 };
+  // 第4.243版（まさちゃん 2026/11/29 01:14「トレーニングセンターの玉落とし抽選の横にもビックリマークをつけて、画像をつけて説明が出てくるようにして！」）：
+  //   お世話チャレンジの 入口の 右上の 横に 金の 丸の「！」（dpq：まん中・dpqr：半径）。押すと アプリが 遊び方を 出す（O.onDropHelp → pt_note.js の TengelHelp.open('drop')）。
+  //   PUSH の 台（だ円：左の はし 約 346）に かからない 所。O.onDropHelp が ない（使い方が ない）ときは 出さない
   let pushCap = null, pushBase = null, dpIcon = null;
   const dropOk = () => !!(O.dropOk && O.dropOk());
   const DROP_WAIT = 0.4;      // PUSH が 出て から この 秒は 入口を 押しても 開かない（入口は 撫でるの ボタンの あった 所：お世話が おわる 瞬間に そこを さわって いた 指で 開かない ように）
@@ -756,6 +759,16 @@ const TCCare = (() => {
         label('お世話', 46, -44, 31, '#7a4520'); label('チャレンジ', 46, -6, 31, '#7a4520');
         { const lk = O.dropLock ? +O.dropLock() || 0 : 0; S.dpLock = lk; label(lk ? `🔒 解放 ${lk.toLocaleString('ja-JP')}P` : '玉を 落とす', 46, 44, lk ? 22 : 24, '#c2362b'); }      // 第4.212版：解放して いない（おもちゃ）ときは 値段
         g.restore();
+        if (O.onDropHelp) {      // 第4.243版：入口の 横の「！」（遊び方）
+          const qq = t - (S.press.dpq == null ? -9 : S.press.dpq), qs = pop * (qq >= 0 && qq < 0.22 ? 0.9 : 1), r = G.dpqr;
+          g.save(); g.translate(G.dpq[0], G.dpq[1]); g.scale(qs, qs);
+          g.fillStyle = 'rgba(40,20,5,0.3)'; g.beginPath(); g.arc(3, 5, r + 3, 0, TAU); g.fill();
+          g.fillStyle = '#ffffff'; g.beginPath(); g.arc(0, 0, r + 3, 0, TAU); g.fill();
+          const qg = g.createLinearGradient(0, -r, 0, r); qg.addColorStop(0, '#ffd76a'); qg.addColorStop(1, '#e2a23b');
+          g.fillStyle = qg; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill();
+          label('!', 0, 2, 34, '#3a2405');
+          g.restore();
+        }
       }
     }
     g.restore();
@@ -1587,6 +1600,7 @@ const TCCare = (() => {
       if (inR(G.m1, G.mw, G.mh + 12)) return 'pm:1';
       if (inR(G.mn, G.mw, G.mh + 12)) return 'pm:n';
       if (S.bulk && S.push.n >= 1 && inR(G.end, G.ew, G.eh + 12)) return 'pend';
+      if (dropOk() && O.onDropHelp && Math.hypot(x - G.dpq[0], y - G.dpq[1]) < G.dpqr + 8) return 'pdq';      // 第4.243版：入口の 横の「！」（入口より 先に 見る）
       if (dropOk() && inR(G.dp, G.dpw, G.dph)) return 'pdrop';
       if (Math.hypot(x - HELP[0], y - HELP[1]) < 48) return 'help';
       return null;                       // お世話の ボタンは かくれて いる（さわっても 何も おきない）
@@ -1619,6 +1633,7 @@ const TCCare = (() => {
     else if (what === 'pend') pushEnd(t);
     else if (what === 'pdrop') { if (pushLive() && !S.fxHold && dropOk() && t >= S.push.lock && t - S.push.t0 > DROP_WAIT) { S.press.dp = t; ev(t, 'button'); if (O.onDrop) O.onDrop(); } }      // お世話チャレンジを 開く（アプリ）。PUSH を 押した すぐ あと（ルーレット・特化ゾーンの キュインキュイーンの 間＝lock）は 開かない：開くと その 当たりの 演出が 出せなく なる
     else if (what === 'buy') pressBuy(t);
+    else if (what === 'pdq') { if (pushLive() && !S.fxHold && dropOk() && O.onDropHelp) { S.press.dpq = t; ev(t, 'button'); O.onDropHelp(); } }      // 第4.243版：お世話チャレンジの 遊び方
   }
   function pointer(kind, x, y, t) {        // アプリの 指（画面の 座標）
     if (kind === 'down') { const h = uiHit(x, y); if (h === 'push') { pushPress(t); S.uiDown = '-'; return; } S.uiDown = h; if (h) return; }      // PUSH は 指を 置いた 瞬間に（「すぐに押せる」）

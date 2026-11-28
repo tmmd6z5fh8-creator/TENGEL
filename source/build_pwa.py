@@ -174,6 +174,13 @@ json.dump({"name": "テンゲルⅢ", "short_name": "テンゲルⅢ", "start_ur
 # 説明書（manual.html・写真は manual/）。アプリの上の「説明書」と設定タブから開く
 MAN_IMGS, MAN_VER = _bm.build('app' if TARGET == 'app' else 'pwa', out, APP_VER, mother=mother)
 if TARGET == 'app':
+    # 第4.243版：使い方の 絵（help/img/hp_*.webp：help/help_art.py が 架空の 画面と 今の アプリで 作る）→ manual/（アプリの Resources に 名前だけで 入る：build_ios.py）。
+    #   pt_note.js の TengelHelp（判定・作戦会議の「！」）が「manual/hp_*.webp」で 読む
+    _hp = os.path.join(HERE, 'help', 'img')
+    for _f in (sorted(os.listdir(_hp)) if os.path.isdir(_hp) else []):
+        if _f.startswith('hp_') and _f.endswith('.webp'):
+            shutil.copy(os.path.join(_hp, _f), f'{out}/manual/{_f}')
+if TARGET == 'app':
     os.makedirs(f'{out}/fonts')
     for f in _bm.APP_FONT_FILES:
         shutil.copy(os.path.join(HERE, 'ios', 'fonts', f), f'{out}/fonts/{f}')

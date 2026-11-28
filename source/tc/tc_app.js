@@ -717,6 +717,8 @@ const TCApp = (() => {
     high: () => (TCCare.on ? TCCare.S.high || 0 : 0),
     holds: () => dropHolds().map(z => JSON.parse(JSON.stringify(z))),
     se: (name, gain) => SND.se('tc_se_' + name + '.m4a', gain),
+    // 第4.243版：台の 上の「！ 遊び方」→ 使い方（pt_note.js の TengelHelp：お世話チャレンジの 遊び方・色と 当たり・激馬熱馬の 瞬間）。ない ときは 札を 出さない
+    help: typeof window !== 'undefined' && window.TengelHelp ? () => { window.TengelHelp.open('drop'); } : null,
     quiet: on => { SND.bgm(on ? '' : null); },      // 第4.175版：激馬熱馬の 馬バレの プチュンの 間は フィールドの 音を 止める（true）→ もどす（false）
     // 玉を 1こ 落とす：トークン −1（お世話 1回に 数えて 保存）→ くじ → 当たりは すぐ 保存。返り値 { ok, z（当たり か null）, c（色 1〜6・はずれは 0） }
     drop() {
@@ -1033,7 +1035,8 @@ const TCApp = (() => {
       lottery, onPrize, onEvent: onCareEvent, banTop: 290, dropX: 726, hiX: 580, hiY: 204, points: walletTotal, onHelp: () => { if (window.TCGuide) TCGuide.open(stage, { anim: true }); },
       onBuy: () => { if (!window.TCBuy || !buyShow()) return false; TCBuy.open(stage, BUY); return true; },      // 第4.165版：下の 列の「お世話トークン購入」（tc_care.js が 描く）→ 購入の 窓
       stockMax: TOKEN_MAX, bulk: !!st.bulk, onBulk: v => { st.bulk = !!v; touch(); save(); }, onPush: on => { st.push = !!on; touch(); save(); },
-      dropOk, onDrop: () => { dropTap(); }, dropLock: () => (dropLocked() ? toyCost() : 0),      // 第4.173版：お世話チャレンジ（PUSH の 左下の 入口 → 玉を 落とす 台）。第4.212版：解放して いない ときは 解放の 窓（dropTap）・入口に 値段（dropLock）
+      dropOk, onDrop: () => { dropTap(); }, dropLock: () => (dropLocked() ? toyCost() : 0), onDropHelp: window.TengelHelp ? () => { window.TengelHelp.open('drop'); } : null,      // 第4.243版：入口の 横の「！」→ 遊び方
+           // 第4.173版：お世話チャレンジ（PUSH の 左下の 入口 → 玉を 落とす 台）。第4.212版：解放して いない ときは 解放の 窓（dropTap）・入口に 値段（dropLock）
       lotFree: () => !busy && !resetting && !panelOpen() && !st.pend, drawLeft });      // drawLeft（第4.168版）：幻の馬・神様馬の 抽選の のこり（上限で PUSH を 消す）      // 第4.159版：PUSH の スイッチ（1個／まとめて）と「PUSH が まだ 出て いる」を おぼえる・待って いた ハートの 抽選を 始めて よいか（当たりの 演出・馬の 入れかえ・説明書などの 途中で ない）
     const S = TCCare.S; S.heart = S.heartShow = st.heart || 0; S.stock = S.stockShow = st.stock; S.high = st.high || 0; S.fav = st.fav.kind;
     if (st.push) { if (st.stock >= 1) TCCare.pushShow(clock() + 0.9); else { st.push = false; touch(); } }      // 前に お世話を した あと PUSH を 押す 前に 閉じた → また 出す（お世話 1回には トークンを 1つは 使う）

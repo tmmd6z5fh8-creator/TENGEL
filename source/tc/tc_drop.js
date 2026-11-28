@@ -270,6 +270,16 @@ const TCDrop = (() => {
     if (S.n === 0 && !S.holds.length) finish(); else finishDrops();
     return true;
   }
+  // 第4.243版（まさちゃん 2026/11/29 01:14「トレーニングセンターの玉落とし抽選の横にもビックリマークをつけて、画像をつけて説明が出てくるようにして！」）：
+  //   左上の「やめる」の 右に「！ 遊び方」の 札（HELPC）。押すと アプリが 遊び方を 出す（api.help → pt_note.js の TengelHelp.open('drop')）。api.help が ない ときは 出さない。
+  //   押せる のは 玉が 落ちて いない とき（玉を 落とす 前・保留結果を見る の 前）。台は その まま（閉じない）
+  const canHelp = () => !!(S && API && API.help && !S.hold && ((S.phase === 'ready' && !S.ball && S.t >= S.lock) || S.phase === 'wait'));
+  function pressHelp() {
+    if (!canHelp()) return false;
+    se('button'); S.press.help = S.t;
+    try { API.help(); } catch (e) { /* なし */ }
+    return true;
+  }
   function finish(aborted) {
     unquiet();                                         // 激馬熱馬の プチュンの 途中で 閉じた：フィールドの 音を もどす
     const r = { used: S ? S.used : 0, aborted: !!aborted };
@@ -313,7 +323,7 @@ const TCDrop = (() => {
 
   // ---------- 指 ----------
   const inBox = (b, x, y, pad) => x >= b[0] - pad && x <= b[2] + pad && y >= b[1] - pad && y <= b[3] + pad;
-  const QUIT = { x: 122, y: 62, w: 204, h: 84 }, ENDC = { y: 960, w: 880, h: 600 }, ENDB = { y: 1146, w: 380, h: 150, gap: 36 };      // やめる・おしまいの 札（まん中・大きさ）・その 中の ボタン
+  const QUIT = { x: 122, y: 62, w: 204, h: 84 }, HELPC = { x: 343, y: 62, w: 170, h: 84 }, ENDC = { y: 960, w: 880, h: 600 }, ENDB = { y: 1146, w: 380, h: 150, gap: 36 };      // やめる・おしまいの 札（まん中・大きさ）・その 中の ボタン
   function hit(xd, yd) {                               // 舞台の 座標 → 何を 押したか
     const xi = (xd - MX) / MS, yi = (yd - MY) / MS;
     if (S.phase === 'end') {
@@ -323,6 +333,7 @@ const TCDrop = (() => {
       return null;
     }
     if (S.phase === 'ready' && Math.abs(xd - (QUIT.x + 22)) < QUIT.w / 2 + 8 && Math.abs(yd - QUIT.y) < QUIT.h / 2 + 8) return 'quit';
+    if (API && API.help && (S.phase === 'ready' || S.phase === 'wait') && Math.abs(xd - HELPC.x) < HELPC.w / 2 + 6 && Math.abs(yd - HELPC.y) < HELPC.h / 2 + 8) return 'help';      // 第4.243版
     if (inBox(D.go.box, xi, yi, 10)) return 'go';
     if (inBox(D.see.box, xi, yi, 6)) return 'see';
     return null;
@@ -334,6 +345,7 @@ const TCDrop = (() => {
     if (what === 'more') return pressMore();
     if (what === 'end') return pressEnd();
     if (what === 'quit') return pressQuit();
+    if (what === 'help') return pressHelp();
     return false;
   }
   function onDown(e) {
@@ -721,6 +733,19 @@ const TCDrop = (() => {
     const canQuit = S.phase === 'ready' && !S.ball && t >= S.lock, qa = S.phase === 'ready' || S.phase === 'fall' ? ia * (canQuit ? 1 : 0.4) : 0;      // 玉を 落とす 間 だけ（保留結果を見る・おしまいの 間は 出さない）
     const early = S.n > 0 || S.holds.length > 0;      // 玉を 落とした あと：「投入終了」（のこりの 玉は 落とさずに 保留結果へ）・まだ 落として いない：「やめる」（閉じる）
     if (qa > 0.01) chip(QUIT.x + 22, QUIT.y, QUIT.w, QUIT.h, early ? '投入終了' : 'やめる', early ? 36 : 34, { a: qa, dx: early ? 0 : 20 });
+    // 第4.243版：「！ 遊び方」（やめるの 右）：玉を 落とす 間・保留結果を見る の 前（押せない 間は うすく）
+    if (API.help && (S.phase === 'ready' || S.phase === 'fall' || S.phase === 'wait')) {
+      const ha = ia * (canHelp() ? 1 : 0.4), hb = t - (S.press.help == null ? -9 : S.press.help), hs = hb >= 0 && hb < 0.22 ? 0.94 : 1;
+      if (ha > 0.01) {
+        chip(HELPC.x, HELPC.y, HELPC.w, HELPC.h, '遊び方', 34, { a: ha, dx: 30, s: hs });
+        g.save(); g.globalAlpha *= ha; g.translate(HELPC.x - 56 * hs, HELPC.y + 2); g.scale(hs, hs);
+        g.fillStyle = '#ffffff'; g.beginPath(); g.arc(0, 0, 25, 0, TAU); g.fill();
+        const qg = g.createLinearGradient(0, -22, 0, 22); qg.addColorStop(0, '#ffd76a'); qg.addColorStop(1, '#e2a23b');
+        g.fillStyle = qg; g.beginPath(); g.arc(0, 0, 22, 0, TAU); g.fill();
+        label('!', 0, 2, 30, '#3a2405');
+        g.restore();
+      }
+    }
     if (!early) { g.save(); g.globalAlpha *= qa; g.strokeStyle = '#7a4520'; g.lineWidth = 6; g.lineCap = 'round'; g.beginPath();      // ✕（字に ない ことが ある ので 線で）
       g.moveTo(QUIT.x - 62, QUIT.y - 12); g.lineTo(QUIT.x - 38, QUIT.y + 14); g.moveTo(QUIT.x - 38, QUIT.y - 12); g.lineTo(QUIT.x - 62, QUIT.y + 14); g.stroke(); g.restore(); }
     // 右上：お世話トークン（・高確ゾーン）
@@ -785,9 +810,9 @@ const TCDrop = (() => {
 
   return { load, ready, open, close, isOpen, covers, BALLS, TONE, NAME, BEAT, LONG_GAP, LEAD, WIN_AT, MISS_AT, PC_LINE, PC_DARK, PC_CALM, gekiArt: () => !!(IM && IM.gk), beats: c => beatList(TONE[c]).map(q => q.slice()),
     _t: T, get state() { return S; }, get data() { return D; },
-    tap: what => !!act(what),                          // テスト・見本 用：'go'・'see'・'more'・'end'・'quit'（押せた ときは true）
+    tap: what => !!act(what),                          // テスト・見本 用：'go'・'see'・'more'・'end'・'quit'・'help'（押せた ときは true）
     // テスト 用：押す 所の まん中（舞台の 座標 1052×1657）と 馬バレの 丸（まん中・黄色い 縁の 半径）
     geo: () => { if (!D) return null; const c = b => [MX + (b[0] + b[2]) / 2 * MS, MY + (b[1] + b[3]) / 2 * MS];
-      return { go: c(D.go.box), see: c(D.see.box), quit: [QUIT.x + 22, QUIT.y], more: [W / 2 - ENDB.w / 2 - ENDB.gap / 2, ENDB.y], end2: [W / 2 + ENDB.w / 2 + ENDB.gap / 2, ENDB.y], end1: [W / 2, ENDB.y], lcd: [MX + D.lcd[0] * MS, MY + D.lcd[1] * MS, D.lcd[3] * MS] }; },
+      return { go: c(D.go.box), see: c(D.see.box), quit: [QUIT.x + 22, QUIT.y], help: API && API.help ? [HELPC.x, HELPC.y] : null, more: [W / 2 - ENDB.w / 2 - ENDB.gap / 2, ENDB.y], end2: [W / 2 + ENDB.w / 2 + ENDB.gap / 2, ENDB.y], end1: [W / 2, ENDB.y], lcd: [MX + D.lcd[0] * MS, MY + D.lcd[1] * MS, D.lcd[3] * MS] }; },
     info: () => (S ? { phase: S.phase, t: S.t, max: S.max, n: S.n, used: S.used, holds: S.holds.map(h => [h.c, h.state, h.z.k]), lcd: S.lcd ? S.lcd.c : 0, lcdOff: !!(S.lcd && S.lcd.off != null && S.lcd.off <= S.t), white: !!(S.lcd && S.lcd.c === 0), lamp: S.lcd ? +lampI(S.lcd).toFixed(3) : 0, aura: S.lcd ? +auraK(S.lcd).toFixed(3) : 0, ball: S.ball ? { pi: S.ball.pi, cup: S.ball.p.cup, c: S.ball.c, inT: S.ball.inT } : null, pc: S.pc ? +(S.t - S.pc.t0).toFixed(3) : null, quiet: !!S.quiet, more: S.more, lock: S.lock, sum: S.sum, tk: S.tk, next: !!S.next, hold: S.hold, op: S.op } : null) };
 })();
