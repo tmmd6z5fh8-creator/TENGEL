@@ -46,7 +46,8 @@ const TCGuide = (() => {
   // 第4.165版（11/13 12:51「ポイントの特化ゾーンを作る … 特化ゾーンも、トレーニングセンターの説明書に追加」）：ポイント特化ゾーン（tc_app.js の ZONE と 同じ 数：test_tc.py が 見くらべる）
   //   1/699 で 入る（どの 表にも 1行）・スタート 1,000P・レバー 1回ごとに 60% で ＋2,000P・12回 つづけて 上乗せで MAX 25,000P・平均 約3,993P（≒4,000P）
   //   第4.230版（まさちゃん 2026/11/27 00:13「この赤四角の中、当選確率それぞれ100増やして！」）：1/699 → 1/799
-  const ZONE = { d: 799, start: 1000, add: 2000, rate: 0.6, max: 12 };
+  //   第4.236版（まさちゃん 2026/11/28 10:28「その下のチケット扉と特化ゾーンは70ずつ増やして！」）：1/799 → 1/869
+  const ZONE = { d: 869, start: 1000, add: 2000, rate: 0.6, max: 12 };
   const ZV = n => ZONE.start + ZONE.add * n, ZP = n => (n < ZONE.max ? Math.pow(ZONE.rate, n) * (1 - ZONE.rate) : Math.pow(ZONE.rate, ZONE.max));      // 上乗せ n回の 合計・そう なる 確率
   const ZAVG = Array.from({ length: ZONE.max + 1 }, (_, n) => ZV(n) * ZP(n)).reduce((a, b) => a + b, 0);
   const cm = v => Math.round(v).toLocaleString('ja-JP');
@@ -55,7 +56,8 @@ const TCGuide = (() => {
   const GEKI = { d: 299999, v: 40000 };
   const GROW = R(GEKI.d, `<span class="gk">激馬熱馬</span>（${cm(GEKI.v)}P）`);
   // 第4.230版：ルーレット 1/125・1/245・1/399 → 1/225・1/345・1/499・チケット 1/600 → 1/700（tc_app.js の PRIZES と 同じ 数：test_tc.py が 見くらべる）
-  const RTD = [225, 345, 499], TKD = 700;
+  // 第4.236版（まさちゃん 11/28 10:28「赤丸のルーレットの確率あと50ずつ増やして」「チケット扉と特化ゾーンは70ずつ増やして！」）：ルーレット 1/275・1/395・1/549・チケット 1/770
+  const RTD = [275, 395, 549], TKD = 770;
   const CARE = [15, 25, 55, 95, 99, 121, RTD[0], RTD[1], RTD[2], TKD, ZONE.d, GEKI.d];      // お世話の 当たり ぜんぶ（合わせた ％を 出す）
   // 第4.165版：お世話トークンの 購入（組は points.js の TOKEN_PACKS：なければ 同じ 数）・たまる 間（tc_app.js の TOKEN_MIN と 同じ 数：test_tc.py が 見くらべる）
   // 第4.230版（まさちゃん 2026/11/27 00:29「お世話トークン5分に５つから8分に５つに変更して！」）：5分 → 8分
