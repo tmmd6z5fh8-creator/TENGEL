@@ -6182,6 +6182,8 @@ html.kanapadon #tcnmd{padding-top:calc(env(safe-area-inset-top) + 12px)}
 #tcnmd .nx{flex:none;width:34px;height:34px;border-radius:50%;background:#fff8ec;border:2px solid #d9b77c;color:#8a5a2a;font:400 17px/1 "BIZ UDPGothic","Hiragino Sans",sans-serif;padding:0}
 #tcnmd .nbd{padding:11px 14px 14px}
 #tcnmd .nhint{margin:0 0 8px;font-size:13px;line-height:1.5;color:#7a5a3a}
+#tcnmd .nnote{display:none;margin:-4px 0 8px;font-size:12px;line-height:1.5;color:#b0445f;font-weight:700;word-break:keep-all;overflow-wrap:anywhere}
+html.kanapadon #tcnmd .nnote{display:block}
 #tcnmd .nin{display:block;width:100%;box-sizing:border-box;height:48px;border-radius:12px;border:2px solid #d9b77c;background:#fffdf7;padding:0 12px;margin:0;font:700 20px/1.2 "Hiragino Mincho ProN","Hiragino Mincho Pro","YuMincho","Yu Mincho","Noto Serif JP","Noto Serif CJK JP",serif;color:#4a250c;-webkit-user-select:text;user-select:text;touch-action:manipulation;-webkit-appearance:none;appearance:none}
 #tcnmd .nin:focus{outline:none;border-color:#c2456f}
 #tcnmd .ncnt{min-height:17px;margin:4px 2px 0;font-size:12px;line-height:17px;color:#9a7a55;text-align:right}
@@ -6304,6 +6306,7 @@ html.kanapadon #tcnmd{padding-top:calc(env(safe-area-inset-top) + 12px)}
       nmd = document.createElement('div'); nmd.id = 'tcnmd'; nmd.setAttribute('role', 'dialog'); nmd.setAttribute('aria-modal', 'true'); nmd.setAttribute('aria-label', '牧場の名前');
       nmd.innerHTML = `<div class="nbk" data-nm="no"></div><div class="nsh"><div class="nhd"><b>🪧 牧場の名前</b><button type="button" class="nx" data-nm="no" aria-label="閉じる">✕</button></div>`
         + `<div class="nbd"><p class="nhint">看板に 書く 名前を 入れてね（${FARM_MAX}文字まで）</p>`
+        + `<p class="nnote">※かなキーボードの 漢字は 牧場に 関係する 字 だけ だよ。カタカナや ローマ字でも 名前を 決めてね！</p>`      
         + `<input class="nin" type="text" data-kana="1" enterkeyhint="done" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" maxlength="${FARM_MAX * 4}" placeholder="${FARM_DEF}" aria-label="牧場の名前">`
         + `<div class="ncnt" aria-live="polite"></div><div class="nrw"><button type="button" class="ndef" data-nm="def">「${FARM_DEF}」に もどす</button>`
         + `<button type="button" class="nkb" data-nm="kb" aria-label="かなキーボードを 出す・しまう" hidden>⌨️ かなキーボード</button></div>`

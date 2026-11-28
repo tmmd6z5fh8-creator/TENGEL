@@ -185,6 +185,16 @@ print("shown %s (0.3s %s) target %s kb %s keys %s -> %s / %s small %s %s bs %s c
       o.get("keys"), o.get("v1"), o.get("v2"), o.get("v3"), o.get("v4"), o.get("v5"), o.get("v6"), o.get("v7"), o.get("closed"), o.get("cells"), b,
       "OK" if ok else "CHECK " + json.dumps(o, ensure_ascii=False)[:500]))
 '
+# 第4.238版：アプリが うしろに 行く ときの 音（電源を 切ると「ビヨーン」）：resign で 鳴って いる 出口を すぐ 止める・interruption では 起こさない・active で 起こす
+AUDPY='
+import json, sys
+o = json.load(open(sys.argv[1])).get("audioQuiet") or {}
+s0, s1, s2, s3 = (o.get(k) or [] for k in ("s0", "s1", "s2", "s3"))
+f = lambda s: " ".join("%s:%s%s" % (q.get("name"), q.get("state"), "" if q.get("on") else "(off)") for q in s)
+ok = o.get("api") is True and any(q.get("on") and q.get("state") == "running" for q in s0) and s1 and all(q.get("state") != "running" for q in s1) and o.get("h1") is True \
+     and all(q.get("state") != "running" for q in s2) and o.get("h2") is True and all(q.get("state") == "running" for q in s3 if q.get("on")) and o.get("h3") is False
+print("before %s / resign %s / interruption %s / active %s -> %s" % (f(s0), f(s1), f(s2), f(s3), "OK" if ok else "CHECK " + json.dumps(o, ensure_ascii=False)[:500]))
+'
 waitfile() { local f="$1" t="${2:-60}" i=0; while [ $i -lt $((t * 4)) ]; do [ -f "$f" ] && return 0; sleep 0.25; i=$((i + 1)); done; return 1; }
 shot() {
   local u="$1" name="$2" w="${3:-700}"
@@ -343,6 +353,7 @@ print("item %s name %s/%s 1-line %s go %s now %s text %s closed %s points-same %
   [ -f "$OUT/iphone-report-1.json" ] && say "   fab marks: $(python3 -c "$V221PY" "$OUT/iphone-report-1.json" 2>&1)"
   [ -f "$OUT/iphone-report-1.json" ] && say "   care recorder: $(python3 -c "$RECPY" "$OUT/iphone-report-1.json" 2>&1)"
   [ -f "$OUT/iphone-report-1.json" ] && say "   kana pad: $(python3 -c "$KANAPY" "$OUT/iphone-report-1.json" 2>&1)"
+  [ -f "$OUT/iphone-report-1.json" ] && say "   audio quiet: $(python3 -c "$AUDPY" "$OUT/iphone-report-1.json" 2>&1)"
   phase "$IPHONE" iphone 2 700 report-2
   # 第4.191版：時計の 番人：アプリの 時計（Clock.swift）が 届く・電源を 入れてからの 時間が 進む・アプリを 開き直しても 起動の 番号（boot）と 端末の 番号（dev）は 同じ・
   #   アプリの 番号（proc）は かわる・Webの 画面（TengelClock）は 1回目 first／ok・2回目 ok（同じ 起動）。boot が 空（iOS が 見せない）でも ほかが 合えば OK（その ときは 番号なしで 見はる）
@@ -408,6 +419,7 @@ if [ -n "$IPAD" ]; then
   [ -f "$OUT/ipad-report-1.json" ] && say "   card battle (ipad): $(python3 -c "$CBPY" "$OUT/ipad-report-1.json" 2>&1)"
   [ -f "$OUT/ipad-report-1.json" ] && say "   care recorder (ipad): $(python3 -c "$RECPY" "$OUT/ipad-report-1.json" 2>&1)"
   [ -f "$OUT/ipad-report-1.json" ] && say "   kana pad (ipad): $(python3 -c "$KANAPY" "$OUT/ipad-report-1.json" 2>&1)"
+  [ -f "$OUT/ipad-report-1.json" ] && say "   audio quiet (ipad): $(python3 -c "$AUDPY" "$OUT/ipad-report-1.json" 2>&1)"
   [ -f "$OUT/ipad-report-1.json" ] && say "   fab marks (ipad): $(python3 -c "$V221PY" "$OUT/ipad-report-1.json" 2>&1)"
   applog "$IPAD" ipad
   xcrun simctl shutdown "$IPAD" > /dev/null 2>&1
