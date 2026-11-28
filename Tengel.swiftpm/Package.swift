@@ -22,7 +22,7 @@ let package = Package(
             targets: ["AppModule"],
             bundleIdentifier: "jp.tengel.app",
             displayVersion: "1.0",
-            bundleVersion: "20261128.9",
+            bundleVersion: "20261129.1",
             appIcon: .asset("AppIcon"),
             accentColor: .presetColor(.orange),
             supportedDeviceFamilies: [

@@ -4958,7 +4958,7 @@ const TCPlan = (() => {
       r.notify = (r.notify || []).includes(m) ? r.notify.filter(x => x !== m) : (r.notify || []).concat(m).sort((x, y) => y - x);
       save(); paint(); return;
     }
-    if (k === 'add') { edit = { _new: true, id: 'p' + Date.now().toString(36), date: today(), time: '', name: '', n: '', dist: '', memo: '', notify: [] }; paint(); root.querySelector('.pb').scrollTop = 0; return; }
+    if (k === 'add') { addNew(); return; }
     if (k === 'edit') { const r = P.races.find(x => x.id === a.dataset.id); if (!r) return; edit = Object.assign({}, r); paint(); root.querySelector('.pb').scrollTop = 0; return; }
     if (k === 'del') {
       const r = P.races.find(x => x.id === a.dataset.id); if (!r) return;
@@ -4978,6 +4978,8 @@ const TCPlan = (() => {
       edit = null; save(); paint(); return;
     }
   }
+  function addNew() { edit = { _new: true, id: 'p' + Date.now().toString(36), date: today(), time: '', name: '', n: '', dist: '', memo: '', notify: [] }; paint(); root.querySelector('.pb').scrollTop = 0; }      
+  
   
   async function open(el, opt) {
     host = el; load(); oLoad();
@@ -4986,6 +4988,7 @@ const TCPlan = (() => {
     const pb = root.querySelector('.pb'), oshi = !!(opt && opt.oshi && OS());
     oshiMode = oshi; oPad();
     if (oshi) oJump(null); else pb.scrollTop = 0;      
+    if (!oshi && opt && opt.add) addNew();      
     const y0 = pb.scrollTop;
     seen(); clearInterval(snT); snT = setInterval(soonPaint, 15000);      
     auth = await authState(); paint();
@@ -6024,6 +6027,7 @@ const TCApp = (() => {
   
   
   
+  
   const FARM_DEF = 'テンゲル牧場', FARM_MAX = 12;
   const SIGN = { ar: 2036 / 334, max: 280, vw: 0.7, pad: 6, fs: 0.56 };      
   function farmClean(v, cut) {
@@ -6061,6 +6065,26 @@ const TCApp = (() => {
   
   const SND = (() => {
     let ac = null, master = null, bed = null, want = null, on = true;
+    
+    
+    
+    
+    
+    
+    let downAt = 0, askAt = -1e9;
+    const live = () => !!ac && (ac.state === 'running' || performance.now() - askAt < 700);
+    function watchState(c) {
+      downAt = c.state === 'running' ? 0 : performance.now();
+      try {
+        c.addEventListener('statechange', () => {
+          if (c !== ac || !master) return;
+          if (c.state !== 'running') { if (!downAt) downAt = performance.now(); return; }
+          const was = downAt; downAt = 0;
+          if (!was || performance.now() - was < 250) return;
+          try { const n = c.currentTime; master.gain.cancelScheduledValues(n); master.gain.setValueAtTime(0, n); master.gain.linearRampToValueAtTime(on ? 1 : 0, n + 0.4); } catch (e) { }
+        });
+      } catch (e) { }
+    }
     const cache = {};
     const AMB = { morning: 'tc_amb_morning.m4a', evening: 'tc_amb_evening.m4a', night: 'tc_amb_night.m4a', abyss: 'tc_bgm_abyss.m4a', divine: 'tc_bgm_divine3.m4a', roulette: 'tc_bgm_roulette.m4a' };
     
@@ -6086,7 +6110,7 @@ const TCApp = (() => {
     let quietT = 0;
     function lvl() { if (!master) return; try { const n = ac.currentTime; master.gain.cancelScheduledValues(n); master.gain.setValueAtTime(on ? 1 : 0, n); } catch (e) { master.gain.value = on ? 1 : 0; } }
     
-    function unlock() { try { if (!ac) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ac = new AC(); master = ac.createGain(); master.gain.value = on ? 1 : 0; master.connect(ac.destination); } clearTimeout(quietT); quietT = 0; lvl(); if (ac.state !== 'running' && ac.state !== 'closed') { const q = ac.resume(); if (q && q.catch) q.catch(() => { }); } } catch (e) { } }
+    function unlock() { try { if (!ac) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ac = new AC(); master = ac.createGain(); master.gain.value = on ? 1 : 0; master.connect(ac.destination); watchState(ac); } clearTimeout(quietT); quietT = 0; lvl(); if (ac.state !== 'running' && ac.state !== 'closed') { askAt = performance.now(); const q = ac.resume(); if (q && q.catch) q.catch(() => { }); } } catch (e) { } }
     
     
     function rebuild() {
@@ -6119,7 +6143,8 @@ const TCApp = (() => {
       if (hold == null) await swap(want, 0.5, 1.5); else if (hold === '') await swap('', 0.08, 0); else await swap(hold, 0.3, 0.12);
     }
     async function se(name, gain, at) {
-      if (!ac || !on) return; let b; try { b = await buf(name); } catch (e) { return; }
+      if (!ac || !on || !live() || nameIsOpen()) return; let b; try { b = await buf(name); } catch (e) { return; }      
+      if (!live()) return;
       try { const s = ac.createBufferSource(); s.buffer = b; const g = ac.createGain(); g.gain.value = gain == null ? 1 : gain; s.connect(g); g.connect(master); s.start(ac.currentTime + Math.max(0, at || 0)); return s; } catch (e) { }
     }
     
@@ -6182,7 +6207,6 @@ const TCApp = (() => {
 #tcOv .tcnmi{display:block;font-family:"Hiragino Mincho ProN","Hiragino Mincho Pro","YuMincho","Yu Mincho","Noto Serif JP","Noto Serif CJK JP",serif;font-weight:700;font-size:24px;line-height:1.1;letter-spacing:.06em;text-indent:.06em;color:#4a250c;text-shadow:0 1px 0 rgba(255,241,214,.8),0 -1px 0 rgba(96,44,8,.25)}
 #tcnmd{position:absolute;inset:0;z-index:60;display:none;align-items:flex-start;justify-content:center;box-sizing:border-box;padding-top:calc(env(safe-area-inset-top) + 72px);touch-action:manipulation;font-family:"BIZ UDPGothic","Hiragino Sans",sans-serif}
 #tcnmd.on{display:flex}
-html.kanapadon #tcnmd{padding-top:calc(env(safe-area-inset-top) + 12px)}
 #tcnmd .nbk{position:absolute;inset:0;background:rgba(30,18,6,.55)}
 #tcnmd .nsh{position:relative;width:calc(100% - 28px);max-width:380px;background:#fff8ec;border-radius:18px;box-shadow:0 6px 18px rgba(0,0,0,.35);overflow:hidden}
 #tcnmd .nhd{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px 6px 14px;background:linear-gradient(#f6e3bf,#efd6a8);border-bottom:2px solid #e2c48e}
@@ -6190,16 +6214,11 @@ html.kanapadon #tcnmd{padding-top:calc(env(safe-area-inset-top) + 12px)}
 #tcnmd .nx{flex:none;width:34px;height:34px;border-radius:50%;background:#fff8ec;border:2px solid #d9b77c;color:#8a5a2a;font:400 17px/1 "BIZ UDPGothic","Hiragino Sans",sans-serif;padding:0}
 #tcnmd .nbd{padding:11px 14px 14px}
 #tcnmd .nhint{margin:0 0 8px;font-size:13px;line-height:1.5;color:#7a5a3a}
-#tcnmd .nnote{display:none;margin:-4px 0 8px;font-size:12px;line-height:1.5;color:#b0445f;font-weight:700;word-break:keep-all;overflow-wrap:anywhere}
-html.kanapadon #tcnmd .nnote{display:block}
 #tcnmd .nin{display:block;width:100%;box-sizing:border-box;height:48px;border-radius:12px;border:2px solid #d9b77c;background:#fffdf7;padding:0 12px;margin:0;font:700 20px/1.2 "Hiragino Mincho ProN","Hiragino Mincho Pro","YuMincho","Yu Mincho","Noto Serif JP","Noto Serif CJK JP",serif;color:#4a250c;-webkit-user-select:text;user-select:text;touch-action:manipulation;-webkit-appearance:none;appearance:none}
 #tcnmd .nin:focus{outline:none;border-color:#c2456f}
 #tcnmd .ncnt{min-height:17px;margin:4px 2px 0;font-size:12px;line-height:17px;color:#9a7a55;text-align:right}
 #tcnmd .ncnt.ng{color:#b0445f;font-weight:700}
 #tcnmd .nrw{display:flex;align-items:center;justify-content:space-between;gap:8px}
-#tcnmd .nkb{flex:none;height:28px;margin:2px 0 0;padding:0 10px;border-radius:14px;border:2px solid #d9b77c;background:#fffdf7;color:#7a4520;font:700 12px/1 "BIZ UDPGothic","Hiragino Sans",sans-serif;white-space:nowrap;-webkit-tap-highlight-color:transparent}
-#tcnmd .nkb[hidden]{display:none}
-#tcnmd .nkb.on{background:#161F3D;color:#FFE6A8;border-color:#E2A23B}
 #tcnmd .ndef{display:inline-block;margin:2px 0 0;padding:4px 2px;border:0;background:none;color:#8a5a2a;font:700 12.5px/1.4 "BIZ UDPGothic","Hiragino Sans",sans-serif;text-decoration:underline;-webkit-tap-highlight-color:transparent}
 #tcnmd .nbtn{display:flex;gap:8px;margin-top:10px}
 #tcnmd .nb{flex:1 1 0;min-width:0;height:42px;border-radius:21px;border:0;padding:0 10px;font:700 15px/1 "BIZ UDPGothic","Hiragino Sans",sans-serif;white-space:nowrap;-webkit-tap-highlight-color:transparent}
@@ -6314,10 +6333,8 @@ html.kanapadon #tcnmd .nnote{display:block}
       nmd = document.createElement('div'); nmd.id = 'tcnmd'; nmd.setAttribute('role', 'dialog'); nmd.setAttribute('aria-modal', 'true'); nmd.setAttribute('aria-label', '牧場の名前');
       nmd.innerHTML = `<div class="nbk" data-nm="no"></div><div class="nsh"><div class="nhd"><b>🪧 牧場の名前</b><button type="button" class="nx" data-nm="no" aria-label="閉じる">✕</button></div>`
         + `<div class="nbd"><p class="nhint">看板に 書く 名前を 入れてね（${FARM_MAX}文字まで）</p>`
-        + `<p class="nnote">※かなキーボードの 漢字は 牧場に 関係する 字 だけ だよ。カタカナや ローマ字でも 名前を 決めてね！</p>`      
-        + `<input class="nin" type="text" data-kana="1" enterkeyhint="done" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" maxlength="${FARM_MAX * 4}" placeholder="${FARM_DEF}" aria-label="牧場の名前">`
-        + `<div class="ncnt" aria-live="polite"></div><div class="nrw"><button type="button" class="ndef" data-nm="def">「${FARM_DEF}」に もどす</button>`
-        + `<button type="button" class="nkb" data-nm="kb" aria-label="かなキーボードを 出す・しまう" hidden>⌨️ かなキーボード</button></div>`
+        + `<input class="nin" type="text" enterkeyhint="done" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" maxlength="${FARM_MAX * 4}" placeholder="${FARM_DEF}" aria-label="牧場の名前">`
+        + `<div class="ncnt" aria-live="polite"></div><div class="nrw"><button type="button" class="ndef" data-nm="def">「${FARM_DEF}」に もどす</button></div>`
         + `<div class="nbtn"><button type="button" class="nb no" data-nm="no">やめる</button><button type="button" class="nb go" data-nm="ok">決める</button></div></div></div>`;
       ov.appendChild(nmd);
       const inp = nmd.querySelector('.nin');
@@ -6328,16 +6345,9 @@ html.kanapadon #tcnmd .nnote{display:block}
         const k = b.dataset.nm;
         if (k === 'no') nameClose(); else if (k === 'ok') nameOk();
         else if (k === 'def') { inp.value = FARM_DEF; nameCount(); try { inp.focus(); } catch (x) {   } }
-        else if (k === 'kb' && window.TengelKana) {      
-          try { inp.focus({ preventScroll: true }); } catch (x) {   }
-          if (TengelKana.state().open) TengelKana.hide(); else TengelKana.show(inp, true);
-        }
       });
-      document.addEventListener('tengel:kanapad', () => { const kb = nmd.querySelector('.nkb'); if (kb) kb.classList.toggle('on', !!(window.TengelKana && TengelKana.state().open)); });
-      ['pointerdown', 'mousedown'].forEach(t => nmd.querySelector('.nkb').addEventListener(t, e => e.preventDefault()));      
     }
     const inp = nmd.querySelector('.nin'); inp.value = farmName(); nameCount();
-    nmd.querySelector('.nkb').hidden = !window.TengelKana;      
     nmd.classList.add('on'); nmAt = performance.now();
     try { inp.focus(); inp.select(); } catch (e) {   }      
   }
