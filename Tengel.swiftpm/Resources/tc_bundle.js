@@ -6014,6 +6014,8 @@ const TCApp = (() => {
   
   
   
+  
+  
   const FARM_DEF = 'テンゲル牧場', FARM_MAX = 12;
   const SIGN = { ar: 2036 / 334, max: 280, vw: 0.7, pad: 6, fs: 0.56 };      
   function farmClean(v, cut) {
@@ -6172,6 +6174,7 @@ const TCApp = (() => {
 #tcOv .tcnmi{display:block;font-family:"Hiragino Mincho ProN","Hiragino Mincho Pro","YuMincho","Yu Mincho","Noto Serif JP","Noto Serif CJK JP",serif;font-weight:700;font-size:24px;line-height:1.1;letter-spacing:.06em;text-indent:.06em;color:#4a250c;text-shadow:0 1px 0 rgba(255,241,214,.8),0 -1px 0 rgba(96,44,8,.25)}
 #tcnmd{position:absolute;inset:0;z-index:60;display:none;align-items:flex-start;justify-content:center;box-sizing:border-box;padding-top:calc(env(safe-area-inset-top) + 72px);touch-action:manipulation;font-family:"BIZ UDPGothic","Hiragino Sans",sans-serif}
 #tcnmd.on{display:flex}
+html.kanapadon #tcnmd{padding-top:calc(env(safe-area-inset-top) + 12px)}
 #tcnmd .nbk{position:absolute;inset:0;background:rgba(30,18,6,.55)}
 #tcnmd .nsh{position:relative;width:calc(100% - 28px);max-width:380px;background:#fff8ec;border-radius:18px;box-shadow:0 6px 18px rgba(0,0,0,.35);overflow:hidden}
 #tcnmd .nhd{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px 6px 14px;background:linear-gradient(#f6e3bf,#efd6a8);border-bottom:2px solid #e2c48e}
@@ -6183,6 +6186,10 @@ const TCApp = (() => {
 #tcnmd .nin:focus{outline:none;border-color:#c2456f}
 #tcnmd .ncnt{min-height:17px;margin:4px 2px 0;font-size:12px;line-height:17px;color:#9a7a55;text-align:right}
 #tcnmd .ncnt.ng{color:#b0445f;font-weight:700}
+#tcnmd .nrw{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#tcnmd .nkb{flex:none;height:28px;margin:2px 0 0;padding:0 10px;border-radius:14px;border:2px solid #d9b77c;background:#fffdf7;color:#7a4520;font:700 12px/1 "BIZ UDPGothic","Hiragino Sans",sans-serif;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+#tcnmd .nkb[hidden]{display:none}
+#tcnmd .nkb.on{background:#161F3D;color:#FFE6A8;border-color:#E2A23B}
 #tcnmd .ndef{display:inline-block;margin:2px 0 0;padding:4px 2px;border:0;background:none;color:#8a5a2a;font:700 12.5px/1.4 "BIZ UDPGothic","Hiragino Sans",sans-serif;text-decoration:underline;-webkit-tap-highlight-color:transparent}
 #tcnmd .nbtn{display:flex;gap:8px;margin-top:10px}
 #tcnmd .nb{flex:1 1 0;min-width:0;height:42px;border-radius:21px;border:0;padding:0 10px;font:700 15px/1 "BIZ UDPGothic","Hiragino Sans",sans-serif;white-space:nowrap;-webkit-tap-highlight-color:transparent}
@@ -6281,29 +6288,9 @@ const TCApp = (() => {
   
   
   
-  const farmAsk = () => {
-    const cur = farmName();
-    
-    return { title: '🪧 牧場の名前', message: '看板に 書く 名前を 入れてね', text: cur, placeholder: FARM_DEF, max: FARM_MAX,
-      empty: `空なら「${FARM_DEF}」になるよ`, ok: '決める', cancel: 'やめる', reset: cur === FARM_DEF ? '' : `「${FARM_DEF}」に もどす` };
-  };
-  let nmAsk = false;
   function nameOpen() {
     if (!ov) return;
-    const N = window.__NATIVE && window.TengelNative;
-    if (N && typeof N.call === 'function') { nameAsk(N); return; }
     nameDialog();
-  }
-  function nameAsk(N) {
-    if (nmAsk) return;      
-    nmAsk = true;
-    let p; try { p = Promise.resolve(N.call('prompt', farmAsk())); } catch (e) { p = Promise.reject(e); }
-    p.then(r => {
-      nmAsk = false;
-      if (!r || typeof r !== 'object') { nameDialog(); return; }      
-      if (r.busy || !r.ok) return;                                    
-      nameSet(r.reset ? FARM_DEF : r.text);
-    }, () => { nmAsk = false; nameDialog(); });
   }
   
   function nameSet(raw) {
@@ -6317,8 +6304,9 @@ const TCApp = (() => {
       nmd = document.createElement('div'); nmd.id = 'tcnmd'; nmd.setAttribute('role', 'dialog'); nmd.setAttribute('aria-modal', 'true'); nmd.setAttribute('aria-label', '牧場の名前');
       nmd.innerHTML = `<div class="nbk" data-nm="no"></div><div class="nsh"><div class="nhd"><b>🪧 牧場の名前</b><button type="button" class="nx" data-nm="no" aria-label="閉じる">✕</button></div>`
         + `<div class="nbd"><p class="nhint">看板に 書く 名前を 入れてね（${FARM_MAX}文字まで）</p>`
-        + `<input class="nin" type="text" enterkeyhint="done" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" maxlength="${FARM_MAX * 4}" placeholder="${FARM_DEF}" aria-label="牧場の名前">`
-        + `<div class="ncnt" aria-live="polite"></div><button type="button" class="ndef" data-nm="def">「${FARM_DEF}」に もどす</button>`
+        + `<input class="nin" type="text" data-kana="1" enterkeyhint="done" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" maxlength="${FARM_MAX * 4}" placeholder="${FARM_DEF}" aria-label="牧場の名前">`
+        + `<div class="ncnt" aria-live="polite"></div><div class="nrw"><button type="button" class="ndef" data-nm="def">「${FARM_DEF}」に もどす</button>`
+        + `<button type="button" class="nkb" data-nm="kb" aria-label="かなキーボードを 出す・しまう" hidden>⌨️ かなキーボード</button></div>`
         + `<div class="nbtn"><button type="button" class="nb no" data-nm="no">やめる</button><button type="button" class="nb go" data-nm="ok">決める</button></div></div></div>`;
       ov.appendChild(nmd);
       const inp = nmd.querySelector('.nin');
@@ -6329,9 +6317,16 @@ const TCApp = (() => {
         const k = b.dataset.nm;
         if (k === 'no') nameClose(); else if (k === 'ok') nameOk();
         else if (k === 'def') { inp.value = FARM_DEF; nameCount(); try { inp.focus(); } catch (x) {   } }
+        else if (k === 'kb' && window.TengelKana) {      
+          try { inp.focus({ preventScroll: true }); } catch (x) {   }
+          if (TengelKana.state().open) TengelKana.hide(); else TengelKana.show(inp, true);
+        }
       });
+      document.addEventListener('tengel:kanapad', () => { const kb = nmd.querySelector('.nkb'); if (kb) kb.classList.toggle('on', !!(window.TengelKana && TengelKana.state().open)); });
+      ['pointerdown', 'mousedown'].forEach(t => nmd.querySelector('.nkb').addEventListener(t, e => e.preventDefault()));      
     }
     const inp = nmd.querySelector('.nin'); inp.value = farmName(); nameCount();
+    nmd.querySelector('.nkb').hidden = !window.TengelKana;      
     nmd.classList.add('on'); nmAt = performance.now();
     try { inp.focus(); inp.select(); } catch (e) {   }      
   }
@@ -6981,7 +6976,7 @@ const TCApp = (() => {
       return { stock: st.stock, max: TOKEN_MAX };
     }
   };
-  return { open, close, tickets, tokens, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, farm: { name: farmName, open: nameOpen, close: nameClose, isOpen: nameIsOpen, clean: farmClean, DEF: FARM_DEF, MAX: FARM_MAX, ask: farmAsk, set: nameSet, dialog: nameDialog, get asking() { return nmAsk; } }, _t: { dropOpen, dropResume, dropTone, dropOk, dropLeft, dropTap, dropLocked, DROP, prep, buyShow, recoverBuy, PACKS, ZONE, GEKI, GEKI_SE, DROP_SE, zoneV, zoneRoll, gov: GOV, get hidN() { return hidN; }, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, drawMax, drawLeft, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, visitDraws: Object.assign({}, VISIT_DRAWS), capWait: CAP_WAIT, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      
+  return { open, close, tickets, tokens, get state() { return st; }, test: TEST, buy: BUY, _snd: SND, farm: { name: farmName, open: nameOpen, close: nameClose, isOpen: nameIsOpen, clean: farmClean, DEF: FARM_DEF, MAX: FARM_MAX, set: nameSet, dialog: nameDialog }, _t: { dropOpen, dropResume, dropTone, dropOk, dropLeft, dropTap, dropLocked, DROP, prep, buyShow, recoverBuy, PACKS, ZONE, GEKI, GEKI_SE, DROP_SE, zoneV, zoneRoll, gov: GOV, get hidN() { return hidN; }, govern, govSet, GOV_Q, lottery, draw, give, onPrize, PRIZES, PRIZES_VISIT, fieldName, startVisit, endVisit, doReset, nextHorse, drawMax, drawLeft, force: k => { forceNext = k; }, chance, rsLeft, visitLeft, RT, trash: { spawn: quiet => spawnTrash(clock(), quiet), spots: trashSpots, items: trashItems, step: trashStep, min: TRASH_MIN, n: TRASH_N }, ODDS: { trashMin: TRASH_MIN, trashN: TRASH_N, poop: P_POOP, gold: P_GOLD, high: P_HIGH, mab: P_MAB, kami: P_KAMI, highX: HIGH_X, highN: HIGH_N, tick: TICK, visitMin: VISIT_MIN, visitDraws: Object.assign({}, VISIT_DRAWS), capWait: CAP_WAIT, resetCares: RESET_CARES, resetMin: RESET_MIN, tokenMin: TOKEN_MIN, tokenStep: TOKEN_STEP, tokenMax: TOKEN_MAX, zone: Object.assign({}, ZONE) } } };      
 })();
 
 ;window.TCField = TCField; window.TCCare = TCCare; window.TCGuide = TCGuide; window.TCBuy = TCBuy; window.TCDrop = TCDrop; window.TCApp = TCApp;
